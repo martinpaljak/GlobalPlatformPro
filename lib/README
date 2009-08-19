@@ -1,0 +1,4 @@
+This Global Platform for SmartCardIO project makes use of the following libraries:
+
+- Bouncy Castle JDK1.6 securtiy provider. Bouncy Castle (http://www.bouncycastle.org)
+  is distributed under the licence stated at: http://www.bouncycastle.org/licence.html

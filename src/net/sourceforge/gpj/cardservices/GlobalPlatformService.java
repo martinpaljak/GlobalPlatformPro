@@ -1259,6 +1259,7 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
         System.out
                 .println(" -sdaid <aid>      Security Domain AID, default a000000003000000");
         System.out.println(" -keyset <num>     use key set <num>, default 0");
+        System.out.println(" -mode <apduMode>  use APDU mode, CLR, MAC, or ENC, default CLR");
         System.out
                 .println(" -enc <key>        define ENC key, default: 40..4F");
         System.out
@@ -1347,6 +1348,7 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
         boolean loadDebug = false;
         boolean loadParam = false;
         boolean useHash = false;
+        int apduMode = APDU_CLR;
 
         Vector<InstallEntry> installs = new Vector<InstallEntry>();
 
@@ -1382,6 +1384,18 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
                     diver = DIVER_VISA2;
                 } else if (args[i].equals("-emv")) {
                     diver = DIVER_EMV;
+                } else if (args[i].equals("-mode")) {
+                    i++;
+                    // TODO: RMAC modes
+                    if("CLR".equals(args[i])) {
+                        apduMode = APDU_CLR;
+                    } else if("MAC".equals(args[i])) {
+                        apduMode = APDU_MAC;
+                    }else if ("ENC".equals(args[i])) {
+                        apduMode = APDU_ENC;
+                    } else {
+                        throw new IllegalArgumentException("Invalid APDU mode: "+args[i]);                        
+                    }
                 } else if (args[i].equals("-delete")) {
                     i++;
                     byte[] aid = GPUtil.stringToByteArray(args[i]);
@@ -1553,15 +1567,14 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
                     service.setKeys(keySet, keys[0], keys[1], keys[2], diver);
                     // TODO: make the APDU mode a parameter, properly adjust
                     // loadSize accordingly
-                    if (loadSize + 8 > defaultLoadSize) {
-                        loadSize -= 8;
-                    }
-                    if (loadSize + 8 > defaultLoadSize) {
-                        loadSize -= 8;
+                    int neededExtraSize = apduMode == APDU_CLR ? 0 :
+                         (apduMode == APDU_MAC ? 8 : 16);
+                    if (loadSize + neededExtraSize > defaultLoadSize) {
+                        loadSize -= neededExtraSize;
                     }
                     service.openSecureChannel(keySet, 0,
                             GlobalPlatformService.SCP_ANY,
-                            GlobalPlatformService.APDU_ENC);
+                            apduMode);
 
                     if (deleteAID.size() > 0) {
                         for (AID aid : deleteAID) {

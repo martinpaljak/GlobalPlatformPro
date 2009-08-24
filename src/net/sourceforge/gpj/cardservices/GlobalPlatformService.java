@@ -1556,9 +1556,12 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
                     if (loadSize + 8 > defaultLoadSize) {
                         loadSize -= 8;
                     }
+                    if (loadSize + 8 > defaultLoadSize) {
+                        loadSize -= 8;
+                    }
                     service.openSecureChannel(keySet, 0,
                             GlobalPlatformService.SCP_ANY,
-                            GlobalPlatformService.APDU_MAC);
+                            GlobalPlatformService.APDU_ENC);
 
                     if (deleteAID.size() > 0) {
                         for (AID aid : deleteAID) {

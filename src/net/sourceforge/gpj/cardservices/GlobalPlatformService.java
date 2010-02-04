@@ -425,7 +425,7 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
                 sessionKeys.keys[keyIndex] = cipher.encrypt(derivationData);
             }
         } catch (Exception e) {
-            throw new CardException("Session key derivation failed.");
+            throw new CardException("Session key derivation failed.", e);
         }
         sessionKeys.keys[2] = staticKeys.keys[2];
         return sessionKeys;
@@ -477,7 +477,7 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
             cipher.setKey(GPUtil.getKey(staticKeys.keys[2], 24));
             sessionKeys.keys[2] = cipher.encrypt(derivationData);
         } catch (Exception e) {
-            throw new CardException("Key derivation failed.");
+            throw new CardException("Key derivation failed.", e);
         }
         return sessionKeys;
 
@@ -526,7 +526,7 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
                         APDU_MAC, icv, ricv);
             } catch (Exception e) {
                 throw new CardException(
-                        "Implicit secure channel initialization failed.");
+                        "Implicit secure channel initialization failed.", e);
             }
         }
         CommandAPDU wc = wrapper.wrap(command);
@@ -944,7 +944,7 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
                 diversified = true;
             } catch (Exception e) {
                 diversified = false;
-                throw new CardException("Diversification failed.");
+                throw new CardException("Diversification failed.", e);
             }
         }
 
@@ -1200,8 +1200,7 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
             } catch (CardException ce) {
                 throw ce;
             } catch (Exception e) {
-                throw new CardException("APDU wrapping failed, exception: "
-                        + e.getClass());
+                throw new CardException("APDU wrapping failed.", e);
             }
         }
 

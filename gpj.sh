@@ -1,4 +1,3 @@
 #!/bin/sh
 
-cd lib
-java -jar gpj.jar $@
+java -cp lib -jar lib/gpj.jar $@

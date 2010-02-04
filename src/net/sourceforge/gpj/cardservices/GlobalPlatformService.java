@@ -24,8 +24,10 @@
 package net.sourceforge.gpj.cardservices;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.security.NoSuchAlgorithmException;
 import java.security.Security;
 import java.security.Provider;
@@ -568,12 +570,12 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
      * @throws IOException
      *             if opening {@code fileName} fails
      */
-    public void loadCapFile(String fileName, boolean includeDebug,
+    public void loadCapFile(URL url, boolean includeDebug,
             boolean separateComponents, int blockSize, boolean loadParam,
             boolean useHash) throws IOException, GPInstallForLoadException,
             GPLoadException, CardException {
         CapFile cap = null;
-        cap = new CapFile(fileName, null);
+        cap = new CapFile(url.openStream(), null);
         loadCapFile(cap, includeDebug, separateComponents, blockSize,
                 loadParam, useHash);
     }
@@ -1272,7 +1274,7 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
         System.out
                 .println(" -deletedeps       also delete depending packages/applets, default off");
         System.out.println(" -delete <aid>     delete package/applet");
-        System.out.println(" -load <cap>       load <cap> file to the card");
+        System.out.println(" -load <cap>       load <cap> file to the card, <cap> can be file name or URL");
         System.out.println(" -loadsize <num>   load block size, default "
                 + defaultLoadSize);
         System.out
@@ -1341,7 +1343,7 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
         Vector<AID> deleteAID = new Vector<AID>();
         boolean deleteDeps = false;
 
-        String capFileName = null;
+        URL capFileUrl = null;
         int loadSize = defaultLoadSize;
         boolean loadCompSep = false;
         boolean loadDebug = false;
@@ -1425,10 +1427,18 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
                     useHash = true;
                 } else if (args[i].equals("-load")) {
                     i++;
-                    capFileName = new String(args[i]);
-                    if (!new File(capFileName).exists()) {
+                    try {
+                      capFileUrl = new URL(args[i]);
+                    }catch(MalformedURLException e) {
+                        // Try with "file:" prepended
+                        capFileUrl = new URL("file:"+args[i]);                        
+                    }
+                    try {
+                      InputStream in = capFileUrl.openStream();
+                      in.close();
+                    }catch(IOException ioe) {
                         throw new IllegalArgumentException("CAP file "
-                                + capFileName + " does not seem to exist.");
+                                + capFileUrl + " does not seem to exist.", ioe);
                     }
                 } else if (args[i].equals("-install")) {
                     i++;
@@ -1588,8 +1598,8 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
                     }
                     CapFile cap = null;
 
-                    if (capFileName != null) {
-                        cap = new CapFile(capFileName);
+                    if (capFileUrl != null) {
+                        cap = new CapFile(capFileUrl.openStream());
                         service.loadCapFile(cap, loadDebug, loadCompSep,
                                 loadSize, loadParam, useHash);
                     }

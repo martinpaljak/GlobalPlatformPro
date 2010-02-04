@@ -29,11 +29,12 @@ import java.io.InputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
+import java.util.zip.ZipInputStream;
 
 public class CapFile {
 
@@ -55,19 +56,20 @@ public class CapFile {
 
     private List<byte[]> installTokens = new ArrayList<byte[]>();
 
-    public CapFile(String fileName) throws IOException {
-        this(fileName, null);
+    public CapFile(InputStream in) throws IOException {
+        this(in, null);
     }
 
-    public CapFile(String fileName, String packageName) throws IOException {
-        ZipFile zip = new ZipFile(fileName);
+    public CapFile(InputStream in, String packageName) throws IOException {
+        ZipInputStream zip = new ZipInputStream(in);
+        Map<String, byte[]> entries = getEntries(zip);
         if (packageName != null) {
             packageName = packageName.replace('.', '/') + "/javacard/";
         } else {
-            Enumeration<? extends ZipEntry> e = zip.entries();
+            Iterator<? extends String> it = entries.keySet().iterator();
             String lookFor = "Header.cap";
-            while (e.hasMoreElements()) {
-                String s = e.nextElement().getName();
+            while (it.hasNext()) {
+                String s = it.next();
                 if (s.endsWith(lookFor)) {
                     packageName = s.substring(0, s.lastIndexOf(lookFor));
                     break;
@@ -80,19 +82,8 @@ public class CapFile {
         GPUtil.debug("package: " + this.packageName);
         for (String name : componentNames) {
             String fullName = packageName + name + ".cap";
-            ZipEntry z = zip.getEntry(fullName);
-            if (z != null) {
-                int size = (int) z.getSize();
-                InputStream i = zip.getInputStream(z);
-                byte[] contents = new byte[size];
-                int index = 0;
-                int ch = i.read();
-                while (ch != -1) {
-                    contents[index++] = (byte) ch;
-                    ch = i.read();
-                }
-                capComponents.put(name, contents);
-            }
+            byte[] contents = entries.get(fullName);
+            capComponents.put(name, contents);
         }
         List<List<byte[]>> tables = new ArrayList<List<byte[]>>();
         tables.add(dapBlocks);
@@ -104,11 +95,8 @@ public class CapFile {
             while (true) {
                 String fullName = "meta-inf/" + packageName.replace('/', '-')
                         + names[i] + (index + 1);
-                ZipEntry z = zip.getEntry(fullName);
-                if (z == null)
-                    break;
-                byte[] contents = new byte[(int) z.getSize()];
-                zip.getInputStream(z).read(contents);
+                byte[] contents = entries.get(fullName);
+                if(contents == null) break;
                 tables.get(i).add(contents);
                 index++;
             }
@@ -154,6 +142,22 @@ public class CapFile {
 
     }
 
+    private Map<String,byte[]> getEntries(ZipInputStream in) throws IOException {
+        Map<String,byte[]> result = new HashMap<String, byte[]>();
+        while(true) {
+            ZipEntry entry = in.getNextEntry();
+            if(entry == null) {
+                break;
+            }
+            byte[] contents = new byte[(int)entry.getSize()];
+            for(int i = 0; i<contents.length; i++) {
+                contents[i] = (byte)in.read();
+            }
+            result.put(entry.getName(),contents);
+        }
+        return result;
+    }
+    
     public AID getPackageAID() {
         return packageAID;
     }
@@ -233,7 +237,7 @@ public class CapFile {
                     }
                     currentComponent = bo.toByteArray();
                 }
-                blocks.addAll(splitArray(currentComponent, blockSize));
+                blocks = splitArray(currentComponent, blockSize);
             }
         }
         return blocks;

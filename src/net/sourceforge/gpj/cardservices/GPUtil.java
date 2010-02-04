@@ -28,9 +28,9 @@ import net.sourceforge.gpj.cardservices.ciphers.ICipher;
 
 public class GPUtil {
 
-    static boolean debug = true;
+    public static boolean debug = true;
 
-    static void debug(Object o) {
+    public static void debug(Object o) {
         if (debug) {
             System.out.println("DEBUG: " + o.toString());
         }
@@ -55,7 +55,7 @@ public class GPUtil {
         return s.getBytes();
     }
 
-    static String byteArrayToString(byte[] a) {
+    public static String byteArrayToString(byte[] a) {
         String result = "";
         String onebyte = null;
         for (int i = 0; i < a.length; i++) {
@@ -69,7 +69,7 @@ public class GPUtil {
         return result;
     }
 
-    static byte[] stringToByteArray(String s) {
+    public static byte[] stringToByteArray(String s) {
         java.util.Vector<Integer> v = new java.util.Vector<Integer>();
         String operate = new String(s);
         operate = operate.replaceAll(" ", "");
@@ -97,7 +97,7 @@ public class GPUtil {
         return result;
     }
 
-    static String swToString(int sw1, int sw2) {
+    public static String swToString(int sw1, int sw2) {
         String result = "";
         String onebyte = null;
         onebyte = Integer.toHexString(sw1);
@@ -117,13 +117,13 @@ public class GPUtil {
         return result;
     }
 
-    static String swToString(int sw) {
+    public static String swToString(int sw) {
         int sw1 = (sw & 0x0000FF00) >> 8;
         int sw2 = (sw & 0x000000FF);
         return swToString(sw1, sw2);
     }
 
-    static byte[] pad80(byte[] text, int offset, int length) {
+    public static byte[] pad80(byte[] text, int offset, int length) {
         if (length == -1)
             length = text.length - offset;
         int totalLength = length;
@@ -138,16 +138,16 @@ public class GPUtil {
         return result;
     }
 
-    static byte[] pad80(byte[] text) {
+    public static byte[] pad80(byte[] text) {
         return pad80(text, 0, text.length);
     }
 
-    static byte[] mac_3des(byte[] key, byte[] text, byte[] cv)
+    public static byte[] mac_3des(byte[] key, byte[] text, byte[] cv)
             throws CardException {
         return mac_3des(key, text, 0, text.length, cv);
     }
 
-    static byte[] mac_3des(byte[] key, byte[] text, int offset, int length,
+    public static byte[] mac_3des(byte[] key, byte[] text, int offset, int length,
             byte[] cv) throws CardException {
         if (length == -1)
             length = text.length - offset;
@@ -164,12 +164,12 @@ public class GPUtil {
         }
     }
 
-    static byte[] mac_des_3des(byte[] key, byte[] text, byte[] cv)
+    public static byte[] mac_des_3des(byte[] key, byte[] text, byte[] cv)
             throws CardException {
         return mac_des_3des(key, text, 0, text.length, cv);
     }
 
-    static byte[] mac_des_3des(byte[] key, byte[] text, int offset, int length,
+    public static byte[] mac_des_3des(byte[] key, byte[] text, int offset, int length,
             byte[] cv) throws CardException {
         if (length == -1)
             length = text.length - offset;
@@ -197,7 +197,7 @@ public class GPUtil {
         }
     }
 
-    static byte[] getKey(byte[] key, int length) {
+    public static byte[] getKey(byte[] key, int length) {
         if (length == 24) {
             byte[] key24 = new byte[24];
             System.arraycopy(key, 0, key24, 0, 16);

@@ -257,7 +257,7 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
      * @throws CardException
      *             if some communication problem is encountered.
      */
-    void openSecureChannel(int keySet, int keyId, int scpVersion,
+    public void openSecureChannel(int keySet, int keyId, int scpVersion,
             int securityLevel) throws IllegalArgumentException, CardException {
 
         if (scpVersion < SCP_ANY || scpVersion > SCP_02_1B) {

@@ -106,8 +106,15 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
 
     public static final byte GET_STATUS = (byte) 0xF2;
 
-    protected AID aid = new AID(new byte[] { (byte) 0xa0, 0x00, 0x00, 0x00,
-            0x03, 0x00, 0x00, 0x00 });
+    /* Card Manager AID, OpenPlatform 2.0.1 6.10.1.1, page 6-26 */
+    public static final AID aid_op201 = new AID(new byte[] { (byte) 0xa0, 0x00, 0x00, 0x00,
+            0x03, 0x00, 0x00 });
+
+    /* Default Issuer Security Domain AID, GlobalPlatform 2.1 Errata P3.10, page 21 */  
+    public static final AID aid_gp21 = new AID(new byte[] { (byte) 0xa0, 0x00, 0x00, 0x01,
+    		0x51, 0x00, 0x00 });
+    
+    protected AID sdAID = null;
 
     public static final byte[] defaultEncKey = { 0x40, 0x41, 0x42, 0x43, 0x44,
             0x45, 0x46, 0x47, 0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F };
@@ -161,7 +168,7 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
     public GlobalPlatformService(AID aid, CardChannel channel, int scpVersion)
             throws IllegalArgumentException {
         this(channel, scpVersion);
-        this.aid = aid;
+        this.sdAID = aid;
     }
 
     /**
@@ -237,16 +244,39 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
      *             on data transmission errors
      */
     public void open() throws GPSecurityDomainSelectionException, CardException {
-        CommandAPDU command = new CommandAPDU(CLA_ISO7816, INS_SELECT, 0x04,
-                0x00, aid.getBytes());
-        ResponseAPDU resp = channel.transmit(command);
-        notifyExchangedAPDU(command, resp);
-        short sw = (short) resp.getSW();
-        if (sw != SW_NO_ERROR) {
-            throw new GPSecurityDomainSelectionException(sw,
-                    "Could not select AID " + aid + ", SW: "
-                            + GPUtil.swToString(sw));
-        }
+    	
+    	if (sdAID == null) {
+    		CommandAPDU command = new CommandAPDU(CLA_ISO7816, INS_SELECT, 0x04,
+                    0x00, aid_gp21.getBytes());
+            ResponseAPDU resp = channel.transmit(command);
+            notifyExchangedAPDU(command, resp);
+            short sw = (short) resp.getSW();
+            /* Try to find GP211 SD, then OP201 CM */
+            if (sw == SW_NO_ERROR) {
+            	sdAID = aid_gp21;
+            } else if (sw == SW_FILE_NOT_FOUND) {
+            	command = new CommandAPDU(CLA_ISO7816, INS_SELECT, 0x04,
+                        0x00, aid_op201.getBytes());
+            	resp = channel.transmit(command);
+            	notifyExchangedAPDU(command, resp);
+            	sw = (short) resp.getSW();
+            	if (sw != SW_NO_ERROR)
+            		throw new GPSecurityDomainSelectionException(sw,
+                            "Could not select GP211 security domain nor OP201 card manager, last SW: "
+                                    + GPUtil.swToString(sw));
+            }
+    	} else {
+    		CommandAPDU command = new CommandAPDU(CLA_ISO7816, INS_SELECT, 0x04,
+                    0x00, sdAID.getBytes());
+            ResponseAPDU resp = channel.transmit(command);
+            notifyExchangedAPDU(command, resp);
+            short sw = (short) resp.getSW();
+            if (sw != SW_NO_ERROR) {
+                throw new GPSecurityDomainSelectionException(sw,
+                        "Could not select custom sdAID " + sdAID + ", SW: "
+                                + GPUtil.swToString(sw));
+            }	
+    	}	
     }
 
     /**
@@ -518,7 +548,7 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
             try {
                 KeySet sessionKeys = deriveSessionKeysSCP02(staticKeys,
                         result[2], result[3], true);
-                byte[] temp = GPUtil.pad80(aid.getBytes());
+                byte[] temp = GPUtil.pad80(sdAID.getBytes());
 
                 byte[] icv = GPUtil.mac_des_3des(sessionKeys.keys[1], temp,
                         new byte[8]);
@@ -617,8 +647,8 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
             bo.write(cap.getPackageAID().getLength());
             bo.write(cap.getPackageAID().getBytes());
 
-            bo.write(aid.getLength());
-            bo.write(aid.getBytes());
+            bo.write(sdAID.getLength());
+            bo.write(sdAID.getBytes());
 
             bo.write(hash.length);
             bo.write(hash);

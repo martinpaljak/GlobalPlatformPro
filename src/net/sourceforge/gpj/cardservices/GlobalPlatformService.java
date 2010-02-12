@@ -264,6 +264,8 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
             		throw new GPSecurityDomainSelectionException(sw,
                             "Could not select GP211 security domain nor OP201 card manager, last SW: "
                                     + GPUtil.swToString(sw));
+            	else
+            		sdAID = aid_op201;
             }
     	} else {
     		CommandAPDU command = new CommandAPDU(CLA_ISO7816, INS_SELECT, 0x04,

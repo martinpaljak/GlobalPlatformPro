@@ -149,15 +149,16 @@ public class CapFile {
             if(entry == null) {
                 break;
             }
-            byte[] contents = new byte[(int)entry.getSize()];
-            for(int i = 0; i<contents.length; i++) {
-                contents[i] = (byte)in.read();
-            }
-            result.put(entry.getName(),contents);
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            byte[] buf = new byte[1024];
+            int c;
+            while ((c = in.read(buf)) > 0)
+                bos.write(buf, 0, c);
+            result.put(entry.getName(), bos.toByteArray());
         }
         return result;
     }
-    
+
     public AID getPackageAID() {
         return packageAID;
     }

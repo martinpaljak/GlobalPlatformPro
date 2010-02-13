@@ -124,22 +124,23 @@ public class CapFile {
         GPUtil.debug("package AID: " + packageAID);
 
         byte[] applet = capComponents.get("Applet");
-        i = 0;
-        // applet[0] should be 3;
-        i++;
-        // applet[1] should be 0;
-        i++;
-        // applet[2] should be remaining length
-        i++;
-        // header[3] should be number of applets
-        int num = applet[i++];
-        for (int j = 0; j < num; j++) {
-            len = applet[i++];
-            appletAIDs.add(new AID(applet, i, len));
-            i += len + 2;
+        if (applet != null) {
+        	i = 0;
+        	// applet[0] should be 3;
+        	i++;
+        	// applet[1] should be 0;
+        	i++;
+        	// applet[2] should be remaining length
+        	i++;
+        	// header[3] should be number of applets
+        	int num = applet[i++];
+        	for (int j = 0; j < num; j++) {
+        		len = applet[i++];
+        		appletAIDs.add(new AID(applet, i, len));
+        		i += len + 2;
+        	}
+        	GPUtil.debug("applet AIDs: " + appletAIDs);
         }
-        GPUtil.debug("applet AIDs: " + appletAIDs);
-
     }
 
     private Map<String,byte[]> getEntries(ZipInputStream in) throws IOException {

@@ -1592,9 +1592,19 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
 
             System.out.println("Found terminals: " + terminals.list());
             for (CardTerminal terminal : terminals
-                    .list(CardTerminals.State.CARD_PRESENT)) {
+                    .list(CardTerminals.State.ALL)) {
                 try {
-                    Card c = terminal.connect("*");
+                	Card c = null;
+                	try {
+                		c = terminal.connect("*");
+                	} catch (CardException e) {
+                		if (e.getCause().getMessage().equalsIgnoreCase("SCARD_E_NO_SMARTCARD")) {
+                			System.err.println("No card in reader " + terminal.getName());
+                			continue;
+                		} else
+                			e.printStackTrace();
+                	}
+                    
                     System.out.println("Found card in terminal: "
                             + terminal.getName());
                     System.out.println("ATR: "
@@ -1700,19 +1710,19 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
             }
         } catch (CardException e) {
         	if (e.getCause().getMessage().equalsIgnoreCase("SCARD_E_NO_READERS_AVAILABLE"))
-        			System.out.println("No smart card readers found");
+        		System.out.println("No smart card readers found");
         	else
         		e.printStackTrace();
-		} catch (NoSuchAlgorithmException e) {
+        } catch (NoSuchAlgorithmException e) {
         	if (e.getCause().getMessage().equalsIgnoreCase("SCARD_E_NO_SERVICE"))
-        			System.out.println("No smart card readers found (PC/SC service not running)");
+        		System.out.println("No smart card readers found (PC/SC service not running)");
         	else
         		e.printStackTrace();
-		}
-        	catch (Exception e) {
-            System.out.format("Terminated by escaping exception %s\n", e
-                    .getClass().getName());
-            e.printStackTrace();
+        }
+        catch (Exception e) {
+        	System.out.format("Terminated by escaping exception %s\n", e
+        			.getClass().getName());
+        	e.printStackTrace();
         }
 
     }

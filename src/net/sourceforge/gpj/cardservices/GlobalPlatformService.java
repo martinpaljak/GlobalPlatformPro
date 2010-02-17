@@ -670,7 +670,6 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
             throw new GPInstallForLoadException(sw,
                     "Install for Load failed, SW: " + GPUtil.swToString(sw));
         }
-
         List<byte[]> blocks = cap.getLoadBlocks(includeDebug,
                 separateComponents, blockSize);
         for (int i = 0; i < blocks.size(); i++) {

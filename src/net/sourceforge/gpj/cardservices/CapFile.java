@@ -123,23 +123,26 @@ public class CapFile {
         packageAID = new AID(header, i, len);
         GPUtil.debug("package AID: " + packageAID);
 
+        
         byte[] applet = capComponents.get("Applet");
-        if (applet != null) {
-        	i = 0;
-        	// applet[0] should be 3;
-        	i++;
-        	// applet[1] should be 0;
-        	i++;
-        	// applet[2] should be remaining length
-        	i++;
-        	// header[3] should be number of applets
-        	int num = applet[i++];
-        	for (int j = 0; j < num; j++) {
-        		len = applet[i++];
-        		appletAIDs.add(new AID(applet, i, len));
-        		i += len + 2;
-        	}
-        	GPUtil.debug("applet AIDs: " + appletAIDs);
+        if(applet != null) {
+          i = 0;
+          // applet[0] should be 3;
+          i++;
+          // applet[1] should be 0;
+          i++;
+          // applet[2] should be remaining length
+          i++;
+          // header[3] should be number of applets
+          int num = applet[i++];
+          for (int j = 0; j < num; j++) {
+              len = applet[i++];
+              appletAIDs.add(new AID(applet, i, len));
+              i += len + 2;
+          }
+          GPUtil.debug("applet AIDs: " + appletAIDs);
+        }else{
+            GPUtil.debug("No Applet component.");            
         }
     }
 
@@ -149,6 +152,9 @@ public class CapFile {
             ZipEntry entry = in.getNextEntry();
             if(entry == null) {
                 break;
+            }
+            if(entry.getName().indexOf("MANIFEST.MF") != -1) {
+                continue;
             }
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             byte[] buf = new byte[1024];

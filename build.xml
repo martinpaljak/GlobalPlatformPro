@@ -1,28 +1,34 @@
-<project name="GlobalPlatformJava" default="dist" basedir=".">
+<?xml version="1.0"?>
+<project name="GlobalPlatform Java" default="dist" basedir=".">
   <description>ANT build file for GPJ</description>
   <property name="src" location="src"/>
-  <property name="build" location="build"/>
+  <property name="build" location="bin"/>
 
   <target name="init">
     <mkdir dir="${build}"/>
   </target>
 
-  <target name="compile" depends="init" description="compile the source " >
+  <target name="compile" depends="init" description="compile the source ">
     <javac srcdir="${src}" destdir="${build}">
-	    <classpath>
-	      <pathelement path="${classpath}"/>
-	      <fileset dir="lib">
-	        <include name="**/*.jar"/>
-	      </fileset>
-		</classpath> 
-	</javac>
+      <classpath>
+        <fileset dir="lib">
+          <include name="*.jar"/>
+        </fileset>
+      </classpath>
+    </javac>
   </target>
 
-  <target name="dist" depends="compile" description="generate the distribution" >
-    <jar manifest="Manifest.mf" jarfile="lib/gpj.jar" basedir="${build}"/>
+  <target name="dist" depends="compile" description="generate the distribution">
+    <jar manifest="Manifest.mf" destfile="lib/gpj.jar">
+      <fileset dir="build"/>
+      <fileset dir="lib">
+        <include name="bcprov-jdk16-145.jar"/>
+      </fileset>
+    </jar>
   </target>
- 
-  <target name="clean" description="clean up" >
+
+  <target name="clean" description="clean up">
     <delete dir="${build}"/>
+    <delete file="lib/gpj.jar"/>
   </target>
 </project>

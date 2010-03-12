@@ -20,7 +20,7 @@
 
   <target name="dist" depends="compile" description="generate the distribution">
     <jar manifest="Manifest.mf" destfile="lib/gpj.jar">
-      <fileset dir="build"/>
+      <fileset dir="${build}"/>
       <fileset dir="lib">
         <include name="bcprov-jdk16-145.jar"/>
       </fileset>

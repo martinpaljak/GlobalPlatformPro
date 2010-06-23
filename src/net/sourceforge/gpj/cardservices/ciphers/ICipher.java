@@ -71,18 +71,6 @@ public interface ICipher {
             return new JavaCipher(alg, key, iv);
         }
 
-        /*
-         * public static ICipher getImpl() { return new BouncyCipher(); }
-         * 
-         * public static ICipher getImpl(int alg) throws CipherException {
-         * return new BouncyCipher(alg); }
-         * 
-         * public static ICipher getImpl(int alg, byte[] key) throws
-         * CipherException { return new BouncyCipher(alg, key); }
-         * 
-         * public static ICipher getImpl(int alg, byte[] key, byte[] iv) throws
-         * CipherException { return new BouncyCipher(alg, key, iv); }
-         */
     }
 
 }

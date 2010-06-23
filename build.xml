@@ -9,26 +9,17 @@
   </target>
 
   <target name="compile" depends="init" description="compile the source ">
-    <javac srcdir="${src}" destdir="${build}">
-      <classpath>
-        <fileset dir="lib">
-          <include name="*.jar"/>
-        </fileset>
-      </classpath>
-    </javac>
+    <javac srcdir="${src}" destdir="${build}"/>
   </target>
 
   <target name="dist" depends="compile" description="generate the distribution">
-    <jar manifest="Manifest.mf" destfile="lib/gpj.jar">
+    <jar manifest="Manifest.mf" destfile="gpj.jar">
       <fileset dir="${build}"/>
-      <fileset dir="lib">
-        <include name="bcprov-jdk16-145.jar"/>
-      </fileset>
     </jar>
   </target>
 
   <target name="clean" description="clean up">
     <delete dir="${build}"/>
-    <delete file="lib/gpj.jar"/>
+    <delete file="gpj.jar"/>
   </target>
 </project>

@@ -2,7 +2,6 @@
  * gpj - Global Platform for Java SmartCardIO
  *
  * Copyright (C) 2009 Wojciech Mostowski, woj@cs.ru.nl
- * Copyright (C) 2009 Hendrik Tews, tews@cs.ru.nl
  * Copyright (C) 2009 Francois Kooman, F.Kooman@student.science.ru.nl
  *
  * This library is free software; you can redistribute it and/or

@@ -29,10 +29,10 @@ AUTHOR(S)
 =========
 
 This project has been developed by Wojciech Mostowski <woj@cs.ru.nl>,
-Hendrik Tews <tews@cs.ru.nl>, and Francois Kooman
-<F.Kooman@student.science.ru.nl> from Radboud University Nijmegen,
-the Netherlands. The project uses some code written ages ago by
-Martijn Oostdijk <martijn.oostdijk@gmail.com>.
+and Francois Kooman <F.Kooman@student.science.ru.nl> from Radboud
+University Nijmegen, the Netherlands. The project uses some code
+written ages ago by Martijn Oostdijk
+<martijn.oostdijk@gmail.com>.
 
 REQUIREMENTS
 ============
@@ -82,3 +82,7 @@ say:
 
   java -jar gpj.jar -load <capFile> -install
 
+THANKS
+======
+
+Hendrik Tews for contributing some code.

@@ -36,6 +36,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.TreeMap;
 import java.util.Vector;
 
 import javax.smartcardio.*;
@@ -87,7 +88,7 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
     public static final int DIVER_VISA2 = 1;
 
     public static final int DIVER_EMV = 2;
-
+    
     public static final byte CLA_GP = (byte) 0x80;
 
     public static final byte CLA_MAC = (byte) 0x84;
@@ -116,6 +117,12 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
 
     public static final byte[] defaultKekKey = { 0x40, 0x41, 0x42, 0x43, 0x44,
             0x45, 0x46, 0x47, 0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F };
+
+    public static Map<String, byte[]> SPECIAL_MOTHER_KEYS = new TreeMap<String, byte[]>();
+
+    static {
+    	SPECIAL_MOTHER_KEYS.put(AID.GEMALTO, new byte[] {0x47, 0x45, 0x4D, 0x58, 0x50, 0x52, 0x45, 0x53, 0x53, 0x4F, 0x53, 0x41, 0x4D, 0x50, 0x4C, 0x45});
+    }
 
     public static final int defaultLoadSize = 255;
 
@@ -285,7 +292,7 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
      *             if some communication problem is encountered.
      */
     public void openSecureChannel(int keySet, int keyId, int scpVersion,
-            int securityLevel) throws IllegalArgumentException, CardException {
+            int securityLevel, boolean gemalto) throws IllegalArgumentException, CardException {
 
         if (scpVersion < SCP_ANY || scpVersion > SCP_02_1B) {
             throw new IllegalArgumentException("Invalid SCP version.");
@@ -317,6 +324,13 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
                     + " not defined.");
         }
 
+        // TODO make this string a constant!
+        if(gemalto && AID.SD_AIDS.get(AID.GEMALTO).equals(sdAID)) {
+        	// get data, prepare diver buffer
+        	byte[] diverData = new byte[16];
+        	staticKeys.diversify(diverData);
+        }
+        
         byte[] rand = new byte[8];
         new Random().nextBytes(rand);
 
@@ -426,7 +440,7 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
         open();
         int keySet = 0;
         setKeys(keySet, defaultEncKey, defaultMacKey, defaultKekKey);
-        openSecureChannel(keySet, 0, SCP_ANY, APDU_MAC);
+        openSecureChannel(keySet, 0, SCP_ANY, APDU_MAC, false);
     }
 
     public boolean isSecureChannelOpen() {
@@ -923,7 +937,7 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
         }
         return registry;
     }
-
+    
     private class KeySet {
 
         private int diversification = DIVER_NONE;
@@ -931,7 +945,7 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
         private boolean diversified = false;
 
         private byte[][] keys = null;
-
+        
         private KeySet() {
             keys = new byte[][] { null, null, null, null };
         }
@@ -940,13 +954,11 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
             keys = new byte[][] { encKey, macKey, kekKey };
         }
 
-        /*
-         * private KeySet(byte[] masterKey) { this(masterKey, masterKey,
-         * masterKey); }
-         * 
-         * private KeySet(byte[] masterKey, int diversification) {
-         * this(masterKey, masterKey, masterKey, diversification); }
-         */
+        private KeySet(byte[] masterKey) { this(masterKey, masterKey, masterKey); }
+          
+        private KeySet(byte[] masterKey, int diversification) {
+          this(masterKey, masterKey, masterKey, diversification); }
+        
 
         private KeySet(byte[] encKey, byte[] macKey, byte[] kekKey,
                 int diversification) {
@@ -976,10 +988,8 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
 
         private void fillData(byte[] data, byte[] res, int i)
                 throws CardException {
-            if (res[11] == (byte) 0x01) {
-                if (diversification == DIVER_EMV) {
-                    throw new CardException("Wrong diversification?");
-                }
+            if (diversification == DIVER_VISA2) {
+                // This is VISA2
                 data[0] = res[0];
                 data[1] = res[1];
                 data[2] = res[4];
@@ -997,10 +1007,8 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
                 data[14] = (byte) 0x0F;
                 data[15] = (byte) i;
             } else {
-                if (diversification == DIVER_VISA2) {
-                    throw new CardException("Wrong diversification?");
-                }
-                data[0] = res[4];
+                // This is EMV
+            	data[0] = res[4];
                 data[1] = res[5];
                 data[2] = res[6];
                 data[3] = res[7];
@@ -1291,6 +1299,7 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
                 .println(" -mac <key>        define MAC key, default: 40..4F");
         System.out
                 .println(" -kek <key>        define KEK key, default: 40..4F");
+        // TODO -GemaltoXpressPro option
         System.out
                 .println(" -visa2            use VISA2 key diversification (only key set 0), default off");
         System.out
@@ -1363,7 +1372,8 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
         byte[][] keys = { defaultEncKey, defaultMacKey, defaultKekKey };
         AID sdAID = null;
         int diver = DIVER_NONE;
-
+        boolean gemalto = false;
+       
         Vector<AID> deleteAID = new Vector<AID>();
         boolean deleteDeps = false;
 
@@ -1405,6 +1415,11 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
                                 + args[i]);
                     }
                     sdAID = new AID(aid);
+                } else if (args[i].equals("-"+AID.GEMALTO)) {
+                    byte[] gemMotherKey = SPECIAL_MOTHER_KEYS.get(AID.GEMALTO);
+                    keys = new byte[][] {gemMotherKey, gemMotherKey, gemMotherKey};
+                    gemalto = true;
+                	diver = DIVER_VISA2;
                 } else if (args[i].equals("-visa2")) {
                     diver = DIVER_VISA2;
                 } else if (args[i].equals("-emv")) {
@@ -1617,7 +1632,7 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
                     }
                     service.openSecureChannel(keySet, 0,
                             GlobalPlatformService.SCP_ANY,
-                            apduMode);
+                            apduMode, gemalto);
 
                     if (deleteAID.size() > 0) {
                         for (AID aid : deleteAID) {

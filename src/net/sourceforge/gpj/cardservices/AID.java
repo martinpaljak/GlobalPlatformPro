@@ -23,8 +23,20 @@
 package net.sourceforge.gpj.cardservices;
 
 import java.util.Arrays;
+import java.util.Map;
+import java.util.TreeMap;
 
 public class AID {
+	
+	public static Map<String,AID> SD_AIDS = new TreeMap<String, AID>();
+
+	static {
+		SD_AIDS.put("OP201a", new AID(new byte[] { (byte) 0xa0, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00 }));
+		SD_AIDS.put("OP201b", new AID(new byte[] { (byte) 0xa0, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00 }));
+		SD_AIDS.put("GP211", new AID(new byte[] { (byte) 0xa0, 0x00, 0x00, 0x01, 0x51, 0x00, 0x00 }));
+		SD_AIDS.put("GemaltoXpressPro", new AID(new byte[]{(byte) 0xa0, 0x00, 0x00, 0x00, 0x18,0x43, 0x4D, 0x00}));		
+	}
+	
     private byte[] aidBytes = null;
 
     /**

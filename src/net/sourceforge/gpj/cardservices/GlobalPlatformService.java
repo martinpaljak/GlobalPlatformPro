@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Vector;
 
@@ -105,14 +106,6 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
 
     public static final byte GET_STATUS = (byte) 0xF2;
 
-    /* Card Manager AID, OpenPlatform 2.0.1 6.10.1.1, page 6-26 */
-    public static final AID aid_op201 = new AID(new byte[] { (byte) 0xa0, 0x00, 0x00, 0x00,
-            0x03, 0x00, 0x00 });
-
-    /* Default Issuer Security Domain AID, GlobalPlatform 2.1 Errata P3.10, page 21 */  
-    public static final AID aid_gp21 = new AID(new byte[] { (byte) 0xa0, 0x00, 0x00, 0x01,
-    		0x51, 0x00, 0x00 });
-    
     protected AID sdAID = null;
 
     public static final byte[] defaultEncKey = { 0x40, 0x41, 0x42, 0x43, 0x44,
@@ -245,27 +238,28 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
     public void open() throws GPSecurityDomainSelectionException, CardException {
     	
     	if (sdAID == null) {
-    		CommandAPDU command = new CommandAPDU(CLA_ISO7816, INS_SELECT, 0x04,
-                    0x00, aid_gp21.getBytes());
-            ResponseAPDU resp = channel.transmit(command);
-            notifyExchangedAPDU(command, resp);
-            short sw = (short) resp.getSW();
-            /* Try to find GP211 SD, then OP201 CM */
-            if (sw == SW_NO_ERROR) {
-            	sdAID = aid_gp21;
-            } else if (sw == SW_FILE_NOT_FOUND) {
-            	command = new CommandAPDU(CLA_ISO7816, INS_SELECT, 0x04,
-                        0x00, aid_op201.getBytes());
-            	resp = channel.transmit(command);
-            	notifyExchangedAPDU(command, resp);
-            	sw = (short) resp.getSW();
-            	if (sw != SW_NO_ERROR)
-            		throw new GPSecurityDomainSelectionException(sw,
-                            "Could not select GP211 security domain nor OP201 card manager, last SW: "
-                                    + GPUtil.swToString(sw));
-            	else
-            		sdAID = aid_op201;
-            }
+    		// Try known SD AIDs
+    		short sw = 0;
+    		for(Map.Entry<String,AID> entry : AID.SD_AIDS.entrySet()) {
+        		CommandAPDU command = new CommandAPDU(CLA_ISO7816, INS_SELECT, 0x04,
+                        0x00, entry.getValue().getBytes());
+                ResponseAPDU resp = channel.transmit(command);
+                notifyExchangedAPDU(command, resp);
+                sw = (short) resp.getSW();
+                if (sw == SW_NO_ERROR) {
+                	sdAID = entry.getValue();
+                    System.out.println("Successfully selected Security Domain "+entry.getKey()+" "+
+                            entry.getValue().toString());
+                	break;
+                }
+                System.out.println("Failed to select Security Domain "+entry.getKey()+" "+
+                  entry.getValue().toString()+", SW: "+GPUtil.swToString(sw));
+    		}
+    		if(sdAID == null) {
+        		throw new GPSecurityDomainSelectionException(sw,
+                        "Could not select any of the known Security Domains!");
+    			
+    		}
     	} else {
     		CommandAPDU command = new CommandAPDU(CLA_ISO7816, INS_SELECT, 0x04,
                     0x00, sdAID.getBytes());

@@ -324,10 +324,24 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
                     + " not defined.");
         }
 
-        // TODO make this string a constant!
-        if(gemalto && AID.SD_AIDS.get(AID.GEMALTO).equals(sdAID)) {
+        if(gemalto && AID.SD_AIDS.get(AID.GEMALTO).equals(sdAID)) {            
         	// get data, prepare diver buffer
+            CommandAPDU c = new CommandAPDU(CLA_GP, INS_GET_DATA, 0x9F ,0x7F, 256);
+            //byte[] cData=new byte[]{(byte)CLA_GP,(byte)INS_GET_DATA,(byte)0x9F,(byte)0x7F,0x00};
+            //CommandAPDU c = new CommandAPDU(cData);
+
+            ResponseAPDU r = channel.transmit(c);
+            notifyExchangedAPDU(c, r);
+            short sw = (short) r.getSW();
+            if (sw != SW_NO_ERROR) {
+                throw new CardException("Wrong "+AID.GEMALTO+" get CPLC data, SW: " + GPUtil.swToString(sw));
+            }
         	byte[] diverData = new byte[16];
+            byte[] t = sdAID.getBytes();
+            diverData[0] = t[t.length - 2];
+            diverData[1] = t[t.length - 1];
+            System.arraycopy(r.getData(), 15, diverData, 4, 4);
+            
         	staticKeys.diversify(diverData);
         }
         
@@ -1299,7 +1313,12 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
                 .println(" -mac <key>        define MAC key, default: 40..4F");
         System.out
                 .println(" -kek <key>        define KEK key, default: 40..4F");
-        // TODO -GemaltoXpressPro option
+        System.out
+                .println(" -"+AID.GEMALTO+" use special VISA2 key diversification for GemaltoXpressPro cards");
+        System.out
+                .println("                   uses predifined Gemalto mother key if not stated otherwise");
+        System.out
+                .println("                   with -enc/-mac/-kek AFTER this option");
         System.out
                 .println(" -visa2            use VISA2 key diversification (only key set 0), default off");
         System.out

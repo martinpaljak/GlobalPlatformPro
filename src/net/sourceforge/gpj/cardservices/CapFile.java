@@ -25,6 +25,7 @@ package net.sourceforge.gpj.cardservices;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.FileInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -322,5 +323,10 @@ public class CapFile {
         }
 
         return result;
+    }
+    
+    // Test
+    public static void main(String[] args) throws IOException {
+      CapFile cp = new CapFile(new FileInputStream(args[0]));
     }
 }

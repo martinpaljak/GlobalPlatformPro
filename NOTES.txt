@@ -7,5 +7,4 @@ New in the 20120310 release:
 
 - GemaltoXpressPro mode: VISA2 based key diversification based on
   card data and a Gemalto mother key. Option -GemaltoXpressPro.
-  EXPERIMENTAL & NOT TESTED.
-
+  EXPERIMENTAL & NOT TESTED. Thanks goes to Dusan Kovacevic.

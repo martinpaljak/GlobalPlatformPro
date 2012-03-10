@@ -1,0 +1,11 @@
+New in the 20120310 release:
+
+- fixes a long overdue bug with NegativeArraySizeException
+
+- if no Security Domain AID is given with the -sdaid option, gpj
+  will go through a list of known SD AIDs until selection is successfull
+
+- GemaltoXpressPro mode: VISA2 based key diversification based on
+  card data and a Gemalto mother key. Option -GemaltoXpressPro.
+  EXPERIMENTAL & NOT TESTED.
+

@@ -2,7 +2,7 @@ FIRST IMPORTANT NOTE
 ====================
 
 The author(s) of this project and software included within are not in
-any way responsible for your broken cards when you use my software. GP
+any way responsible for your broken cards when you use this software. GP
 compliant smart cards are very sensitive to failed authentication
 attempts and may become unoperational. So make sure you know what you
 are doing. The library has been tested with a handful of OP2.0.1 and

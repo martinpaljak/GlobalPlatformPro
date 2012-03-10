@@ -5,7 +5,7 @@ NAME=gpj-$TODAY
 
 mkdir $NAME
 
-cp -r README.txt lgpl*.txt gpj.bat gpj.sh gpj.jar $NAME
+cp -r NOTES.txt README.txt lgpl*.txt gpj.bat gpj.sh gpj.jar $NAME
 
 sed --in-place 's/$/\r/' $NAME/*.txt $NAME/*.bat
 

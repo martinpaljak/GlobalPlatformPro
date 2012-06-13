@@ -20,91 +20,58 @@
  *
  */
 
-package net.sourceforge.gpj.cardservices;
+package openkms.gpj;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.net.URL;
-import java.security.NoSuchAlgorithmException;
-import java.security.Security;
-import java.security.Provider;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
-import java.util.Vector;
 
-import javax.smartcardio.*;
+import javax.crypto.Cipher;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
+import javax.smartcardio.CardChannel;
+import javax.smartcardio.CardException;
+import javax.smartcardio.CommandAPDU;
+import javax.smartcardio.ResponseAPDU;
 
-import net.sourceforge.gpj.cardservices.ciphers.ICipher;
-
-import net.sourceforge.gpj.cardservices.exceptions.*;
 
 /**
  * The main Global Platform Service class. Provides most of the Global Platform
- * functionality and a simple command line application (see the main method) for
- * managing GP compliant smart cards.
- * 
+ * functionality for managing GP compliant smart cards.
  */
-public class GlobalPlatformService implements ISO7816, APDUListener {
-
+public class GlobalPlatform {
     public static final int SCP_ANY = 0;
-
     public static final int SCP_01_05 = 1;
-
     public static final int SCP_01_15 = 2;
-
     public static final int SCP_02_04 = 3;
-
     public static final int SCP_02_05 = 4;
-
     public static final int SCP_02_0A = 5;
-
     public static final int SCP_02_0B = 6;
-
     public static final int SCP_02_14 = 7;
-
     public static final int SCP_02_15 = 8;
-
     public static final int SCP_02_1A = 9;
-
     public static final int SCP_02_1B = 10;
-
     public static final int APDU_CLR = 0x00;
-
     public static final int APDU_MAC = 0x01;
-
     public static final int APDU_ENC = 0x02;
-
     public static final int APDU_RMAC = 0x10;
-
     public static final int DIVER_NONE = 0;
-
     public static final int DIVER_VISA2 = 1;
-
     public static final int DIVER_EMV = 2;
-    
     public static final byte CLA_GP = (byte) 0x80;
-
     public static final byte CLA_MAC = (byte) 0x84;
-
     public static final byte INIT_UPDATE = (byte) 0x50;
-
     public static final byte EXT_AUTH = (byte) 0x82;
-
     public static final byte GET_DATA = (byte) 0xCA;
-
     public static final byte INSTALL = (byte) 0xE6;
-
     public static final byte LOAD = (byte) 0xE8;
-
     public static final byte DELETE = (byte) 0xE4;
-
     public static final byte GET_STATUS = (byte) 0xF2;
 
     protected AID sdAID = null;
@@ -134,7 +101,6 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
 
     private HashMap<Integer, KeySet> keys = new HashMap<Integer, KeySet>();
 
-    private ArrayList<APDUListener> apduListeners = new ArrayList<APDUListener>();
 
     /**
      * Set the security domain AID, the channel and use scpAny.
@@ -146,7 +112,7 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
      * @throws IllegalArgumentException
      *             if {@code channel} is null.
      */
-    public GlobalPlatformService(AID aid, CardChannel channel)
+    public GlobalPlatform(AID aid, CardChannel channel)
             throws IllegalArgumentException {
         this(aid, channel, SCP_ANY);
     }
@@ -164,7 +130,7 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
      *             if {@code scpVersion} is out of range or {@code channel} is
      *             null.
      */
-    public GlobalPlatformService(AID aid, CardChannel channel, int scpVersion)
+    public GlobalPlatform(AID aid, CardChannel channel, int scpVersion)
             throws IllegalArgumentException {
         this(channel, scpVersion);
         this.sdAID = aid;
@@ -178,7 +144,7 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
      * @throws IllegalArgumentException
      *             if {@code channel} is null.
      */
-    public GlobalPlatformService(CardChannel channel)
+    public GlobalPlatform(CardChannel channel)
             throws IllegalArgumentException {
         this(channel, SCP_ANY);
     }
@@ -194,7 +160,7 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
      *             if {@code scpVersion} is out of range or {@code channel} is
      *             null.
      */
-    public GlobalPlatformService(CardChannel channel, int scpVersion)
+    public GlobalPlatform(CardChannel channel, int scpVersion)
             throws IllegalArgumentException {
         if (scpVersion != SCP_ANY && scpVersion != SCP_02_0A
                 && scpVersion != SCP_02_0B && scpVersion != SCP_02_1A
@@ -209,74 +175,44 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
         this.scpVersion = scpVersion;
     }
 
-    public void addAPDUListener(APDUListener l) {
-        apduListeners.add(l);
-    }
-
-    public void removeAPDUListener(APDUListener l) {
-        apduListeners.remove(l);
-    }
-
-    public void notifyExchangedAPDU(CommandAPDU c, ResponseAPDU r) {
-        for (APDUListener l : apduListeners) {
-            l.exchangedAPDU(c, r);
-        }
-    }
-
-    public void exchangedAPDU(CommandAPDU c, ResponseAPDU r) {
-        GPUtil
-                .debug("Command  APDU: "
-                        + GPUtil.byteArrayToString(c.getBytes()));
-        GPUtil
-                .debug("Response APDU: "
-                        + GPUtil.byteArrayToString(r.getBytes()));
-    }
-
     /**
      * Establish a connection to the security domain specified in the
      * constructor. This method is required before doing
      * {@link #openSecureChannel openSecureChannel}.
      * 
-     * @throws GPSecurityDomainSelectionException
+     * @throws GPException
      *             if security domain selection fails for some reason
      * @throws CardException
      *             on data transmission errors
      */
-    public void open() throws GPSecurityDomainSelectionException, CardException {
-    	
+    public void open() throws GPException, CardException {
     	if (sdAID == null) {
     		// Try known SD AIDs
     		short sw = 0;
     		for(Map.Entry<String,AID> entry : AID.SD_AIDS.entrySet()) {
-        		CommandAPDU command = new CommandAPDU(CLA_ISO7816, INS_SELECT, 0x04,
+        		CommandAPDU command = new CommandAPDU(ISO7816.CLA_ISO7816, ISO7816.INS_SELECT, 0x04,
                         0x00, entry.getValue().getBytes());
                 ResponseAPDU resp = channel.transmit(command);
-                notifyExchangedAPDU(command, resp);
                 sw = (short) resp.getSW();
-                if (sw == SW_NO_ERROR) {
+                if (sw == ISO7816.SW_NO_ERROR) {
                 	sdAID = entry.getValue();
                     System.out.println("Successfully selected Security Domain "+entry.getKey()+" "+
                             entry.getValue().toString());
                 	break;
                 }
                 System.out.println("Failed to select Security Domain "+entry.getKey()+" "+
-                  entry.getValue().toString()+", SW: "+GPUtil.swToString(sw));
+                  entry.getValue().toString()+", SW: "+GPUtils.swToString(sw));
     		}
     		if(sdAID == null) {
-        		throw new GPSecurityDomainSelectionException(sw,
-                        "Could not select any of the known Security Domains!");
-    			
+        		throw new GPException(sw, "Could not select any of the known Security Domains!");
     		}
     	} else {
-    		CommandAPDU command = new CommandAPDU(CLA_ISO7816, INS_SELECT, 0x04,
+    		CommandAPDU command = new CommandAPDU(ISO7816.CLA_ISO7816, ISO7816.INS_SELECT, 0x04,
                     0x00, sdAID.getBytes());
             ResponseAPDU resp = channel.transmit(command);
-            notifyExchangedAPDU(command, resp);
             short sw = (short) resp.getSW();
-            if (sw != SW_NO_ERROR) {
-                throw new GPSecurityDomainSelectionException(sw,
-                        "Could not select custom sdAID " + sdAID + ", SW: "
-                                + GPUtil.swToString(sw));
+            if (sw != ISO7816.SW_NO_ERROR) {
+                throw new GPException(sw, "Could not select custom sdAID " + sdAID);
             }	
     	}	
     }
@@ -311,8 +247,7 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
         int mask = ~(APDU_MAC | APDU_ENC | APDU_RMAC);
 
         if ((securityLevel & mask) != 0) {
-            throw new IllegalArgumentException(
-                    "Wrong security level specification");
+            throw new IllegalArgumentException("Wrong security level specification");
         }
         if ((securityLevel & APDU_ENC) != 0) {
             securityLevel |= APDU_MAC;
@@ -320,31 +255,30 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
 
         KeySet staticKeys = keys.get(new Integer(keySet));
         if (staticKeys == null) {
-            throw new IllegalArgumentException("Key set " + keySet
-                    + " not defined.");
+            throw new IllegalArgumentException("Key set " + keySet + " not defined.");
         }
 
-        if(gemalto && AID.SD_AIDS.get(AID.GEMALTO).equals(sdAID)) {            
-        	// get data, prepare diver buffer
-            CommandAPDU c = new CommandAPDU(CLA_GP, INS_GET_DATA, 0x9F ,0x7F, 256);
-            //byte[] cData=new byte[]{(byte)CLA_GP,(byte)INS_GET_DATA,(byte)0x9F,(byte)0x7F,0x00};
-            //CommandAPDU c = new CommandAPDU(cData);
+		if (gemalto && AID.SD_AIDS.get(AID.GEMALTO).equals(sdAID)) {
+			// get data, prepare diver buffer
+			CommandAPDU c = new CommandAPDU(CLA_GP, ISO7816.INS_GET_DATA, 0x9F, 0x7F, 256);
+			// byte[] cData=new
+			// byte[]{(byte)CLA_GP,(byte)ISO7816.INS_GET_DATA,(byte)0x9F,(byte)0x7F,0x00};
+			// CommandAPDU c = new CommandAPDU(cData);
 
-            ResponseAPDU r = channel.transmit(c);
-            notifyExchangedAPDU(c, r);
-            short sw = (short) r.getSW();
-            if (sw != SW_NO_ERROR) {
-                throw new CardException("Wrong "+AID.GEMALTO+" get CPLC data, SW: " + GPUtil.swToString(sw));
-            }
-        	byte[] diverData = new byte[16];
-            byte[] t = sdAID.getBytes();
-            diverData[0] = t[t.length - 2];
-            diverData[1] = t[t.length - 1];
-            System.arraycopy(r.getData(), 15, diverData, 4, 4);
-            
-        	staticKeys.diversify(diverData);
-        }
-        
+			ResponseAPDU r = channel.transmit(c);
+			short sw = (short) r.getSW();
+			if (sw != ISO7816.SW_NO_ERROR) {
+				throw new CardException("Wrong " + AID.GEMALTO + " get CPLC data, SW: " + GPUtils.swToString(sw));
+			}
+			byte[] diverData = new byte[16];
+			byte[] t = sdAID.getBytes();
+			diverData[0] = t[t.length - 2];
+			diverData[1] = t[t.length - 1];
+			System.arraycopy(r.getData(), 15, diverData, 4, 4);
+
+			staticKeys.diversify(diverData);
+		}
+
         byte[] rand = new byte[8];
         new Random().nextBytes(rand);
 
@@ -352,11 +286,9 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
                 keyId, rand);
 
         ResponseAPDU response = channel.transmit(initUpdate);
-        notifyExchangedAPDU(initUpdate, response);
         short sw = (short) response.getSW();
-        if (sw != SW_NO_ERROR) {
-            throw new CardException("Wrong initialize update, SW: "
-                    + GPUtil.swToString(sw));
+        if (sw != ISO7816.SW_NO_ERROR) {
+            throw new CardException("Wrong initialize update, SW: " + GPUtils.swToString(sw));
         }
         byte[] result = response.getData();
         if (result.length != 28) {
@@ -402,7 +334,7 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
 
         }
 
-        byte[] myCryptogram = GPUtil.mac_3des(sessionKeys.keys[0], GPUtil
+        byte[] myCryptogram = GPUtils.mac_3des(sessionKeys.keys[0], GPUtils
                 .pad80(bo.toByteArray()), new byte[8]);
 
         byte[] cardCryptogram = new byte[8];
@@ -419,7 +351,7 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
 
         }
 
-        byte[] authData = GPUtil.mac_3des(sessionKeys.keys[0], GPUtil.pad80(bo
+        byte[] authData = GPUtils.mac_3des(sessionKeys.keys[0], GPUtils.pad80(bo
                 .toByteArray()), new byte[8]);
 
         wrapper = new SecureChannelWrapper(sessionKeys, scpVersion, APDU_MAC,
@@ -427,11 +359,10 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
         CommandAPDU externalAuthenticate = new CommandAPDU(CLA_MAC, EXT_AUTH,
                 securityLevel, 0, authData);
         response = transmit(externalAuthenticate);
-        notifyExchangedAPDU(externalAuthenticate, response);
         sw = (short) response.getSW();
-        if (sw != SW_NO_ERROR) {
+        if (sw != ISO7816.SW_NO_ERROR) {
             throw new CardException("External authenticate failed. SW: "
-                    + GPUtil.swToString(sw));
+                    + GPUtils.swToString(sw));
         }
         wrapper.setSecurityLevel(securityLevel);
         if ((securityLevel & APDU_RMAC) != 0) {
@@ -472,12 +403,10 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
         KeySet sessionKeys = new KeySet();
 
         try {
-            ICipher cipher = ICipher.Factory
-                    .getImplementation(ICipher.DESEDE_ECB_NOPADDING);
-
+        	Cipher cipher = Cipher.getInstance("DESede/ECB/NoPadding");
             for (int keyIndex = 0; keyIndex < 2; keyIndex++) {
-                cipher.setKey(GPUtil.getKey(staticKeys.keys[keyIndex], 24));
-                sessionKeys.keys[keyIndex] = cipher.encrypt(derivationData);
+            	cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(GPUtils.getKey(staticKeys.keys[keyIndex], 24), "DESede"));
+                sessionKeys.keys[keyIndex] = cipher.doFinal(derivationData);
             }
         } catch (Exception e) {
             throw new CardException("Session key derivation failed.", e);
@@ -498,10 +427,10 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
             byte[] constantMAC = new byte[] { (byte) 0x01, (byte) 0x01 };
             System.arraycopy(constantMAC, 0, derivationData, 0, 2);
 
-            ICipher cipher = ICipher.Factory.getImplementation(
-                    ICipher.DESEDE_CBC_NOPADDING, GPUtil.getKey(
-                            staticKeys.keys[1], 24), new byte[8]);
-            sessionKeys.keys[1] = cipher.encrypt(derivationData);
+            Cipher cipher = Cipher.getInstance("DESede/CBS/NoPadding");
+            cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(GPUtils.getKey(staticKeys.keys[1], 24), "DESede"), new IvParameterSpec(new byte[8]));
+       
+            sessionKeys.keys[1] = cipher.doFinal(derivationData);
 
             // TODO: is this correct?
             if (implicitChannel) {
@@ -518,19 +447,20 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
             byte[] constantRMAC = new byte[] { (byte) 0x01, (byte) 0x02 };
             System.arraycopy(constantRMAC, 0, derivationData, 0, 2);
 
-            cipher.setKey(GPUtil.getKey(staticKeys.keys[1], 24));
-            sessionKeys.keys[3] = cipher.encrypt(derivationData);
+            cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(GPUtils.getKey(staticKeys.keys[1], 24), "DESede"), new IvParameterSpec(new byte[8]));
+            sessionKeys.keys[3] = cipher.doFinal(derivationData);
 
             byte[] constantENC = new byte[] { (byte) 0x01, (byte) 0x82 };
             System.arraycopy(constantENC, 0, derivationData, 0, 2);
 
-            cipher.setKey(GPUtil.getKey(staticKeys.keys[0], 24));
-            sessionKeys.keys[0] = cipher.encrypt(derivationData);
+            cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(GPUtils.getKey(staticKeys.keys[0], 24), "DESede"), new IvParameterSpec(new byte[8]));
+            sessionKeys.keys[0] = cipher.doFinal(derivationData);
 
             byte[] constantDEK = new byte[] { (byte) 0x01, (byte) 0x81 };
             System.arraycopy(constantDEK, 0, derivationData, 0, 2);
-            cipher.setKey(GPUtil.getKey(staticKeys.keys[2], 24));
-            sessionKeys.keys[2] = cipher.encrypt(derivationData);
+            
+            cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(GPUtils.getKey(staticKeys.keys[2], 24), "DESede"), new IvParameterSpec(new byte[8]));
+            sessionKeys.keys[2] = cipher.doFinal(derivationData);
         } catch (Exception e) {
             throw new CardException("Key derivation failed.", e);
         }
@@ -545,7 +475,6 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
                         || scpVersion == SCP_02_1A || scpVersion == SCP_02_1B)) {
             CommandAPDU getData = new CommandAPDU(CLA_GP, GET_DATA, 0, 0xE0);
             ResponseAPDU data = channel.transmit(getData);
-            notifyExchangedAPDU(getData, data);
 
             byte[] result = data.getBytes();
             int keySet = 0;
@@ -560,22 +489,21 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
 
             CommandAPDU getSeq = new CommandAPDU(CLA_GP, GET_DATA, 0, 0xC1);
             ResponseAPDU seq = channel.transmit(getSeq);
-            notifyExchangedAPDU(getSeq, seq);
             result = seq.getBytes();
             short sw = (short) seq.getSW();
-            if (sw != SW_NO_ERROR) {
+            if (sw != ISO7816.SW_NO_ERROR) {
                 throw new CardException("Reading sequence counter failed. SW: "
-                        + GPUtil.swToString(sw));
+                        + GPUtils.swToString(sw));
             }
 
             try {
                 KeySet sessionKeys = deriveSessionKeysSCP02(staticKeys,
                         result[2], result[3], true);
-                byte[] temp = GPUtil.pad80(sdAID.getBytes());
+                byte[] temp = GPUtils.pad80(sdAID.getBytes());
 
-                byte[] icv = GPUtil.mac_des_3des(sessionKeys.keys[1], temp,
+                byte[] icv = GPUtils.mac_des_3des(sessionKeys.keys[1], temp,
                         new byte[8]);
-                byte[] ricv = GPUtil.mac_des_3des(sessionKeys.keys[3], temp,
+                byte[] ricv = GPUtils.mac_des_3des(sessionKeys.keys[3], temp,
                         new byte[8]);
                 wrapper = new SecureChannelWrapper(sessionKeys, scpVersion,
                         APDU_MAC, icv, ricv);
@@ -586,7 +514,6 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
         }
         CommandAPDU wc = wrapper.wrap(command);
         ResponseAPDU wr = channel.transmit(wc);
-        notifyExchangedAPDU(wc, wr);
         return wrapper.unwrap(wr);
     }
 
@@ -625,8 +552,7 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
      */
     public void loadCapFile(URL url, boolean includeDebug,
             boolean separateComponents, int blockSize, boolean loadParam,
-            boolean useHash) throws IOException, GPInstallForLoadException,
-            GPLoadException, CardException {
+            boolean useHash) throws IOException, GPException, CardException {
         CapFile cap = null;
         cap = new CapFile(url.openStream(), null);
         loadCapFile(cap, includeDebug, separateComponents, blockSize,
@@ -654,8 +580,7 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
      */
     public void loadCapFile(CapFile cap, boolean includeDebug,
             boolean separateComponents, int blockSize, boolean loadParam,
-            boolean useHash) throws GPInstallForLoadException, GPLoadException,
-            CardException {
+            boolean useHash) throws GPException, CardException {
 
         byte[] hash = useHash ? cap.getLoadFileDataHash(includeDebug)
                 : new byte[0];
@@ -685,11 +610,9 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
         CommandAPDU installForLoad = new CommandAPDU(CLA_GP, INSTALL, 0x02,
                 0x00, bo.toByteArray());
         ResponseAPDU response = transmit(installForLoad);
-        notifyExchangedAPDU(installForLoad, response);
         short sw = (short) response.getSW();
-        if (sw != SW_NO_ERROR) {
-            throw new GPInstallForLoadException(sw,
-                    "Install for Load failed, SW: " + GPUtil.swToString(sw));
+        if (sw != ISO7816.SW_NO_ERROR) {
+            throw new GPException(sw, "Install for Load failed");
         }
         List<byte[]> blocks = cap.getLoadBlocks(includeDebug,
                 separateComponents, blockSize);
@@ -697,11 +620,9 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
             CommandAPDU load = new CommandAPDU(CLA_GP, LOAD, (i == blocks
                     .size() - 1) ? 0x80 : 0x00, (byte) i, blocks.get(i));
             response = transmit(load);
-            notifyExchangedAPDU(load, response);
             sw = (short) response.getSW();
-            if (sw != SW_NO_ERROR) {
-                throw new GPLoadException(sw, "Load failed, SW: "
-                        + GPUtil.swToString(sw));
+            if (sw != ISO7816.SW_NO_ERROR) {
+                throw new GPException(sw, "Load failed");
             }
 
         }
@@ -741,7 +662,7 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
      */
     public void installAndMakeSelecatable(AID packageAID, AID appletAID,
             AID instanceAID, byte privileges, byte[] installParams,
-            byte[] installToken) throws GPMakeSelectableException,
+            byte[] installToken) throws GPException,
             CardException {
         if (installParams == null) {
             installParams = new byte[] { (byte) 0xC9, 0x00 };
@@ -776,12 +697,9 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
         CommandAPDU install = new CommandAPDU(CLA_GP, INSTALL, 0x0C, 0x00, bo
                 .toByteArray());
         ResponseAPDU response = transmit(install);
-        notifyExchangedAPDU(install, response);
         short sw = (short) response.getSW();
-        if (sw != SW_NO_ERROR) {
-            throw new GPMakeSelectableException(sw,
-                    "Install for Install and make selectable failed, SW: "
-                            + GPUtil.swToString(sw));
+        if (sw != ISO7816.SW_NO_ERROR) {
+            throw new GPException(sw, "Install for Install and make selectable failed");
         }
 
     }
@@ -800,7 +718,7 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
      *             for low-level communication errors
      */
     public void deleteAID(AID aid, boolean deleteDeps)
-            throws GPDeleteException, CardException {
+            throws GPException, CardException {
         ByteArrayOutputStream bo = new ByteArrayOutputStream();
         try {
             bo.write(0x4f);
@@ -812,11 +730,9 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
         CommandAPDU delete = new CommandAPDU(CLA_GP, DELETE, 0x00,
                 deleteDeps ? 0x80 : 0x00, bo.toByteArray());
         ResponseAPDU response = transmit(delete);
-        notifyExchangedAPDU(delete, response);
         short sw = (short) response.getSW();
-        if (sw != SW_NO_ERROR) {
-            throw new GPDeleteException(sw, "Deletion failed, SW: "
-                    + GPUtil.swToString(sw));
+        if (sw != ISO7816.SW_NO_ERROR) {
+            throw new GPException(sw, "Deletion failed");
         }
     }
 
@@ -836,9 +752,8 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
             CommandAPDU getStatus = new CommandAPDU(CLA_GP, GET_STATUS, p1,
                     0x00, new byte[] { 0x4F, 0x00 });
             ResponseAPDU response = transmit(getStatus);
-            notifyExchangedAPDU(getStatus, response);
             short sw = (short) response.getSW();
-            if (sw != SW_NO_ERROR && sw != (short) 0x6310) {
+            if (sw != ISO7816.SW_NO_ERROR && sw != (short) 0x6310) {
                 continue;
             }
             try {
@@ -850,16 +765,15 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
                 getStatus = new CommandAPDU(CLA_GP, GET_STATUS, p1, 0x01,
                         new byte[] { 0x4F, 0x00 });
                 response = transmit(getStatus);
-                notifyExchangedAPDU(getStatus, response);
                 try {
                     bo.write(response.getData());
                 } catch (IOException ioe) {
 
                 }
                 sw = (short) response.getSW();
-                if (sw != SW_NO_ERROR && sw != (short) 0x6310) {
+                if (sw != ISO7816.SW_NO_ERROR && sw != (short) 0x6310) {
                     throw new CardException("Get Status failed, SW: "
-                            + GPUtil.swToString(sw));
+                            + GPUtils.swToString(sw));
                 }
             }
             // parse data no sub-AID
@@ -894,9 +808,8 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
             CommandAPDU getStatus = new CommandAPDU(CLA_GP, GET_STATUS, p1,
                     0x00, new byte[] { 0x4F, 0x00 });
             ResponseAPDU response = transmit(getStatus);
-            notifyExchangedAPDU(getStatus, response);
             short sw = (short) response.getSW();
-            if (sw != SW_NO_ERROR && sw != (short) 0x6310) {
+            if (sw != ISO7816.SW_NO_ERROR && sw != (short) 0x6310) {
                 continue;
             }
             if (p1 == 0x10)
@@ -912,16 +825,15 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
                 getStatus = new CommandAPDU(CLA_GP, GET_STATUS, p1, 0x01,
                         new byte[] { 0x4F, 0x00 });
                 response = transmit(getStatus);
-                notifyExchangedAPDU(getStatus, response);
                 try {
                     bo.write(response.getData());
                 } catch (IOException ioe) {
 
                 }
                 sw = (short) response.getSW();
-                if (sw != SW_NO_ERROR && sw != (short) 0x6310) {
+                if (sw != ISO7816.SW_NO_ERROR && sw != (short) 0x6310) {
                     throw new CardException("Get Status failed, SW: "
-                            + GPUtil.swToString(sw));
+                            + GPUtils.swToString(sw));
                 }
             }
 
@@ -985,13 +897,13 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
                 return;
             }
             try {
-                ICipher cipher = ICipher.Factory
-                        .getImplementation(ICipher.DESEDE_ECB_NOPADDING);
+            	Cipher cipher = Cipher.getInstance("DESede/ECB/NoPadding");            	
                 byte[] data = new byte[16];
                 for (int i = 0; i < 3; i++) {
                     fillData(data, diverData, i + 1);
-                    cipher.setKey(GPUtil.getKey(keys[i], 24));
-                    keys[i] = cipher.encrypt(data);
+                    cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(keys[i], "DESede"));
+                    // Replaces key
+                    keys[i] = cipher.doFinal(data);
                 }
                 diversified = true;
             } catch (Exception e) {
@@ -1169,17 +1081,17 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
                     if (icv == null) {
                         icv = new byte[8];
                     } else if (icvEnc) {
-                        ICipher c = null;
+                        Cipher c = null;
                         if (scp == 1) {
-                            c = ICipher.Factory.getImplementation(
-                                    ICipher.DESEDE_ECB_NOPADDING, GPUtil
-                                            .getKey(sessionKeys.keys[1], 24));
+                        	c = Cipher.getInstance("DESede/ECB/NoPadding");
+                        	c.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(GPUtils.getKey(sessionKeys.keys[1], 24), "DESede"));
+
                         } else {
-                            c = ICipher.Factory.getImplementation(
-                                    ICipher.DES_ECB_NOPADDING, GPUtil.getKey(
-                                            sessionKeys.keys[1], 8));
+                        	c = Cipher.getInstance("DES/ECB/NoPadding");
+                        	c.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(GPUtils.getKey(sessionKeys.keys[1], 8), "DES"));
                         }
-                        icv = c.encrypt(icv);
+                        // encrypts the future ICV ?
+                        icv = c.doFinal(icv);
                     }
 
                     if (preAPDU) {
@@ -1194,11 +1106,9 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
                     t.write(origData);
 
                     if (scp == 1) {
-                        icv = GPUtil.mac_3des(sessionKeys.keys[1], GPUtil
-                                .pad80(t.toByteArray()), icv);
+                        icv = GPUtils.mac_3des(sessionKeys.keys[1], GPUtils.pad80(t.toByteArray()), icv);
                     } else {
-                        icv = GPUtil.mac_des_3des(sessionKeys.keys[1], GPUtil
-                                .pad80(t.toByteArray()), icv);
+                        icv = GPUtils.mac_des_3des(sessionKeys.keys[1], GPUtils.pad80(t.toByteArray()), icv);
                     }
 
                     if (postAPDU) {
@@ -1214,19 +1124,18 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
                         t.write(origLc);
                         t.write(origData);
                         if (t.size() % 8 != 0) {
-                            byte[] x = GPUtil.pad80(t.toByteArray());
+                            byte[] x = GPUtils.pad80(t.toByteArray());
                             t.reset();
                             t.write(x);
                         }
                     } else {
-                        t.write(GPUtil.pad80(origData));
+                        t.write(GPUtils.pad80(origData));
                     }
                     newLc += t.size() - origData.length;
 
-                    ICipher c = ICipher.Factory.getImplementation(
-                            ICipher.DESEDE_CBC_NOPADDING, GPUtil.getKey(
-                                    sessionKeys.keys[0], 24), new byte[8]);
-                    newData = c.encrypt(t.toByteArray());
+                    Cipher c = Cipher.getInstance("DESede/CBC/NoPadding");
+                    c.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(GPUtils.getKey(sessionKeys.keys[0], 24), "DESede"), new IvParameterSpec(new byte[8]));
+                    newData = c.doFinal(t.toByteArray());
                     t.reset();
                 }
                 t.write(newCLA);
@@ -1264,8 +1173,7 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
                 rMac.write(response.getSW1());
                 rMac.write(response.getSW2());
 
-                ricv = GPUtil.mac_des_3des(sessionKeys.keys[3], GPUtil
-                        .pad80(rMac.toByteArray()), ricv);
+                ricv = GPUtils.mac_des_3des(sessionKeys.keys[3], GPUtils.pad80(rMac.toByteArray()), ricv);
 
                 byte[] actualMac = new byte[8];
                 System.arraycopy(response.getData(), respLen, actualMac, 0, 8);
@@ -1284,473 +1192,5 @@ public class GlobalPlatformService implements ISO7816, APDUListener {
 
     }
 
-    private static final String jcopProviderName = "ds.javacard.emulator.jcop.DS_provider";
-
-    public static void loadJCOPProvider() throws InstantiationException,
-            ClassNotFoundException, IllegalAccessException,
-            NoSuchAlgorithmException {
-        Class<?> jcopProvider = Class.forName(jcopProviderName);
-        Security.addProvider((Provider) (jcopProvider.newInstance()));
-        // Peek that provider to provoke ClassNotFoundException
-        // from a missing offcard.jar.
-        TerminalFactory.getInstance("JcopEmulator", null);
-        System.out.println("Provider for jcop emulator comptibility loaded.");
-    }
-
-    public static void usage() {
-        System.out.println("Usage:");
-        System.out
-                .println("  java cardservices.GlobalPlatformService <options>");
-        System.out.println("");
-        System.out.println("Options:\n");
-        System.out
-                .println(" -sdaid <aid>      Security Domain AID, default a000000003000000");
-        System.out.println(" -keyset <num>     use key set <num>, default 0");
-        System.out.println(" -mode <apduMode>  use APDU mode, CLR, MAC, or ENC, default CLR");
-        System.out
-                .println(" -enc <key>        define ENC key, default: 40..4F");
-        System.out
-                .println(" -mac <key>        define MAC key, default: 40..4F");
-        System.out
-                .println(" -kek <key>        define KEK key, default: 40..4F");
-        System.out
-                .println(" -"+AID.GEMALTO+" use special VISA2 key diversification for GemaltoXpressPro cards");
-        System.out
-                .println("                   uses predifined Gemalto mother key if not stated otherwise");
-        System.out
-                .println("                   with -enc/-mac/-kek AFTER this option");
-        System.out
-                .println(" -visa2            use VISA2 key diversification (only key set 0), default off");
-        System.out
-                .println(" -emv              use EMV key diversification (only key set 0), default off");
-        System.out
-                .println(" -deletedeps       also delete depending packages/applets, default off");
-        System.out.println(" -delete <aid>     delete package/applet");
-        System.out.println(" -load <cap>       load <cap> file to the card, <cap> can be file name or URL");
-        System.out.println(" -loadsize <num>   load block size, default "
-                + defaultLoadSize);
-        System.out
-                .println(" -loadsep          load CAP components separately, default off");
-        System.out
-                .println(" -loaddebug        load the Debug & Descriptor component, default off");
-        System.out
-                .println(" -loadparam        set install for load code size parameter");
-        System.out
-                .println("                      (e.g. for CyberFlex cards), default off");
-        System.out.println(" -loadhash         check code hash during loading");
-        System.out.println(" -install          install applet:");
-        System.out
-                .println("   -applet <aid>   applet AID, default: take all AIDs from the CAP file");
-        System.out
-                .println("   -package <aid>  package AID, default: take from the CAP file");
-        System.out.println("   -priv <num>     privileges, default 0");
-        System.out
-                .println("   -param <bytes>  install parameters, default: C900");
-        System.out.println(" -list             list card registry");
-        System.out
-                .println(" -jcop             connect to the jcop emulator on port 8015");
-        System.out.println(" -h|-help|--help   print this usage info");
-        System.out.println("");
-        System.out
-                .println("Multiple -load/-install/-delete and -list take the following precedence:");
-        System.out.println("  delete(s), load, install(s), list\n");
-        System.out
-                .println("All -load/-install/-delete/-list actions will be performed on\n"
-                        + "the basic logical channel of all cards currently connected.\n"
-                        + "By default all connected PC/SC terminals are searched.\n\n"
-                        + "Option -jcop requires jcopio.jar and offcard.jar on the class path.\n");
-        System.out
-                .println("<aid> can be of the byte form 0A00000003... or the string form \"|applet.app|\"\n");
-        System.out.println("Examples:\n");
-        System.out.println(" [prog] -list");
-        System.out.println(" [prog] -load applet.cap -install -list ");
-        System.out
-                .println(" [prog] -deletedeps -delete 360000000001 -load applet.cap -install -list");
-        System.out
-                .println(" [prog] -emv -keyset 0 -enc 404142434445464748494A4B4C4D4E4F -list");
-        System.out.println("");
-    }
-
-    public static void main(String[] args) throws IOException {
-
-        final class InstallEntry {
-            AID appletAID;
-
-            AID packageAID;
-
-            int priv;
-
-            byte[] params;
-        }
-
-        boolean listApplets = false;
-
-        boolean use_jcop_emulator = false;
-
-        int keySet = 0;
-        byte[][] keys = { defaultEncKey, defaultMacKey, defaultKekKey };
-        AID sdAID = null;
-        int diver = DIVER_NONE;
-        boolean gemalto = false;
-       
-        Vector<AID> deleteAID = new Vector<AID>();
-        boolean deleteDeps = false;
-
-        URL capFileUrl = null;
-        int loadSize = defaultLoadSize;
-        boolean loadCompSep = false;
-        boolean loadDebug = false;
-        boolean loadParam = false;
-        boolean useHash = false;
-        int apduMode = APDU_CLR;
-
-        Vector<InstallEntry> installs = new Vector<InstallEntry>();
-
-        try {
-            for (int i = 0; i < args.length; i++) {
-
-                if (args[i].equals("-h") || args[i].equals("-help")
-                        || args[i].equals("--help")) {
-                    usage();
-                    System.exit(0);
-                }
-                if (args[i].equals("-list")) {
-                    listApplets = true;
-                } else if (args[i].equals("-keyset")) {
-                    i++;
-                    keySet = Integer.parseInt(args[i]);
-                    if (keySet <= 0 || keySet > 127) {
-                        throw new IllegalArgumentException("Key set number "
-                                + keySet + " out of range.");
-                    }
-                } else if (args[i].equals("-sdaid")) {
-                    i++;
-                    byte[] aid = GPUtil.stringToByteArray(args[i]);
-                    if (aid == null) {
-                        aid = GPUtil.readableStringToByteArray(args[i]);
-                    }
-                    if (aid == null) {
-                        throw new IllegalArgumentException("Malformed SD AID: "
-                                + args[i]);
-                    }
-                    sdAID = new AID(aid);
-                } else if (args[i].equals("-"+AID.GEMALTO)) {
-                    byte[] gemMotherKey = SPECIAL_MOTHER_KEYS.get(AID.GEMALTO);
-                    keys = new byte[][] {gemMotherKey, gemMotherKey, gemMotherKey};
-                    gemalto = true;
-                	diver = DIVER_VISA2;
-                } else if (args[i].equals("-visa2")) {
-                    diver = DIVER_VISA2;
-                } else if (args[i].equals("-emv")) {
-                    diver = DIVER_EMV;
-                } else if (args[i].equals("-mode")) {
-                    i++;
-                    // TODO: RMAC modes
-                    if("CLR".equals(args[i])) {
-                        apduMode = APDU_CLR;
-                    } else if("MAC".equals(args[i])) {
-                        apduMode = APDU_MAC;
-                    }else if ("ENC".equals(args[i])) {
-                        apduMode = APDU_ENC;
-                    } else {
-                        throw new IllegalArgumentException("Invalid APDU mode: "+args[i]);                        
-                    }
-                } else if (args[i].equals("-delete")) {
-                    i++;
-                    byte[] aid = GPUtil.stringToByteArray(args[i]);
-                    if (aid == null) {
-                        aid = GPUtil.readableStringToByteArray(args[i]);
-                    }
-                    if (aid == null) {
-                        throw new IllegalArgumentException("Malformed AID: "
-                                + args[i]);
-                    }
-                    deleteAID.add(new AID(aid));
-                } else if (args[i].equals("-deletedeps")) {
-                    deleteDeps = true;
-                } else if (args[i].equals("-loadsize")) {
-                    i++;
-                    loadSize = Integer.parseInt(args[i]);
-                    if (loadSize <= 16 || loadSize > 255) {
-                        throw new IllegalArgumentException("Load size "
-                                + loadSize + " out of range.");
-                    }
-                } else if (args[i].equals("-loadsep")) {
-                    loadCompSep = true;
-                } else if (args[i].equals("-loaddebug")) {
-                    loadDebug = true;
-                } else if (args[i].equals("-loadparam")) {
-                    loadParam = true;
-                } else if (args[i].equals("-loadhash")) {
-                    useHash = true;
-                } else if (args[i].equals("-load")) {
-                    i++;
-                    try {
-                      capFileUrl = new URL(args[i]);
-                    }catch(MalformedURLException e) {
-                        // Try with "file:" prepended
-                        capFileUrl = new URL("file:"+args[i]);                        
-                    }
-                    try {
-                      InputStream in = capFileUrl.openStream();
-                      in.close();
-                    }catch(IOException ioe) {
-                        throw new IllegalArgumentException("CAP file "
-                                + capFileUrl + " does not seem to exist.", ioe);
-                    }
-                } else if (args[i].equals("-install")) {
-                    i++;
-                    int totalOpts = 4;
-                    int current = 0;
-                    AID appletAID = null;
-                    AID packageAID = null;
-                    int priv = 0;
-                    byte[] param = null;
-                    while (i < args.length && current < totalOpts) {
-                        if (args[i].equals("-applet")) {
-                            i++;
-                            byte[] aid = GPUtil.stringToByteArray(args[i]);
-                            if (aid == null) {
-                                aid = GPUtil.readableStringToByteArray(args[i]);
-                            }
-                            i++;
-                            if (aid == null) {
-                                throw new IllegalArgumentException(
-                                        "Malformed AID: " + args[i]);
-                            }
-                            appletAID = new AID(aid);
-                            current = 1;
-                        } else if (args[i].equals("-package")) {
-                            i++;
-                            byte[] aid = GPUtil.stringToByteArray(args[i]);
-                            if (aid == null) {
-                                aid = GPUtil.readableStringToByteArray(args[i]);
-                            }
-                            i++;
-                            if (aid == null) {
-                                throw new IllegalArgumentException(
-                                        "Malformed AID: " + args[i]);
-                            }
-                            packageAID = new AID(aid);
-                            current = 2;
-                        } else if (args[i].equals("-priv")) {
-                            i++;
-                            priv = Integer.parseInt(args[i]);
-                            i++;
-                            current = 3;
-                        } else if (args[i].equals("-param")) {
-                            i++;
-                            param = GPUtil.stringToByteArray(args[i]);
-                            i++;
-                            if (param == null) {
-                                throw new IllegalArgumentException(
-                                        "Malformed params: " + args[i]);
-                            }
-                            current = 4;
-                        } else {
-                            current = 4;
-                            i--;
-                        }
-                    }
-                    InstallEntry inst = new InstallEntry();
-                    inst.appletAID = appletAID;
-                    inst.packageAID = packageAID;
-                    inst.priv = priv;
-                    inst.params = param;
-                    installs.add(inst);
-                } else if (args[i].equals("-jcop")) {
-                    try {
-                        loadJCOPProvider();
-                        use_jcop_emulator = true;
-                    } catch (Exception e) {
-                        System.out
-                                .println("Unable to load jcop compatibility provider.\n"
-                                        + "Please put offcard.jar and jcopio.jar "
-                                        + "on the class path.\n");
-                        e.printStackTrace();
-                        System.exit(1);
-                    }
-                } else {
-                    String[] keysOpt = { "-enc", "-mac", "-kek" };
-                    int index = -1;
-                    for (int k = 0; k < keysOpt.length; k++) {
-                        if (args[i].equals(keysOpt[k]))
-                            index = k;
-                    }
-                    if (index >= 0) {
-                        i++;
-                        keys[index] = GPUtil.stringToByteArray(args[i]);
-                        if (keys[index] == null || keys[index].length != 16) {
-                            throw new IllegalArgumentException("Wrong "
-                                    + keysOpt[index].substring(1).toUpperCase()
-                                    + " key: " + args[i]);
-                        }
-                    } else {
-                        throw new IllegalArgumentException("Unknown option: "
-                                + args[i]);
-                    }
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            usage();
-            System.exit(1);
-        }
-
-        try {
-
-            /*
-             * Provider acrProv = null; try { Class<?> acrProvClass =
-             * Class.forName("ds.smartcards.acr122.ACR122Provider"); acrProv =
-             * (Provider)acrProvClass.newInstance(); } catch (Exception e) { }
-             * TerminalFactory tf = TerminalFactory.getInstance("ACR", null,
-             * acrProv);
-             */
-
-            TerminalFactory tf;
-            if (use_jcop_emulator == false)
-                tf = TerminalFactory.getInstance("PC/SC", null);
-            else
-                tf = TerminalFactory.getInstance("JcopEmulator", null);
-
-            // System.out.println(tf.getProvider());
-            CardTerminals terminals = tf.terminals();
-
-            System.out.println("Found terminals: " + terminals.list());
-            for (CardTerminal terminal : terminals
-                    .list(CardTerminals.State.ALL)) {
-                try {
-                	Card c = null;
-                	try {
-                		c = terminal.connect("*");
-                	} catch (CardException e) {
-                		if (e.getCause().getMessage().equalsIgnoreCase("SCARD_E_NO_SMARTCARD")) {
-                			System.err.println("No card in reader " + terminal.getName());
-                			continue;
-                		} else
-                			e.printStackTrace();
-                	}
-                    
-                    System.out.println("Found card in terminal: "
-                            + terminal.getName());
-                    System.out.println("ATR: "
-                            + GPUtil.byteArrayToString(c.getATR().getBytes()));
-                    CardChannel channel = c.getBasicChannel();
-                    GlobalPlatformService service = (sdAID == null) ? new GlobalPlatformService(
-                            channel)
-                            : new GlobalPlatformService(sdAID, channel);
-                    service.addAPDUListener(service);
-                    service.open();
-                    service.setKeys(keySet, keys[0], keys[1], keys[2], diver);
-                    // TODO: make the APDU mode a parameter, properly adjust
-                    // loadSize accordingly
-                    int neededExtraSize = apduMode == APDU_CLR ? 0 :
-                         (apduMode == APDU_MAC ? 8 : 16);
-                    if (loadSize + neededExtraSize > defaultLoadSize) {
-                        loadSize -= neededExtraSize;
-                    }
-                    service.openSecureChannel(keySet, 0,
-                            GlobalPlatformService.SCP_ANY,
-                            apduMode, gemalto);
-
-                    if (deleteAID.size() > 0) {
-                        for (AID aid : deleteAID) {
-                            try {
-                                service.deleteAID(aid, deleteDeps);
-                            } catch (CardException ce) {
-                                System.out.println("Could not delete AID: "
-                                        + aid);
-                                // This is when the applet is not there, ignore
-                            }
-                        }
-                    }
-                    CapFile cap = null;
-
-                    if (capFileUrl != null) {
-                        cap = new CapFile(capFileUrl.openStream());
-                        service.loadCapFile(cap, loadDebug, loadCompSep,
-                                loadSize, loadParam, useHash);
-                    }
-
-                    if (installs.size() > 0) {
-                        for (InstallEntry install : installs) {
-                            if (install.appletAID == null) {
-                                AID p = cap.getPackageAID();
-                                for (AID a : cap.getAppletAIDs()) {
-                                    service.installAndMakeSelecatable(p, a,
-                                            null, (byte) install.priv,
-                                            install.params, null);
-                                }
-                            } else {
-                                service.installAndMakeSelecatable(
-                                        install.packageAID, install.appletAID,
-                                        null, (byte) install.priv,
-                                        install.params, null);
-
-                            }
-                        }
-
-                    }
-                    if (listApplets) {
-                        AIDRegistry registry = service.getStatus();
-                        for (AIDRegistryEntry e : registry) {
-                            AID aid = e.getAID();
-                            int numSpaces = (15 - aid.getLength());
-                            String spaces = "";
-                            String spaces2 = "";
-                            for (int i = 0; i < numSpaces; i++) {
-                                spaces = spaces + "   ";
-                                spaces2 = spaces2 + " ";
-                            }
-                            System.out.print("AID: "
-                                    + GPUtil.byteArrayToString(aid.getBytes())
-                                    + spaces
-                                    + " "
-                                    + GPUtil.byteArrayToReadableString(aid
-                                            .getBytes()) + spaces2);
-                            System.out.format(" %s LC: %d PR: 0x%02X\n", e
-                                    .getKind().toShortString(), e
-                                    .getLifeCycleState(), e.getPrivileges());
-                            for (AID a : e.getExecutableAIDs()) {
-                                numSpaces = (15 - a.getLength()) * 3;
-                                spaces = "";
-                                for (int i = 0; i < numSpaces; i++)
-                                    spaces = spaces + " ";
-                                System.out
-                                        .println("     "
-                                                + GPUtil.byteArrayToString(a
-                                                        .getBytes())
-                                                + spaces
-                                                + " "
-                                                + GPUtil
-                                                        .byteArrayToReadableString(a
-                                                                .getBytes()));
-                            }
-                            System.out.println();
-                        }
-
-                    }
-                } catch (Exception ce) {
-                    ce.printStackTrace();
-                }
-            }
-        } catch (CardException e) {
-        	if (e.getCause().getMessage().equalsIgnoreCase("SCARD_E_NO_READERS_AVAILABLE"))
-        		System.out.println("No smart card readers found");
-        	else
-        		e.printStackTrace();
-        } catch (NoSuchAlgorithmException e) {
-        	if (e.getCause().getMessage().equalsIgnoreCase("SCARD_E_NO_SERVICE"))
-        		System.out.println("No smart card readers found (PC/SC service not running)");
-        	else
-        		e.printStackTrace();
-        }
-        catch (Exception e) {
-        	System.out.format("Terminated by escaping exception %s\n", e
-        			.getClass().getName());
-        	e.printStackTrace();
-        }
-
-    }
 
 }

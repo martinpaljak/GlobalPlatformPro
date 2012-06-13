@@ -20,7 +20,7 @@
  *
  */
 
-package net.sourceforge.gpj.cardservices;
+package openkms.gpj;
 
 import java.util.ArrayList;
 import java.util.List;

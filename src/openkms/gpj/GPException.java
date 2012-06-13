@@ -20,14 +20,15 @@
  *
  */
 
-package net.sourceforge.gpj.cardservices.exceptions;
+package openkms.gpj;
+
+import javax.smartcardio.CardException;
 
 /**
  * 
- * Exception for errors in the install-for-load command in {@link
- * GlobalPlatformService#loadCapFile GlobalPlatformService.loadCapFile}.
+ * Root exception class for all global platform protocol errors.
  */
-public class GPInstallForLoadException extends GPException {
+public class GPException extends CardException {
 
     /**
      * 
@@ -37,43 +38,21 @@ public class GPInstallForLoadException extends GPException {
 
     /**
      * 
-     * Constructs a new GPInstallForLoadException with the specified detail
-     * message.
+     * Response status indicating the error, or 0 if not applicable.
+     */
+    public final short sw;
+
+    /**
+     * 
+     * Constructs a new GPException with the specified detail message.
      * 
      * @param sw
      *            failing response status
      * @param message
      *            the detailed message
      */
-    public GPInstallForLoadException(short sw, String message) {
-        super(sw, message);
-    }
-
-    /**
-     * 
-     * Constructs a new GPInstallForLoadException with the specified detail
-     * message and cause.
-     * 
-     * @param sw
-     *            failing response status
-     * @param message
-     *            the detailed message
-     * @param cause
-     *            the cause of this exception or null
-     */
-    public GPInstallForLoadException(short sw, String message, Throwable cause) {
-        super(sw, message, cause);
-    }
-
-    /**
-     * 
-     * Constructs a new GPInstallForLoadException with the specified cause and a
-     * detail message of {@code (cause==null ? null : cause.toString())}.
-     * 
-     * @param cause
-     *            the cause of this exception or null
-     */
-    public GPInstallForLoadException(Throwable cause) {
-        super(cause);
+    public GPException(short sw, String message) {
+        super(message + " SW: " + GPUtils.swToString(sw));
+        this.sw = sw;
     }
 }

@@ -20,18 +20,20 @@
  *
  */
 
-package net.sourceforge.gpj.cardservices;
+package openkms.gpj;
 
+import javax.crypto.Cipher;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 import javax.smartcardio.CardException;
-import net.sourceforge.gpj.cardservices.ciphers.ICipher;
 
-public class GPUtil {
+public class GPUtils {
 
     public static boolean debug = true;
 
     public static void debug(Object o) {
         if (debug) {
-            System.out.println("DEBUG: " + o.toString());
+            System.err.println("DEBUG: " + o.toString());
         }
     }
 
@@ -96,7 +98,7 @@ public class GPUtil {
         return result;
     }
 
-    public static String swToString(int sw1, int sw2) {
+    private static String swToString(int sw1, int sw2) {
         String result = "";
         String onebyte = null;
         onebyte = Integer.toHexString(sw1);
@@ -122,7 +124,7 @@ public class GPUtil {
         return swToString(sw1, sw2);
     }
 
-    public static byte[] pad80(byte[] text, int offset, int length) {
+    private static byte[] pad80(byte[] text, int offset, int length) {
         if (length == -1)
             length = text.length - offset;
         int totalLength = length;
@@ -146,16 +148,16 @@ public class GPUtil {
         return mac_3des(key, text, 0, text.length, cv);
     }
 
-    public static byte[] mac_3des(byte[] key, byte[] text, int offset, int length,
+    private static byte[] mac_3des(byte[] key, byte[] text, int offset, int length,
             byte[] cv) throws CardException {
         if (length == -1)
             length = text.length - offset;
 
         try {
-            ICipher cipher = ICipher.Factory.getImplementation(
-                    ICipher.DESEDE_CBC_NOPADDING, getKey(key, 24), cv);
+        	Cipher cipher = Cipher.getInstance("DESede/CBC/NoPadding");
+        	cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(getKey(key, 24), "DESede"), new IvParameterSpec(cv));
             byte[] result = new byte[8];
-            byte[] res = cipher.encrypt(text, offset, length);
+            byte[] res = cipher.doFinal(text, offset, length);
             System.arraycopy(res, res.length - 8, result, 0, 8);
             return result;
         } catch (Exception e) {
@@ -168,26 +170,27 @@ public class GPUtil {
         return mac_des_3des(key, text, 0, text.length, cv);
     }
 
-    public static byte[] mac_des_3des(byte[] key, byte[] text, int offset, int length,
+    private static byte[] mac_des_3des(byte[] key, byte[] text, int offset, int length,
             byte[] cv) throws CardException {
         if (length == -1)
             length = text.length - offset;
 
         try {
-            ICipher cipher1 = ICipher.Factory.getImplementation(
-                    ICipher.DES_CBC_NOPADDING, getKey(key, 8), cv);
-            ICipher cipher2 = ICipher.Factory.getImplementation(
-                    ICipher.DESEDE_CBC_NOPADDING, getKey(key, 24), cv);
+        
+        	Cipher cipher1 = Cipher.getInstance("DES/CBC/NoPadding");
+        	cipher1.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(getKey(key, 8), "DES"), new IvParameterSpec(cv));
+        	Cipher cipher2 = Cipher.getInstance("DESede/CBC/NoPadding");
+        	cipher2.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(getKey(key, 24), "DESede"), new IvParameterSpec(cv));
 
             byte[] result = new byte[8];
             byte[] temp;
 
             if (length > 8) {
-                temp = cipher1.encrypt(text, offset, length - 8);
+                temp = cipher1.doFinal(text, offset, length - 8);
                 System.arraycopy(temp, temp.length - 8, result, 0, 8);
-                cipher2.setIV(result);
+                cipher2.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(getKey(key, 24), "DESede"), new IvParameterSpec(result));
             }
-            temp = cipher2.encrypt(text, offset + length - 8, 8);
+            temp = cipher2.doFinal(text, offset + length - 8, 8);
             System.arraycopy(temp, temp.length - 8, result, 0, 8);
             return result;
         } catch (Exception e) {

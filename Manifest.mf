@@ -1,2 +1,2 @@
 Manifest-Version: 1.0
-Main-Class: net.sourceforge.gpj.cardservices.GlobalPlatformService
+Main-Class: openkms.gpj.GPJTool

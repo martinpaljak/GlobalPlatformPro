@@ -20,12 +20,11 @@
  *
  */
 
-package net.sourceforge.gpj.cardservices;
+package openkms.gpj;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.FileInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -76,10 +75,10 @@ public class CapFile {
                 }
             }
         }
-        GPUtil.debug("packagePath: " + packageName);
+        GPUtils.debug("packagePath: " + packageName);
         this.packageName = packageName.substring(0,
                 packageName.lastIndexOf("/javacard/")).replace('/', '.');
-        GPUtil.debug("package: " + this.packageName);
+        GPUtils.debug("package: " + this.packageName);
         for (String name : componentNames) {
             String fullName = packageName + name + ".cap";
             byte[] contents = entries.get(fullName);
@@ -121,7 +120,7 @@ public class CapFile {
         // header[12] should be the length of AID
         int len = header[i++];
         packageAID = new AID(header, i, len);
-        GPUtil.debug("package AID: " + packageAID);
+        GPUtils.debug("package AID: " + packageAID);
 
         
         byte[] applet = capComponents.get("Applet");
@@ -140,9 +139,9 @@ public class CapFile {
               appletAIDs.add(new AID(applet, i, len));
               i += len + 2;
           }
-          GPUtil.debug("applet AIDs: " + appletAIDs);
+          GPUtils.debug("applet AIDs: " + appletAIDs);
         }else{
-            GPUtil.debug("No Applet component.");            
+            GPUtils.debug("No Applet component.");            
         }
     }
 
@@ -273,8 +272,7 @@ public class CapFile {
             return MessageDigest.getInstance("SHA1").digest(
                     getRawCode(includeDebug));
         } catch (NoSuchAlgorithmException e) {
-            GPUtil.debug("Not possible?");
-            return null;
+            throw new RuntimeException("Not possible", e);
         }
     }
 
@@ -305,7 +303,7 @@ public class CapFile {
             result = result + name + ".cap:\n";
             byte[] b = (byte[]) capComponents.get(name);
             if (b != null) {
-                result = result + GPUtil.byteArrayToString(b) + "\n";
+                result = result + GPUtils.byteArrayToString(b) + "\n";
             } else {
                 result = result + "(empty)\n";
             }
@@ -318,15 +316,10 @@ public class CapFile {
         for (int i = 0; i < names.length; i++) {
             result = result + names[i] + ":\n";
             for (byte[] o : tables.get(i)) {
-                result = result + GPUtil.byteArrayToString(o) + "\n";
+                result = result + GPUtils.byteArrayToString(o) + "\n";
             }
         }
 
         return result;
-    }
-    
-    // Test
-    public static void main(String[] args) throws IOException {
-      CapFile cp = new CapFile(new FileInputStream(args[0]));
     }
 }

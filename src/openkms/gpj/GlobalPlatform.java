@@ -427,7 +427,7 @@ public class GlobalPlatform {
             byte[] constantMAC = new byte[] { (byte) 0x01, (byte) 0x01 };
             System.arraycopy(constantMAC, 0, derivationData, 0, 2);
 
-            Cipher cipher = Cipher.getInstance("DESede/CBS/NoPadding");
+            Cipher cipher = Cipher.getInstance("DESede/CBC/NoPadding");
             cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(GPUtils.getKey(staticKeys.keys[1], 24), "DESede"), new IvParameterSpec(new byte[8]));
        
             sessionKeys.keys[1] = cipher.doFinal(derivationData);

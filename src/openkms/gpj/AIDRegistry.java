@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Iterator;
 
 /**
- * Convenience class managing a vector of {@link AIDRegistryEntry 
+ * Convenience class managing a vector of {@link AIDRegistryEntry
  * AIDRegistryEntries} with search functionality.
  * 
  * Implements {@code Iterable<AIDRegistryEntry} to permit foreach loops such as
@@ -35,51 +35,51 @@ import java.util.Iterator;
  */
 public class AIDRegistry implements Iterable<AIDRegistryEntry> {
 
-    List<AIDRegistryEntry> entries = new ArrayList<AIDRegistryEntry>();
+	List<AIDRegistryEntry> entries = new ArrayList<AIDRegistryEntry>();
 
-    /**
-     * Add one entry to this registry.
-     * 
-     * @param entry
-     */
-    public void add(AIDRegistryEntry entry) {
-        entries.add(entry);
-    }
+	/**
+	 * Add one entry to this registry.
+	 * 
+	 * @param entry
+	 */
+	public void add(AIDRegistryEntry entry) {
+		entries.add(entry);
+	}
 
-    /**
-     * Returns an iterator that iterates over all entries in this registry.
-     * 
-     * @return iterator
-     */
-    public Iterator<AIDRegistryEntry> iterator() {
-        return entries.iterator();
-    }
+	/**
+	 * Returns an iterator that iterates over all entries in this registry.
+	 * 
+	 * @return iterator
+	 */
+	public Iterator<AIDRegistryEntry> iterator() {
+		return entries.iterator();
+	}
 
-    /**
-     * Returns a list of all packages in this registry.
-     * 
-     * @return a list of all packages
-     */
-    public List<AIDRegistryEntry> allPackages() {
-        List<AIDRegistryEntry> res = new ArrayList<AIDRegistryEntry>();
-        for (AIDRegistryEntry e : entries) {
-            if (e.isPackage())
-                res.add(e);
-        }
-        return res;
-    }
+	/**
+	 * Returns a list of all packages in this registry.
+	 * 
+	 * @return a list of all packages
+	 */
+	public List<AIDRegistryEntry> allPackages() {
+		List<AIDRegistryEntry> res = new ArrayList<AIDRegistryEntry>();
+		for (AIDRegistryEntry e : entries) {
+			if (e.isPackage())
+				res.add(e);
+		}
+		return res;
+	}
 
-    /**
-     * Returns a list of all applets in this registry.
-     * 
-     * @return a list of all applets
-     */
-    public List<AIDRegistryEntry> allApplets() {
-        List<AIDRegistryEntry> res = new ArrayList<AIDRegistryEntry>();
-        for (AIDRegistryEntry e : entries) {
-            if (e.isApplet())
-                res.add(e);
-        }
-        return res;
-    }
+	/**
+	 * Returns a list of all applets in this registry.
+	 * 
+	 * @return a list of all applets
+	 */
+	public List<AIDRegistryEntry> allApplets() {
+		List<AIDRegistryEntry> res = new ArrayList<AIDRegistryEntry>();
+		for (AIDRegistryEntry e : entries) {
+			if (e.isApplet())
+				res.add(e);
+		}
+		return res;
+	}
 }

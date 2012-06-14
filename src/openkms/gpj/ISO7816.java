@@ -30,6 +30,7 @@ package openkms.gpj;
  * @author Martin Paljak
  */
 public interface ISO7816 {
+
 	public static final byte OFFSET_CLA = (byte) 0;
 
 	public static final byte OFFSET_INS = (byte) 1;
@@ -43,7 +44,7 @@ public interface ISO7816 {
 	public static final byte OFFSET_CDATA = (byte) 5;
 
 	public static final byte CLA_ISO7816 = (byte) 0x00;
-	
+
 	public static final byte INS_ERASE_BINARY = 0x0E;
 
 	public static final byte INS_VERIFY = 0x20;

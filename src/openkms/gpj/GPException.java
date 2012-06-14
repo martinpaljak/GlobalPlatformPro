@@ -30,29 +30,29 @@ import javax.smartcardio.CardException;
  */
 public class GPException extends CardException {
 
-    /**
-     * 
-     * Field to disable the serialVersionUID warning.
-     */
-    public static final long serialVersionUID = 1L;
+	/**
+	 * 
+	 * Field to disable the serialVersionUID warning.
+	 */
+	public static final long serialVersionUID = 1L;
 
-    /**
-     * 
-     * Response status indicating the error, or 0 if not applicable.
-     */
-    public final short sw;
+	/**
+	 * 
+	 * Response status indicating the error, or 0 if not applicable.
+	 */
+	public final short sw;
 
-    /**
-     * 
-     * Constructs a new GPException with the specified detail message.
-     * 
-     * @param sw
-     *            failing response status
-     * @param message
-     *            the detailed message
-     */
-    public GPException(short sw, String message) {
-        super(message + " SW: " + GPUtils.swToString(sw));
-        this.sw = sw;
-    }
+	/**
+	 * 
+	 * Constructs a new GPException with the specified detail message.
+	 * 
+	 * @param sw
+	 *            failing response status
+	 * @param message
+	 *            the detailed message
+	 */
+	public GPException(short sw, String message) {
+		super(message + " SW: " + GPUtils.swToString(sw));
+		this.sw = sw;
+	}
 }

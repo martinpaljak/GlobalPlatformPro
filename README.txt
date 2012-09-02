@@ -2,7 +2,7 @@ OpenKMS notice
 ==============
 This code is based on GPJ, Global Platform for SmartCardIO
 Java SDK library, available from http://gpj.sourceforge.net,
-adapted for use in OpenKMS
+adapted for use in OpenKMS.
 
 It is licensed under LGPL 3.0
 

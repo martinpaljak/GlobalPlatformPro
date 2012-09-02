@@ -1,2 +1,3 @@
 Manifest-Version: 1.0
 Main-Class: openkms.gpj.GPJTool
+Sealed: true

@@ -13,13 +13,13 @@
   </target>
 
   <target name="dist" depends="compile" description="generate the distribution">
-    <jar manifest="Manifest.mf" destfile="gpj.jar">
+    <jar manifest="Manifest.mf" destfile="openkms-globalplatform.jar">
       <fileset dir="${build}"/>
     </jar>
   </target>
 
   <target name="clean" description="clean up">
     <delete dir="${build}"/>
-    <delete file="gpj.jar"/>
+    <delete file="openkms-globalplatform.jar"/>
   </target>
 </project>

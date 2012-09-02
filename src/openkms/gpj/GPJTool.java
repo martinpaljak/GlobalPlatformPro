@@ -362,7 +362,7 @@ public class GPJTool {
 
 	public static void usage() {
 		System.out.println("Usage:");
-		System.out.println("  java cardservices.GlobalPlatformService <options>");
+		System.out.println("  java -jar openkms-globalplatform.jar <options>");
 		System.out.println("");
 		System.out.println("Options:\n");
 		System.out.println(" -sdaid <aid>      Security Domain AID, default a000000003000000");

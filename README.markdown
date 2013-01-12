@@ -7,12 +7,12 @@ adapted for use in OpenKMS.
 It is licensed under LGPL 3.0
 
 Credits:
-Wojciech Mostowski <woj@cs.ru.nl>,
-Francois Kooman <F.Kooman@student.science.ru.nl>
-Martijn Oostdijk <martijn.oostdijk@gmail.com>
-Martin Paljak <martin@martinpaljak.net>
-Hendrik Tews
-Dusan Kovacevic
+*  Wojciech Mostowski <woj@cs.ru.nl>,
+*  Francois Kooman <F.Kooman@student.science.ru.nl>
+*  Martijn Oostdijk <martijn.oostdijk@gmail.com>
+*  Martin Paljak <martin@martinpaljak.net>
+*  Hendrik Tews
+*  Dusan Kovacevic
 
 -- 
 OpenKMS - open source key management

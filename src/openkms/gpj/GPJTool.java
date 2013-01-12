@@ -6,8 +6,6 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.NoSuchAlgorithmException;
-import java.security.Provider;
-import java.security.Security;
 import java.util.Vector;
 
 import javax.smartcardio.Card;
@@ -22,20 +20,13 @@ public class GPJTool {
 	public static void main(String[] args) throws IOException {
 
 		final class InstallEntry {
-
 			AID appletAID;
-
 			AID packageAID;
-
 			int priv;
-
 			byte[] params;
 		}
 
 		boolean listApplets = false;
-
-		boolean use_jcop_emulator = false;
-
 		int keySet = 0;
 		byte[][] keys = { GlobalPlatform.defaultEncKey, GlobalPlatform.defaultMacKey, GlobalPlatform.defaultKekKey };
 		AID sdAID = null;
@@ -204,16 +195,6 @@ public class GPJTool {
 					inst.priv = priv;
 					inst.params = param;
 					installs.add(inst);
-				} else if (args[i].equals("-jcop")) {
-					try {
-						loadJCOPProvider();
-						use_jcop_emulator = true;
-					} catch (Exception e) {
-						System.out.println("Unable to load jcop compatibility provider.\n" + "Please put offcard.jar and jcopio.jar "
-								+ "on the class path.\n");
-						e.printStackTrace();
-						System.exit(1);
-					}
 				} else {
 					String[] keysOpt = { "-enc", "-mac", "-kek" };
 					int index = -1;
@@ -250,18 +231,14 @@ public class GPJTool {
 					System.setProperty("sun.security.smartcardio.library", "/lib/libpcsclite.so");
 			}
 
-			TerminalFactory tf;
-			if (use_jcop_emulator == false)
-				tf = TerminalFactory.getInstance("PC/SC", null);
-			else
-				tf = TerminalFactory.getInstance("JcopEmulator", null);
-
-			// System.out.println(tf.getProvider());
+			TerminalFactory tf = TerminalFactory.getInstance("PC/SC", null);
 			CardTerminals terminals = tf.terminals();
 
 			System.out.println("Found readers: " + terminals.list());
+			// Use State.ALL because older OS X Java did now list readers with cards through Java.
 			for (CardTerminal terminal : terminals.list(CardTerminals.State.ALL)) {
 				try {
+					// Wrap the terminal with a loggin wrapper if needed.
 					if (verbose) {
 						terminal = LoggingCardTerminal.getInstance(terminal);
 					}
@@ -283,6 +260,7 @@ public class GPJTool {
 					GlobalPlatform service = (sdAID == null) ? new GlobalPlatform(channel) : new GlobalPlatform(sdAID, channel);
 					service.open();
 					service.setKeys(keySet, keys[0], keys[1], keys[2], diver);
+					
 					// TODO: make the APDU mode a parameter, properly adjust
 					// loadSize accordingly
 					int neededExtraSize = apduMode == GlobalPlatform.APDU_CLR ? 0 : (apduMode == GlobalPlatform.APDU_MAC ? 8 : 16);
@@ -375,8 +353,7 @@ public class GPJTool {
 		System.out.println("Usage:");
 		System.out.println("  java -jar openkms-globalplatform.jar <options>");
 		System.out.println("");
-		System.out.println("Options:\n");
-		
+		System.out.println("Options:");
 		System.out.println(" -v|-verbose       Print APDU-s exchanged with the card");
 		System.out.println(" -sdaid <aid>      Security Domain AID, default a000000003000000");
 		System.out.println(" -keyset <num>     use key set <num>, default 0");
@@ -404,34 +381,23 @@ public class GPJTool {
 		System.out.println("   -priv <num>     privileges, default 0");
 		System.out.println("   -param <bytes>  install parameters, default: C900");
 		System.out.println(" -list             list card registry");
-		System.out.println(" -jcop             connect to the jcop emulator on port 8015");
 		System.out.println(" -h|-help|--help   print this usage info");
 		System.out.println("");
 		System.out.println("Multiple -load/-install/-delete and -list take the following precedence:");
-		System.out.println("  delete(s), load, install(s), list\n");
-		System.out.println("All -load/-install/-delete/-list actions will be performed on\n"
-				+ "the basic logical channel of all cards currently connected.\n"
-				+ "By default all connected PC/SC terminals are searched.\n\n"
-				+ "Option -jcop requires jcopio.jar and offcard.jar on the class path.\n");
-		System.out.println("<aid> can be of the byte form 0A00000003... or the string form \"|applet.app|\"\n");
-		System.out.println("Examples:\n");
+		System.out.println("  delete(s), load, install(s), list");
+		System.out.println("");
+		System.out.println("All -load/-install/-delete/-list actions will be performed on");
+		System.out.println("the basic logical channel of all cards currently connected.");
+		System.out.println("By default all connected PC/SC terminals are searched.");
+		System.out.println("");
+		System.out.println("<aid> can be of the byte form 0A00000003... or the string form \"|applet.app|\"");
+		System.out.println("");
+		System.out.println("Examples:");
+		System.out.println("");
 		System.out.println(" [prog] -list");
 		System.out.println(" [prog] -load applet.cap -install -list ");
 		System.out.println(" [prog] -deletedeps -delete 360000000001 -load applet.cap -install -list");
 		System.out.println(" [prog] -emv -keyset 0 -enc 404142434445464748494A4B4C4D4E4F -list");
 		System.out.println("");
 	}
-
-	private static final String jcopProviderName = "ds.javacard.emulator.jcop.DS_provider";
-
-	public static void loadJCOPProvider() throws InstantiationException, ClassNotFoundException, IllegalAccessException,
-			NoSuchAlgorithmException {
-		Class<?> jcopProvider = Class.forName(jcopProviderName);
-		Security.addProvider((Provider) (jcopProvider.newInstance()));
-		// Peek that provider to provoke ClassNotFoundException
-		// from a missing offcard.jar.
-		TerminalFactory.getInstance("JcopEmulator", null);
-		System.out.println("Provider for jcop emulator comptibility loaded.");
-	}
-
 }

@@ -177,6 +177,7 @@ public class GlobalPlatform {
 	public void open() throws GPException, CardException {
 		if (sdAID == null) {
 			// Try known SD AIDs
+			// FIXME: use an ordered list instead of unordered entrySet	
 			short sw = 0;
 			for (Map.Entry<String, AID> entry : AID.SD_AIDS.entrySet()) {
 				CommandAPDU command = new CommandAPDU(ISO7816.CLA_ISO7816, ISO7816.INS_SELECT, 0x04, 0x00, entry.getValue().getBytes());
@@ -184,10 +185,10 @@ public class GlobalPlatform {
 				sw = (short) resp.getSW();
 				if (sw == ISO7816.SW_NO_ERROR) {
 					sdAID = entry.getValue();
-					System.out.println("Successfully selected Security Domain " + entry.getKey() + " " + entry.getValue().toString());
+					System.err.println("Selected Security Domain " + entry.getKey() + " " + entry.getValue().toString());
 					break;
 				}
-				System.out.println("Failed to select Security Domain " + entry.getKey() + " " + entry.getValue().toString() + ", SW: "
+				System.err.println("Failed to select Security Domain " + entry.getKey() + " " + entry.getValue().toString() + ", SW: "
 						+ GPUtils.swToString(sw));
 			}
 			if (sdAID == null) {

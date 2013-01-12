@@ -51,6 +51,8 @@ public class GPJTool {
 		boolean loadDebug = false;
 		boolean loadParam = false;
 		boolean useHash = false;
+		boolean verbose = false;
+
 		int apduMode = GlobalPlatform.APDU_CLR;
 
 		Vector<InstallEntry> installs = new Vector<InstallEntry>();
@@ -62,7 +64,11 @@ public class GPJTool {
 					usage();
 					System.exit(0);
 				}
-				if (args[i].equals("-list")) {
+
+				// All other options.
+				if (args[i].equals("-v") || args[i].equals("-verbose") || args[i].equals("-debug")) {
+					verbose = true;
+				} else if (args[i].equals("-list")) {
 					listApplets = true;
 				} else if (args[i].equals("-keyset")) {
 					i++;
@@ -234,6 +240,7 @@ public class GPJTool {
 
 		try {
 			// Set necessary parameters for seamless PC/SC access.
+			// This does not work with multiarch and is not needed with OpenJDK 7
 			if (System.getProperty("os.name").equalsIgnoreCase("Linux")) {
 				// Debian
 				if (new File("/usr/lib/libpcsclite.so").exists())
@@ -252,21 +259,25 @@ public class GPJTool {
 			// System.out.println(tf.getProvider());
 			CardTerminals terminals = tf.terminals();
 
-			System.out.println("Found terminals: " + terminals.list());
+			System.out.println("Found readers: " + terminals.list());
 			for (CardTerminal terminal : terminals.list(CardTerminals.State.ALL)) {
 				try {
+					if (verbose) {
+						terminal = LoggingCardTerminal.getInstance(terminal);
+					}
+					
 					Card c = null;
 					try {
 						c = terminal.connect("*");
 					} catch (CardException e) {
 						if (e.getCause().getMessage().equalsIgnoreCase("SCARD_E_NO_SMARTCARD")) {
-							System.err.println("No card in reader " + terminal.getName());
+							System.err.println("No card in reader: " + terminal.getName());
 							continue;
 						} else
 							e.printStackTrace();
 					}
 
-					System.out.println("Found card in terminal: " + terminal.getName());
+					System.out.println("Found card in reader: " + terminal.getName());
 					System.out.println("ATR: " + GPUtils.byteArrayToString(c.getATR().getBytes()));
 					CardChannel channel = c.getBasicChannel();
 					GlobalPlatform service = (sdAID == null) ? new GlobalPlatform(channel) : new GlobalPlatform(sdAID, channel);
@@ -365,6 +376,8 @@ public class GPJTool {
 		System.out.println("  java -jar openkms-globalplatform.jar <options>");
 		System.out.println("");
 		System.out.println("Options:\n");
+		
+		System.out.println(" -v|-verbose       Print APDU-s exchanged with the card");
 		System.out.println(" -sdaid <aid>      Security Domain AID, default a000000003000000");
 		System.out.println(" -keyset <num>     use key set <num>, default 0");
 		System.out.println(" -mode <apduMode>  use APDU mode, CLR, MAC, or ENC, default CLR");

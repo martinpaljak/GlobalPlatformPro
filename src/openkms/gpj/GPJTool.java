@@ -234,7 +234,14 @@ public class GPJTool {
 			TerminalFactory tf = TerminalFactory.getInstance("PC/SC", null);
 			CardTerminals terminals = tf.terminals();
 
-			System.out.println("Found readers: " + terminals.list());
+			if ((terminals.list().size() > 0) && verbose) {
+				System.out.println("Found readers:");
+				for (CardTerminal terminal : terminals.list()) {
+					System.out.println("  " + terminal.getName());
+				}
+				System.out.println();
+			}
+			
 			// Use State.ALL because older OS X Java did now list readers with cards through Java.
 			for (CardTerminal terminal : terminals.list(CardTerminals.State.ALL)) {
 				try {
@@ -248,10 +255,15 @@ public class GPJTool {
 						c = terminal.connect("*");
 					} catch (CardException e) {
 						if (e.getCause().getMessage().equalsIgnoreCase("SCARD_E_NO_SMARTCARD")) {
-							System.err.println("No card in reader: " + terminal.getName());
+							System.err.println("No card in reader \"" + terminal.getName() + "\": " + e.getCause().getMessage());
 							continue;
-						} else
+						} else if (e.getCause().getMessage().equalsIgnoreCase("SCARD_W_UNPOWERED_CARD")) {
+							System.err.println("No card in reader \"" + terminal.getName() + "\": " + e.getCause().getMessage());
+							System.err.println("  TIP: Make sure that the card is properly inserted and the chip is clean!");
+							continue;
+						} else {
 							e.printStackTrace();
+						}
 					}
 
 					System.out.println("Found card in reader: " + terminal.getName());
@@ -394,10 +406,10 @@ public class GPJTool {
 		System.out.println("");
 		System.out.println("Examples:");
 		System.out.println("");
-		System.out.println(" [prog] -list");
-		System.out.println(" [prog] -load applet.cap -install -list ");
-		System.out.println(" [prog] -deletedeps -delete 360000000001 -load applet.cap -install -list");
-		System.out.println(" [prog] -emv -keyset 0 -enc 404142434445464748494A4B4C4D4E4F -list");
+		System.out.println("  [prog] -list");
+		System.out.println("  [prog] -load applet.cap -install -list");
+		System.out.println("  [prog] -deletedeps -delete 360000000001 -load applet.cap -install -list");
+		System.out.println("  [prog] -emv -keyset 0 -enc 404142434445464748494A4B4C4D4E4F -list");
 		System.out.println("");
 	}
 }

@@ -242,13 +242,13 @@ public class GPJTool {
 			
 			// Use State.ALL because older OS X Java did now list readers with cards through Java.
 			for (CardTerminal terminal : terminals.list(CardTerminals.State.ALL)) {
+				Card c = null;
 				try {
 					// Wrap the terminal with a loggin wrapper if needed.
 					if (verbose) {
 						terminal = LoggingCardTerminal.getInstance(terminal);
 					}
-					
-					Card c = null;
+
 					try {
 						c = terminal.connect("*");
 					} catch (CardException e) {
@@ -325,10 +325,15 @@ public class GPJTool {
 							}
 							System.out.println();
 						}
-
 					}
 				} catch (Exception ce) {
 					ce.printStackTrace();
+				} finally {
+					// javax.smartcardio is buggy
+					String jvm_version = System.getProperty("java.version");
+					if (jvm_version.startsWith("1.7") || jvm_version.startsWith("1.6")) {
+						c.disconnect(false);
+					}
 				}
 			}
 		} catch (CardException e) {

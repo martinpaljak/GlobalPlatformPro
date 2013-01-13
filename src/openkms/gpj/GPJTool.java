@@ -31,8 +31,6 @@ public class GPJTool {
 		byte[][] keys = { GlobalPlatform.defaultEncKey, GlobalPlatform.defaultMacKey, GlobalPlatform.defaultKekKey };
 		AID sdAID = null;
 		int diver = GlobalPlatform.DIVER_NONE;
-		boolean gemalto = false;
-
 		Vector<AID> deleteAID = new Vector<AID>();
 		boolean deleteDeps = false;
 
@@ -77,11 +75,11 @@ public class GPJTool {
 						throw new IllegalArgumentException("Malformed SD AID: " + args[i]);
 					}
 					sdAID = new AID(aid);
-				} else if (args[i].equals("-" + AID.GEMALTO)) {
-					byte[] gemMotherKey = GlobalPlatform.SPECIAL_MOTHER_KEYS.get(AID.GEMALTO);
-					keys = new byte[][] { gemMotherKey, gemMotherKey, gemMotherKey };
-					gemalto = true;
-					diver = GlobalPlatform.DIVER_VISA2;
+					if (AID.SD_AIDS.get(AID.GEMALTO).equals(sdAID)) {
+						byte[] gemMotherKey = GlobalPlatform.SPECIAL_MOTHER_KEYS.get(AID.GEMALTO);
+						keys = new byte[][] { gemMotherKey, gemMotherKey, gemMotherKey };
+						diver = GlobalPlatform.DIVER_VISA2;
+					}
 				} else if (args[i].equals("-visa2")) {
 					diver = GlobalPlatform.DIVER_VISA2;
 				} else if (args[i].equals("-emv")) {
@@ -279,7 +277,7 @@ public class GPJTool {
 					if (loadSize + neededExtraSize > GlobalPlatform.defaultLoadSize) {
 						loadSize -= neededExtraSize;
 					}
-					service.openSecureChannel(keySet, 0, GlobalPlatform.SCP_ANY, apduMode, gemalto);
+					service.openSecureChannel(keySet, 0, GlobalPlatform.SCP_ANY, apduMode);
 
 					if (deleteAID.size() > 0) {
 						for (AID aid : deleteAID) {
@@ -317,24 +315,11 @@ public class GPJTool {
 						AIDRegistry registry = service.getStatus();
 						for (AIDRegistryEntry e : registry) {
 							AID aid = e.getAID();
-							int numSpaces = (15 - aid.getLength());
-							String spaces = "";
-							String spaces2 = "";
-							for (int i = 0; i < numSpaces; i++) {
-								spaces = spaces + "   ";
-								spaces2 = spaces2 + " ";
-							}
-							System.out.print("AID: " + GPUtils.byteArrayToString(aid.getBytes()) + spaces + " "
-									+ GPUtils.byteArrayToReadableString(aid.getBytes()) + spaces2);
-							System.out.format(" %s LC: %d PR: 0x%02X\n", e.getKind().toShortString(), e.getLifeCycleState(),
-									e.getPrivileges());
+							System.out.println("AID: " + GPUtils.byteArrayToString(aid.getBytes()) + " (" + GPUtils.byteArrayToReadableString(aid.getBytes()) + ")");
+							System.out.println("     " + e.getKind().toShortString() + " LC: " + e.getLifeCycleState() + " PR: " + Integer.toHexString(e.getPrivileges()));
+							
 							for (AID a : e.getExecutableAIDs()) {
-								numSpaces = (15 - a.getLength()) * 3;
-								spaces = "";
-								for (int i = 0; i < numSpaces; i++)
-									spaces = spaces + " ";
-								System.out.println("     " + GPUtils.byteArrayToString(a.getBytes()) + spaces + " "
-										+ GPUtils.byteArrayToReadableString(a.getBytes()));
+								System.out.println("     " + GPUtils.byteArrayToString(a.getBytes()) + " (" + GPUtils.byteArrayToReadableString(a.getBytes()) + ")");
 							}
 							System.out.println();
 						}
@@ -352,10 +337,11 @@ public class GPJTool {
 		} catch (NoSuchAlgorithmException e) {
 			if (e.getCause().getMessage().equalsIgnoreCase("SCARD_E_NO_SERVICE"))
 				System.out.println("No smart card readers found (PC/SC service not running)");
-			else
+			else {
 				e.printStackTrace();
+			}
 		} catch (Exception e) {
-			System.out.format("Terminated by escaping exception %s\n", e.getClass().getName());
+			System.out.println("Terminated by escaping exception: " + e.getClass().getName());
 			e.printStackTrace();
 		}
 

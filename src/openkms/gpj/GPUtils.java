@@ -67,7 +67,7 @@ public class GPUtils {
 				onebyte = onebyte.substring(onebyte.length() - 2);
 			result = result + onebyte.toUpperCase() + " ";
 		}
-		return result;
+		return result.trim(); // Return the extra space
 	}
 
 	public static byte[] stringToByteArray(String s) {

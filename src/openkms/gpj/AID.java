@@ -108,6 +108,10 @@ public class AID {
 		return GPUtils.byteArrayToString(aidBytes);
 	}
 
+	public int hashCode() {
+		return Arrays.hashCode(aidBytes);
+	}
+
 	public boolean equals(Object o) {
 		if (o instanceof AID) {
 			return Arrays.equals(((AID) o).aidBytes, aidBytes);

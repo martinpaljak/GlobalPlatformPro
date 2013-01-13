@@ -214,7 +214,7 @@ public class GlobalPlatform {
 	 * @throws CardException
 	 *             if some communication problem is encountered.
 	 */
-	public void openSecureChannel(int keySet, int keyId, int scpVersion, int securityLevel, boolean gemalto)
+	public void openSecureChannel(int keySet, int keyId, int scpVersion, int securityLevel)
 			throws IllegalArgumentException, CardException {
 
 		if (scpVersion < SCP_ANY || scpVersion > SCP_02_1B) {
@@ -226,7 +226,7 @@ public class GlobalPlatform {
 		}
 
 		if (keySet < 0 || keySet > 127) {
-			throw new IllegalArgumentException("Wrong key set.");
+			throw new IllegalArgumentException("Invalid key set number.");
 		}
 
 		int mask = ~(APDU_MAC | APDU_ENC | APDU_RMAC);
@@ -243,7 +243,8 @@ public class GlobalPlatform {
 			throw new IllegalArgumentException("Key set " + keySet + " not defined.");
 		}
 
-		if (gemalto && AID.SD_AIDS.get(AID.GEMALTO).equals(sdAID)) {
+		// Gemalto hack.
+		if (AID.SD_AIDS.get(AID.GEMALTO).equals(sdAID)) {
 			// get data, prepare diver buffer
 			CommandAPDU c = new CommandAPDU(CLA_GP, ISO7816.INS_GET_DATA, 0x9F, 0x7F, 256);
 			// byte[] cData=new
@@ -295,11 +296,9 @@ public class GlobalPlatform {
 			staticKeys.diversify(result);
 		}
 
-		if (keySet > 0 && result[10] != (byte) keySet) {
+		if ((keySet > 0) && ((result[10] &0xff) != keySet)) {
 			throw new CardException("Key set mismatch.");
-		} else {
-			keySet = result[10] & 0xff;
-		}
+		} 
 
 		KeySet sessionKeys = null;
 
@@ -364,7 +363,7 @@ public class GlobalPlatform {
 		open();
 		int keySet = 0;
 		setKeys(keySet, defaultEncKey, defaultMacKey, defaultKekKey);
-		openSecureChannel(keySet, 0, SCP_ANY, APDU_MAC, false);
+		openSecureChannel(keySet, 0, SCP_ANY, APDU_MAC);
 	}
 
 	public boolean isSecureChannelOpen() {
@@ -901,13 +900,16 @@ public class GlobalPlatform {
 
 		private int scp = 0;
 
-		private ByteArrayOutputStream rMac;
+		private ByteArrayOutputStream rMac = new ByteArrayOutputStream();
 
-		private boolean icvEnc;
+		private boolean icvEnc = false;
 
-		private boolean preAPDU, postAPDU;
+		private boolean preAPDU = false;
+		private boolean postAPDU  =false;
 
-		private boolean mac = false, enc = false, rmac = false;
+		private boolean mac = false;
+		private boolean enc = false;
+		private boolean rmac = false;
 
 		private SecureChannelWrapper(KeySet sessionKeys, int scp, int securityLevel, byte[] icv, byte[] ricv) {
 			this.sessionKeys = sessionKeys;

@@ -260,7 +260,9 @@ public class GPJTool {
 							System.err.println("  TIP: Make sure that the card is properly inserted and the chip is clean!");
 							continue;
 						} else {
+							System.err.println("Could not read card!");
 							e.printStackTrace();
+							continue;
 						}
 					}
 
@@ -359,9 +361,6 @@ public class GPJTool {
 		System.out.println(" -enc <key>        define ENC key, default: 40..4F");
 		System.out.println(" -mac <key>        define MAC key, default: 40..4F");
 		System.out.println(" -kek <key>        define KEK key, default: 40..4F");
-		System.out.println(" -" + AID.GEMALTO + " use special VISA2 key diversification for GemaltoXpressPro cards");
-		System.out.println("                   uses predifined Gemalto mother key if not stated otherwise");
-		System.out.println("                   with -enc/-mac/-kek AFTER this option");
 		System.out.println(" -visa2            use VISA2 key diversification (only key set 0), default off");
 		System.out.println(" -emv              use EMV key diversification (only key set 0), default off");
 		System.out.println(" -deletedeps       also delete depending packages/applets, default off");
@@ -386,7 +385,7 @@ public class GPJTool {
 		System.out.println("");
 		System.out.println("All -load/-install/-delete/-list actions will be performed on");
 		System.out.println("the basic logical channel of all cards currently connected.");
-		System.out.println("By default all connected PC/SC terminals are searched.");
+		System.out.println("By default all connected PC/SC readers are searched.");
 		System.out.println("");
 		System.out.println("<aid> can be of the byte form 0A00000003... or the string form \"|applet.app|\"");
 		System.out.println("");

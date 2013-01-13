@@ -1,6 +1,7 @@
 package openkms.gpj;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 import javax.smartcardio.ATR;
 import javax.smartcardio.Card;
@@ -43,6 +44,8 @@ public class LoggingCardTerminal extends CardTerminal {
 
 	@Override
 	public Card connect(String arg0) throws CardException {
+		System.err.format("SCardConnect(%s)\n", arg0);
+		System.err.flush();
 		return new LoggingCard(terminal, arg0);
 	}
 
@@ -76,18 +79,22 @@ public class LoggingCardTerminal extends CardTerminal {
 		
 		@Override
 		public void beginExclusive() throws CardException {
+			System.err.println("SCardBeginTransaction()");
+			System.err.flush();
 			card.beginExclusive();	
 		}
 
 		@Override
 		public void disconnect(boolean arg0) throws CardException {
-			System.err.println("SCardDisconnect()");
+			System.err.format("SCardDisconnect(%b)\n", arg0);
 			System.err.flush();
 			card.disconnect(arg0);
 		}
 
 		@Override
 		public void endExclusive() throws CardException {
+			System.err.println("SCardEndTransaction()");
+			System.err.flush();
 			card.endExclusive();
 		}
 
@@ -142,11 +149,27 @@ public class LoggingCardTerminal extends CardTerminal {
 			public ResponseAPDU transmit(CommandAPDU apdu) throws CardException {
 
 				int len = apdu.getData().length > 255 ? 7 : 5;
-				System.err.println("A>> " + card.getProtocol() + " ("+ len + "+" + apdu.getData().length + ") " + encodeHexString(apdu.getBytes()));
+				System.err.print("A>> " + card.getProtocol() + " (4+" + String.format("%04d", apdu.getData().length) + ")");
+				System.err.print(" " + encodeHexString(Arrays.copyOfRange(apdu.getBytes(), 0, 4)));
+
+				// Only if Case 2, 3 or 4 APDU
+				if (apdu.getBytes().length > 4) {
+					System.err.print(" " + encodeHexString(Arrays.copyOfRange(apdu.getBytes(), 4, len)));
+					System.err.println(" " + encodeHexString(Arrays.copyOfRange(apdu.getBytes(), len, apdu.getBytes().length)));
+				} else {
+					System.err.println();
+				}
 				System.err.flush();
+
 				ResponseAPDU response = channel.transmit(apdu);
-				System.err.println("A<< (" + response.getData().length + ") " + encodeHexString(response.getBytes()));
+				
+				System.err.print("A<< (" + String.format("%04d", response.getData().length) + "+2)");
+				if (response.getData().length > 2) {
+					System.err.print(" " + encodeHexString(response.getData()));
+				}
+				System.err.println(" " + encodeHexString(Arrays.copyOfRange(response.getBytes(), response.getBytes().length-2, response.getBytes().length)));
 				System.err.flush();
+				
 				return response;
 			}
 

@@ -25,11 +25,11 @@ package openkms.gpj;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URL;
+import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.TreeMap;
 
 import javax.crypto.Cipher;
@@ -265,7 +265,8 @@ public class GlobalPlatform {
 		}
 
 		byte[] rand = new byte[8];
-		new Random().nextBytes(rand);
+		SecureRandom sr = new SecureRandom();
+		sr.nextBytes(rand);
 
 		CommandAPDU initUpdate = new CommandAPDU(CLA_GP, INIT_UPDATE, keySet, keyId, rand);
 

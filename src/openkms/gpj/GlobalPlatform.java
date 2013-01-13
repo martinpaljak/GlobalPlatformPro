@@ -366,10 +366,6 @@ public class GlobalPlatform {
 		openSecureChannel(keySet, 0, SCP_ANY, APDU_MAC);
 	}
 
-	public boolean isSecureChannelOpen() {
-		return wrapper != null;
-	}
-
 	private KeySet deriveSessionKeysSCP01(KeySet staticKeys, byte[] hostRandom, byte[] cardResponse) throws CardException {
 		byte[] derivationData = new byte[16];
 
@@ -448,8 +444,9 @@ public class GlobalPlatform {
 
 	}
 
-	public ResponseAPDU transmit(CommandAPDU command) throws IllegalStateException, CardException {
-		if (wrapper == null && (scpVersion == SCP_02_0A || scpVersion == SCP_02_0B || scpVersion == SCP_02_1A || scpVersion == SCP_02_1B)) {
+	// FIXME: When and why is this used?
+	public void openImplicitChannel() throws CardException {
+		if (scpVersion == SCP_02_0A || scpVersion == SCP_02_0B || scpVersion == SCP_02_1A || scpVersion == SCP_02_1B) {
 			CommandAPDU getData = new CommandAPDU(CLA_GP, GET_DATA, 0, 0xE0);
 			ResponseAPDU data = channel.transmit(getData);
 
@@ -482,6 +479,12 @@ public class GlobalPlatform {
 				throw new CardException("Implicit secure channel initialization failed.", e);
 			}
 		}
+		
+	}
+	
+	
+	
+	public ResponseAPDU transmit(CommandAPDU command) throws CardException {
 		CommandAPDU wc = wrapper.wrap(command);
 		ResponseAPDU wr = channel.transmit(wc);
 		return wrapper.unwrap(wr);

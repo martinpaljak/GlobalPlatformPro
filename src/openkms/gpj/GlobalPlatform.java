@@ -40,6 +40,8 @@ import javax.smartcardio.CardException;
 import javax.smartcardio.CommandAPDU;
 import javax.smartcardio.ResponseAPDU;
 
+import openkms.gpj.AIDRegistryEntry.Kind;
+
 /**
  * The main Global Platform Service class. Provides most of the Global Platform
  * functionality for managing GP compliant smart cards.
@@ -174,7 +176,7 @@ public class GlobalPlatform {
 	 * @throws CardException
 	 *             on data transmission errors
 	 */
-	public void open() throws GPException, CardException {
+	public void open() throws GPException, CardException, IOException {
 		if (sdAID == null) {
 			// Try known SD AIDs
 			// FIXME: use an ordered list instead of unordered entrySet	
@@ -204,6 +206,18 @@ public class GlobalPlatform {
 		}
 	}
 
+	public void discoverCardProperties() throws CardException, IOException {
+		// Query the registry to find the actual SD AID, to be used in further commands (as selection can succeed with truncated AID)
+		AIDRegistry content = getStatus();
+		for (AIDRegistryEntry entry: content) {
+			if (entry.getKind() == Kind.IssuerSecurityDomain) {
+				if (!entry.getAID().equals(sdAID)) {
+					System.err.println("Using " + entry.getAID() + " as actual SD AID!");
+					sdAID = entry.getAID();
+				}
+			}
+		}
+	}
 	/**
 	 * Establishes a secure channel to the security domain. The security domain
 	 * must have been selected with {@link open open} before. The {@code keySet}
@@ -359,7 +373,7 @@ public class GlobalPlatform {
 	 *             when communication problems with the card or the selected
 	 *             security domain arise.
 	 */
-	public void openWithDefaultKeys() throws CardException {
+	public void openWithDefaultKeys() throws CardException, IOException{
 		open();
 		int keySet = 0;
 		setKeys(keySet, defaultEncKey, defaultMacKey, defaultKekKey);

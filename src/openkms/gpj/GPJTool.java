@@ -281,6 +281,8 @@ public class GPJTool {
 					}
 					service.openSecureChannel(keySet, 0, GlobalPlatform.SCP_ANY, apduMode);
 
+					service.discoverCardProperties();
+					
 					if (deleteAID.size() > 0) {
 						for (AID aid : deleteAID) {
 							try {

@@ -283,13 +283,19 @@ public class GPJTool {
 
 					service.discoverCardProperties();
 					
+					AIDRegistry registry = service.getStatus();
+				
 					if (deleteAID.size() > 0) {
 						for (AID aid : deleteAID) {
 							try {
 								service.deleteAID(aid, deleteDeps);
 							} catch (CardException ce) {
-								System.out.println("Could not delete AID: " + aid);
-								// This is when the applet is not there, ignore
+								if (!registry.entries.contains(aid)) {
+									System.out.println("Could not delete AID (not present on card): " + aid);
+								} else {
+									System.out.println("Could not delete AID: " + aid);
+									// This is when the applet is not there, ignore
+								}
 							}
 						}
 					}
@@ -316,7 +322,7 @@ public class GPJTool {
 
 					}
 					if (listApplets) {
-						AIDRegistry registry = service.getStatus();
+						registry = service.getStatus();
 						for (AIDRegistryEntry e : registry) {
 							AID aid = e.getAID();
 							System.out.println("AID: " + GPUtils.byteArrayToString(aid.getBytes()) + " (" + GPUtils.byteArrayToReadableString(aid.getBytes()) + ")");

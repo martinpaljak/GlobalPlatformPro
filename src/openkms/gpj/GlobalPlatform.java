@@ -189,9 +189,9 @@ public class GlobalPlatform {
 					sdAID = entry.getValue();
 					System.err.println("Selected Security Domain " + entry.getKey() + " " + entry.getValue().toString());
 					break;
+				} else if (sw != 0x6A82) {
+					System.err.println("Failed to select SD " + entry.getValue().toString() + ", SW: " + GPUtils.swToString(sw));
 				}
-				System.err.println("Failed to select Security Domain " + entry.getKey() + " " + entry.getValue().toString() + ", SW: "
-						+ GPUtils.swToString(sw));
 			}
 			if (sdAID == null) {
 				throw new GPException(sw, "Could not select any of the known Security Domains!");

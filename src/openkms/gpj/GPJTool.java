@@ -41,7 +41,8 @@ public class GPJTool {
 		boolean loadParam = false;
 		boolean useHash = false;
 		boolean verbose = false;
-
+		boolean format = false;
+		
 		int apduMode = GlobalPlatform.APDU_CLR;
 
 		Vector<InstallEntry> installs = new Vector<InstallEntry>();
@@ -108,6 +109,8 @@ public class GPJTool {
 					deleteAID.add(new AID(aid));
 				} else if (args[i].equals("-deletedeps")) {
 					deleteDeps = true;
+				} else if (args[i].equals("-format")) {
+					format = true;
 				} else if (args[i].equals("-loadsize")) {
 					i++;
 					loadSize = Integer.parseInt(args[i]);
@@ -289,13 +292,21 @@ public class GPJTool {
 						for (AID aid : deleteAID) {
 							try {
 								service.deleteAID(aid, deleteDeps);
-							} catch (CardException ce) {
+							} catch (GPException gpe) {
 								if (!registry.entries.contains(aid)) {
 									System.out.println("Could not delete AID (not present on card): " + aid);
 								} else {
 									System.out.println("Could not delete AID: " + aid);
-									// This is when the applet is not there, ignore
+									gpe.printStackTrace();
 								}
+							}
+						}
+					} else if (format) {
+						for (AIDRegistryEntry entry : registry.allPackages()) {
+							try {
+								service.deleteAID(entry.getAID(), true);
+							} catch (GPException e) {
+								System.out.println("Could not delete AID when formatting: " + entry.getAID() + " : " + e.sw);
 							}
 						}
 					}

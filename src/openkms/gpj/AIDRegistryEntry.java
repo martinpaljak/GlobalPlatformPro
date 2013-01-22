@@ -31,8 +31,8 @@ import java.util.List;
  * Describes one entry of the card registry, consisting of
  * <UL>
  * <LI>application ID (as {@link AID})
- * <LI>the live cycle status (as integer)
- * <LI>the priveledges (in encoded form as integer)
+ * <LI>the life cycle status (as integer)
+ * <LI>the privileges (in encoded form as integer)
  * <LI>the list of ?? (as array of {@link AID AID's}
  * <LI>and the kind
  * </UL>

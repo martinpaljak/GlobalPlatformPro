@@ -687,7 +687,7 @@ public class GlobalPlatform {
 	 *            identifier of the file to delete
 	 * @param deleteDeps
 	 *            if true delete dependencies as well
-	 * @throws GPDeleteException
+	 * @throws GPDelete
 	 *             if the delete command fails with a non 9000 response status
 	 * @throws CardException
 	 *             for low-level communication errors
@@ -699,7 +699,7 @@ public class GlobalPlatform {
 			bo.write(aid.getLength());
 			bo.write(aid.getBytes());
 		} catch (IOException ioe) {
-
+			throw new RuntimeException(ioe);
 		}
 		CommandAPDU delete = new CommandAPDU(CLA_GP, DELETE, 0x00, deleteDeps ? 0x80 : 0x00, bo.toByteArray());
 		ResponseAPDU response = transmit(delete);

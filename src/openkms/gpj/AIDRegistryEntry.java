@@ -178,10 +178,62 @@ public class AIDRegistryEntry {
 	 */
 	public String toString() {
 		String result = "";
-		result = result + "AID: " + aid + ", LC: " + lifeCycleState + ", PR: " + privileges + ", Kind: " + kind.toShortString();
+		result += "AID: " + aid + ", " + lifeCycleState + ", " + privileges + ", Kind: " + kind.toShortString();
+
 		for (AID a : executableAIDS) {
 			result = result + "\n  " + a;
 		}
 		return result;
+	}
+
+	public String getLifeCycleString() {
+		switch (kind) {
+		case IssuerSecurityDomain:
+			switch (lifeCycleState) {
+			case 0x1:
+				return "OP_READY";
+			case 0x7:
+				return "INITIALIZED";
+			case 0xF:
+				return "SECURED";
+			case 0x7F:
+				return "CARD_LOCKED";
+			case 0xFF:
+				return "TERMINATED";
+			default:
+				return "ERROR";
+			}
+		case Application:
+			if (lifeCycleState == 0x3) {
+				return "INSTALLED";
+			} else if (lifeCycleState <= 0x7F) {
+				return "SELECTABLE";
+			} else if (lifeCycleState > 0x83) {
+				return "LOCKED";
+			}
+		case ExecutableLoadFilesAndModules:
+			if (lifeCycleState == 0x1) {
+				return "LOADED";
+			} else {
+				return "ERROR";
+			}
+		default:
+			return "ERROR";
+		}
+	}
+
+	public String getPrivilegesString() {
+		String result = "";
+		if ((privileges & (1<<4)) != 0) {
+			result += "Card lock, ";
+		}
+		if ((privileges & (1<<3)) != 0) {
+			result += "Card terminate, ";
+		}
+		if ((privileges & (1<<2)) != 0) {
+			result += "Default selected, ";
+		}
+
+		return result.trim() + " (" + Integer.toHexString(privileges) + ")";
 	}
 }

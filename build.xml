@@ -8,8 +8,8 @@
     <mkdir dir="${build}"/>
   </target>
 
-  <target name="compile" depends="init" description="compile the source ">
-    <javac srcdir="${src}" destdir="${build}" includeantruntime="false"/>
+  <target name="compile" depends="init" description="compile the source">
+    <javac srcdir="${src}" destdir="${build}" includeantruntime="false" source="1.6" target="1.6"/>
   </target>
 
   <target name="dist" depends="compile" description="generate the distribution">

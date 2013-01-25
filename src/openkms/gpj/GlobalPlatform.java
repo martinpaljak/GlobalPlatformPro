@@ -210,19 +210,19 @@ public class GlobalPlatform {
 		// OP201 cards don't support this command
 		// Card data
 		CommandAPDU command = new CommandAPDU(CLA_GP, ISO7816.INS_GET_DATA, 0x00, 0x66, 256);
-		ResponseAPDU resp = channel.transmit(command);
-		if (resp.getSW() == 0x6A88) {
+		ResponseAPDU resp = transmit(command);
+		if (resp.getSW() == 0x6A86) {
 			System.out.println("GET DATA(CardData) not supported, Open Platform 2.0.1 card?");
 		} else {
 			// IIN
 			command = new CommandAPDU(CLA_GP, ISO7816.INS_GET_DATA, 0x00, 0x42, 256);
-			resp = channel.transmit(command);
+			resp = transmit(command);
 			command = new CommandAPDU(CLA_GP, ISO7816.INS_GET_DATA, 0x00, 0x45, 256);
-			resp = channel.transmit(command);
+			resp = transmit(command);
 			command = new CommandAPDU(CLA_GP, ISO7816.INS_GET_DATA, 0x00, 0xE0, 256);
-			resp = channel.transmit(command);
+			resp = transmit(command);
 			command = new CommandAPDU(CLA_GP, ISO7816.INS_GET_DATA, 0x00, 0xC1, 256);
-			resp = channel.transmit(command);
+			resp = transmit(command);
 		}
 
 		// Query the registry to find the actual SD AID, to be used in further commands (as selection can succeed with truncated AID)

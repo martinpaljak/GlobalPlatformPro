@@ -214,6 +214,18 @@ public class AIDRegistryEntry {
 		case ExecutableLoadFilesAndModules:
 			if (lifeCycleState == 0x1) {
 				return "LOADED";
+			} else if (lifeCycleState == 0x00) {
+				// OP201
+				return "LOGICALLY_DELETED";
+			} else {
+				return "ERROR";
+			}
+		case ExecutableLoadFiles:
+			if (lifeCycleState == 0x1) {
+				return "LOADED";
+			} else if (lifeCycleState == 0x00) {
+				// OP201
+				return "LOGICALLY_DELETED";
 			} else {
 				return "ERROR";
 			}
@@ -223,17 +235,47 @@ public class AIDRegistryEntry {
 	}
 
 	public String getPrivilegesString() {
+		ArrayList<String> privs = new ArrayList<String>();
+		
+		int r = privileges;
+		
+		if (r == 0) {
+			privs.add("(NONE)");
+		} else {
+			if ((r & (1<<7)) != 0) {
+				r &= ~(1<<7);
+				privs.add("Security Domain");
+			}
+			if ((r & (1<<4)) != 0) {
+				r &= ~(1<<4);
+				privs.add("Card lock");
+			}
+			if ((r & (1<<3)) != 0) {
+				r &= ~(1<<3);
+				privs.add("Card terminate");
+			}
+			if ((r & (1<<2)) != 0) {
+				r &= ~(1<<2);
+				privs.add("Default selected");
+			}
+			if ((r & (1<<1)) != 0) {
+				r &= ~(1<<1);
+				privs.add("CVM (PIN) management");
+			}
+		}
 		String result = "";
-		if ((privileges & (1<<4)) != 0) {
-			result += "Card lock, ";
+		for (int i = 0; i < privs.size(); i++) {
+			if (i != 0) {
+				result += ", ";
+			}
+			result += privs.get(i);
 		}
-		if ((privileges & (1<<3)) != 0) {
-			result += "Card terminate, ";
+		
+		// TODO: Wait until actual cards discovered
+		if (r>0) {
+			result += " " + Integer.toHexString(r);
 		}
-		if ((privileges & (1<<2)) != 0) {
-			result += "Default selected, ";
-		}
-
-		return result.trim() + " (" + Integer.toHexString(privileges) + ")";
+		
+		return result.trim();
 	}
 }

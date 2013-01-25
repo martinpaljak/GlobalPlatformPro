@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.NoSuchAlgorithmException;
+import java.util.List;
 import java.util.Vector;
 
 import javax.smartcardio.Card;
@@ -42,12 +43,13 @@ public class GPJTool {
 		boolean useHash = false;
 		boolean verbose = false;
 		boolean format = false;
+		boolean listReaders = false;
 		
 		int apduMode = GlobalPlatform.APDU_CLR;
 
 		Vector<InstallEntry> installs = new Vector<InstallEntry>();
-
-		try {
+		
+		try {				
 			for (int i = 0; i < args.length; i++) {
 
 				if (args[i].equals("-h") || args[i].equals("-help") || args[i].equals("--help")) {
@@ -58,6 +60,8 @@ public class GPJTool {
 				// All other options.
 				if (args[i].equals("-v") || args[i].equals("-verbose") || args[i].equals("-debug")) {
 					verbose = true;
+				} else if (args[i].equals("-readers")) {
+					listReaders = true;
 				} else if (args[i].equals("-list")) {
 					listApplets = true;
 				} else if (args[i].equals("-keyset")) {
@@ -224,21 +228,24 @@ public class GPJTool {
 			// Set necessary parameters for seamless PC/SC access.
 			// This does not work with multiarch and is not needed with OpenJDK 7
 			if (System.getProperty("os.name").equalsIgnoreCase("Linux")) {
-				// Debian
-				if (new File("/usr/lib/libpcsclite.so").exists())
+				if (new File("/usr/lib/libpcsclite.so").exists()) {
+					// Debian
 					System.setProperty("sun.security.smartcardio.library", "/usr/lib/libpcsclite.so");
-				// Ubuntu
-				else if (new File("/lib/libpcsclite.so").exists())
+				} else if (new File("/lib/libpcsclite.so").exists()) {
+					// Ubuntu
 					System.setProperty("sun.security.smartcardio.library", "/lib/libpcsclite.so");
+				}
 			}
-
+			
 			TerminalFactory tf = TerminalFactory.getInstance("PC/SC", null);
 			CardTerminals terminals = tf.terminals();
+			List<CardTerminal> terms = terminals.list();
 
-			if ((terminals.list().size() > 0) && verbose) {
-				System.out.println("Found readers:");
-				for (CardTerminal terminal : terminals.list()) {
-					System.out.println("  " + terminal.getName());
+			// list readers in verbose mode and with -readers
+			if (((terms.size() > 0) && verbose) || listReaders) {
+				System.out.println("# Detected readers");
+				for (CardTerminal term : terms) {
+					System.out.println(term.getName());
 				}
 				System.out.println();
 			}
@@ -283,7 +290,7 @@ public class GPJTool {
 						loadSize -= neededExtraSize;
 					}
 					service.openSecureChannel(keySet, 0, GlobalPlatform.SCP_ANY, apduMode);
-
+					// Try to read Card Data and discover actual SD AID
 					service.discoverCardProperties();
 					
 					AIDRegistry registry = service.getStatus();
@@ -306,7 +313,7 @@ public class GPJTool {
 							try {
 								service.deleteAID(entry.getAID(), true);
 							} catch (GPException e) {
-								System.out.println("Could not delete AID when formatting: " + entry.getAID() + " : " + e.sw);
+								System.out.println("Could not delete AID when formatting: " + entry.getAID() + " : 0x" + Integer.toHexString(e.sw));
 							}
 						}
 					}
@@ -351,7 +358,9 @@ public class GPJTool {
 					// javax.smartcardio is buggy
 					String jvm_version = System.getProperty("java.version");
 					if (jvm_version.startsWith("1.7") || jvm_version.startsWith("1.6")) {
-						c.disconnect(false);
+						if (c != null) {
+							c.disconnect(false);
+						}
 					}
 				}
 			}
@@ -379,6 +388,7 @@ public class GPJTool {
 		System.out.println("");
 		System.out.println("Options:");
 		System.out.println(" -v|-verbose       Print APDU-s exchanged with the card");
+		System.out.println(" -readers          Print all found card raders");
 		System.out.println(" -sdaid <aid>      Security Domain AID, default a000000003000000");
 		System.out.println(" -keyset <num>     use key set <num>, default 0");
 		System.out.println(" -mode <apduMode>  use APDU mode, CLR, MAC, or ENC, default CLR");

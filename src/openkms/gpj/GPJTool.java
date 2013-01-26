@@ -344,7 +344,7 @@ public class GPJTool {
 						for (AIDRegistryEntry e : registry) {
 							AID aid = e.getAID();
 							System.out.println("AID: " + GPUtils.byteArrayToString(aid.getBytes()) + " (" + GPUtils.byteArrayToReadableString(aid.getBytes()) + ")");
-							System.out.println("     " + e.getKind().toShortString() + " " + e.getLifeCycleString() + ", " + e.getPrivilegesString());
+							System.out.println("     " + e.getKind().toShortString() + " " + e.getLifeCycleString() + ": " + e.getPrivilegesString());
 							
 							for (AID a : e.getExecutableAIDs()) {
 								System.out.println("     " + GPUtils.byteArrayToString(a.getBytes()) + " (" + GPUtils.byteArrayToReadableString(a.getBytes()) + ")");

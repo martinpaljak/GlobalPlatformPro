@@ -8,7 +8,7 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 3.0 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -27,7 +27,7 @@ import java.util.List;
 
 /**
  * One entry in the card registry.
- * 
+ *
  * Describes one entry of the card registry, consisting of
  * <UL>
  * <LI>application ID (as {@link AID})
@@ -36,7 +36,7 @@ import java.util.List;
  * <LI>the list of ?? (as array of {@link AID AID's}
  * <LI>and the kind
  * </UL>
- * 
+ *
  */
 public class AIDRegistryEntry {
 
@@ -48,7 +48,7 @@ public class AIDRegistryEntry {
 
 		/**
 		 * Convert a kind into a three letter string.
-		 * 
+		 *
 		 * @return a three letter abbreviation
 		 */
 		public String toShortString() {
@@ -68,19 +68,19 @@ public class AIDRegistryEntry {
 		}
 	}
 
-	private AID aid;
+	private final AID aid;
 
-	private int lifeCycleState;
+	private final int lifeCycleState;
 
-	private int privileges;
+	private final int privileges;
 
-	private List<AID> executableAIDS;
+	private final List<AID> executableAIDS;
 
-	private Kind kind;
+	private final Kind kind;
 
 	/**
 	 * Create a new entry.
-	 * 
+	 *
 	 * @param aid
 	 *            the application ID
 	 * @param lifeCycleState
@@ -98,7 +98,7 @@ public class AIDRegistryEntry {
 
 	/**
 	 * Add an executable application ID to this entry.
-	 * 
+	 *
 	 * @param aid
 	 *            application ID
 	 */
@@ -108,7 +108,7 @@ public class AIDRegistryEntry {
 
 	/**
 	 * Return the application ID of this entry.
-	 * 
+	 *
 	 * @return application ID
 	 */
 	public AID getAID() {
@@ -117,7 +117,7 @@ public class AIDRegistryEntry {
 
 	/**
 	 * Return the life cycle state of this entry.
-	 * 
+	 *
 	 * @return live cycle state
 	 */
 	public int getLifeCycleState() {
@@ -126,7 +126,7 @@ public class AIDRegistryEntry {
 
 	/**
 	 * Return the priveledges of this entry.
-	 * 
+	 *
 	 * @return priveledges, encoded into an int
 	 */
 	public int getPrivileges() {
@@ -135,7 +135,7 @@ public class AIDRegistryEntry {
 
 	/**
 	 * Return the kind of this entry.
-	 * 
+	 *
 	 * @return kind
 	 */
 	public Kind getKind() {
@@ -144,16 +144,16 @@ public class AIDRegistryEntry {
 
 	/**
 	 * Return true if this entry describes a package.
-	 * 
+	 *
 	 * @return true if this entry is a package
 	 */
 	public boolean isPackage() {
-		return kind == Kind.ExecutableLoadFilesAndModules || kind == Kind.ExecutableLoadFiles;
+		return (kind == Kind.ExecutableLoadFilesAndModules) || (kind == Kind.ExecutableLoadFiles);
 	}
 
 	/**
 	 * Return true if this entry describes an applet.
-	 * 
+	 *
 	 * @return true if this entry is an applet
 	 */
 	public boolean isApplet() {
@@ -162,7 +162,7 @@ public class AIDRegistryEntry {
 
 	/**
 	 * Return all executable application ID's of this entry.
-	 * 
+	 *
 	 * @return application ID's
 	 */
 	public List<AID> getExecutableAIDs() {
@@ -173,7 +173,7 @@ public class AIDRegistryEntry {
 
 	/**
 	 * Return a string representation of this entry.
-	 * 
+	 *
 	 * @return description
 	 */
 	public String toString() {
@@ -210,6 +210,8 @@ public class AIDRegistryEntry {
 				return "SELECTABLE";
 			} else if (lifeCycleState > 0x83) {
 				return "LOCKED";
+			} else {
+				return "ERROR";
 			}
 		case ExecutableLoadFilesAndModules:
 			if (lifeCycleState == 0x1) {
@@ -236,9 +238,9 @@ public class AIDRegistryEntry {
 
 	public String getPrivilegesString() {
 		ArrayList<String> privs = new ArrayList<String>();
-		
+
 		int r = privileges;
-		
+
 		if (r == 0) {
 			privs.add("(NONE)");
 		} else {
@@ -270,12 +272,12 @@ public class AIDRegistryEntry {
 			}
 			result += privs.get(i);
 		}
-		
+
 		// TODO: Wait until actual cards discovered
 		if (r>0) {
 			result += " " + Integer.toHexString(r);
 		}
-		
+
 		return result.trim();
 	}
 }

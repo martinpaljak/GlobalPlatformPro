@@ -16,9 +16,10 @@ import javax.smartcardio.CardTerminal;
 import javax.smartcardio.CardTerminals;
 import javax.smartcardio.TerminalFactory;
 
+
 public class GPJTool {
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws Exception {
 
 		final class InstallEntry {
 			AID appletAID;
@@ -31,7 +32,7 @@ public class GPJTool {
 		int keySet = 0;
 		byte[][] keys = { GlobalPlatform.defaultEncKey, GlobalPlatform.defaultMacKey, GlobalPlatform.defaultKekKey };
 		AID sdAID = null;
-		int diver = GlobalPlatform.DIVER_NONE;
+		int diver = KeySet.NONE;
 		Vector<AID> deleteAID = new Vector<AID>();
 		boolean deleteDeps = false;
 
@@ -43,13 +44,14 @@ public class GPJTool {
 		boolean useHash = false;
 		boolean verbose = false;
 		boolean format = false;
+		boolean debug = false;
 		boolean listReaders = false;
-		
+
 		int apduMode = GlobalPlatform.APDU_CLR;
 
 		Vector<InstallEntry> installs = new Vector<InstallEntry>();
-		
-		try {				
+
+		try {
 			for (int i = 0; i < args.length; i++) {
 
 				if (args[i].equals("-h") || args[i].equals("-help") || args[i].equals("--help")) {
@@ -58,7 +60,7 @@ public class GPJTool {
 				}
 
 				// All other options.
-				if (args[i].equals("-v") || args[i].equals("-verbose") || args[i].equals("-debug")) {
+				if (args[i].equals("-v") || args[i].equals("-verbose")) {
 					verbose = true;
 				} else if (args[i].equals("-readers")) {
 					listReaders = true;
@@ -67,7 +69,7 @@ public class GPJTool {
 				} else if (args[i].equals("-keyset")) {
 					i++;
 					keySet = Integer.parseInt(args[i]);
-					if (keySet <= 0 || keySet > 127) {
+					if ((keySet <= 0) || (keySet > 127)) {
 						throw new IllegalArgumentException("Key set number " + keySet + " out of range.");
 					}
 				} else if (args[i].equals("-sdaid")) {
@@ -80,15 +82,12 @@ public class GPJTool {
 						throw new IllegalArgumentException("Malformed SD AID: " + args[i]);
 					}
 					sdAID = new AID(aid);
-					if (AID.SD_AIDS.get(AID.GEMALTO).equals(sdAID)) {
-						byte[] gemMotherKey = GlobalPlatform.SPECIAL_MOTHER_KEYS.get(AID.GEMALTO);
-						keys = new byte[][] { gemMotherKey, gemMotherKey, gemMotherKey };
-						diver = GlobalPlatform.DIVER_VISA2;
-					}
 				} else if (args[i].equals("-visa2")) {
-					diver = GlobalPlatform.DIVER_VISA2;
+					diver = KeySet.VISA2;
+					apduMode = GlobalPlatform.APDU_MAC;
 				} else if (args[i].equals("-emv")) {
-					diver = GlobalPlatform.DIVER_EMV;
+					diver = KeySet.EMV;
+					apduMode = GlobalPlatform.APDU_MAC;
 				} else if (args[i].equals("-mode")) {
 					i++;
 					// TODO: RMAC modes
@@ -115,10 +114,12 @@ public class GPJTool {
 					deleteDeps = true;
 				} else if (args[i].equals("-format")) {
 					format = true;
+				} else if (args[i].equals("-debug")) {
+					debug = true;
 				} else if (args[i].equals("-loadsize")) {
 					i++;
 					loadSize = Integer.parseInt(args[i]);
-					if (loadSize <= 16 || loadSize > 255) {
+					if ((loadSize <= 16) || (loadSize > 255)) {
 						throw new IllegalArgumentException("Load size " + loadSize + " out of range.");
 					}
 				} else if (args[i].equals("-loadsep")) {
@@ -151,7 +152,7 @@ public class GPJTool {
 					AID packageAID = null;
 					int priv = 0;
 					byte[] param = null;
-					while (i < args.length && current < totalOpts) {
+					while ((i < args.length) && (current < totalOpts)) {
 						if (args[i].equals("-applet")) {
 							i++;
 							byte[] aid = GPUtils.stringToByteArray(args[i]);
@@ -204,13 +205,14 @@ public class GPJTool {
 					String[] keysOpt = { "-enc", "-mac", "-kek" };
 					int index = -1;
 					for (int k = 0; k < keysOpt.length; k++) {
-						if (args[i].equals(keysOpt[k]))
+						if (args[i].equals(keysOpt[k])) {
 							index = k;
+						}
 					}
 					if (index >= 0) {
 						i++;
 						keys[index] = GPUtils.stringToByteArray(args[i]);
-						if (keys[index] == null || keys[index].length != 16) {
+						if ((keys[index] == null) || (keys[index].length != 16)) {
 							throw new IllegalArgumentException("Wrong " + keysOpt[index].substring(1).toUpperCase() + " key: " + args[i]);
 						}
 					} else {
@@ -218,44 +220,56 @@ public class GPJTool {
 					}
 				}
 			}
-		} catch (Exception e) {
+		} catch (IllegalArgumentException e) {
 			e.printStackTrace();
 			usage();
 			System.exit(1);
 		}
 
+		// Do the actual work
 		try {
-			// Set necessary parameters for seamless PC/SC access.
-			// This does not work with multiarch and is not needed with OpenJDK 7
+			// Set necessary parameters for seamless PC/SC access. OpenJDK has wrong paths (without .1)
+			// See http://ludovicrousseau.blogspot.com.es/2013/03/oracle-javaxsmartcardio-failures.html
 			if (System.getProperty("os.name").equalsIgnoreCase("Linux")) {
-				if (new File("/usr/lib/libpcsclite.so").exists()) {
+				if (new File("/usr/lib/libpcsclite.so.1").exists()) {
 					// Debian
-					System.setProperty("sun.security.smartcardio.library", "/usr/lib/libpcsclite.so");
-				} else if (new File("/lib/libpcsclite.so").exists()) {
+					System.setProperty("sun.security.smartcardio.library", "/usr/lib/libpcsclite.so.1");
+				} else if (new File("/lib/libpcsclite.so.1").exists()) {
 					// Ubuntu
-					System.setProperty("sun.security.smartcardio.library", "/lib/libpcsclite.so");
+					System.setProperty("sun.security.smartcardio.library", "/lib/libpcsclite.so.1");
 				}
 			}
 			
 			TerminalFactory tf = TerminalFactory.getInstance("PC/SC", null);
+			// OSX is horribly broken. Use JNA based approach if not already
+			// installed and used as default
+			if (System.getProperty("os.name").equalsIgnoreCase("Mac OS X")) {
+				if (tf.getProvider().getName() != jnasmartcardio.Smartcardio.PROVIDER_NAME) {
+					tf = TerminalFactory.getInstance("PC/SC", null, new jnasmartcardio.Smartcardio());
+				}
+			}
+			if (debug)
+				System.out.println("Using PC/SC provier: " + tf.getProvider().getName());
+			
 			CardTerminals terminals = tf.terminals();
 			List<CardTerminal> terms = terminals.list();
 
-			// list readers in verbose mode and with -readers
-			if (((terms.size() > 0) && verbose) || listReaders) {
+			// list readers in debug mode and with -readers
+			if (debug || listReaders) {
 				System.out.println("# Detected readers");
 				for (CardTerminal term : terms) {
-					System.out.println(term.getName());
+					System.out.println(term.getName() + (term.isCardPresent() ? "  CARD" : " EMPTY"));
 				}
 				System.out.println();
 			}
+
 			
-			// Use State.ALL because older OS X Java did now list readers with cards through Java.
-			for (CardTerminal terminal : terminals.list(CardTerminals.State.ALL)) {
+			// Do what is needed, conncting to all terminals with a reader
+			for (CardTerminal terminal : terminals.list(CardTerminals.State.CARD_PRESENT)) {
 				Card c = null;
 				try {
-					// Wrap the terminal with a loggin wrapper if needed.
-					if (verbose) {
+					// Wrap the terminal with a logging wrapper if needed.
+					if (debug) {
 						terminal = LoggingCardTerminal.getInstance(terminal);
 					}
 
@@ -270,31 +284,32 @@ public class GPJTool {
 							System.err.println("  TIP: Make sure that the card is properly inserted and the chip is clean!");
 							continue;
 						} else {
-							System.err.println("Could not read card!");
+							System.err.println("Could not read card in " + terminal.getName());
 							e.printStackTrace();
 							continue;
 						}
 					}
 
-					System.out.println("Found card in reader: " + terminal.getName());
-					System.out.println("ATR: " + GPUtils.byteArrayToString(c.getATR().getBytes()));
+					if (verbose) {
+						System.out.println("Found card in reader: " + terminal.getName());
+						System.out.println("ATR: " + GPUtils.byteArrayToString(c.getATR().getBytes()));
+					}
 					CardChannel channel = c.getBasicChannel();
 					GlobalPlatform service = (sdAID == null) ? new GlobalPlatform(channel) : new GlobalPlatform(sdAID, channel);
+					service.setVerbose(verbose);
 					service.open();
 					service.setKeys(keySet, keys[0], keys[1], keys[2], diver);
-					
+
 					// TODO: make the APDU mode a parameter, properly adjust
 					// loadSize accordingly
 					int neededExtraSize = apduMode == GlobalPlatform.APDU_CLR ? 0 : (apduMode == GlobalPlatform.APDU_MAC ? 8 : 16);
-					if (loadSize + neededExtraSize > GlobalPlatform.defaultLoadSize) {
+					if ((loadSize + neededExtraSize) > GlobalPlatform.defaultLoadSize) {
 						loadSize -= neededExtraSize;
 					}
 					service.openSecureChannel(keySet, 0, GlobalPlatform.SCP_ANY, apduMode);
-					// Try to read Card Data and discover actual SD AID
-					service.discoverCardProperties();
-					
+
 					AIDRegistry registry = service.getStatus();
-				
+
 					if (deleteAID.size() > 0) {
 						for (AID aid : deleteAID) {
 							try {
@@ -345,39 +360,40 @@ public class GPJTool {
 							AID aid = e.getAID();
 							System.out.println("AID: " + GPUtils.byteArrayToString(aid.getBytes()) + " (" + GPUtils.byteArrayToReadableString(aid.getBytes()) + ")");
 							System.out.println("     " + e.getKind().toShortString() + " " + e.getLifeCycleString() + ": " + e.getPrivilegesString());
-							
+
 							for (AID a : e.getExecutableAIDs()) {
 								System.out.println("     " + GPUtils.byteArrayToString(a.getBytes()) + " (" + GPUtils.byteArrayToReadableString(a.getBytes()) + ")");
 							}
 							System.out.println();
 						}
 					}
-				} catch (Exception ce) {
-					ce.printStackTrace();
 				} finally {
 					// javax.smartcardio is buggy
-					String jvm_version = System.getProperty("java.version");
-					if (jvm_version.startsWith("1.7") || jvm_version.startsWith("1.6")) {
-						if (c != null) {
+					if (c != null) {
+						String jvm_version = System.getProperty("java.version");
+						if (jvm_version.startsWith("1.7") || jvm_version.startsWith("1.6")) {
 							c.disconnect(false);
 						}
 					}
 				}
 			}
 		} catch (CardException e) {
-			if (e.getCause().getMessage().equalsIgnoreCase("SCARD_E_NO_READERS_AVAILABLE"))
-				System.out.println("No smart card readers found");
-			else
+			e.printStackTrace();
+			if (e.getCause().getMessage().equalsIgnoreCase("SCARD_E_NO_READERS_AVAILABLE")) {
+				System.out.println("No smart card readers found (No readers available)");
+			} else {
 				e.printStackTrace();
+			}
 		} catch (NoSuchAlgorithmException e) {
-			if (e.getCause().getMessage().equalsIgnoreCase("SCARD_E_NO_SERVICE"))
+			if (e.getCause().getMessage().equalsIgnoreCase("SCARD_E_NO_SERVICE")) {
 				System.out.println("No smart card readers found (PC/SC service not running)");
-			else {
+			} else {
 				e.printStackTrace();
 			}
 		} catch (Exception e) {
 			System.out.println("Terminated by escaping exception: " + e.getClass().getName());
 			e.printStackTrace();
+			System.exit(1);
 		}
 
 	}
@@ -387,18 +403,20 @@ public class GPJTool {
 		System.out.println("  java -jar openkms-globalplatform.jar <options>");
 		System.out.println("");
 		System.out.println("Options:");
-		System.out.println(" -v|-verbose       Print APDU-s exchanged with the card");
+		System.out.println(" -debug            Print APDU-s exchanged with the card");
+		System.out.println(" -verbose          Print more information about card and ");
 		System.out.println(" -readers          Print all found card raders");
-		System.out.println(" -sdaid <aid>      Security Domain AID, default a000000003000000");
-		System.out.println(" -keyset <num>     use key set <num>, default 0");
-		System.out.println(" -mode <apduMode>  use APDU mode, CLR, MAC, or ENC, default CLR");
-		System.out.println(" -enc <key>        define ENC key, default: 40..4F");
-		System.out.println(" -mac <key>        define MAC key, default: 40..4F");
-		System.out.println(" -kek <key>        define KEK key, default: 40..4F");
+		System.out.println(" -sdaid <aid>      Security Domain AID (default: auto-detect)");
+		System.out.println(" -keyset <num>     use key set <num> (default: 0)");
+		System.out.println(" -mode <apduMode>  use APDU mode, CLR, MAC, or ENC (default: CLR)");
+		System.out.println(" -enc <key>        define ENC key (default: 40..4F)");
+		System.out.println(" -mac <key>        define MAC key (default: 40..4F)");
+		System.out.println(" -kek <key>        define KEK key (default: 40..4F)");
 		System.out.println(" -visa2            use VISA2 key diversification (only key set 0), default off");
 		System.out.println(" -emv              use EMV key diversification (only key set 0), default off");
 		System.out.println(" -deletedeps       also delete depending packages/applets, default off");
 		System.out.println(" -delete <aid>     delete package/applet");
+		System.out.println(" -format           format the card (try to delete all content)");
 		System.out.println(" -load <cap>       load <cap> file to the card, <cap> can be file name or URL");
 		System.out.println(" -loadsize <num>   load block size, default " + GlobalPlatform.defaultLoadSize);
 		System.out.println(" -loadsep          load CAP components separately, default off");

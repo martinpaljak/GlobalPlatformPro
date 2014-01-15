@@ -8,7 +8,7 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 3.0 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -22,30 +22,22 @@
 
 package openkms.gpj;
 
-import javax.smartcardio.CardException;
-
 /**
- * 
  * Root exception class for all global platform protocol errors.
  */
-public class GPException extends CardException {
+public class GPException extends Exception {
+
+	private static final long serialVersionUID = -642613357615559636L;
 
 	/**
-	 * 
-	 * Field to disable the serialVersionUID warning.
-	 */
-	public static final long serialVersionUID = 1L;
-
-	/**
-	 * 
 	 * Response status indicating the error, or 0 if not applicable.
 	 */
 	public final short sw;
 
 	/**
-	 * 
+	 *
 	 * Constructs a new GPException with the specified detail message.
-	 * 
+	 *
 	 * @param sw
 	 *            failing response status
 	 * @param message
@@ -54,5 +46,10 @@ public class GPException extends CardException {
 	public GPException(short sw, String message) {
 		super(message + " SW: " + GPUtils.swToString(sw));
 		this.sw = sw;
+	}
+
+	public GPException(String message) {
+		super(message);
+		this.sw = 0x0000;
 	}
 }

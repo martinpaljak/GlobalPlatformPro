@@ -15,7 +15,7 @@ public class LoggingCardTerminal extends CardTerminal {
 	// This code has been taken from Apache commons-codec 1.7
 	private static final char[] LOWER_HEX = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 	public static String encodeHexString(final byte[] data) {
-		
+
         final int l = data.length;
         final char[] out = new char[l << 1];
         // two characters form the hex value.
@@ -26,15 +26,17 @@ public class LoggingCardTerminal extends CardTerminal {
         return new String(out);
     }
 	// End of copied code from commons-codec
-	
+
 	protected static CardTerminal terminal = null;
 	private static LoggingCardTerminal instance;
-	
+
 	public static LoggingCardTerminal getInstance(CardTerminal term) {
-		if (instance == null)
+		if (instance == null) {
 			instance = new LoggingCardTerminal(term);
-		if (!term.equals(terminal))
+		}
+		if (!term.equals(terminal)) {
 			instance = new LoggingCardTerminal(term);
+		}
 		return instance;
 	}
 
@@ -70,18 +72,18 @@ public class LoggingCardTerminal extends CardTerminal {
 		return terminal.waitForCardPresent(arg0);
 	}
 
-	
+
 	public final class LoggingCard extends Card {
-		private Card card;
+		private final Card card;
 		private LoggingCard(CardTerminal term, String protocol) throws CardException {
 			card = terminal.connect(protocol);
 		}
-		
+
 		@Override
 		public void beginExclusive() throws CardException {
 			System.err.println("SCardBeginTransaction()");
 			System.err.flush();
-			card.beginExclusive();	
+			card.beginExclusive();
 		}
 
 		@Override
@@ -122,10 +124,10 @@ public class LoggingCardTerminal extends CardTerminal {
 		public byte[] transmitControlCommand(int arg0, byte[] arg1) throws CardException {
 			return null;
 		}
-		
+
 		class LoggingCardChannel extends CardChannel {
-			private CardChannel channel;
-			private Card card;
+			private final CardChannel channel;
+			private final Card card;
 			public LoggingCardChannel(Card card) {
 				this.card = card;
 				this.channel = card.getBasicChannel();
@@ -160,16 +162,17 @@ public class LoggingCardTerminal extends CardTerminal {
 					System.err.println();
 				}
 				System.err.flush();
-
-				ResponseAPDU response = channel.transmit(apdu);
 				
-				System.err.print("A<< (" + String.format("%04d", response.getData().length) + "+2)");
+				long t = System.currentTimeMillis();
+				ResponseAPDU response = channel.transmit(apdu);
+				long ms = System.currentTimeMillis() - t;
+				System.err.print("A<< (" + String.format("%04d", response.getData().length) + "+2) (" + ms + "ms)");
 				if (response.getData().length > 2) {
 					System.err.print(" " + encodeHexString(response.getData()));
 				}
 				System.err.println(" " + encodeHexString(Arrays.copyOfRange(response.getBytes(), response.getBytes().length-2, response.getBytes().length)));
 				System.err.flush();
-				
+
 				return response;
 			}
 
@@ -178,7 +181,7 @@ public class LoggingCardTerminal extends CardTerminal {
 				byte[] commandBytes = new byte[cmd.remaining()];
 		        cmd.get(commandBytes);
 		        cmd.position(0);
-		        
+
 				System.err.println("B>> " + card.getProtocol() + " (" + commandBytes.length + ") " + encodeHexString(commandBytes));
 				System.err.flush();
 				int response = channel.transmit(cmd, rsp);
@@ -188,7 +191,7 @@ public class LoggingCardTerminal extends CardTerminal {
 				System.err.println("B<< (" + responseBytes.length + ") " + encodeHexString(responseBytes));
 				System.err.flush();
 				return response;
-			}		
+			}
 		}
 	}
 }

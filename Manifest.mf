@@ -1,3 +1,5 @@
 Manifest-Version: 1.0
 Main-Class: openkms.gpj.GPJTool
+Class-path: lib/bcprov-jdk15on-150.jar
+Mame: openkms/gpj/
 Sealed: true

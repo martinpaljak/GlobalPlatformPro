@@ -8,7 +8,7 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 3.0 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -24,7 +24,7 @@ package openkms.gpj;
 
 /**
  * Constants interface for ISO 7816 (and friends).
- * 
+ *
  * @author Engelbert Hubbers (hubbers@cs.ru.nl)
  * @author Martijn Oostdijk (martijno@cs.ru.nl)
  * @author Martin Paljak
@@ -45,29 +45,19 @@ public interface ISO7816 {
 
 	public static final byte CLA_ISO7816 = (byte) 0x00;
 
-	public static final byte INS_ERASE_BINARY = 0x0E;
+	public static final byte INS_ERASE_BINARY_0E = 0x0E;
 
-	public static final byte INS_VERIFY = 0x20;
+	public static final byte INS_VERIFY_20 = 0x20;
 
-	public static final byte INS_CHANGE_CHV = 0x24;
+	public static final byte INS_CHANGE_CHV_24 = 0x24;
 
-	public static final byte INS_UNBLOCK_CHV = 0x2C;
+	public static final byte INS_UNBLOCK_CHV_2C = 0x2C;
 
-	public static final byte INS_DECREASE = 0x30;
+	public static final byte INS_EXTERNAL_AUTHENTICATE_82 = (byte) 0x82;
 
-	public static final byte INS_INCREASE = 0x32;
+	public static final byte INS_MUTUAL_AUTHENTICATE_82 = (byte) 0x82;
 
-	public static final byte INS_DECREASE_STAMPED = 0x34;
-
-	public static final byte INS_REHABILITATE_CHV = 0x44;
-
-	public static final byte INS_MANAGE_CHANNEL = 0x70;
-
-	public static final byte INS_EXTERNAL_AUTHENTICATE = (byte) 0x82;
-
-	public static final byte INS_MUTUAL_AUTHENTICATE = (byte) 0x82;
-
-	public static final byte INS_GET_CHALLENGE = (byte) 0x84;
+	public static final byte INS_GET_CHALLENGE_84 = (byte) 0x84;
 
 	public static final byte INS_ASK_RANDOM = (byte) 0x84;
 
@@ -93,10 +83,6 @@ public interface ISO7816 {
 
 	public static final byte INS_READ_RECORDS = (byte) 0xB2;
 
-	public static final byte INS_READ_BINARY_STAMPED = (byte) 0xB4;
-
-	public static final byte INS_READ_RECORD_STAMPED = (byte) 0xB6;
-
 	public static final byte INS_GET_RESPONSE = (byte) 0xC0;
 
 	public static final byte INS_ENVELOPE = (byte) 0xC2;
@@ -121,6 +107,7 @@ public interface ISO7816 {
 
 	public static final byte INS_DELETE_FILE = (byte) 0xE4;
 
+	///////////////////////////////////////////////////////
 	public static final short SW_BYTES_REMAINING_00 = (short) 0x6100;
 
 	public static final short SW_END_OF_FILE = (short) 0x6282;
@@ -131,19 +118,17 @@ public interface ISO7816 {
 
 	public static final short SW_SECURITY_STATUS_NOT_SATISFIED = (short) 0x6982;
 
-	public static final short SW_FILE_INVALID = (short) 0x6983;
+	public static final short SW_AUTHENTICATION_METHOD_BLOCKED = (short) 0x6983;
 
 	public static final short SW_DATA_INVALID = (short) 0x6984;
 
-	public static final short SW_CONDITIONS_NOT_SATISFIED = (short) 0x6985;
+	public static final short SW_CONDITIONS_OF_USE_NOT_SATISFIED = (short) 0x6985;
 
 	public static final short SW_COMMAND_NOT_ALLOWED = (short) 0x6986;
 
 	public static final short SW_EXPECTED_SM_DATA_OBJECTS_MISSING = (short) 0x6987;
 
 	public static final short SW_SM_DATA_OBJECTS_INCORRECT = (short) 0x6988;
-
-	public static final short SW_APPLET_SELECT_FAILED = (short) 0x6999;
 
 	public static final short SW_KEY_USAGE_ERROR = (short) 0x69C1;
 
@@ -173,7 +158,7 @@ public interface ISO7816 {
 
 	public static final short SW_CLA_NOT_SUPPORTED = (short) 0x6E00;
 
-	public static final short SW_UNKNOWN = (short) 0x6F00;
+	public static final short SW_NO_PRECISE_DIAGNOSIS = (short) 0x6F00;
 
 	public static final short SW_CARD_TERMINATED = (short) 0x6FFF;
 

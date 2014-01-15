@@ -8,7 +8,7 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 3.0 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -40,19 +40,19 @@ public class CapFile {
 	public static final String[] componentNames = { "Header", "Directory", "Import", "Applet", "Class", "Method", "StaticField", "Export",
 			"ConstantPool", "RefLocation", "Descriptor", "Debug" };
 
-	private HashMap<String, byte[]> capComponents = new HashMap<String, byte[]>();
+	private final HashMap<String, byte[]> capComponents = new HashMap<String, byte[]>();
 
 	private String packageName = null;
 
 	private AID packageAID = null;
 
-	private List<AID> appletAIDs = new ArrayList<AID>();
+	private final List<AID> appletAIDs = new ArrayList<AID>();
 
-	private List<byte[]> dapBlocks = new ArrayList<byte[]>();
+	private final List<byte[]> dapBlocks = new ArrayList<byte[]>();
 
-	private List<byte[]> loadTokens = new ArrayList<byte[]>();
+	private final List<byte[]> loadTokens = new ArrayList<byte[]>();
 
-	private List<byte[]> installTokens = new ArrayList<byte[]>();
+	private final List<byte[]> installTokens = new ArrayList<byte[]>();
 
 	public CapFile(InputStream in) throws IOException {
 		this(in, null);
@@ -74,7 +74,7 @@ public class CapFile {
 				}
 			}
 		}
-		
+
 		// Avoid a possible NPE
 		if (packageName == null) {
 			throw new RuntimeException("Could not figure out the package name of the applet!");
@@ -97,8 +97,9 @@ public class CapFile {
 			while (true) {
 				String fullName = "meta-inf/" + packageName.replace('/', '-') + names[i] + (index + 1);
 				byte[] contents = entries.get(fullName);
-				if (contents == null)
+				if (contents == null) {
 					break;
+				}
 				tables.get(i).add(contents);
 				index++;
 			}
@@ -160,8 +161,9 @@ public class CapFile {
 			ByteArrayOutputStream bos = new ByteArrayOutputStream();
 			byte[] buf = new byte[1024];
 			int c;
-			while ((c = in.read(buf)) > 0)
+			while ((c = in.read(buf)) > 0) {
 				bos.write(buf, 0, c);
+			}
 			result.put(entry.getName(), bos.toByteArray());
 		}
 		return result;
@@ -180,8 +182,9 @@ public class CapFile {
 	public int getCodeLength(boolean includeDebug) {
 		int result = 0;
 		for (String name : componentNames) {
-			if (!includeDebug && (name.equals("Debug") || name.equals("Descriptor")))
+			if (!includeDebug && (name.equals("Debug") || name.equals("Descriptor"))) {
 				continue;
+			}
 			byte[] data = capComponents.get(name);
 			if (data != null) {
 				result += data.length;
@@ -226,8 +229,9 @@ public class CapFile {
 			blocks = splitArray(bo.toByteArray(), blockSize);
 		} else {
 			for (String name : componentNames) {
-				if (!includeDebug && (name.equals("Debug") || name.equals("Descriptor")))
+				if (!includeDebug && (name.equals("Debug") || name.equals("Descriptor"))) {
 					continue;
+				}
 
 				byte[] currentComponent = capComponents.get(name);
 				if (currentComponent == null) {
@@ -253,11 +257,13 @@ public class CapFile {
 		byte[] result = new byte[getCodeLength(includeDebug)];
 		short offset = 0;
 		for (String name : componentNames) {
-			if (!includeDebug && (name.equals("Debug") || name.equals("Descriptor")))
+			if (!includeDebug && (name.equals("Debug") || name.equals("Descriptor"))) {
 				continue;
-			byte[] currentComponent = (byte[]) capComponents.get(name);
-			if (currentComponent == null)
+			}
+			byte[] currentComponent = capComponents.get(name);
+			if (currentComponent == null) {
 				continue;
+			}
 			System.arraycopy(currentComponent, 0, result, offset, currentComponent.length);
 			offset += currentComponent.length;
 		}
@@ -297,7 +303,7 @@ public class CapFile {
 		String result = "";
 		for (String name : componentNames) {
 			result = result + name + ".cap:\n";
-			byte[] b = (byte[]) capComponents.get(name);
+			byte[] b = capComponents.get(name);
 			if (b != null) {
 				result = result + GPUtils.byteArrayToString(b) + "\n";
 			} else {

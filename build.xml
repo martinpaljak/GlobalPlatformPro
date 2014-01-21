@@ -16,9 +16,15 @@
     </javac>
   </target>
   <target name="dist" depends="compile" description="generate the distribution">
-    <jar manifest="Manifest.mf" destfile="openkms-globalplatform.jar" filesetmanifest="skip">
-      <fileset dir="${build}"/>
-      <zipgroupfileset file="lib/jnasmartcardio.jar"/>
+    <java classname="proguard.ProGuard" fork="true" failonerror="true">
+      <arg line="@globalplatform.pro"/>
+      <classpath>
+        <pathelement location="ext/proguard.jar"/>
+      </classpath>
+    </java>
+    <jar manifest="Manifest.mf" destfile="openkms-globalplatform.jar">
+      <zipfileset src="lib/jnasmartcardio.jar"/>
+      <zipfileset src="optimized-globalplatform.jar" excludes="META-INF/BCKEY.*,org/bouncycastle/x509/"/>
     </jar>
   </target>
   <target name="clean" description="clean up">

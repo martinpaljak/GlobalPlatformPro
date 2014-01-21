@@ -179,11 +179,9 @@ public class GlobalPlatform {
 			CommandAPDU command = new CommandAPDU(ISO7816.CLA_ISO7816, ISO7816.INS_SELECT, 0x04, 0x00, 256);
 			ResponseAPDU resp = channel.transmit(command);
 			
-			if (resp.getSW() == 0x6283) {
-				throw new GPException("Could not select ISD: 6283 (CARD_LOCKED)");
-			} if (resp.getSW() == 0x6A82) {
+			if (resp.getSW() == 0x6A82) {
 				throw new GPException("Could not select ISD: 6A82 - maybe unfused JCOP?");
-			} else if (resp.getSW() == 0x9000) {
+			} else if (resp.getSW() == 0x9000 || resp.getSW() == 0x6283) {
 				// The security domain AID is in FCI.
 				byte [] fci = resp.getData();
 
@@ -197,7 +195,6 @@ public class GlobalPlatform {
 				// TODO: parse the maximum command size as well.
 			} else {
 				// Could not auto-detect ISD AID. Try known ones.
-				// FIXME: use an ordered list instead of unordered entrySet
 				short sw = 0;
 				for (Map.Entry<String, AID> entry : AID.SD_AIDS.entrySet()) {
 					command = new CommandAPDU(ISO7816.CLA_ISO7816, ISO7816.INS_SELECT, 0x04, 0x00, entry.getValue().getBytes());
@@ -211,7 +208,7 @@ public class GlobalPlatform {
 						System.err.println("Failed to select SD " + entry.getValue().toString() + ", SW: " + GPUtils.swToString(sw));
 					}
 				}
-				// Give up. The caller need to know the sdAID
+				// Give up. The caller needs to know the sdAID
 				if (sdAID == null) {
 					throw new GPException(sw, "Could not select any of the known Security Domains!");
 				}

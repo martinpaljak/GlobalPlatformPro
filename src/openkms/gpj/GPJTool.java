@@ -368,10 +368,11 @@ public class GPJTool {
 						}
 					}
 				} finally {
-					// javax.smartcardio is buggy
 					if (c != null) {
-						String jvm_version = System.getProperty("java.version");
-						if (jvm_version.startsWith("1.7") || jvm_version.startsWith("1.6")) {
+						if (tf.getProvider().getName().equalsIgnoreCase("JNA2PCSC")) {
+							c.disconnect(true);
+						} else {
+							// javax.smartcardio is buggy
 							c.disconnect(false);
 						}
 					}

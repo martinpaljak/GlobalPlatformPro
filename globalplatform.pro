@@ -1,4 +1,4 @@
--injars bin/
+-injars build
 -injars lib/bcprov-jdk15on-150.jar
 -libraryjars lib/jnasmartcardio.jar
 -libraryjars  <java.home>/lib/rt.jar:<java.home>/lib/jce.jar

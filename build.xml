@@ -1,13 +1,10 @@
 <?xml version="1.0"?>
 <project name="GlobalPlatform Java" default="dist" basedir=".">
   <description>ANT build file for OpenKMS GlobalPlatform</description>
-  <property name="src" location="src"/>
-  <property name="build" location="bin"/>
-  <target name="init">
-    <mkdir dir="${build}"/>
-  </target>
-  <target name="compile" depends="init" description="compile the source">
-    <javac srcdir="${src}" destdir="${build}" includeantruntime="false" source="1.6" target="1.6" debug="true" debuglevel="lines,vars,source">
+  <!-- Build the software -->
+  <target name="compile" description="compile the source">
+    <mkdir dir="build"/>
+    <javac srcdir="src" destdir="build" includeantruntime="false" excludes="**/tests/**" source="1.6" target="1.6" debug="true" debuglevel="lines,vars,source">
       <compilerarg value="-Xlint"/>
       <classpath>
         <pathelement location="lib/jnasmartcardio.jar"/>
@@ -15,6 +12,7 @@
       </classpath>
     </javac>
   </target>
+  <!-- Package it into a nice little JAR -->
   <target name="dist" depends="compile" description="generate the distribution">
     <java classname="proguard.ProGuard" fork="true" failonerror="true">
       <arg line="@globalplatform.pro"/>
@@ -28,8 +26,9 @@
     </jar>
     <delete file="optimized-globalplatform.jar"/>
   </target>
+  <!-- Clean the source tree -->
   <target name="clean" description="clean up">
-    <delete dir="${build}"/>
+    <delete dir="build"/>
     <delete file="openkms-globalplatform.jar"/>
   </target>
 </project>

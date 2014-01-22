@@ -26,6 +26,7 @@
       <zipfileset src="lib/jnasmartcardio.jar"/>
       <zipfileset src="optimized-globalplatform.jar" excludes="META-INF/BCKEY.*,org/bouncycastle/x509/"/>
     </jar>
+    <delete file="optimized-globalplatform.jar"/>
   </target>
   <target name="clean" description="clean up">
     <delete dir="${build}"/>

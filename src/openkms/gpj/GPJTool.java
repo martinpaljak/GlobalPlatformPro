@@ -48,7 +48,7 @@ public class GPJTool {
 
 		boolean verbose = false;
 		boolean debug = false;
-		boolean relaxed = false;
+		boolean relax = false;
 
 		boolean format = false;
 		boolean listReaders = false;
@@ -70,8 +70,8 @@ public class GPJTool {
 					verbose = true;
 				} else if (args[i].equals("-debug")) {
 					debug = true;
-				} else if (args[i].equals("-relaxed")) {
-					relaxed = true;
+				} else if (args[i].equals("-relax")) {
+					relax = true;
 				} else if (args[i].equals("-readers")) {
 					listReaders = true;
 				} else if (args[i].equals("-list")) {
@@ -293,7 +293,7 @@ public class GPJTool {
 					CardChannel channel = c.getBasicChannel();
 					GlobalPlatform service = new GlobalPlatform(channel);
 					service.setVerbose(verbose);
-					service.setStrict(!relaxed);
+					service.setStrict(!relax);
 					service.select(sdAID);
 
 					KeySet ks = new KeySet(keyID, keyVersion, keys[0], keys [1], keys[2], diver);
@@ -399,10 +399,11 @@ public class GPJTool {
 		System.out.println("  java -jar openkms-globalplatform.jar <options>");
 		System.out.println("");
 		System.out.println("Options:");
-		System.out.println(" -debug            Print APDU-s exchanged with the card");
-		System.out.println(" -verbose          Print more information about card and ");
-		System.out.println(" -readers          Print all found card raders");
-		System.out.println(" -sdaid <aid>      Security Domain AID (default: auto-detect)");
+		System.out.println(" -debug            print APDU-s exchanged with the card");
+		System.out.println(" -verbose          print more information about card and ");
+		System.out.println(" -readers          print all found card raders");
+		System.out.println(" -relax            relax checks (lockup warning!)");
+		System.out.println(" -sdaid <aid>      security Domain AID (default: auto-detect)");
 		System.out.println(" -keyver <num>     use key version <num> (default: 0)");
 		System.out.println(" -keyid <num>      use key ID <num> (default: 0)");
 		System.out.println(" -mode <apduMode>  use APDU mode, CLR, MAC, or ENC (default: MAC)");

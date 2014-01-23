@@ -81,7 +81,7 @@ public class GlobalPlatform {
 	public static final byte INS_GP_GET_STATUS_F2 = (byte) 0xF2;
 
 	// AID of the card successfully selected or null
-	protected AID sdAID = null;
+	public AID sdAID = null;
 
 	public static final byte[] defaultKey = { 0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F };
 
@@ -91,10 +91,11 @@ public class GlobalPlatform {
 
 	public static final int defaultLoadSize = 255;
 	protected SecureChannelWrapper wrapper = null;
-	protected CardChannel channel = null;
+	private CardChannel channel = null;
 	protected int scpVersion = SCP_ANY;
 	private final HashMap<Integer, KeySet> keys = new HashMap<Integer, KeySet>();
 
+	private byte[] cplc = null;
 	protected boolean verbose = false;
 	protected boolean debug = false;
 	protected boolean strict = true;
@@ -246,6 +247,7 @@ public class GlobalPlatform {
 		} else {
 			System.out.println("GET DATA(Key Information Template) not supported");
 		}
+
 		// Sequence Counter of the default Key Version Number
 		command = new CommandAPDU(CLA_GP, ISO7816.INS_GET_DATA, 0x00, 0xC1, 256);
 		resp = channel.transmit(command);
@@ -254,17 +256,6 @@ public class GlobalPlatform {
 		} else {
 			System.out.println("GET DATA(SSC) not supported");
 		}
-
-		// CPLC - not needed to have it.
-		command = new CommandAPDU(CLA_GP, ISO7816.INS_GET_DATA, 0x9F, 0x7F, 256);
-		resp = channel.transmit(command);
-		if (resp.getSW() == 0x9000) {
-			System.out.println("CPLC " + LoggingCardTerminal.encodeHexString(resp.getData()));
-		} else {
-			System.out.println("GET DATA(CPLC) not supported");
-		}
-
-
 	}
 
 	public static byte[] fetchCPLC(boolean iso, CardChannel channel) throws CardException {
@@ -278,7 +269,9 @@ public class GlobalPlatform {
 	}
 
 	public byte[] getCPLC() throws CardException {
-		return fetchCPLC(false, this.channel);
+		if (cplc == null)
+			cplc = fetchCPLC(false, this.channel);
+		return cplc;
 	}
 
 	/**
@@ -294,6 +287,14 @@ public class GlobalPlatform {
 	public void openSecureChannel(KeySet staticKeys, int scpVersion, int securityLevel)
 			throws CardException, GPException {
 
+		if (sdAID == null)
+			throw new IllegalStateException("No selected ISD!");
+
+		if (staticKeys.getKey(KeyType.MAC).equals(defaultKey) && strict) {
+			if (GlobalPlatformData.want_emv(getCPLC()) && !staticKeys.needsDiversity() && staticKeys.getKeyVersion() == 0x00)
+				printStrictWarning("Card probably requires EMV diversification but no diversification specified!");
+		}
+
 		if ((scpVersion < SCP_ANY) || (scpVersion > SCP_02_1B)) {
 			throw new IllegalArgumentException("Invalid SCP version.");
 		}
@@ -301,10 +302,6 @@ public class GlobalPlatform {
 		if ((scpVersion == SCP_02_0A) || (scpVersion == SCP_02_0B) || (scpVersion == SCP_02_1A) || (scpVersion == SCP_02_1B)) {
 			throw new IllegalArgumentException("Implicit secure channels cannot be initialized explicitly (use the constructor).");
 		}
-
-		//		if ((keySet < 0) || (keySet > 127)) {
-		//			throw new IllegalArgumentException("Invalid key set number.");
-		//		}
 
 		int mask = ~(APDU_MAC | APDU_ENC | APDU_RMAC);
 
@@ -402,7 +399,7 @@ public class GlobalPlatform {
 		response = transmit(externalAuthenticate);
 		sw = (short) response.getSW();
 		if (sw != ISO7816.SW_NO_ERROR) {
-			throw new GPException(sw, "External authenticate failed. SW: " + GPUtils.swToString(sw));
+			throw new GPException(sw, "External authenticate failed");
 		}
 		wrapper.setSecurityLevel(securityLevel);
 		if ((securityLevel & APDU_RMAC) != 0) {
@@ -905,6 +902,8 @@ public class GlobalPlatform {
 		}
 
 		private CommandAPDU wrap(CommandAPDU command) throws CardException {
+			if (debug) {
+			}
 			try {
 				if (rmac) {
 					rMac.reset();

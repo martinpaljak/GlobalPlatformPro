@@ -40,21 +40,21 @@ public final  class TLVUtils {
 		offset = skipLength(data, offset);
 		return offset;
 	}
-	
+
 	static short getTagLength(byte [] data, short offset) {
 		++offset; // FIXME: jumpOverTag
 		return getLength(data, offset);
 	}
-	
+
 	static int getTLVTag(byte [] data, short offset) {
 		return data[offset] & 0xFF;
 	}
-	
+
 	static String getTLVValueAsHex(byte [] data, short offset) {
 		short len = getTagLength(data, offset);
 		return LoggingCardTerminal.encodeHexString(Arrays.copyOfRange(data, offset + 2, offset + 2 + len));
 	}
-	
+
 	static byte[] getTLVValueAsBytes(byte [] data, short offset) {
 		short len = getTagLength(data, offset);
 		return Arrays.copyOfRange(data, offset + 2, offset + 2 + len);
@@ -65,7 +65,7 @@ public final  class TLVUtils {
 		return Arrays.copyOfRange(data, offset, offset + 2 + len);
 	}
 
-	
+
 	static int getTLVValueOffset(byte [] data, short offset) {
 		// FIXME
 		return offset+2;
@@ -75,7 +75,7 @@ public final  class TLVUtils {
 		offset = skipLength(data, offset);
 		return offset;
 	}
-	
+
 	static short getLength(byte [] data, short offset) {
 		return (short)(data[offset] & 0x00FF);
 	}
@@ -84,7 +84,7 @@ public final  class TLVUtils {
 		++offset; // FIXME
 		return (short) (offset + getLength(data, offset) +1 );
 	}
-	
+
 	static short findTag(byte [] data, short offset, byte tag) {
 		while (true) {
 			if (data[offset] == tag) {
@@ -94,4 +94,7 @@ public final  class TLVUtils {
 			}
 		}	 
 	}
+
+	// String functions
+
 }

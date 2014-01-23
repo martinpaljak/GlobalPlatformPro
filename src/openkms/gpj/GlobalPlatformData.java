@@ -1,6 +1,7 @@
 package openkms.gpj;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 
@@ -110,7 +111,41 @@ public class GlobalPlatformData {
 		offset = TLVUtils.skipTagAndLength(data, offset, (byte) 0x66);
 		offset = TLVUtils.skipTagAndLength(data, offset, (byte) 0x73);
 		offset = TLVUtils.findTag(data, offset, (byte) 0x60);
+	}
 
+
+	public static boolean want_emv(byte[] cplc) {
+		// G&D?
+		if (cplc[7] == 0x16 && cplc[8] == 0x71)
+			return true;
+		return false;
+	}
+	private static String bytesAsHex(byte[] data, short offset, int len) {
+		return LoggingCardTerminal.encodeHexString(Arrays.copyOfRange(data, offset, len));
+	}
+	public static void print_cplc_data(byte [] data) {
+		if (data.length < 3 || data[2] != 0x2A)
+			throw new IllegalArgumentException("CPLC must be 0x2A bytes long");
+		short offset = 3;
+		//offset = TLVUtils.skipTag(data, offset, (short)0x9F7F);
+		System.out.println("IC Fabricator: " + bytesAsHex(data, offset, offset + 2)); offset += 2;
+		System.out.println("IC Type: " + bytesAsHex(data, offset, offset + 2)); offset += 2;
+		System.out.println("Operating System ID: " + bytesAsHex(data, offset, offset + 2)); offset += 2;
+		System.out.println("Operating System release date: " + bytesAsHex(data, offset, offset + 2)); offset += 2;
+		System.out.println("Operating System release level: " + bytesAsHex(data, offset, offset + 2)); offset += 2;
+		System.out.println("IC Fabrication Date: " + bytesAsHex(data, offset, offset + 2)); offset += 2;
+		System.out.println("IC Serial Number: " + bytesAsHex(data, offset, offset + 4)); offset += 4;
+		System.out.println("IC Batch Identifier: " + bytesAsHex(data, offset, offset + 2)); offset += 2;
+		System.out.println("IC Module Fabricator: " + bytesAsHex(data, offset, offset + 2)); offset += 2;
+		System.out.println("IC Module Packaging Date: " + bytesAsHex(data, offset, offset + 2)); offset += 2;
+		System.out.println("ICC Manufacturer: " + bytesAsHex(data, offset, offset + 2)); offset += 2;
+		System.out.println("IC Embedding Date: " + bytesAsHex(data, offset, offset + 2)); offset += 2;
+		System.out.println("IC Pre-Personalizer: " + bytesAsHex(data, offset, offset + 2)); offset += 2;
+		System.out.println("IC Pre-Perso. Equipment Date: " + bytesAsHex(data, offset, offset + 2)); offset += 2;
+		System.out.println("IC Pre-Perso. Equipment ID: " + bytesAsHex(data, offset, offset + 4)); offset += 4;
+		System.out.println("IC Personalizer: " + bytesAsHex(data, offset, offset + 2)); offset += 2;
+		System.out.println("IC Personalization Date: " + bytesAsHex(data, offset, offset + 2)); offset += 2;
+		System.out.println("IC Perso. Equipment ID: " + bytesAsHex(data, offset, offset + 4));	 offset += 4;
 	}
 
 }

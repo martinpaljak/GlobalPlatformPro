@@ -174,7 +174,7 @@ public class GlobalPlatform {
 			AID detectedAID = new AID(fci, aid_offset + 2, aid_length, true);
 			if (verbose)
 				System.out.println("Auto-detected AID: " + detectedAID);
-			if (sdAID != null && !detectedAID.equals(detectedAID)) {
+			if (sdAID != null && !detectedAID.equals(sdAID)) {
 				printStrictWarning("sdAID in FCI does not match the requested AID!");
 			}
 			this.sdAID = sdAID == null ? detectedAID : sdAID;

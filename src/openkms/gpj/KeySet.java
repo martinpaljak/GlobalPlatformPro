@@ -9,83 +9,134 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
 
-
 public class KeySet {
-	
-	public enum KeyType {
-		ENC(0), MAC(1), KEK(2);
-		
-		private final int value;
-		private KeyType(int value) {
-	        this.value = value;
-	    }
 
-	    public int getValue() {
-	        return value;
-	    }
+	public enum KeyType {
+		// ID is as used in diversification
+		// That is - one based.
+		ENC(1), MAC(2), KEK(3), RMAC(4);
+
+		private final int value;
+
+		private KeyType(int value) {
+			this.value = value;
+		}
+
+		public int getValue() {
+			return value;
+		}
 	};
 
-	// Diversification method, if applicable.
-	public static final int NONE = 0;
-	public static final int VISA2 = 1;
-	public static final int EMV = 2;
+	public enum KeyDiversification {
+		NONE, VISA2, EMV
+	};
 
-	// index in the keys array for a given key
-	public static final int KEY_ENC = 0;
-	public static final int KEY_MAC = 1;
-	public static final int KEY_KEK = 2;
-	
+	byte[] enc_key = null;
+	byte[] mac_key = null;
+	byte[] kek_key = null;
+	byte[] rmac_key = null;
+
 	// KeyID
 	private int keyID = 0x00;
 	private int keyVersion = 0x00;
 
-	int diversification = NONE;
+	public KeyDiversification diversification = KeyDiversification.NONE;
 	private boolean diversified = false;
 
-	byte[][] keys = null;
-
 	public KeySet() {
-		keys = new byte[][] { null, null, null, null };
 	}
 
 	public KeySet(byte[] encKey, byte[] macKey, byte[] kekKey) {
-		keys = new byte[][] { encKey, macKey, kekKey };
+		setKey(KeyType.ENC, encKey);
+		setKey(KeyType.MAC, macKey);
+		setKey(KeyType.KEK, kekKey);
 	}
 
+	public void setKey(KeyType type, byte[] value) {
+		if (value.length < 16)
+			throw new IllegalArgumentException("Key must be at least 16 bytes");
+		switch (type) {
+		case ENC:
+			enc_key = value;
+			break;
+		case MAC:
+			mac_key = value;
+			break;
+		case KEK:
+			kek_key = value;
+			break;
+		case RMAC:
+			rmac_key = value;
+			break;
+		default:
+			break;
+		}
+	}
 
-	public KeySet(byte[] encKey, byte[] macKey, byte[] kekKey, int diversification) {
+	public byte[] getKey(KeyType type) {
+		switch (type) {
+		case ENC:
+			return enc_key;
+		case MAC:
+			return mac_key;
+		case KEK:
+			return kek_key;
+		case RMAC:
+			return rmac_key;
+		default:
+			return null;
+		}
+	}
+
+	public byte[] get3DES(KeyType type) {
+		byte[] key24 = new byte[24];
+		System.arraycopy(getKey(type), 0, key24, 0, 16);
+		System.arraycopy(getKey(type), 0, key24, 16, 8);
+		return key24;
+	}
+
+	public byte[] getDES(KeyType type) {
+		byte[] key8 = new byte[8];
+		System.arraycopy(getKey(type), 0, key8, 0, 8);
+		return key8;
+	}
+
+	public KeySet(int keyVersion, int keyID, byte[] encKey, byte[] macKey, byte[] kekKey, KeyDiversification diversification) {
 		this(encKey, macKey, kekKey);
 		this.diversification = diversification;
+		this.keyID = keyID;
+		this.keyVersion = keyVersion;
 	}
 
+	public boolean needsDiversity() {
+		return diversification != KeyDiversification.NONE && !diversified;
+	}
 	public void diversify(byte[] initialize_update_response) {
-		// Caller must assure that this only gets called ONCE after initialize update!
-		if (diversified) {
-			throw new RuntimeException("Already diversified keys!");
-		}
-		
-		if (diversification == NONE) {
-			throw new RuntimeException("No diversification required but diversify() called!");
+		if (diversified || diversification == KeyDiversification.NONE) {
+			throw new IllegalStateException("Already diversified or not needed!");
 		}
 
 		try {
 			Cipher cipher = Cipher.getInstance("DESede/ECB/NoPadding");
 			byte[] data = new byte[16];
-			for (int i = 0; i < 3; i++) {
+			for (KeyType v : KeyType.values()) {
+				if (v == KeyType.RMAC)
+					continue;
 
 				// shift around and fill initialize update data as required.
-				if (diversification == VISA2) {
-					fillVisa(data, initialize_update_response, i);
-				} else if (diversification == EMV) {
-					fillEmv(data, initialize_update_response, i);
+				if (diversification == KeyDiversification.VISA2) {
+					fillVisa(data, initialize_update_response, v);
+				} else if (diversification == KeyDiversification.EMV) {
+					fillEmv(data, initialize_update_response, v);
 				}
 
 				// Encrypt with current master key
-				cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(GPUtils.getKey(keys[i], 24) , "DESede"));
+				cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(get3DES(v), "DESede"));
 
 				// Replace the key
-				keys[i] = cipher.doFinal(data);
+				setKey(v, cipher.doFinal(data));
 			}
+
 			diversified = true;
 		} catch (BadPaddingException e) {
 			throw new RuntimeException("Diversification failed.", e);
@@ -100,34 +151,40 @@ public class KeySet {
 		}
 	}
 
-	private void fillVisa(byte[] data, byte[] init_update_response, int key) {
-		// key is 0 based in input
-		key++;
+	private void fillVisa(byte[] data, byte[] init_update_response, KeyType key) {
 		System.arraycopy(init_update_response, 0, data, 0, 2);
 		System.arraycopy(init_update_response, 4, data, 2, 4);
 		data[6] = (byte) 0xF0;
-		data[7] = (byte) key;
+		data[7] = (byte) key.value;
 		System.arraycopy(init_update_response, 0, data, 8, 2);
 		System.arraycopy(init_update_response, 4, data, 10, 4);
 		data[14] = (byte) 0x0F;
-		data[15] = (byte) key;
+		data[15] = (byte) key.value;
 	}
 
-	private void fillEmv(byte[] data, byte[] init_update_response, int key) {
-		// input key is 0 based
-		key++;
+	private void fillEmv(byte[] data, byte[] init_update_response, KeyType key) {
 		// 6 rightmost bytes of init update response (which is 10 bytes)
 		System.arraycopy(init_update_response, 4, data, 0, 6);
 		data[6] = (byte) 0xF0;
-		data[7] = (byte) key;
+		data[7] = (byte) key.value;
 		System.arraycopy(init_update_response, 4, data, 8, 6);
 		data[14] = (byte) 0x0F;
-		data[15] = (byte) key;
+		data[15] = (byte) key.value;
 	}
 
 	@Override
 	public String toString() {
-		return new String("\nKeys:\nENC: " + GPUtils.byteArrayToString(keys[0])  + "\nMAC: " + GPUtils.byteArrayToString(keys[1]) + "\nKEK: " + GPUtils.byteArrayToString(keys[2]) + "\n");
+		return new String("\nKeys:\nENC: " + GPUtils.byteArrayToString(getKey(KeyType.ENC)) + "\nMAC: "
+				+ GPUtils.byteArrayToString(getKey(KeyType.MAC)) + "\nKEK: " + GPUtils.byteArrayToString(getKey(KeyType.KEK)) + "\n");
+	}
+
+	public int getKeyID() {
+		return keyID;
+	}
+
+	public int getKeyVersion() {
+		// TODO Auto-generated method stub
+		return keyVersion;
 	}
 
 }

@@ -47,6 +47,9 @@ import javax.smartcardio.CardException;
 import javax.smartcardio.CommandAPDU;
 import javax.smartcardio.ResponseAPDU;
 
+import openkms.gpj.KeySet.KeyDiversification;
+import openkms.gpj.KeySet.KeyType;
+
 
 /**
  * The main Global Platform Service class. Provides most of the Global Platform
@@ -77,11 +80,10 @@ public class GlobalPlatform {
 	public static final byte INS_DELETE = (byte) 0xE4;
 	public static final byte INS_GP_GET_STATUS_F2 = (byte) 0xF2;
 
+	// AID of the card successfully selected or null
 	protected AID sdAID = null;
 
-	public static final byte[] defaultEncKey = { 0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F };
-	public static final byte[] defaultMacKey = { 0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F };
-	public static final byte[] defaultKekKey = { 0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F };
+	public static final byte[] defaultKey = { 0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F };
 
 	static final IvParameterSpec iv_null = new IvParameterSpec(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 });
 	public static Map<String, byte[]> SPECIAL_MOTHER_KEYS = new TreeMap<String, byte[]>();
@@ -92,39 +94,11 @@ public class GlobalPlatform {
 	protected CardChannel channel = null;
 	protected int scpVersion = SCP_ANY;
 	private final HashMap<Integer, KeySet> keys = new HashMap<Integer, KeySet>();
-	private boolean verbose;
 
-	/**
-	 * Set the security domain AID, the channel and use scpAny.
-	 *
-	 * @param aid
-	 *            applet identifier of the security domain
-	 * @param channel
-	 *            channel to talk to
-	 * @throws IllegalArgumentException
-	 *             if {@code channel} is null.
-	 */
-	public GlobalPlatform(AID aid, CardChannel channel) {
-		this(aid, channel, SCP_ANY);
-	}
+	protected boolean verbose = false;
+	protected boolean debug = false;
+	protected boolean strict = true;
 
-	/**
-	 * Full constructor, setting the security domain AID, the channel and the
-	 * scp version.
-	 *
-	 * @param aid
-	 *            applet identifier of the security domain
-	 * @param channel
-	 *            channel to talk to
-	 * @param scpVersion
-	 * @throws IllegalArgumentException
-	 *             if {@code scpVersion} is out of range or {@code channel} is
-	 *             null.
-	 */
-	public GlobalPlatform(AID aid, CardChannel channel, int scpVersion) {
-		this(channel, scpVersion);
-		this.sdAID = aid;
-	}
 
 	/**
 	 * Set the channel and use the default security domain AID and scpAny.
@@ -135,7 +109,7 @@ public class GlobalPlatform {
 	 *             if {@code channel} is null.
 	 */
 	public GlobalPlatform(CardChannel channel) {
-		this(channel, SCP_ANY);
+		this.channel = channel;
 	}
 
 	/**
@@ -149,16 +123,65 @@ public class GlobalPlatform {
 	 *             if {@code scpVersion} is out of range or {@code channel} is
 	 *             null.
 	 */
-	public GlobalPlatform(CardChannel channel, int scpVersion) {
-		if ((scpVersion != SCP_ANY) && (scpVersion != SCP_02_0A) && (scpVersion != SCP_02_0B) && (scpVersion != SCP_02_1A) && (scpVersion != SCP_02_1B)) {
-			throw new IllegalArgumentException("Only implicit secure channels can be set through the constructor.");
-		}
-		this.channel = channel;
-		this.scpVersion = scpVersion;
-	}
+	//	public GlobalPlatform(CardChannel channel, int scpVersion) {
+	//		if ((scpVersion != SCP_ANY) && (scpVersion != SCP_02_0A) && (scpVersion != SCP_02_0B) && (scpVersion != SCP_02_1A) && (scpVersion != SCP_02_1B)) {
+	//			throw new IllegalArgumentException("Only implicit secure channels can be set through the constructor.");
+	//		}
+	//		this.channel = channel;
+	//		this.scpVersion = scpVersion;
+	//	}
 
 	public void setVerbose(boolean verbose) {
 		this.verbose = verbose;
+	}
+
+	public void setStrict(boolean strict) {
+		this.strict = strict;
+	}
+
+	public void setDebug(boolean debug) {
+		this.debug = debug;
+	}
+
+	protected void printStrictWarning(String message) throws GPException {
+		if (strict) {
+			throw new GPException(message);
+		} else {
+			System.err.println(message);
+		}
+	}
+
+	public boolean select(AID sdAID) throws GPException, CardException {
+		// 1. Try to select ISD without giving the sdAID
+		// Works on most cards. Notice the coding of Le in CommandAPDU
+		CommandAPDU command = new CommandAPDU(ISO7816.CLA_ISO7816, ISO7816.INS_SELECT, 0x04, 0x00, 256);
+		ResponseAPDU resp = channel.transmit(command);
+
+		if (resp.getSW() == 0x6A82) {
+			printStrictWarning("Warning - SELECT ISD returned 6A82 - unfused JCOP?");
+		}
+		if (resp.getSW() == 0x6283) {
+			printStrictWarning("Warning - SELECT ISD returned 6283 - CARD_LOCKED");
+		}
+		if (resp.getSW() == 0x9000 || resp.getSW() == 0x6283) {
+			// The security domain AID is in FCI.
+			byte[] fci = resp.getData();
+
+			// Skip template information and find tag 0x84
+			short aid_offset = TLVUtils.findTag(fci, TLVUtils.skipTagAndLength(fci, (short) 0, (byte) 0x6F), (byte) 0x84);
+			int aid_length = TLVUtils.getTagLength(fci, aid_offset);
+
+			AID detectedAID = new AID(fci, aid_offset + 2, aid_length, true);
+			if (verbose)
+				System.out.println("Auto-detected AID: " + detectedAID);
+			if (sdAID != null && !detectedAID.equals(detectedAID)) {
+				printStrictWarning("sdAID in FCI does not match the requested AID!");
+			}
+			this.sdAID = sdAID == null ? detectedAID : sdAID;
+			return true;
+			// TODO: parse the maximum command size as well.
+		}
+		return false;
 	}
 	/**
 	 * Establish a connection to the security domain specified in the
@@ -170,60 +193,19 @@ public class GlobalPlatform {
 	 * @throws CardException
 	 *             on data transmission errors
 	 */
-	public void open() throws GPException, CardException, IOException {
-
+	public void select() throws GPException, CardException, IOException {
 		// Try to locate the security domain if not given as a parameter.
-		if (sdAID == null) {
-			// 1. Try to select ISD without giving the sdAID
-			// Works on most cards. Notice the coding of Le in CommandAPDU
-			CommandAPDU command = new CommandAPDU(ISO7816.CLA_ISO7816, ISO7816.INS_SELECT, 0x04, 0x00, 256);
-			ResponseAPDU resp = channel.transmit(command);
-			
-			if (resp.getSW() == 0x6A82) {
-				throw new GPException("Could not select ISD: 6A82 - maybe unfused JCOP?");
-			} else if (resp.getSW() == 0x9000 || resp.getSW() == 0x6283) {
-				// The security domain AID is in FCI.
-				byte [] fci = resp.getData();
-
-				// Skip template information and find tag 0x84
-				short aid_offset = TLVUtils.findTag(fci, TLVUtils.skipTagAndLength(fci, (short) 0, (byte)0x6F), (byte) 0x84);
-				int aid_length = TLVUtils.getTagLength(fci, aid_offset);
-
-				sdAID = new AID(fci, aid_offset + 2, aid_length, true);
-				if (verbose)
-					System.out.println("Auto-detected AID: " + sdAID);
-				// TODO: parse the maximum command size as well.
-			} else {
-				// Could not auto-detect ISD AID. Try known ones.
-				short sw = 0;
-				for (Map.Entry<String, AID> entry : AID.SD_AIDS.entrySet()) {
-					command = new CommandAPDU(ISO7816.CLA_ISO7816, ISO7816.INS_SELECT, 0x04, 0x00, entry.getValue().getBytes());
-					resp = channel.transmit(command);
-					sw = (short) resp.getSW();
-					if (sw == ISO7816.SW_NO_ERROR) {
-						sdAID = entry.getValue();
-						System.err.println("Selected Security Domain " + entry.getKey() + " " + entry.getValue().toString());
-						break;
-					} else if (sw != 0x6A82) {
-						System.err.println("Failed to select SD " + entry.getValue().toString() + ", SW: " + GPUtils.swToString(sw));
-					}
+		if (!select(null)) {
+			for (Map.Entry<String, AID> entry : AID.SD_AIDS.entrySet()) {
+				if (select(entry.getValue())) {
+					break;
 				}
-				// Give up. The caller needs to know the sdAID
-				if (sdAID == null) {
-					throw new GPException(sw, "Could not select any of the known Security Domains!");
-				}
-			}
-		} else {
-			// Select the chosen AID
-			CommandAPDU command = new CommandAPDU(ISO7816.CLA_ISO7816, ISO7816.INS_SELECT, 0x04, 0x00, sdAID.getBytes());
-			ResponseAPDU resp = channel.transmit(command);
-			short sw = (short) resp.getSW();
-			if (sw != ISO7816.SW_NO_ERROR) {
-				throw new GPException(sw, "Could not select sdAID " + sdAID);
 			}
 		}
 
-		// Get some more information from the ISD.
+		if (this.sdAID == null) {
+			throw new GPException("Could not select security domain!");
+		}
 		if (this.verbose)
 			discoverCardProperties();
 	}
@@ -236,8 +218,7 @@ public class GlobalPlatform {
 		if (resp.getSW() == 0x6A86) {
 			System.out.println("GET DATA(CardData) not supported, Open Platform 2.0.1 card?");
 		} else if (resp.getSW() == 0x9000) {
-			GlobalPlatformData.print_card_data(resp.getData());
-
+			GlobalPlatformData.pretty_print_card_data(resp.getData());
 		}
 		// Issuer Identification Number (IIN)
 		command = new CommandAPDU(CLA_GP, ISO7816.INS_GET_DATA, 0x00, 0x42, 256);
@@ -286,6 +267,20 @@ public class GlobalPlatform {
 
 	}
 
+	public static byte[] fetchCPLC(boolean iso, CardChannel channel) throws CardException {
+		CommandAPDU command = new CommandAPDU(iso ? ISO7816.CLA_ISO7816 : CLA_GP, ISO7816.INS_GET_DATA, 0x9F, 0x7F, 256);
+		ResponseAPDU resp = channel.transmit(command);
+
+		if (resp.getSW() == 0x9000) {
+			return resp.getData();
+		}
+		return null;
+	}
+
+	public byte[] getCPLC() throws CardException {
+		return fetchCPLC(false, this.channel);
+	}
+
 	/**
 	 * Establishes a secure channel to the security domain. The security domain
 	 * must have been selected with {@link open open} before. The {@code keySet}
@@ -296,7 +291,7 @@ public class GlobalPlatform {
 	 * @throws CardException
 	 *             if some communication problem is encountered.
 	 */
-	public void openSecureChannel(int keySet, int keyId, int scpVersion, int securityLevel)
+	public void openSecureChannel(KeySet staticKeys, int scpVersion, int securityLevel)
 			throws CardException, GPException {
 
 		if ((scpVersion < SCP_ANY) || (scpVersion > SCP_02_1B)) {
@@ -307,9 +302,9 @@ public class GlobalPlatform {
 			throw new IllegalArgumentException("Implicit secure channels cannot be initialized explicitly (use the constructor).");
 		}
 
-		if ((keySet < 0) || (keySet > 127)) {
-			throw new IllegalArgumentException("Invalid key set number.");
-		}
+		//		if ((keySet < 0) || (keySet > 127)) {
+		//			throw new IllegalArgumentException("Invalid key set number.");
+		//		}
 
 		int mask = ~(APDU_MAC | APDU_ENC | APDU_RMAC);
 
@@ -320,19 +315,18 @@ public class GlobalPlatform {
 			securityLevel |= APDU_MAC;
 		}
 
-		KeySet staticKeys = keys.get(keySet);
-		if (staticKeys == null) {
-			throw new IllegalArgumentException("Key set " + keySet + " not defined.");
-		}
-
 		byte[] rand = new byte[8];
 		SecureRandom sr = new SecureRandom();
 		sr.nextBytes(rand);
 
-		CommandAPDU initUpdate = new CommandAPDU(CLA_GP, INS_INITIALIZE_UPDATE, keySet, keyId, rand);
+		// P1 key version (SCP1)
+		// P2 either key ID (SCP01) or 0 (SCP2)
+		// TODO: use it here?
+		CommandAPDU initUpdate = new CommandAPDU(CLA_GP, INS_INITIALIZE_UPDATE, staticKeys.getKeyVersion(), staticKeys.getKeyID(), rand);
 
 		ResponseAPDU response = channel.transmit(initUpdate);
 		short sw = (short) response.getSW();
+
 		// Detect and report locked cards in a more sensible way.
 		if ((sw == ISO7816.SW_SECURITY_STATUS_NOT_SATISFIED) || (sw == ISO7816.SW_AUTHENTICATION_METHOD_BLOCKED)) {
 			throw new GPException(sw, "INITIALIZE UPDATE failed, card LOCKED?");
@@ -358,13 +352,13 @@ public class GlobalPlatform {
 		}
 
 		// Only diversify default key sets that require it.
-		if ((keySet == 0) || (keySet == 255)) {
-			if (staticKeys.diversification != KeySet.NONE) {
+		if ((staticKeys.getKeyVersion() == 0) || (staticKeys.getKeyVersion() == 255)) {
+			if (staticKeys.needsDiversity()) {
 				staticKeys.diversify(update_response);
 			}
 		}
 
-		if ((keySet > 0) && ((update_response[10] &0xff) != keySet)) {
+		if ((staticKeys.getKeyVersion() > 0) && ((update_response[10] & 0xff) != staticKeys.getKeyVersion())) {
 			throw new GPException("Key set mismatch.");
 		}
 
@@ -385,7 +379,7 @@ public class GlobalPlatform {
 			throw new RuntimeException(ioe);
 		}
 
-		byte[] myCryptogram = GPUtils.mac_3des(sessionKeys.keys[0], GPUtils.pad80(bo.toByteArray()), new byte[8]);
+		byte[] myCryptogram = GPUtils.mac_3des(sessionKeys.getKey(KeyType.ENC), GPUtils.pad80(bo.toByteArray()), new byte[8]);
 
 		byte[] cardCryptogram = new byte[8];
 		System.arraycopy(update_response, 20, cardCryptogram, 0, 8);
@@ -401,7 +395,7 @@ public class GlobalPlatform {
 			throw new RuntimeException(ioe);
 		}
 
-		byte[] authData = GPUtils.mac_3des(sessionKeys.keys[0], GPUtils.pad80(bo.toByteArray()), new byte[8]);
+		byte[] authData = GPUtils.mac_3des(sessionKeys.getKey(KeyType.ENC), GPUtils.pad80(bo.toByteArray()), new byte[8]);
 
 		wrapper = new SecureChannelWrapper(sessionKeys, scpVersion, APDU_MAC, null, null);
 		CommandAPDU externalAuthenticate = new CommandAPDU(CLA_MAC, ISO7816.INS_EXTERNAL_AUTHENTICATE_82, securityLevel, 0, authData);
@@ -418,24 +412,6 @@ public class GlobalPlatform {
 		this.scpVersion = scpVersion;
 	}
 
-	/**
-	 * Convenience method combining {@link #open open()} and
-	 * {@link #openSecureChannel openSecureChannel} with the default keys and no
-	 * diversification.
-	 *
-	 * @throws CardException
-	 *             when communication problems with the card or the selected
-	 *             security domain arise.
-	 * @throws GPException
-	 * @throws
-	 */
-	public void openWithDefaultKeys() throws CardException, GPException, IOException {
-		open();
-		int keySet = 0;
-		setKeys(keySet, defaultEncKey, defaultMacKey, defaultKekKey);
-		openSecureChannel(keySet, 0, SCP_ANY, APDU_MAC);
-	}
-
 	public KeySet deriveSessionKeysSCP01(KeySet staticKeys, byte[] hostRandom, byte[] cardResponse) {
 		byte[] derivationData = new byte[16];
 
@@ -447,9 +423,10 @@ public class GlobalPlatform {
 
 		try {
 			Cipher cipher = Cipher.getInstance("DESede/ECB/NoPadding");
-			for (int keyIndex = 0; keyIndex < 2; keyIndex++) {
-				cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(GPUtils.getKey(staticKeys.keys[keyIndex], 24), "DESede"));
-				sessionKeys.keys[keyIndex] = cipher.doFinal(derivationData);
+			for (KeyType v: KeyType.values()) {
+				if (v == KeyType.RMAC) continue;
+				cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(staticKeys.get3DES(v), "DESede"));
+				sessionKeys.setKey(v, cipher.doFinal(derivationData));
 			}
 		} catch (BadPaddingException e) {
 			throw new RuntimeException("Session keys calculation failed.", e);
@@ -463,7 +440,8 @@ public class GlobalPlatform {
 			throw new RuntimeException("Session keys calculation failed.", e);
 		}
 
-		sessionKeys.keys[2] = staticKeys.keys[2];
+		// KEK is the same
+		sessionKeys.setKey(KeyType.KEK, staticKeys.getKey(KeyType.KEK));
 		return sessionKeys;
 	}
 
@@ -479,10 +457,8 @@ public class GlobalPlatform {
 			System.arraycopy(constantMAC, 0, derivationData, 0, 2);
 
 			Cipher cipher = Cipher.getInstance("DESede/CBC/NoPadding");
-			cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(GPUtils.getKey(staticKeys.keys[1], 24), "DESede"), new IvParameterSpec(
-					new byte[8]));
-
-			sessionKeys.keys[1] = cipher.doFinal(derivationData);
+			cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(staticKeys.get3DES(KeyType.MAC), "DESede"), new IvParameterSpec(new byte[8]));
+			sessionKeys.setKey(KeyType.MAC, cipher.doFinal(derivationData));
 
 			// TODO: is this correct?
 			if (implicitChannel) {
@@ -499,23 +475,22 @@ public class GlobalPlatform {
 			byte[] constantRMAC = new byte[] { (byte) 0x01, (byte) 0x02 };
 			System.arraycopy(constantRMAC, 0, derivationData, 0, 2);
 
-			cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(GPUtils.getKey(staticKeys.keys[1], 24), "DESede"), new IvParameterSpec(
-					new byte[8]));
-			sessionKeys.keys[3] = cipher.doFinal(derivationData);
+
+			cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(staticKeys.get3DES(KeyType.MAC), "DESede"), new IvParameterSpec(new byte[8]));
+			sessionKeys.setKey(KeyType.RMAC, cipher.doFinal(derivationData));;
 
 			byte[] constantENC = new byte[] { (byte) 0x01, (byte) 0x82 };
 			System.arraycopy(constantENC, 0, derivationData, 0, 2);
 
-			cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(GPUtils.getKey(staticKeys.keys[0], 24), "DESede"), new IvParameterSpec(
-					new byte[8]));
-			sessionKeys.keys[0] = cipher.doFinal(derivationData);
+			cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(staticKeys.get3DES(KeyType.ENC), "DESede"), new IvParameterSpec(new byte[8]));
+			sessionKeys.setKey(KeyType.ENC, cipher.doFinal(derivationData));
 
 			byte[] constantDEK = new byte[] { (byte) 0x01, (byte) 0x81 };
 			System.arraycopy(constantDEK, 0, derivationData, 0, 2);
 
-			cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(GPUtils.getKey(staticKeys.keys[2], 24), "DESede"), new IvParameterSpec(
-					new byte[8]));
-			sessionKeys.keys[2] = cipher.doFinal(derivationData);
+			cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(staticKeys.get3DES(KeyType.KEK), "DESede"), new IvParameterSpec(new byte[8]));
+			sessionKeys.setKey(KeyType.KEK, cipher.doFinal(derivationData));
+
 		}  catch (BadPaddingException e) {
 			throw new RuntimeException("Session keys calculation failed.", e);
 		} catch (NoSuchAlgorithmException e) {
@@ -539,12 +514,8 @@ public class GlobalPlatform {
 		return wrapper.unwrap(wr);
 	}
 
-	public void setKeys(int index, byte[] encKey, byte[] macKey, byte[] kekKey, int diversification) {
-		keys.put(index, new KeySet(encKey, macKey, kekKey, diversification));
-	}
-
-	public void setKeys(int index, byte[] encKey, byte[] macKey, byte[] kekKey) {
-		keys.put(index, new KeySet(encKey, macKey, kekKey));
+	public void setKeys(int id, byte[] masterKey, KeyDiversification diversification) {
+		keys.put(id, new KeySet(id, 0, masterKey, masterKey, masterKey, diversification));
 	}
 
 	/**
@@ -690,6 +661,29 @@ public class GlobalPlatform {
 	}
 
 
+	public void makeDefaultSelected(AID aid, byte privileges) throws CardException, GPException {
+		ByteArrayOutputStream bo = new ByteArrayOutputStream();
+		try {
+			bo.write(0);
+			bo.write(0);
+			bo.write(aid.getLength());
+			bo.write(aid.getBytes());
+			bo.write(1);
+			bo.write(privileges);
+			bo.write(0);
+			bo.write(0);
+
+			CommandAPDU install = new CommandAPDU(CLA_GP, INS_INSTALL, 0x08, 0x00, bo.toByteArray());
+			ResponseAPDU response = transmit(install);
+			short sw = (short) response.getSW();
+			if (sw != ISO7816.SW_NO_ERROR) {
+				throw new GPException(sw, "Install for Install and make selectable failed");
+			}
+
+		} catch (IOException ioe) {
+			throw new RuntimeException(ioe);
+		}
+	}
 	/**
 	 * Delete file {@code aid} on the card. Delete dependencies as well if
 	 * {@code deleteDeps} is true.
@@ -792,9 +786,9 @@ public class GlobalPlatform {
 				continue;
 			}
 			if (p1 == 0x10)
-			 {
+			{
 				succ10 = true;
-			// copy data
+				// copy data
 			}
 
 			bo.write(response.getData());
@@ -833,7 +827,7 @@ public class GlobalPlatform {
 		return registry;
 	}
 
-	
+
 
 	public class SecureChannelWrapper {
 		private KeySet sessionKeys = null;
@@ -846,7 +840,7 @@ public class GlobalPlatform {
 		private boolean icvEnc = false;
 
 		private boolean preAPDU = false;
-		private boolean postAPDU  =false;
+		private boolean postAPDU = false;
 
 		private boolean mac = false;
 		private boolean enc = false;
@@ -877,7 +871,6 @@ public class GlobalPlatform {
 			} else {
 				rmac = false;
 			}
-
 		}
 
 		public void setSCPVersion(int scp) {
@@ -941,6 +934,7 @@ public class GlobalPlatform {
 				int le = command.getNe();
 				ByteArrayOutputStream t = new ByteArrayOutputStream();
 
+				// TODO: get from CardData
 				int maxLen = 255;
 
 				if (mac) {
@@ -961,11 +955,11 @@ public class GlobalPlatform {
 						Cipher c = null;
 						if (scp == 1) {
 							c = Cipher.getInstance("DESede/ECB/NoPadding");
-							c.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(GPUtils.getKey(sessionKeys.keys[1], 24), "DESede"));
+							c.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(sessionKeys.get3DES(KeyType.MAC), "DESede"));
 
 						} else {
 							c = Cipher.getInstance("DES/ECB/NoPadding");
-							c.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(GPUtils.getKey(sessionKeys.keys[1], 8), "DES"));
+							c.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(sessionKeys.getDES(KeyType.MAC), "DES"));
 						}
 						// encrypts the future ICV ?
 						icv = c.doFinal(icv);
@@ -983,9 +977,9 @@ public class GlobalPlatform {
 					t.write(origData);
 
 					if (scp == 1) {
-						icv = GPUtils.mac_3des(sessionKeys.keys[1], GPUtils.pad80(t.toByteArray()), icv);
+						icv = GPUtils.mac_3des(sessionKeys.getKey(KeyType.MAC), GPUtils.pad80(t.toByteArray()), icv);
 					} else {
-						icv = GPUtils.mac_des_3des(sessionKeys.keys[1], GPUtils.pad80(t.toByteArray()), icv);
+						icv = GPUtils.mac_des_3des(sessionKeys.getKey(KeyType.MAC), GPUtils.pad80(t.toByteArray()), icv);
 					}
 
 					if (postAPDU) {
@@ -1011,7 +1005,7 @@ public class GlobalPlatform {
 					newLc += t.size() - origData.length;
 
 					Cipher c = Cipher.getInstance("DESede/CBC/NoPadding");
-					c.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(GPUtils.getKey(sessionKeys.keys[0], 24), "DESede"), iv_null);
+					c.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(sessionKeys.get3DES(KeyType.ENC), "DESede"), iv_null);
 					newData = c.doFinal(t.toByteArray());
 					t.reset();
 				}
@@ -1061,7 +1055,7 @@ public class GlobalPlatform {
 				rMac.write(response.getSW1());
 				rMac.write(response.getSW2());
 
-				ricv = GPUtils.mac_des_3des(sessionKeys.keys[3], GPUtils.pad80(rMac.toByteArray()), ricv);
+				ricv = GPUtils.mac_des_3des(sessionKeys.getKey(KeyType.RMAC), GPUtils.pad80(rMac.toByteArray()), ricv);
 
 				byte[] actualMac = new byte[8];
 				System.arraycopy(response.getData(), respLen, actualMac, 0, 8);

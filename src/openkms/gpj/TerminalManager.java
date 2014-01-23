@@ -33,8 +33,11 @@ public class TerminalManager {
 		if (System.getProperty("os.name").equalsIgnoreCase("Mac OS X")) {
 			if (tf.getProvider().getName() != jnasmartcardio.Smartcardio.PROVIDER_NAME) {
 				tf = TerminalFactory.getInstance("PC/SC", null, new jnasmartcardio.Smartcardio());
-				buggy = false;
 			}
+		}
+		
+		if (tf.getProvider().getName() == jnasmartcardio.Smartcardio.PROVIDER_NAME) {
+			buggy = false;
 		}
 		return tf;
 	}

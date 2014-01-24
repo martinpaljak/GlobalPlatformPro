@@ -46,6 +46,11 @@ public class KeySet {
 	public KeySet() {
 	}
 
+	public KeySet(byte[] masterKey, KeyDiversification diversification) {
+		this(masterKey, masterKey, masterKey);
+		this.diversification = diversification;
+	}
+
 	public KeySet(byte[] masterKey) {
 		this(masterKey, masterKey, masterKey);
 	}

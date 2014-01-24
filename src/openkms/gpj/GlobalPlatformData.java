@@ -3,6 +3,8 @@ package openkms.gpj;
 import java.io.IOException;
 import java.util.Arrays;
 
+import openkms.gpj.KeySet.KeyDiversification;
+
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 
 public class GlobalPlatformData {
@@ -114,15 +116,19 @@ public class GlobalPlatformData {
 	}
 
 
-	public static boolean want_emv(byte[] cplc) {
-		// G&D?
+	public static KeyDiversification suggestDiversification(byte[] cplc) {
+		// G&D
 		if (cplc[7] == 0x16 && cplc[8] == 0x71)
-			return true;
-		return false;
+			return KeyDiversification.EMV;
+		return KeyDiversification.NONE;
 	}
+
+
 	private static String bytesAsHex(byte[] data, short offset, int len) {
 		return LoggingCardTerminal.encodeHexString(Arrays.copyOfRange(data, offset, len));
 	}
+
+
 	public static void print_cplc_data(byte [] data) {
 		if (data.length < 3 || data[2] != 0x2A)
 			throw new IllegalArgumentException("CPLC must be 0x2A bytes long");

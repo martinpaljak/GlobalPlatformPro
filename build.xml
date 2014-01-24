@@ -20,7 +20,7 @@
         <pathelement location="ext/proguard.jar"/>
       </classpath>
     </java>
-    <jar manifest="Manifest.mf" destfile="openkms-globalplatform.jar">
+    <jar manifest="Manifest.mf" destfile="openkms-globalplatform.jar" level="9">
       <zipfileset src="lib/jnasmartcardio.jar"/>
       <zipfileset src="optimized-globalplatform.jar" excludes="META-INF/BCKEY.*,org/bouncycastle/x509/"/>
     </jar>

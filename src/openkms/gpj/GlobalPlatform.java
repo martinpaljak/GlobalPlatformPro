@@ -45,6 +45,7 @@ import javax.smartcardio.CardException;
 import javax.smartcardio.CommandAPDU;
 import javax.smartcardio.ResponseAPDU;
 
+import openkms.gpj.KeySet.KeyDiversification;
 import openkms.gpj.KeySet.KeyType;
 
 
@@ -137,6 +138,12 @@ public class GlobalPlatform {
 
 	public void setDebug(boolean debug) {
 		this.debug = debug;
+	}
+
+	public void imFeelingLucky() throws CardException, GPException {
+		select(null);
+		KeySet ks = new KeySet(defaultKey, GlobalPlatformData.suggestDiversification(getCPLC()));
+		openSecureChannel(ks, SCP_ANY, APDU_MAC);
 	}
 
 	protected void printStrictWarning(String message) throws GPException {
@@ -287,7 +294,8 @@ public class GlobalPlatform {
 			throw new IllegalStateException("No selected ISD!");
 
 		if (staticKeys.getKey(KeyType.MAC).equals(defaultKey) && strict) {
-			if (GlobalPlatformData.want_emv(getCPLC()) && !staticKeys.needsDiversity() && staticKeys.getKeyVersion() == 0x00)
+			if (GlobalPlatformData.suggestDiversification(getCPLC()) != KeyDiversification.NONE 
+					&& !staticKeys.needsDiversity() && staticKeys.getKeyVersion() == 0x00)
 				printStrictWarning("Card probably requires EMV diversification but no diversification specified!");
 		}
 

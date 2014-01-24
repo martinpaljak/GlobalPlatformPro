@@ -49,14 +49,6 @@ public class GPUtils {
 		return "|" + s + "|";
 	}
 
-	public static byte[] readableStringToByteArray(String s) {
-		if (!s.startsWith("|") && !s.endsWith("|")) {
-			return null;
-		}
-		s = s.substring(1, s.length() - 1);
-		return s.getBytes();
-	}
-
 	public static String byteArrayToString(byte[] a) {
 		String result = "";
 		String onebyte = null;

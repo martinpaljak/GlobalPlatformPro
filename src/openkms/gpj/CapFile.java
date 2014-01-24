@@ -79,6 +79,7 @@ public class CapFile {
 		if (packageName == null) {
 			throw new RuntimeException("Could not figure out the package name of the applet!");
 		}
+
 		GPUtils.debug("packagePath: " + packageName);
 		this.packageName = packageName.substring(0, packageName.lastIndexOf("/javacard/")).replace('/', '.');
 		GPUtils.debug("package: " + this.packageName);

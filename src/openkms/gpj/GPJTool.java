@@ -310,88 +310,90 @@ public class GPJTool {
 
 					// Select sdAID
 					service.select(sdAID);
+					
+					// Only authenticate if needed
+					if (deleteDefault || format || deleteAID.size() > 0 || installs.size() > 0 || listApplets) {
 
-					// TODO: make the APDU mode a parameter, properly adjust
-					// loadSize accordingly
-					int neededExtraSize = apduMode == GlobalPlatform.APDU_CLR ? 0 : (apduMode == GlobalPlatform.APDU_MAC ? 8 : 16);
-					if ((loadSize + neededExtraSize) > GlobalPlatform.defaultLoadSize) {
-						loadSize -= neededExtraSize;
-					}
-					service.openSecureChannel(ks, GlobalPlatform.SCP_ANY, apduMode);
+						// TODO: make the APDU mode a parameter, properly adjust
+						// loadSize accordingly
+						int neededExtraSize = apduMode == GlobalPlatform.APDU_CLR ? 0 : (apduMode == GlobalPlatform.APDU_MAC ? 8 : 16);
+						if ((loadSize + neededExtraSize) > GlobalPlatform.defaultLoadSize) {
+							loadSize -= neededExtraSize;
+						}
+						service.openSecureChannel(ks, GlobalPlatform.SCP_ANY, apduMode);
 
-					AIDRegistry registry = service.getStatus();
+						AIDRegistry registry = service.getStatus();
 
-					if (deleteAID.size() > 0) {
-						for (AID aid : deleteAID) {
-							try {
-								service.deleteAID(aid, deleteDeps);
-							} catch (GPException gpe) {
-								if (!registry.entries.contains(aid)) {
-									System.out.println("Could not delete AID (not present on card): " + aid);
-								} else {
-									System.out.println("Could not delete AID: " + aid);
-									gpe.printStackTrace();
+						if (deleteAID.size() > 0) {
+							for (AID aid : deleteAID) {
+								try {
+									service.deleteAID(aid, deleteDeps);
+								} catch (GPException gpe) {
+									if (!registry.entries.contains(aid)) {
+										System.out.println("Could not delete AID (not present on card): " + aid);
+									} else {
+										System.out.println("Could not delete AID: " + aid);
+										gpe.printStackTrace();
+									}
 								}
 							}
-						}
-					} else if (format) {
-						for (AIDRegistryEntry entry : registry.allApplets()) {
-							try {
-								service.deleteAID(entry.getAID(), true);
-							} catch (GPException e) {
-								System.out.println("Could not delete AID when formatting: " + entry.getAID() + " : 0x" + Integer.toHexString(e.sw));
+						} else if (format) {
+							for (AIDRegistryEntry entry : registry.allApplets()) {
+								try {
+									service.deleteAID(entry.getAID(), true);
+								} catch (GPException e) {
+									System.out.println("Could not delete AID when formatting: " + entry.getAID() + " : 0x" + Integer.toHexString(e.sw));
+								}
 							}
-						}
-					} else if (deleteDefault) {
-						AID  aid = registry.getDefaultSelectedPackageAID();
-						if (aid != null) {
-							try {
-								service.deleteAID(aid, true);
-							} catch (GPException e) {
-								System.out.println("Could not delete default applet: " + aid + " : 0x" + Integer.toHexString(e.sw));
-							}
-						} else {
-							System.out.println("Card has no DefaultSelected applet");
-						}
-					}
-
-					CapFile cap = null;
-
-					if (capFileUrl != null) {
-						cap = new CapFile(capFileUrl.openStream());
-						service.loadCapFile(cap, loadDebug, loadCompSep, loadSize, loadParam, useHash);
-					}
-
-					if (installs.size() > 0) {
-						for (InstallEntry install : installs) {
-							if (install.appletAID == null) {
-								AID p = cap.getPackageAID();
-								for (AID a : cap.getAppletAIDs()) {
-									service.installAndMakeSelecatable(p, a, null, (byte) install.priv, install.params, null);
+						} else if (deleteDefault) {
+							AID  aid = registry.getDefaultSelectedPackageAID();
+							if (aid != null) {
+								try {
+									service.deleteAID(aid, true);
+								} catch (GPException e) {
+									System.out.println("Could not delete default applet: " + aid + " : 0x" + Integer.toHexString(e.sw));
 								}
 							} else {
-								service.installAndMakeSelecatable(install.packageAID, install.appletAID, null, (byte) install.priv,
-										install.params, null);
-
+								System.out.println("Card has no DefaultSelected applet");
 							}
 						}
 
-					}
+						CapFile cap = null;
 
-					if (defaultAID != null)
-						service.makeDefaultSelected(defaultAID, (byte) 0x04);
+						if (capFileUrl != null) {
+							cap = new CapFile(capFileUrl.openStream());
+							service.loadCapFile(cap, loadDebug, loadCompSep, loadSize, loadParam, useHash);
+						}
 
-					if (listApplets) {
-						registry = service.getStatus();
-						for (AIDRegistryEntry e : registry) {
-							AID aid = e.getAID();
-							System.out.println("AID: " + GPUtils.byteArrayToString(aid.getBytes()) + " (" + GPUtils.byteArrayToReadableString(aid.getBytes()) + ")");
-							System.out.println("     " + e.getKind().toShortString() + " " + e.getLifeCycleString() + ": " + e.getPrivilegesString());
-
-							for (AID a : e.getExecutableAIDs()) {
-								System.out.println("     " + GPUtils.byteArrayToString(a.getBytes()) + " (" + GPUtils.byteArrayToReadableString(a.getBytes()) + ")");
+						if (installs.size() > 0) {
+							for (InstallEntry install : installs) {
+								if (install.appletAID == null) {
+									AID p = cap.getPackageAID();
+									for (AID a : cap.getAppletAIDs()) {
+										service.installAndMakeSelecatable(p, a, null, (byte) install.priv, install.params, null);
+									}
+								} else {
+									service.installAndMakeSelecatable(install.packageAID, install.appletAID, null, (byte) install.priv, install.params, null);
+								}
 							}
-							System.out.println();
+
+						}
+
+						if (defaultAID != null)
+							service.makeDefaultSelected(defaultAID, (byte) 0x04);
+
+						if (listApplets) {
+							registry = service.getStatus();
+							for (AIDRegistryEntry e : registry) {
+								AID aid = e.getAID();
+								System.out.println("AID: " + GPUtils.byteArrayToString(aid.getBytes()) + " (" + GPUtils.byteArrayToReadableString(aid.getBytes()) + ")");
+								System.out.println("     " + e.getKind().toShortString() + " " + e.getLifeCycleString() + ": " + e.getPrivilegesString());
+
+								for (AID a : e.getExecutableAIDs()) {
+									System.out.println("     " + GPUtils.byteArrayToString(a.getBytes()) + " (" + GPUtils.byteArrayToReadableString(a.getBytes()) + ")");
+								}
+								System.out.println();
+							}
 						}
 					}
 				} finally {

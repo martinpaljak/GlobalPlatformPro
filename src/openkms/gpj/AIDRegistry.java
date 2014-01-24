@@ -101,6 +101,11 @@ public class AIDRegistry implements Iterable<AIDRegistryEntry> {
 				if (e.getExecutableAIDs().contains(defaultAID))
 					return e.getAID();
 			}
+			// Did not get a hit. Loop packages and look for prefixes
+			for (AIDRegistryEntry e : allPackages()) {
+				if (defaultAID.toString().startsWith(e.getAID().toString()))
+					return e.getAID();
+			}
 		}
 		return null;
 	}

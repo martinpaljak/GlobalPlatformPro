@@ -277,18 +277,25 @@ public class GPJTool {
 					try {
 						c = terminal.connect("*");
 					} catch (CardException e) {
-						if (e.getCause().getMessage().equalsIgnoreCase("SCARD_E_NO_SMARTCARD")) {
-							System.err.println("No card in reader \"" + terminal.getName() + "\": " + e.getCause().getMessage());
-							continue;
-						} else if (e.getCause().getMessage().equalsIgnoreCase("SCARD_W_UNPOWERED_CARD")) {
-							System.err.println("No card in reader \"" + terminal.getName() + "\": " + e.getCause().getMessage());
-							System.err.println("  TIP: Make sure that the card is properly inserted and the chip is clean!");
-							continue;
+						if (e.getCause() != null && e.getCause().getMessage() != null) {
+							String msg = e.getCause().getMessage();
+							if (msg != null) {
+								if (msg.equalsIgnoreCase("SCARD_E_NO_SMARTCARD")) {
+									System.err.println("No card in reader \"" + terminal.getName() + "\": " + e.getCause().getMessage());
+									continue;
+								} else if (msg.equalsIgnoreCase("SCARD_W_UNPOWERED_CARD")) {
+									System.err.println("No card in reader \"" + terminal.getName() + "\": " + e.getCause().getMessage());
+									System.err.println("  TIP: Make sure that the card is properly inserted and the chip is clean!");
+									continue;
+								}
+							}
 						} else {
-							System.err.println("Could not read card in " + terminal.getName());
+							System.err.println("Could not connect to card in " + terminal.getName());
 							e.printStackTrace();
 							continue;
 						}
+						e.printStackTrace();
+
 					}
 
 					if (verbose || showInfo) {
@@ -302,7 +309,7 @@ public class GPJTool {
 						// Print CPLC
 						System.out.println("CPLC: ");
 						GlobalPlatformData.print_cplc_data(service.getCPLC());
-
+						service.discoverCardProperties();
 					}
 
 					service.setVerbose(verbose);
@@ -310,7 +317,7 @@ public class GPJTool {
 
 					// Select sdAID
 					service.select(sdAID);
-					
+
 					// Only authenticate if needed
 					if (deleteDefault || format || deleteAID.size() > 0 || installs.size() > 0 || listApplets) {
 
@@ -457,6 +464,7 @@ public class GPJTool {
 		System.out.println("   -package <aid>  package AID, default: take from the CAP file");
 		System.out.println("   -priv <num>     privileges, default 0");
 		System.out.println("   -param <bytes>  install parameters, default: C900");
+		System.out.println("   -default        install as default selected (same as -priv 4)");
 		System.out.println(" -default <aid>    make the specified AID default selected");
 
 		System.out.println(" -list             list card registry");

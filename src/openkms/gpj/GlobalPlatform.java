@@ -140,6 +140,7 @@ public class GlobalPlatform {
 	}
 
 	protected void printStrictWarning(String message) throws GPException {
+		message = "STRICT WARNING: "+ message;
 		if (strict) {
 			throw new GPException(message);
 		} else {
@@ -154,10 +155,10 @@ public class GlobalPlatform {
 		ResponseAPDU resp = channel.transmit(command);
 
 		if (resp.getSW() == 0x6A82) {
-			printStrictWarning("Warning - SELECT ISD returned 6A82 - unfused JCOP?");
+			printStrictWarning("SELECT ISD returned 6A82 - unfused JCOP?");
 		}
 		if (resp.getSW() == 0x6283) {
-			printStrictWarning("Warning - SELECT ISD returned 6283 - CARD_LOCKED");
+			printStrictWarning("SELECT ISD returned 6283 - CARD_LOCKED");
 		}
 		if (resp.getSW() == 0x9000 || resp.getSW() == 0x6283) {
 			// The security domain AID is in FCI.

@@ -31,10 +31,8 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -47,7 +45,6 @@ import javax.smartcardio.CardException;
 import javax.smartcardio.CommandAPDU;
 import javax.smartcardio.ResponseAPDU;
 
-import openkms.gpj.KeySet.KeyDiversification;
 import openkms.gpj.KeySet.KeyType;
 
 
@@ -78,22 +75,20 @@ public class GlobalPlatform {
 	public static final byte INS_INSTALL = (byte) 0xE6;
 	public static final byte INS_LOAD = (byte) 0xE8;
 	public static final byte INS_DELETE = (byte) 0xE4;
-	public static final byte INS_GP_GET_STATUS_F2 = (byte) 0xF2;
+	public static final byte INS_GET_STATUS = (byte) 0xF2;
 
 	// AID of the card successfully selected or null
 	public AID sdAID = null;
 
 	public static final byte[] defaultKey = { 0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F };
 
-	static final IvParameterSpec iv_null = new IvParameterSpec(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 });
-	public static Map<String, byte[]> SPECIAL_MOTHER_KEYS = new TreeMap<String, byte[]>();
+	private static final byte[] iv_null_bytes = new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+	private static final IvParameterSpec iv_null = new IvParameterSpec(iv_null_bytes);
 
-
-	public static final int defaultLoadSize = 255;
+	public static final int defaultLoadSize = 255; // TODO: Check CardData
 	protected SecureChannelWrapper wrapper = null;
 	private CardChannel channel = null;
 	protected int scpVersion = SCP_ANY;
-	private final HashMap<Integer, KeySet> keys = new HashMap<Integer, KeySet>();
 
 	private byte[] cplc = null;
 	protected boolean verbose = false;
@@ -376,7 +371,7 @@ public class GlobalPlatform {
 			throw new RuntimeException(ioe);
 		}
 
-		byte[] myCryptogram = GPUtils.mac_3des(sessionKeys.getKey(KeyType.ENC), GPUtils.pad80(bo.toByteArray()), new byte[8]);
+		byte[] myCryptogram = GPUtils.mac_3des(sessionKeys.getKey(KeyType.ENC), GPUtils.pad80(bo.toByteArray()), iv_null_bytes);
 
 		byte[] cardCryptogram = new byte[8];
 		System.arraycopy(update_response, 20, cardCryptogram, 0, 8);
@@ -392,7 +387,7 @@ public class GlobalPlatform {
 			throw new RuntimeException(ioe);
 		}
 
-		byte[] authData = GPUtils.mac_3des(sessionKeys.getKey(KeyType.ENC), GPUtils.pad80(bo.toByteArray()), new byte[8]);
+		byte[] authData = GPUtils.mac_3des(sessionKeys.getKey(KeyType.ENC), GPUtils.pad80(bo.toByteArray()), iv_null_bytes);
 
 		wrapper = new SecureChannelWrapper(sessionKeys, scpVersion, APDU_MAC, null, null);
 		CommandAPDU externalAuthenticate = new CommandAPDU(CLA_MAC, ISO7816.INS_EXTERNAL_AUTHENTICATE_82, securityLevel, 0, authData);
@@ -454,7 +449,7 @@ public class GlobalPlatform {
 			System.arraycopy(constantMAC, 0, derivationData, 0, 2);
 
 			Cipher cipher = Cipher.getInstance("DESede/CBC/NoPadding");
-			cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(staticKeys.get3DES(KeyType.MAC), "DESede"), new IvParameterSpec(new byte[8]));
+			cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(staticKeys.get3DES(KeyType.MAC), "DESede"), iv_null);
 			sessionKeys.setKey(KeyType.MAC, cipher.doFinal(derivationData));
 
 			// TODO: is this correct?
@@ -473,19 +468,19 @@ public class GlobalPlatform {
 			System.arraycopy(constantRMAC, 0, derivationData, 0, 2);
 
 
-			cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(staticKeys.get3DES(KeyType.MAC), "DESede"), new IvParameterSpec(new byte[8]));
+			cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(staticKeys.get3DES(KeyType.MAC), "DESede"), iv_null);
 			sessionKeys.setKey(KeyType.RMAC, cipher.doFinal(derivationData));;
 
 			byte[] constantENC = new byte[] { (byte) 0x01, (byte) 0x82 };
 			System.arraycopy(constantENC, 0, derivationData, 0, 2);
 
-			cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(staticKeys.get3DES(KeyType.ENC), "DESede"), new IvParameterSpec(new byte[8]));
+			cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(staticKeys.get3DES(KeyType.ENC), "DESede"), iv_null);
 			sessionKeys.setKey(KeyType.ENC, cipher.doFinal(derivationData));
 
 			byte[] constantDEK = new byte[] { (byte) 0x01, (byte) 0x81 };
 			System.arraycopy(constantDEK, 0, derivationData, 0, 2);
 
-			cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(staticKeys.get3DES(KeyType.KEK), "DESede"), new IvParameterSpec(new byte[8]));
+			cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(staticKeys.get3DES(KeyType.KEK), "DESede"), iv_null);
 			sessionKeys.setKey(KeyType.KEK, cipher.doFinal(derivationData));
 
 		}  catch (BadPaddingException e) {
@@ -722,7 +717,7 @@ public class GlobalPlatform {
 		int[] p1s = { 0x80, 0x40 };
 		for (int p1 : p1s) {
 			ByteArrayOutputStream bo = new ByteArrayOutputStream();
-			CommandAPDU getStatus = new CommandAPDU(CLA_GP, INS_GP_GET_STATUS_F2, p1, 0x00, new byte[] { 0x4F, 0x00 });
+			CommandAPDU getStatus = new CommandAPDU(CLA_GP, INS_GET_STATUS, p1, 0x00, new byte[] { 0x4F, 0x00 });
 			ResponseAPDU response = transmit(getStatus);
 			short sw = (short) response.getSW();
 
@@ -734,7 +729,7 @@ public class GlobalPlatform {
 			bo.write(response.getData());
 
 			while (response.getSW() == 0x6310) {
-				getStatus = new CommandAPDU(CLA_GP, INS_GP_GET_STATUS_F2, p1, 0x01, new byte[] { 0x4F, 0x00 });
+				getStatus = new CommandAPDU(CLA_GP, INS_GET_STATUS, p1, 0x01, new byte[] { 0x4F, 0x00 });
 				response = transmit(getStatus);
 
 				bo.write(response.getData());
@@ -774,7 +769,7 @@ public class GlobalPlatform {
 				continue;
 			}
 			ByteArrayOutputStream bo = new ByteArrayOutputStream();
-			CommandAPDU getStatus = new CommandAPDU(CLA_GP, INS_GP_GET_STATUS_F2, p1, 0x00, new byte[] { 0x4F, 0x00 });
+			CommandAPDU getStatus = new CommandAPDU(CLA_GP, INS_GET_STATUS, p1, 0x00, new byte[] { 0x4F, 0x00 });
 			ResponseAPDU response = transmit(getStatus);
 			short sw = (short) response.getSW();
 			if ((sw != ISO7816.SW_NO_ERROR) && (sw != (short) 0x6310)) {
@@ -789,7 +784,7 @@ public class GlobalPlatform {
 			bo.write(response.getData());
 
 			while (response.getSW() == 0x6310) {
-				getStatus = new CommandAPDU(CLA_GP, INS_GP_GET_STATUS_F2, p1, 0x01, new byte[] { 0x4F, 0x00 });
+				getStatus = new CommandAPDU(CLA_GP, INS_GET_STATUS, p1, 0x01, new byte[] { 0x4F, 0x00 });
 				response = transmit(getStatus);
 				bo.write(response.getData());
 

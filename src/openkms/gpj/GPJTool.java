@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Vector;
 
 import javax.smartcardio.Card;
-import javax.smartcardio.CardChannel;
 import javax.smartcardio.CardException;
 import javax.smartcardio.CardTerminal;
 import javax.smartcardio.CardTerminals;
@@ -55,6 +54,7 @@ public class GPJTool {
 
 		boolean format = false;
 		boolean listReaders = false;
+		boolean showInfo = false;
 
 		int apduMode = GlobalPlatform.APDU_MAC;
 
@@ -79,6 +79,8 @@ public class GPJTool {
 					listReaders = true;
 				} else if (args[i].equals("-list")) {
 					listApplets = true;
+				} else if (args[i].equals("-info")) {
+					showInfo = true;
 				} else if (args[i].equals("-keyver")) {
 					i++;
 					keyVersion = Integer.parseInt(args[i]);
@@ -289,14 +291,24 @@ public class GPJTool {
 						}
 					}
 
-					if (verbose) {
+					if (verbose || showInfo) {
 						System.out.println("Found card in reader: " + terminal.getName());
 						System.out.println("ATR: " + GPUtils.byteArrayToString(c.getATR().getBytes()));
 					}
-					CardChannel channel = c.getBasicChannel();
-					GlobalPlatform service = new GlobalPlatform(channel);
+
+					GlobalPlatform service = new GlobalPlatform(c.getBasicChannel());
+
+					if (showInfo) {
+						// Print CPLC
+						System.out.println("CPLC: ");
+						GlobalPlatformData.print_cplc_data(service.getCPLC());
+
+					}
+
 					service.setVerbose(verbose);
 					service.setStrict(!relax);
+
+					// Select sdAID
 					service.select(sdAID);
 
 					// TODO: make the APDU mode a parameter, properly adjust
@@ -418,6 +430,7 @@ public class GPJTool {
 		System.out.println(" -verbose          print more information about card and ");
 		System.out.println(" -readers          print all found card raders");
 		System.out.println(" -relax            relax checks (lockup warning!)");
+		System.out.println(" -info             show interesting information about cards");
 		System.out.println(" -sdaid <aid>      security Domain AID (default: auto-detect)");
 		System.out.println(" -keyver <num>     use key version <num> (default: 0)");
 		System.out.println(" -keyid <num>      use key ID <num> (default: 0)");

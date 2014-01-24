@@ -16,6 +16,7 @@ import javax.smartcardio.CardTerminals;
 import javax.smartcardio.TerminalFactory;
 
 import openkms.gpj.KeySet.KeyDiversification;
+import openkms.gpj.KeySet.KeyType;
 
 
 public class GPJTool {
@@ -32,13 +33,13 @@ public class GPJTool {
 		boolean listApplets = false;
 		int keyID = 0;
 		int keyVersion = 0;
-		byte[] [] keys = { GlobalPlatform.defaultKey, GlobalPlatform.defaultKey, GlobalPlatform.defaultKey };
+		KeySet ks = new KeySet(GlobalPlatform.defaultKey);
 		AID sdAID = null;
 		AID defaultAID = null;
 
-		KeyDiversification diver = KeyDiversification.NONE;
 		Vector<AID> deleteAID = new Vector<AID>();
 		boolean deleteDeps = false;
+		boolean deleteDefault = false;
 
 		URL capFileUrl = null;
 		int loadSize = GlobalPlatform.defaultLoadSize;
@@ -94,9 +95,6 @@ public class GPJTool {
 					i++;
 					byte[] aid = GPUtils.stringToByteArray(args[i]);
 					if (aid == null) {
-						aid = GPUtils.readableStringToByteArray(args[i]);
-					}
-					if (aid == null) {
 						throw new IllegalArgumentException("Malformed SD AID: " + args[i]);
 					}
 					sdAID = new AID(aid);
@@ -108,10 +106,10 @@ public class GPJTool {
 					}
 					defaultAID = new AID(aid);
 				} else if (args[i].equals("-visa2")) {
-					diver = KeyDiversification.VISA2;
+					ks.diversification = KeyDiversification.VISA2;
 					apduMode = GlobalPlatform.APDU_MAC;
 				} else if (args[i].equals("-emv")) {
-					diver = KeyDiversification.EMV;
+					ks.diversification = KeyDiversification.EMV;
 					apduMode = GlobalPlatform.APDU_MAC;
 				} else if (args[i].equals("-mode")) {
 					i++;
@@ -127,14 +125,15 @@ public class GPJTool {
 					}
 				} else if (args[i].equals("-delete")) {
 					i++;
-					byte[] aid = GPUtils.stringToByteArray(args[i]);
-					if (aid == null) {
-						aid = GPUtils.readableStringToByteArray(args[i]);
+					if (args[i].equals("-default")) {
+						deleteDefault = true;
+					} else {
+						byte[] aid = GPUtils.stringToByteArray(args[i]);
+						if (aid == null) {
+							throw new IllegalArgumentException("Malformed AID: " + args[i]);
+						}
+						deleteAID.add(new AID(aid));
 					}
-					if (aid == null) {
-						throw new IllegalArgumentException("Malformed AID: " + args[i]);
-					}
-					deleteAID.add(new AID(aid));
 				} else if (args[i].equals("-deletedeps")) {
 					deleteDeps = true;
 				} else if (args[i].equals("-format")) {
@@ -169,7 +168,7 @@ public class GPJTool {
 					}
 				} else if (args[i].equals("-install")) {
 					i++;
-					int totalOpts = 4;
+					int totalOpts = 5;
 					int current = 0;
 					AID appletAID = null;
 					AID packageAID = null;
@@ -179,9 +178,6 @@ public class GPJTool {
 						if (args[i].equals("-applet")) {
 							i++;
 							byte[] aid = GPUtils.stringToByteArray(args[i]);
-							if (aid == null) {
-								aid = GPUtils.readableStringToByteArray(args[i]);
-							}
 							i++;
 							if (aid == null) {
 								throw new IllegalArgumentException("Malformed AID: " + args[i]);
@@ -191,9 +187,6 @@ public class GPJTool {
 						} else if (args[i].equals("-package")) {
 							i++;
 							byte[] aid = GPUtils.stringToByteArray(args[i]);
-							if (aid == null) {
-								aid = GPUtils.readableStringToByteArray(args[i]);
-							}
 							i++;
 							if (aid == null) {
 								throw new IllegalArgumentException("Malformed AID: " + args[i]);
@@ -205,6 +198,10 @@ public class GPJTool {
 							priv = Integer.parseInt(args[i]);
 							i++;
 							current = 3;
+						} else if (args[i].equals("-default")) {
+							i++;
+							priv|= 0x4;
+							current = 4;
 						} else if (args[i].equals("-param")) {
 							i++;
 							param = GPUtils.stringToByteArray(args[i]);
@@ -212,9 +209,9 @@ public class GPJTool {
 							if (param == null) {
 								throw new IllegalArgumentException("Malformed params: " + args[i]);
 							}
-							current = 4;
+							current = 5;
 						} else {
-							current = 4;
+							current = 5;
 							i--;
 						}
 					}
@@ -225,21 +222,18 @@ public class GPJTool {
 					inst.params = param;
 					installs.add(inst);
 				} else {
-					String[] keysOpt = { "-enc", "-mac", "-kek" };
-					int index = -1;
-					for (int k = 0; k < keysOpt.length; k++) {
-						if (args[i].equals(keysOpt[k])) {
-							index = k;
+					KeyType type = null;
+					for (KeyType k: KeyType.values()) {
+						if (args[i].substring(1).equalsIgnoreCase(k.toString())) {
+							type = k;
+							break;
 						}
 					}
-					if (index >= 0) {
-						i++;
-						keys[index] = GPUtils.stringToByteArray(args[i]);
-						if ((keys[index] == null) || (keys[index].length != 16)) {
-							throw new IllegalArgumentException("Wrong " + keysOpt[index].substring(1).toUpperCase() + " key: " + args[i]);
-						}
+					if (type == null) {
+						throw new IllegalArgumentException("Unknown parameter " + args[i]);
 					} else {
-						throw new IllegalArgumentException("Unknown option: " + args[i]);
+						i++;
+						ks.setKey(type, GPUtils.stringToByteArray(args[i]));
 					}
 				}
 			}
@@ -305,8 +299,6 @@ public class GPJTool {
 					service.setStrict(!relax);
 					service.select(sdAID);
 
-					KeySet ks = new KeySet(keyID, keyVersion, keys[0], keys [1], keys[2], diver);
-
 					// TODO: make the APDU mode a parameter, properly adjust
 					// loadSize accordingly
 					int neededExtraSize = apduMode == GlobalPlatform.APDU_CLR ? 0 : (apduMode == GlobalPlatform.APDU_MAC ? 8 : 16);
@@ -331,15 +323,25 @@ public class GPJTool {
 							}
 						}
 					} else if (format) {
-						for (AIDRegistryEntry entry : registry.allPackages()) {
+						for (AIDRegistryEntry entry : registry.allApplets()) {
 							try {
 								service.deleteAID(entry.getAID(), true);
 							} catch (GPException e) {
 								System.out.println("Could not delete AID when formatting: " + entry.getAID() + " : 0x" + Integer.toHexString(e.sw));
 							}
 						}
+					} else if (deleteDefault) {
+						AID  aid = registry.getDefaultSelectedPackageAID();
+						if (aid != null) {
+							try {
+								service.deleteAID(aid, true);
+							} catch (GPException e) {
+								System.out.println("Could not delete default applet: " + aid + " : 0x" + Integer.toHexString(e.sw));
+							}
+						} else {
+							System.out.println("Card has no DefaultSelected applet");
+						}
 					}
-
 
 					CapFile cap = null;
 
@@ -451,8 +453,6 @@ public class GPJTool {
 		System.out.println("All -load/-install/-delete/-list actions will be performed on");
 		System.out.println("the basic logical channel of all cards currently connected.");
 		System.out.println("By default all connected PC/SC readers are searched.");
-		System.out.println("");
-		System.out.println("<aid> can be of the byte form 0A00000003... or the string form \"|applet.app|\"");
 		System.out.println("");
 		System.out.println("Examples:");
 		System.out.println("");

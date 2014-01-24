@@ -242,7 +242,7 @@ public class AIDRegistryEntry {
 		int r = privileges;
 
 		if (r == 0) {
-			privs.add("(NONE)");
+			privs.add("(none)");
 		} else {
 			if ((r & (1<<7)) != 0) {
 				r &= ~(1<<7);

@@ -511,10 +511,6 @@ public class GlobalPlatform {
 		return wrapper.unwrap(wr);
 	}
 
-	public void setKeys(int id, byte[] masterKey, KeyDiversification diversification) {
-		keys.put(id, new KeySet(id, 0, masterKey, masterKey, masterKey, diversification));
-	}
-
 	/**
 	 *
 	 * Convenience method, opens {@code fileName} and calls then
@@ -660,6 +656,8 @@ public class GlobalPlatform {
 
 	public void makeDefaultSelected(AID aid, byte privileges) throws CardException, GPException {
 		ByteArrayOutputStream bo = new ByteArrayOutputStream();
+		// Only supported privilege
+		privileges = 0x04;
 		try {
 			bo.write(0);
 			bo.write(0);

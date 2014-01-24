@@ -46,6 +46,10 @@ public class KeySet {
 	public KeySet() {
 	}
 
+	public KeySet(byte[] masterKey) {
+		this(masterKey, masterKey, masterKey);
+	}
+
 	public KeySet(byte[] encKey, byte[] macKey, byte[] kekKey) {
 		setKey(KeyType.ENC, encKey);
 		setKey(KeyType.MAC, macKey);

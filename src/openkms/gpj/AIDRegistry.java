@@ -84,4 +84,24 @@ public class AIDRegistry implements Iterable<AIDRegistryEntry> {
 		}
 		return res;
 	}
+
+	public AID getDefaultSelectedAID() {
+		for (AIDRegistryEntry e : allApplets()) {
+			if ((e.getPrivileges() & 0x04) != 0) {
+				return e.getAID();
+			}
+		}
+		return null;
+	}
+
+	public AID getDefaultSelectedPackageAID() {
+		AID defaultAID = getDefaultSelectedAID();
+		if (defaultAID != null) {
+			for (AIDRegistryEntry e : allPackages()) {
+				if (e.getExecutableAIDs().contains(defaultAID))
+					return e.getAID();
+			}
+		}
+		return null;
+	}
 }

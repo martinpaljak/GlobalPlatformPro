@@ -1,6 +1,15 @@
 GlobalPlatform for OpenKMS
 ==========================
-Load and manage applets with GlobalPlatform compatible JavaCards
+Load and manage applets with GlobalPlatform compatible JavaCards from command line or from your Java project
+
+### Get it now!
+ * Download latest pre-built JAR from [releases](https://github.com/martinpaljak/GlobalPlatform/releases)
+ * Fetch from github and build it yourself:
+
+        git clone https://github.com/martinpaljak/GlobalPlatform
+        cd GlobalPlatform
+        ant
+
 ### Usage
 Command line samples assume default test keys of ```40..4F```. If you need custom keys, specify them with any or all of the following options: ```-keyid``` ```-keyver``` ```-enc``` ```-mac``` ```-kek``` (you need to know the details or ask your card provider). Some cards require key diversification with ```-emv``` or ```-visa2``` (you should be notified if that's the case).
 
@@ -25,6 +34,7 @@ Command line samples assume default test keys of ```40..4F```. If you need custo
    add ```-debug``` to your command
 
  * Don't use MAC on commands (plain GlobalPlatform commands):
+
    add ```-mode clr``` to your command (not supported on all cards)
 
 

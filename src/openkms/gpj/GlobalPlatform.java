@@ -674,7 +674,7 @@ public class GlobalPlatform {
 			ResponseAPDU response = transmit(install);
 			short sw = (short) response.getSW();
 			if (sw != ISO7816.SW_NO_ERROR) {
-				throw new GPException(sw, "Install for Install and make selectable failed");
+				throw new GPException(sw, "Install for make selectable failed");
 			}
 
 		} catch (IOException ioe) {

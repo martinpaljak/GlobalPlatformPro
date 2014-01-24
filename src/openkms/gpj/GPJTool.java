@@ -34,6 +34,8 @@ public class GPJTool {
 		int keyVersion = 0;
 		byte[] [] keys = { GlobalPlatform.defaultKey, GlobalPlatform.defaultKey, GlobalPlatform.defaultKey };
 		AID sdAID = null;
+		AID defaultAID = null;
+
 		KeyDiversification diver = KeyDiversification.NONE;
 		Vector<AID> deleteAID = new Vector<AID>();
 		boolean deleteDeps = false;
@@ -98,6 +100,13 @@ public class GPJTool {
 						throw new IllegalArgumentException("Malformed SD AID: " + args[i]);
 					}
 					sdAID = new AID(aid);
+				} else if (args[i].equals("-default")) {
+					i++;
+					byte[] aid = GPUtils.stringToByteArray(args[i]);
+					if (aid == null) {
+						throw new IllegalArgumentException("Malformed AID: " + args[i]);
+					}
+					defaultAID = new AID(aid);
 				} else if (args[i].equals("-visa2")) {
 					diver = KeyDiversification.VISA2;
 					apduMode = GlobalPlatform.APDU_MAC;
@@ -354,6 +363,10 @@ public class GPJTool {
 						}
 
 					}
+
+					if (defaultAID != null)
+						service.makeDefaultSelected(defaultAID, (byte) 0x04);
+
 					if (listApplets) {
 						registry = service.getStatus();
 						for (AIDRegistryEntry e : registry) {
@@ -427,6 +440,8 @@ public class GPJTool {
 		System.out.println("   -package <aid>  package AID, default: take from the CAP file");
 		System.out.println("   -priv <num>     privileges, default 0");
 		System.out.println("   -param <bytes>  install parameters, default: C900");
+		System.out.println(" -default <aid>    make the specified AID default selected");
+
 		System.out.println(" -list             list card registry");
 		System.out.println(" -h|-help|--help   print this usage info");
 		System.out.println("");

@@ -37,6 +37,9 @@ Command line samples assume default test keys of ```40..4F```. If you need custo
 
    add ```-mode clr``` to your command (not supported on all cards)
 
+##### Usage from Java
+ * Check the (currently very bad) [Javadoc](http://martinpaljak.github.io/GlobalPlatform/)
+ * Or the [command line utility source code](https://github.com/martinpaljak/GlobalPlatform/blob/master/src/openkms/gpj/GPJTool.java)
 
 ### Contact 
 

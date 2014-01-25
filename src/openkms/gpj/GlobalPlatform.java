@@ -683,6 +683,13 @@ public class GlobalPlatform {
 			throw new RuntimeException(ioe);
 		}
 	}
+
+	public void uninstallDefaultSelected() throws CardException, GPException {
+		AIDRegistry reg = getStatus();
+		deleteAID(reg.getDefaultSelectedPackageAID(), true);
+	}
+
+
 	/**
 	 * Delete file {@code aid} on the card. Delete dependencies as well if
 	 * {@code deleteDeps} is true.
@@ -713,32 +720,20 @@ public class GlobalPlatform {
 		}
 	}
 
-	/**
-	 * Get card status. Perform all possible variants of the get status command
-	 * and return all entries reported by the card in an AIDRegistry.
-	 *
-	 * @return registry with all entries on the card
-	 * @throws CardException
-	 *             in case of communication errors
-	 */
-	public AIDRegistry getStatus() throws CardException, IOException {
-		AIDRegistry registry = new AIDRegistry();
-		int[] p1s = { 0x80, 0x40 };
-		for (int p1 : p1s) {
-			ByteArrayOutputStream bo = new ByteArrayOutputStream();
-			CommandAPDU getStatus = new CommandAPDU(CLA_GP, INS_GET_STATUS, p1, 0x00, new byte[] { 0x4F, 0x00 });
-			ResponseAPDU response = transmit(getStatus);
-			short sw = (short) response.getSW();
 
-			// is SD scope fails, use application scope
-			if ((sw != ISO7816.SW_NO_ERROR) && (sw != (short) 0x6310)) {
-				continue;
-			}
-
+	private byte[] getConcatenatedStatus(int p1, byte[] data) throws CardException {
+		CommandAPDU getStatus = new CommandAPDU(CLA_GP, INS_GET_STATUS, p1, 0x00, data);
+		ResponseAPDU response = transmit(getStatus);
+		short sw = (short) response.getSW();
+		if ((sw != ISO7816.SW_NO_ERROR) && (sw != (short) 0x6310)) {
+			return response.getData(); // Should be empty
+		}
+		ByteArrayOutputStream bo = new ByteArrayOutputStream();
+		try {
 			bo.write(response.getData());
 
 			while (response.getSW() == 0x6310) {
-				getStatus = new CommandAPDU(CLA_GP, INS_GET_STATUS, p1, 0x01, new byte[] { 0x4F, 0x00 });
+				getStatus = new CommandAPDU(CLA_GP, INS_GET_STATUS, p1, 0x01, data);
 				response = transmit(getStatus);
 
 				bo.write(response.getData());
@@ -748,9 +743,29 @@ public class GlobalPlatform {
 					throw new CardException("Get Status failed, SW: " + GPUtils.swToString(sw));
 				}
 			}
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+
+		return bo.toByteArray();
+	}
+
+
+	/**
+	 * Get card status. Perform all possible variants of the get status command
+	 * and return all entries reported by the card in an AIDRegistry.
+	 *
+	 * @return registry with all entries on the card
+	 * @throws CardException
+	 *             in case of communication errors
+	 */
+	public AIDRegistry getStatus() throws CardException {
+		AIDRegistry registry = new AIDRegistry();
+		int[] p1s = { 0x80, 0x40 };
+		for (int p1 : p1s) {
 			// parse data no sub-AID
 			int index = 0;
-			byte[] data = bo.toByteArray();
+			byte[] data = getConcatenatedStatus(p1, new byte[] { 0x4F, 0x00 });
 			while (index < data.length) {
 				int len = data[index++];
 				AID aid = new AID(data, index, len);
@@ -772,39 +787,9 @@ public class GlobalPlatform {
 			}
 		}
 		p1s = new int[] { 0x10, 0x20 };
-		boolean succ10 = false;
 		for (int p1 : p1s) {
-			if (succ10) {
-				continue;
-			}
-			ByteArrayOutputStream bo = new ByteArrayOutputStream();
-			CommandAPDU getStatus = new CommandAPDU(CLA_GP, INS_GET_STATUS, p1, 0x00, new byte[] { 0x4F, 0x00 });
-			ResponseAPDU response = transmit(getStatus);
-			short sw = (short) response.getSW();
-			if ((sw != ISO7816.SW_NO_ERROR) && (sw != (short) 0x6310)) {
-				continue;
-			}
-			if (p1 == 0x10)
-			{
-				succ10 = true;
-				// copy data
-			}
-
-			bo.write(response.getData());
-
-			while (response.getSW() == 0x6310) {
-				getStatus = new CommandAPDU(CLA_GP, INS_GET_STATUS, p1, 0x01, new byte[] { 0x4F, 0x00 });
-				response = transmit(getStatus);
-				bo.write(response.getData());
-
-				sw = (short) response.getSW();
-				if ((sw != ISO7816.SW_NO_ERROR) && (sw != (short) 0x6310)) {
-					throw new CardException("Get Status failed, SW: " + GPUtils.swToString(sw));
-				}
-			}
-
 			int index = 0;
-			byte[] data = bo.toByteArray();
+			byte[] data = getConcatenatedStatus(p1, new byte[] { 0x4F, 0x00 });
 			while (index < data.length) {
 				int len = data[index++];
 				AID aid = new AID(data, index, len);
@@ -946,6 +931,7 @@ public class GlobalPlatform {
 				}
 
 				if (origLc > maxLen) {
+					// TODO IllegalArgument 
 					throw new CardException("APDU too long for wrapping.");
 				}
 
@@ -1061,6 +1047,7 @@ public class GlobalPlatform {
 				byte[] actualMac = new byte[8];
 				System.arraycopy(response.getData(), respLen, actualMac, 0, 8);
 				if (!Arrays.equals(ricv, actualMac)) {
+					// TODO: should be GPException
 					throw new CardException("RMAC invalid.");
 				}
 				ByteArrayOutputStream o = new ByteArrayOutputStream();

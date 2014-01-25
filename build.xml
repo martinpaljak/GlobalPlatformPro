@@ -34,7 +34,7 @@
   </target>
   <!-- Put javadocs online -->
   <target name="javadoc">
-    <javadoc destdir="javadoc" Doctitle="GlobalPlatform Java" access="public">
+    <javadoc destdir="javadoc" Doctitle="GlobalPlatform Java" access="public" linksource="true">
       <packageset dir="src">
         <include name="openkms/gpj/"/>
         <exclude name="openkms/gpj/tests/**"/>

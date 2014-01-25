@@ -9,6 +9,12 @@ import javax.smartcardio.CardTerminal;
 import javax.smartcardio.CardTerminals;
 import javax.smartcardio.TerminalFactory;
 
+/**
+ * Facilitates working with javax.smartcardio
+ *
+ * @author Martin Paljak
+ *
+ */
 public class TerminalManager {
 
 	private static boolean buggy = true;
@@ -35,13 +41,22 @@ public class TerminalManager {
 				tf = TerminalFactory.getInstance("PC/SC", null, new jnasmartcardio.Smartcardio());
 			}
 		}
-		
+
 		if (tf.getProvider().getName() == jnasmartcardio.Smartcardio.PROVIDER_NAME) {
 			buggy = false;
 		}
 		return tf;
 	}
 
+	/**
+	 * Calls {@link javax.smartcardio.Card#disconnect(boolean)} with the fixed reset parameter.
+	 *
+	 * The parameter is fixed based on the used provider.
+	 *
+	 * @param card The card on what to act
+	 * @param reset The intended operation after disconnect
+	 * @throws CardException
+	 */
 	public static void disconnect(Card card, boolean reset) throws CardException {
 		card.disconnect(buggy ? !reset : reset);
 	}

@@ -1,4 +1,5 @@
-/bin
-/build
+/bin/
+/build/
 *~
 /openkms-globalplatform.jar
+/javadoc/

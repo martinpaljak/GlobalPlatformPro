@@ -70,13 +70,13 @@ public class GlobalPlatform {
 	public static final int APDU_MAC = 0x01;
 	public static final int APDU_ENC = 0x02;
 	public static final int APDU_RMAC = 0x10;
-	public static final byte CLA_GP = (byte) 0x80;
-	public static final byte CLA_MAC = (byte) 0x84;
-	public static final byte INS_INITIALIZE_UPDATE = (byte) 0x50;
-	public static final byte INS_INSTALL = (byte) 0xE6;
-	public static final byte INS_LOAD = (byte) 0xE8;
-	public static final byte INS_DELETE = (byte) 0xE4;
-	public static final byte INS_GET_STATUS = (byte) 0xF2;
+	private static final byte CLA_GP = (byte) 0x80;
+	private static final byte CLA_MAC = (byte) 0x84;
+	private static final byte INS_INITIALIZE_UPDATE = (byte) 0x50;
+	private static final byte INS_INSTALL = (byte) 0xE6;
+	private static final byte INS_LOAD = (byte) 0xE8;
+	private static final byte INS_DELETE = (byte) 0xE4;
+	private static final byte INS_GET_STATUS = (byte) 0xF2;
 
 	// AID of the card successfully selected or null
 	public AID sdAID = null;
@@ -87,7 +87,7 @@ public class GlobalPlatform {
 	private static final IvParameterSpec iv_null = new IvParameterSpec(iv_null_bytes);
 
 	public static final int defaultLoadSize = 255; // TODO: Check CardData
-	protected SecureChannelWrapper wrapper = null;
+	private SecureChannelWrapper wrapper = null;
 	private CardChannel channel = null;
 	protected int scpVersion = SCP_ANY;
 

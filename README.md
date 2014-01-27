@@ -1,6 +1,6 @@
 GlobalPlatform for OpenKMS
 ==========================
-Load and manage applets with GlobalPlatform compatible JavaCards from command line or from your Java project
+Load and manage applets with GlobalPlatform compatible JavaCards from command line or from your Java project with a [DWIM](http://en.wikipedia.org/wiki/DWIM) approach.
 
 ### Get it now!
  * Download latest pre-built JAR from [release area](https://github.com/martinpaljak/GlobalPlatform/releases)

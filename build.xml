@@ -20,7 +20,7 @@
         <pathelement location="ext/proguard.jar"/>
       </classpath>
     </java>
-    <jar manifest="Manifest.mf" destfile="openkms-globalplatform.jar" level="9">
+    <jar manifest="Manifest.mf" destfile="gp.jar" level="9">
       <zipfileset src="lib/jnasmartcardio.jar"/>
       <zipfileset src="optimized-globalplatform.jar" excludes="META-INF/BCKEY.*,org/bouncycastle/x509/"/>
     </jar>
@@ -30,7 +30,7 @@
   <target name="clean" description="clean up">
     <delete dir="build"/>
     <delete dir="javadoc"/>
-    <delete file="openkms-globalplatform.jar"/>
+    <delete file="gp.jar"/>
   </target>
   <!-- Put javadocs online -->
   <target name="javadoc">

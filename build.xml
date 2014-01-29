@@ -4,7 +4,7 @@
   <!-- Build the software -->
   <target name="compile" description="compile the source">
     <mkdir dir="build"/>
-    <javac srcdir="src" destdir="build" includeantruntime="false" excludes="**/tests/**" source="1.6" target="1.6" debug="true" debuglevel="lines,vars,source">
+    <javac srcdir="src" destdir="build" includeantruntime="false" excludes="**/tests/**" target="1.7" debug="true" debuglevel="lines,vars,source">
       <compilerarg value="-Xlint"/>
       <classpath>
         <pathelement location="lib/jnasmartcardio.jar"/>

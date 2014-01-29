@@ -32,7 +32,7 @@ public class GPException extends Exception {
 	/**
 	 * Response status indicating the error, or 0 if not applicable.
 	 */
-	public final short sw;
+	public final int sw;
 
 	/**
 	 *
@@ -43,7 +43,7 @@ public class GPException extends Exception {
 	 * @param message
 	 *            the detailed message
 	 */
-	public GPException(short sw, String message) {
+	public GPException(int sw, String message) {
 		super(message + " SW: " + GPUtils.swToString(sw));
 		this.sw = sw;
 	}

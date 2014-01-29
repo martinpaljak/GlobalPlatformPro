@@ -39,6 +39,8 @@ public class GPJTool {
 		Vector<AID> deleteAID = new Vector<AID>();
 		boolean deleteDeps = false;
 		boolean deleteDefault = false;
+		boolean format = false;
+
 
 		URL capFileUrl = null;
 		int loadSize = GlobalPlatform.defaultLoadSize;
@@ -48,13 +50,13 @@ public class GPJTool {
 		boolean loadParam = false;
 		boolean useHash = false;
 
-		boolean verbose = false;
-		boolean debug = false;
-		boolean relax = false;
+		boolean verbose = false; // true if GP is verbose
+		boolean debug = false; // true if APDU-s logged
+		boolean relax = false; // true if not strict
 
-		boolean format = false;
 		boolean listReaders = false;
 		boolean showInfo = false;
+		boolean auth = false; // true if auth even if not needed
 
 		int apduMode = GlobalPlatform.APDU_MAC;
 
@@ -81,6 +83,8 @@ public class GPJTool {
 					listApplets = true;
 				} else if (args[i].equals("-info")) {
 					showInfo = true;
+				} else if (args[i].equals("-auth")) {
+					auth = true;
 				} else if (args[i].equals("-keyver")) {
 					i++;
 					keyVersion = Integer.parseInt(args[i]);
@@ -304,31 +308,28 @@ public class GPJTool {
 					}
 
 					GlobalPlatform service = new GlobalPlatform(c.getBasicChannel());
-
-					if (showInfo) {
-						// Print CPLC
-						System.out.println("CPLC: ");
-						GlobalPlatformData.print_cplc_data(service.getCPLC());
-						service.discoverCardProperties();
-					}
-
-					service.setVerbose(verbose);
+					if (verbose)
+						service.beVerboseTo(System.out);
 					service.setStrict(!relax);
 
 					// Select sdAID
 					service.select(sdAID);
 
+					// Show info
+					if (showInfo) {
+						System.out.println("***** Card info (not authenticated):");
+						print_card_info(service);
+					}
+
 					// Only authenticate if needed
-					if (deleteDefault || format || deleteAID.size() > 0 || installs.size() > 0 || listApplets) {
+					auth = auth || deleteDefault || format || deleteAID.size() > 0 || installs.size() > 0 || listApplets;
 
-						// TODO: make the APDU mode a parameter, properly adjust
-						// loadSize accordingly
-						int neededExtraSize = apduMode == GlobalPlatform.APDU_CLR ? 0 : (apduMode == GlobalPlatform.APDU_MAC ? 8 : 16);
-						if ((loadSize + neededExtraSize) > GlobalPlatform.defaultLoadSize) {
-							loadSize -= neededExtraSize;
-						}
+					if (auth) {
 						service.openSecureChannel(ks, GlobalPlatform.SCP_ANY, apduMode);
-
+						if (showInfo) {
+							System.out.println("***** Card info (authenticated):");
+							print_card_info(service);
+						}
 						AIDRegistry registry = service.getStatus();
 
 						if (deleteAID.size() > 0) {
@@ -368,6 +369,12 @@ public class GPJTool {
 						CapFile cap = null;
 
 						if (capFileUrl != null) {
+							// TODO: make the APDU mode a parameter, properly adjust
+							// loadSize accordingly
+							int neededExtraSize = apduMode == GlobalPlatform.APDU_CLR ? 0 : (apduMode == GlobalPlatform.APDU_MAC ? 8 : 16);
+							if ((loadSize + neededExtraSize) > GlobalPlatform.defaultLoadSize) {
+								loadSize -= neededExtraSize;
+							}
 							cap = new CapFile(capFileUrl.openStream());
 							service.loadCapFile(cap, loadDebug, loadCompSep, loadSize, loadParam, useHash);
 						}
@@ -429,8 +436,21 @@ public class GPJTool {
 		}
 
 	}
+	// TODO public for debuggin purposes
+	public static void print_card_info(GlobalPlatform gp) throws CardException, GPException {
+		// Print CPLC
+		GlobalPlatformData.pretty_print_cplc(gp.getCPLC(), System.out);
+		// Requires GP?
+		// Print CardData
+		System.out.println("***** CARD DATA");
+		byte [] card_data = gp.fetchCardData();
+		GlobalPlatformData.pretty_print_card_data(card_data, System.out);
+		// Print Key Info Template
+		System.out.println("***** KEY INFO");
+		GlobalPlatformData.pretty_print_key_template(gp.getKeyInfoTemplate(), System.out);
 
-	public static void usage() {
+	}
+	private static void usage() {
 		System.out.println("Usage:");
 		System.out.println("  java -jar openkms-globalplatform.jar <options>");
 		System.out.println("");
@@ -482,7 +502,7 @@ public class GPJTool {
 		System.out.println("  [prog] -list");
 		System.out.println("  [prog] -load applet.cap -install -list");
 		System.out.println("  [prog] -deletedeps -delete 360000000001 -load applet.cap -install -list");
-		System.out.println("  [prog] -emv -keyset 0 -enc 404142434445464748494A4B4C4D4E4F -list");
+		System.out.println("  [prog] -emv -enc 404142434445464748494A4B4C4D4E4F -list");
 		System.out.println("");
 	}
 }

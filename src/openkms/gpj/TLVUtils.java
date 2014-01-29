@@ -71,7 +71,7 @@ public final  class TLVUtils {
 		return offset+2;
 	}
 	static short getTagLength(byte [] data, short offset, byte tag) {
-		offset = expectTag(data, offset, tag);		
+		offset = expectTag(data, offset, tag);
 		offset = skipLength(data, offset);
 		return offset;
 	}
@@ -92,7 +92,20 @@ public final  class TLVUtils {
 			} else {
 				offset = skipAnyTag(data, offset);
 			}
-		}	 
+		}
+	}
+
+	// Given a MSB byte array with a length, increment it by one.
+	public static void buffer_increment(byte[] buffer, short offset, short len) {
+		if (len < 1)
+			return;
+		for (short i=(short) (offset+len-1); i >= offset; i--) {
+			if (buffer[i] != (byte) 0xFF) {
+				buffer[i]++;
+				break;
+			} else
+				buffer[i] = (byte) 0x00;
+		}
 	}
 
 	// String functions

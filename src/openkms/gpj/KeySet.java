@@ -11,6 +11,41 @@ import javax.crypto.spec.SecretKeySpec;
 
 public class KeySet {
 
+
+	public static class Key {
+		private int algorithm = 0;
+		private int version = 0;
+		private int id = 0;
+		private int length = -1;
+		private byte [] value = null;
+		public int getID() {
+			return id;
+		}
+		public int getVersion() {
+			return version;
+		}
+		public byte[] getValue() {
+			return value;
+		}
+		public int getLength() {
+			return length;
+		}
+
+		public Key(int version, int id, byte[] value) {
+			this.version = version;
+			this.id = id;
+			this.value = value;
+			this.length = value.length;
+		}
+
+		public Key(int version, int id, int length, int type) {
+			this.version = version;
+			this.id = id;
+			this.length = length;
+			this.algorithm = type;
+		}
+	}
+
 	public enum KeyType {
 		// ID is as used in diversification
 		// That is - one based.

@@ -7,6 +7,7 @@ import javax.smartcardio.Card;
 import javax.smartcardio.CardException;
 import javax.smartcardio.CardTerminal;
 import javax.smartcardio.CardTerminals;
+import javax.smartcardio.CardTerminals.State;
 import javax.smartcardio.TerminalFactory;
 
 /**
@@ -42,6 +43,7 @@ public class TerminalManager {
 			}
 		}
 
+		// Right now only JNA based approach should be correct.
 		if (tf.getProvider().getName() == jnasmartcardio.Smartcardio.PROVIDER_NAME) {
 			buggy = false;
 		}
@@ -65,8 +67,8 @@ public class TerminalManager {
 		try {
 			TerminalFactory tf = getTerminalFactory();
 			CardTerminals tl = tf.terminals();
-			if (tl.list().size() != 1) {
-				throw new RuntimeException("Need to have one and only one reader.");
+			if (tl.list(State.CARD_PRESENT).size() != 1) {
+				throw new RuntimeException("This application expect one and only one card reader with an inserted card");
 			}
 			return tl.list().get(0);
 		} catch (NoSuchAlgorithmException e) {

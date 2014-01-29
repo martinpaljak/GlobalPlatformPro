@@ -25,7 +25,6 @@ package openkms.gpj;
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
-import javax.smartcardio.CardException;
 
 public class GPUtils {
 
@@ -119,8 +118,8 @@ public class GPUtils {
 
 	public static String swToString(int sw) {
 		int sw1 = (sw & 0x0000FF00) >> 8;
-		int sw2 = (sw & 0x000000FF);
-		return swToString(sw1, sw2);
+			int sw2 = (sw & 0x000000FF);
+			return swToString(sw1, sw2);
 	}
 
 	private static byte[] pad80(byte[] text, int offset, int length) {
@@ -145,11 +144,11 @@ public class GPUtils {
 		return pad80(text, 0, text.length);
 	}
 
-	public static byte[] mac_3des(byte[] key, byte[] text, byte[] cv) throws CardException {
+	public static byte[] mac_3des(byte[] key, byte[] text, byte[] cv)  {
 		return mac_3des(key, text, 0, text.length, cv);
 	}
 
-	private static byte[] mac_3des(byte[] key, byte[] text, int offset, int length, byte[] cv) throws CardException {
+	private static byte[] mac_3des(byte[] key, byte[] text, int offset, int length, byte[] cv) {
 		if (length == -1) {
 			length = text.length - offset;
 		}
@@ -162,15 +161,15 @@ public class GPUtils {
 			System.arraycopy(res, res.length - 8, result, 0, 8);
 			return result;
 		} catch (Exception e) {
-			throw new CardException("MAC computation failed.");
+			throw new RuntimeException("MAC computation failed.", e);
 		}
 	}
 
-	public static byte[] mac_des_3des(byte[] key, byte[] text, byte[] iv) throws CardException {
+	public static byte[] mac_des_3des(byte[] key, byte[] text, byte[] iv) {
 		return mac_des_3des(key, text, 0, text.length, iv);
 	}
 
-	private static byte[] mac_des_3des(byte[] key, byte[] text, int offset, int length, byte[] iv) throws CardException {
+	private static byte[] mac_des_3des(byte[] key, byte[] text, int offset, int length, byte[] iv) {
 		if (length == -1) {
 			length = text.length - offset;
 		}
@@ -195,7 +194,7 @@ public class GPUtils {
 			return result;
 		} catch (Exception e) {
 			e.printStackTrace();
-			throw new CardException("MAC computation failed.");
+			throw new RuntimeException("MAC computation failed.", e);
 		}
 	}
 

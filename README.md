@@ -14,7 +14,7 @@ Load and manage applets on compatible JavaCards from command line or from your J
 
 ### Usage
 
-*Beware: until v1.0 is released, both command line and Java API are subject to change without notice. So check back often for [new features](#coming-soon)*
+*Beware: [until v1.0 is released](#upcoming-releases), both command line and Java API are subject to change without notice. Check back often.*
 
 Command line samples assume default test keys of ```40..4F```. If you need custom keys, specify them with any or all of the following options: ```-keyid``` ```-keyver``` and ```-enc``` ```-mac``` ```-kek``` (you need to know the details or ask your card provider). Some cards require key diversification with ```-emv``` or ```-visa2``` (you should be notified if that's the case).
 
@@ -43,13 +43,13 @@ Command line samples assume default test keys of ```40..4F```. If you need custo
    add ```-mode clr``` to your command (not supported on all cards)
 
 ##### Usage from Java
- * Check the (currently in very bad shape) [javadoc](http://martinpaljak.github.io/GlobalPlatform/)
- * Or the [command line utility source code](https://github.com/martinpaljak/GlobalPlatform/blob/master/src/openkms/gpj/GPJTool.java)
-
+ * For now consult the [command line utility source code](https://github.com/martinpaljak/GlobalPlatform/blob/master/src/openkms/gpj/GPJTool.java)
+ * [Javadoc](http://martinpaljak.github.io/GlobalPlatform/) is in a bad shape but shall be fixed near v1.0
+ 
 ### Contact 
 
  * martin@martinpaljak.net
- * .. or file an issue on Github. Better yet - a pull request!
+ * File an issue on Github. Better yet - a pull request!
  * For general conversation: [google forum](https://groups.google.com/forum/#!forum/openkms)
 
 ### History
@@ -88,7 +88,7 @@ available from http://gpj.sourceforge.net.
  * JCOP tools, RADIII, JCardManager4 etc
    * not publicly available open source projects and thus not suitable for this comparision
 
-## Coming soon
+## Upcoming releases
  * re-written command line utility
  * ```-lock``` and ```-unlock``` commands for changing secure channel keys
  * Simple GUI
@@ -103,7 +103,7 @@ In regard to GlobalPlatform, the goal is to make simple operations like installi
 <sup>*</sup> <sub>With the difference that OpenKMS thrives for a secure, easily usable and pleasantly readable codebase. And yes, you have probably already sold your soul to the devil...</sub>
 
 #### Legal disclaimer
- The casual: trademarks to their owners, copyrights to authors, patents to hell. Please send all legal letters to ~~/dev/null~~ PGP key 0x307E3452.
+ The casual: trademarks to their owners, copyrights to authors, patents to hell. You can send all legal letters to ~~/dev/null~~ PGP key 0x307E3452.
 
 ----
 OpenKMS - open source key management - [openkms.org](http://openkms.org)

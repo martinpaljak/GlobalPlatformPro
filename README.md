@@ -2,7 +2,7 @@
 
 Load and manage applets on compatible JavaCards from command line or from your Java project with a [DWIM](http://en.wikipedia.org/wiki/DWIM) approach.
 
-Provides a **high level** and **easy to use** interface that most of the time **JustWorks<sup>(TM)</sup>** yet is as **flexible** as GPShell.
+> Provides a **high level** and **easy to use** interface that most of the time **JustWorks<sup>(TM)</sup>** yet is as **flexible** as GPShell.
 
 ### Get it now!
  * Download latest pre-built JAR from [release area](https://github.com/martinpaljak/GlobalPlatform/releases)
@@ -14,7 +14,7 @@ Provides a **high level** and **easy to use** interface that most of the time **
 
 ### Usage
 
-*Beware: until v1.0 is released, both command line and Java API are subject to change without notice.*
+*Beware: until v1.0 is released, both command line and Java API are subject to change without notice. So check back often for [new features](#coming-soon)*
 
 Command line samples assume default test keys of ```40..4F```. If you need custom keys, specify them with any or all of the following options: ```-keyid``` ```-keyver``` and ```-enc``` ```-mac``` ```-kek``` (you need to know the details or ask your card provider). Some cards require key diversification with ```-emv``` or ```-visa2``` (you should be notified if that's the case).
 
@@ -88,11 +88,22 @@ available from http://gpj.sourceforge.net.
  * JCOP tools, RADIII, JCardManager4 etc
    * not publicly available open source projects and thus not suitable for this comparision
 
+## Coming soon
+ * re-written command line utility
+ * ```-lock``` and ```-unlock``` commands for changing secure channel keys
+ * Simple GUI
+
 ## About OpenKMS
 The promise of OpenKMS is similar to OpenSSL: 
     
-    Why buy a smart card software kit as a black box when you can get an open one for free?
-<sub>(with the difference that OpenKMS thrives for a secure, easily usable and pleasantly readable codebase). And yes, you have probably already sold your soul to the devil...</sub>
+> Why buy a smart card **software kit as a black box** when you can get an **open one for free**? <sup>*</sup>
+
+In regard to GlobalPlatform, the goal is to make simple operations like installing and removing applets and locking the card with new keys as easy as next-next-done - you don't have to know the whole Global Platform specification by heart for that or buy a piece of proprietary software for a few hundred euros! For all those features that are not describe in the GlobalPlatform specification that actually make your card work... you still have to use those proprietary commands, but OpenKMS GlobalPlatform toolkit's flexibility (and its license) should allow you to do that as well.
+
+<sup>*</sup> <sub>With the difference that OpenKMS thrives for a secure, easily usable and pleasantly readable codebase. And yes, you have probably already sold your soul to the devil...</sub>
+
+#### Legal disclaimer
+ The casual: trademarks to their owners, copyrights to authors, patents to hell. Please send all legal letters to ~~/dev/null~~ PGP key 0x307E3452.
 
 ----
 OpenKMS - open source key management - [openkms.org](http://openkms.org)

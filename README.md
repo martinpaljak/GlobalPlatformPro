@@ -103,7 +103,7 @@ In regard to GlobalPlatform, the goal is to make simple operations like installi
 <sup>*</sup> <sub>With the difference that OpenKMS thrives for a secure, easily usable and pleasantly readable codebase. And yes, you have probably already sold your soul to the devil...</sub>
 
 #### Legal disclaimer
- The casual: trademarks to their owners, copyrights to authors, patents to hell. You can send all legal letters to ~~/dev/null~~ PGP key 0x307E3452.
+ The casual: trademarks to their owners, copyrights to authors, patents to hell, legal letters to ~~/dev/null~~ PGP key 0x307E3452.
 
 ----
 OpenKMS - open source key management - [openkms.org](http://openkms.org)

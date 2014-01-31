@@ -2,14 +2,16 @@
 <project name="GlobalPlatform Java" default="dist" basedir=".">
   <description>ANT build file for OpenKMS GlobalPlatform</description>
   <!-- Build the software -->
+  <path id="build.classpath">
+    <pathelement location="lib/jnasmartcardio.jar"/>
+    <pathelement location="lib/bcprov-jdk15on-150.jar"/>
+    <pathelement location="lib/jopt-simple-4.6.jar"/>
+  </path>
   <target name="compile" description="compile the source">
     <mkdir dir="build"/>
     <javac srcdir="src" destdir="build" includeantruntime="false" excludes="**/tests/**" target="1.7" debug="true" debuglevel="lines,vars,source">
       <compilerarg value="-Xlint"/>
-      <classpath>
-        <pathelement location="lib/jnasmartcardio.jar"/>
-        <pathelement location="lib/bcprov-jdk15on-150.jar"/>
-      </classpath>
+      <classpath refid="build.classpath"/>
     </javac>
   </target>
   <!-- Package it into a nice little JAR -->
@@ -22,9 +24,19 @@
     </java>
     <jar manifest="Manifest.mf" destfile="gp.jar" level="9">
       <zipfileset src="lib/jnasmartcardio.jar"/>
-      <zipfileset src="optimized-globalplatform.jar" excludes="META-INF/BCKEY.*,org/bouncycastle/x509/"/>
+      <zipfileset src="optimized-globalplatform.jar" excludes="org/bouncycastle/x509/"/>
     </jar>
     <delete file="optimized-globalplatform.jar"/>
+  </target>
+  <!-- Wrap the JAR into .EXE -->
+  <target name="windist" depends="dist" description="package as .exe">
+    <property name="launch4j.dir" location="ext/launch4j"/>
+    <taskdef name="launch4j" classname="net.sf.launch4j.ant.Launch4jTask" classpath="${launch4j.dir}/launch4j.jar:${launch4j.dir}/lib/xstream.jar"/>
+    <launch4j>
+      <config headerType="console" outfile="gp.exe" jar="gp.jar" errTitle="GlobalPlatform">
+        <jre minVersion="1.7.0"/>
+      </config>
+    </launch4j>
   </target>
   <!-- Clean the source tree -->
   <target name="clean" description="clean up">
@@ -39,10 +51,7 @@
         <include name="openkms/gpj/"/>
         <exclude name="openkms/gpj/tests/**"/>
       </packageset>
-      <classpath>
-        <pathelement location="lib/jnasmartcardio.jar"/>
-        <pathelement location="lib/bcprov-jdk15on-150.jar"/>
-      </classpath>
+      <classpath refid="build.classpath"/>
     </javadoc>
   </target>
   <!-- Do a full release to github -->

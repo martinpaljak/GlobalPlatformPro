@@ -177,13 +177,13 @@ public class AIDRegistryEntry {
 	 * @return description
 	 */
 	public String toString() {
-		String result = "";
-		result += "AID: " + aid + ", " + lifeCycleState + ", " + privileges + ", Kind: " + kind.toShortString();
+		StringBuffer result = new StringBuffer();
+		result.append("AID: " + aid + ", " + lifeCycleState + ", " + privileges + ", Kind: " + kind.toShortString());
 
 		for (AID a : executableAIDS) {
-			result = result + "\n  " + a;
+			result.append("\n  " + a);
 		}
-		return result;
+		return result.toString();
 	}
 
 	public String getLifeCycleString() {
@@ -265,19 +265,20 @@ public class AIDRegistryEntry {
 				privs.add("CVM (PIN) management");
 			}
 		}
-		String result = "";
+		StringBuffer result = new StringBuffer();
+		// http://findbugs.sourceforge.net/bugDescriptions.html#SBSC_USE_STRINGBUFFER_CONCATENATION
+
 		for (int i = 0; i < privs.size(); i++) {
 			if (i != 0) {
-				result += ", ";
+				result.append(", ");
 			}
-			result += privs.get(i);
+			result.append(privs.get(i));
 		}
 
 		// TODO: Wait until actual cards discovered
 		if (r>0) {
-			result += " " + Integer.toHexString(r);
+			result.append(" " + Integer.toHexString(r));
 		}
-
-		return result.trim();
+		return result.toString().trim();
 	}
 }

@@ -23,7 +23,7 @@ public final  class TLVUtils {
 	}
 
 	static short skipLength(byte[] data, short offset) {
-		return ++offset;
+		return (short) (offset + 1);
 	}
 
 	static int get_byte_value(byte[] data, short offset) {

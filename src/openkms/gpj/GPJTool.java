@@ -1,508 +1,351 @@
 package openkms.gpj;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.security.NoSuchAlgorithmException;
+import java.io.File;
+import java.io.FileInputStream;
+import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
-import java.util.Vector;
 
 import javax.smartcardio.Card;
 import javax.smartcardio.CardException;
 import javax.smartcardio.CardTerminal;
 import javax.smartcardio.CardTerminals;
+import javax.smartcardio.CardTerminals.State;
 import javax.smartcardio.TerminalFactory;
 
-import openkms.gpj.KeySet.KeyDiversification;
-import openkms.gpj.KeySet.KeyType;
+import joptsimple.OptionException;
+import joptsimple.OptionParser;
+import joptsimple.OptionSet;
 
 
 public class GPJTool {
 
-	public static void main(String[] args) throws Exception {
+	private final static String CMD_INFO = "info";
 
-		final class InstallEntry {
-			AID appletAID;
-			AID packageAID;
-			int priv;
-			byte[] params;
-		}
-
-		boolean listApplets = false;
-		int keyID = 0;
-		int keyVersion = 0;
-		KeySet ks = new KeySet(GlobalPlatform.defaultKey);
-		AID sdAID = null;
-		AID defaultAID = null;
-
-		Vector<AID> deleteAID = new Vector<AID>();
-		boolean deleteDeps = false;
-		boolean deleteDefault = false;
-		boolean format = false;
+	private final static String CMD_LIST = "list";
+	private final static String CMD_LOCK = "lock";
+	private final static String CMD_INSTALL = "install";
+	private final static String CMD_DELETE = "delete";
+	private final static String CMD_CREATE = "create";
+	private final static String CMD_LOAD = "load";
+	private final static String CMD_UNLOCK = "unlock";
 
 
-		URL capFileUrl = null;
-		int loadSize = GlobalPlatform.defaultLoadSize;
+	private final static String OPT_DELETEDEPS = "deletedeps";
+	private final static String OPT_DEFAULT = "default";
+	private final static String OPT_CAP = "cap";
+	private final static String OPT_APPLET = "applet";
+	private final static String OPT_PACKAGE = "package";
+	private final static String OPT_INSTANCE = "instance";
+	private final static String OPT_DO_ALL_READERS = "all";
 
-		boolean loadCompSep = false;
-		boolean loadDebug = false;
-		boolean loadParam = false;
-		boolean useHash = false;
 
-		boolean verbose = false; // true if GP is verbose
-		boolean debug = false; // true if APDU-s logged
-		boolean relax = false; // true if not strict
+	private final static String OPT_CONTINUE = "skip-error";
+	private final static String OPT_RELAX = "relax";
+	private final static String OPT_READER = "reader";
+	private final static String OPT_VERSION = "version";
+	private final static String OPT_SDAID = "sdaid";
+	private final static String OPT_DEBUG = "debug";
+	private final static String OPT_VERBOSE = "verbose";
+	private final static String OPT_REINSTALL = "reinstall";
 
-		boolean listReaders = false;
-		boolean showInfo = false;
-		boolean auth = false; // true if auth even if not needed
+	private final static String OPT_MODE = "mode";
 
-		int apduMode = GlobalPlatform.APDU_MAC;
+	private final static String OPT_MAC = "mac";
+	private final static String OPT_ENC = "enc";
+	private final static String OPT_KEK = "kek";
+	private final static String OPT_KEY = "key";
+	private final static String OPT_KEY_VERSION = "keyver";
+	private final static String OPT_KEY_ID = "keyid";
 
-		Vector<InstallEntry> installs = new Vector<InstallEntry>();
+	private final static String OPT_EMV = "emv";
+	private final static String OPT_VISA2 = "visa2";
 
+
+
+
+	public static void main(String[] argv) throws Exception {
+		OptionSet args = null;
+		OptionParser parser = new OptionParser();
+
+		// Generic options
+		parser.acceptsAll(Arrays.asList("h", "help"), "Shows this help string").forHelp();
+		parser.acceptsAll(Arrays.asList("d", OPT_DEBUG), "Show PC/SC and APDU trace");
+		parser.acceptsAll(Arrays.asList("v", OPT_VERBOSE), "Be verbose about operations");
+		parser.acceptsAll(Arrays.asList("r", OPT_READER), "Use specific reader").withRequiredArg();
+		parser.acceptsAll(Arrays.asList("l", CMD_LIST), "List the contents of the card");
+		parser.acceptsAll(Arrays.asList("i", CMD_INFO), "Show information");
+		parser.accepts(OPT_VERSION, "Show information about the program");
+
+		// Special options
+		parser.accepts(OPT_RELAX, "Relaxed error checking");
+		parser.accepts(OPT_DO_ALL_READERS, "Work with multiple readers");
+
+		// Applet operation options
+		parser.accepts(OPT_CAP, "Use a CAP file as source").withRequiredArg().ofType(File.class);
+		parser.accepts(CMD_LOAD, "Load a CAP file").withRequiredArg().ofType(File.class);
+
+		parser.accepts(CMD_INSTALL, "Install applet").withOptionalArg().ofType(File.class);
+		parser.accepts(OPT_DEFAULT, "Indicate Default Selected");
+		parser.accepts(OPT_DELETEDEPS, "Also delete dependencies");
+		parser.accepts(OPT_REINSTALL, "Remove card content during installation");
+
+		parser.accepts(CMD_DELETE, "Delete something").requiredIf(OPT_DELETEDEPS).withOptionalArg().withValuesConvertedBy(GPJToolArgumentMatchers.aid());
+
+		// TODO: require CAP file here, for now (usability)
+		parser.accepts(CMD_CREATE, "Create new instance of an applet").withRequiredArg().withValuesConvertedBy(GPJToolArgumentMatchers.aid());
+		parser.accepts(OPT_APPLET, "Applet AID").withRequiredArg().withValuesConvertedBy(GPJToolArgumentMatchers.aid());
+		parser.accepts(OPT_PACKAGE, "Package AID").withRequiredArg().withValuesConvertedBy(GPJToolArgumentMatchers.aid());
+		parser.accepts(OPT_INSTANCE, "Instance AID").withRequiredArg().withValuesConvertedBy(GPJToolArgumentMatchers.aid());
+
+		// Key options
+		parser.accepts(OPT_MAC, "Specify MAC key").withRequiredArg().withValuesConvertedBy(GPJToolArgumentMatchers.key());
+		parser.accepts(OPT_ENC, "Specify ENC key").withRequiredArg().withValuesConvertedBy(GPJToolArgumentMatchers.key());
+		parser.accepts(OPT_KEK, "Specify KEK key").withRequiredArg().withValuesConvertedBy(GPJToolArgumentMatchers.key());
+		parser.accepts(OPT_KEY, "Specify master key").withRequiredArg().withValuesConvertedBy(GPJToolArgumentMatchers.key());
+		parser.accepts(CMD_LOCK, "Set new key").withRequiredArg().withValuesConvertedBy(GPJToolArgumentMatchers.key());
+		parser.accepts(CMD_UNLOCK, "Set default key").withRequiredArg().withValuesConvertedBy(GPJToolArgumentMatchers.key());
+		parser.accepts(OPT_KEY_ID, "Specify key ID").withRequiredArg().ofType(Integer.class);
+		parser.accepts(OPT_KEY_VERSION, "Specify key version").withRequiredArg().ofType(Integer.class);
+
+		// Key diversification and AID options
+		parser.accepts(OPT_EMV, "Use EMV diversification");
+		parser.accepts(OPT_VISA2, "Use VISA2 diversification");
+		parser.accepts(OPT_MODE, "APDU mode to use (mac/enc/clr)").withRequiredArg().withValuesConvertedBy(GPJToolArgumentMatchers.mode());;
+
+		parser.accepts(OPT_SDAID, "ISD AID").withRequiredArg().withValuesConvertedBy(GPJToolArgumentMatchers.aid());
+
+
+		// Parse arguments
 		try {
-			for (int i = 0; i < args.length; i++) {
-
-				if (args[i].equals("-h") || args[i].equals("-help") || args[i].equals("--help")) {
-					usage();
-					System.exit(0);
-				}
-
-				// All other options.
-				if (args[i].equals("-v") || args[i].equals("-verbose")) {
-					verbose = true;
-				} else if (args[i].equals("-debug")) {
-					debug = true;
-				} else if (args[i].equals("-relax")) {
-					relax = true;
-				} else if (args[i].equals("-readers")) {
-					listReaders = true;
-				} else if (args[i].equals("-list")) {
-					listApplets = true;
-				} else if (args[i].equals("-info")) {
-					showInfo = true;
-				} else if (args[i].equals("-auth")) {
-					auth = true;
-				} else if (args[i].equals("-keyver")) {
-					i++;
-					keyVersion = Integer.parseInt(args[i]);
-					if ((keyVersion <= 0) || (keyVersion > 127)) {
-						throw new IllegalArgumentException("Key version " + keyVersion + " out of range.");
-					}
-				} else if (args[i].equals("-keyid")) {
-					i++;
-					keyID = Integer.parseInt(args[i]);
-					if ((keyID <= 0) || (keyID > 127)) {
-						throw new IllegalArgumentException("Key ID " + keyID + " out of range.");
-					}
-				} else if (args[i].equals("-sdaid")) {
-					i++;
-					byte[] aid = GPUtils.stringToByteArray(args[i]);
-					if (aid == null) {
-						throw new IllegalArgumentException("Malformed SD AID: " + args[i]);
-					}
-					sdAID = new AID(aid);
-				} else if (args[i].equals("-default")) {
-					i++;
-					byte[] aid = GPUtils.stringToByteArray(args[i]);
-					if (aid == null) {
-						throw new IllegalArgumentException("Malformed AID: " + args[i]);
-					}
-					defaultAID = new AID(aid);
-				} else if (args[i].equals("-visa2")) {
-					ks.diversification = KeyDiversification.VISA2;
-					apduMode = GlobalPlatform.APDU_MAC;
-				} else if (args[i].equals("-emv")) {
-					ks.diversification = KeyDiversification.EMV;
-					apduMode = GlobalPlatform.APDU_MAC;
-				} else if (args[i].equals("-mode")) {
-					i++;
-					// TODO: RMAC modes
-					if ("CLR".equalsIgnoreCase(args[i])) {
-						apduMode = GlobalPlatform.APDU_CLR;
-					} else if ("MAC".equalsIgnoreCase(args[i])) {
-						apduMode = GlobalPlatform.APDU_MAC;
-					} else if ("ENC".equalsIgnoreCase(args[i])) {
-						apduMode = GlobalPlatform.APDU_ENC;
-					} else {
-						throw new IllegalArgumentException("Invalid APDU mode: " + args[i]);
-					}
-				} else if (args[i].equals("-delete")) {
-					i++;
-					if (args[i].equals("-default")) {
-						deleteDefault = true;
-					} else {
-						byte[] aid = GPUtils.stringToByteArray(args[i]);
-						if (aid == null) {
-							throw new IllegalArgumentException("Malformed AID: " + args[i]);
-						}
-						deleteAID.add(new AID(aid));
-					}
-				} else if (args[i].equals("-deletedeps")) {
-					deleteDeps = true;
-				} else if (args[i].equals("-format")) {
-					format = true;
-				} else if (args[i].equals("-loadsize")) {
-					i++;
-					loadSize = Integer.parseInt(args[i]);
-					if ((loadSize <= 16) || (loadSize > 255)) {
-						throw new IllegalArgumentException("Load size " + loadSize + " out of range.");
-					}
-				} else if (args[i].equals("-loadsep")) {
-					loadCompSep = true;
-				} else if (args[i].equals("-loaddebug")) {
-					loadDebug = true;
-				} else if (args[i].equals("-loadparam")) {
-					loadParam = true;
-				} else if (args[i].equals("-loadhash")) {
-					useHash = true;
-				} else if (args[i].equals("-load")) {
-					i++;
-					try {
-						capFileUrl = new URL(args[i]);
-					} catch (MalformedURLException e) {
-						// Try with "file:" prepended
-						capFileUrl = new URL("file:" + args[i]);
-					}
-					try {
-						InputStream in = capFileUrl.openStream();
-						in.close();
-					} catch (IOException ioe) {
-						throw new IllegalArgumentException("CAP file " + capFileUrl + " does not seem to exist.", ioe);
-					}
-				} else if (args[i].equals("-install")) {
-					i++;
-					int totalOpts = 5;
-					int current = 0;
-					AID appletAID = null;
-					AID packageAID = null;
-					int priv = 0;
-					byte[] param = null;
-					while ((i < args.length) && (current < totalOpts)) {
-						if (args[i].equals("-applet")) {
-							i++;
-							byte[] aid = GPUtils.stringToByteArray(args[i]);
-							i++;
-							if (aid == null) {
-								throw new IllegalArgumentException("Malformed AID: " + args[i]);
-							}
-							appletAID = new AID(aid);
-							current = 1;
-						} else if (args[i].equals("-package")) {
-							i++;
-							byte[] aid = GPUtils.stringToByteArray(args[i]);
-							i++;
-							if (aid == null) {
-								throw new IllegalArgumentException("Malformed AID: " + args[i]);
-							}
-							packageAID = new AID(aid);
-							current = 2;
-						} else if (args[i].equals("-priv")) {
-							i++;
-							priv = Integer.parseInt(args[i]);
-							i++;
-							current = 3;
-						} else if (args[i].equals("-default")) {
-							i++;
-							priv|= 0x4;
-							current = 4;
-						} else if (args[i].equals("-param")) {
-							i++;
-							param = GPUtils.stringToByteArray(args[i]);
-							i++;
-							if (param == null) {
-								throw new IllegalArgumentException("Malformed params: " + args[i]);
-							}
-							current = 5;
-						} else {
-							current = 5;
-							i--;
-						}
-					}
-					InstallEntry inst = new InstallEntry();
-					inst.appletAID = appletAID;
-					inst.packageAID = packageAID;
-					inst.priv = priv;
-					inst.params = param;
-					installs.add(inst);
-				} else {
-					KeyType type = null;
-					for (KeyType k: KeyType.values()) {
-						if (args[i].substring(1).equalsIgnoreCase(k.toString())) {
-							type = k;
-							break;
-						}
-					}
-					if (type == null) {
-						throw new IllegalArgumentException("Unknown parameter " + args[i]);
-					} else {
-						i++;
-						ks.setKey(type, GPUtils.stringToByteArray(args[i]));
-					}
-				}
+			args = parser.parse(argv);
+			// Try to fetch all values
+			for (String s: parser.recognizedOptions().keySet()) {args.valueOf(s);}
+		} catch (OptionException e) {
+			if (e.getCause() != null) {
+				System.err.println(e.getMessage() + ": " + e.getCause().getMessage());
+			} else {
+				System.err.println(e.getMessage());
 			}
-		} catch (IllegalArgumentException e) {
-			e.printStackTrace();
-			usage();
+			System.err.println();
+			parser.printHelpOn(System.err);
 			System.exit(1);
 		}
 
-		// Do the actual work
-		try {
-			TerminalFactory tf = TerminalManager.getTerminalFactory();
+		// Do the work, based on arguments
+		if (args.has("help")) {
+			parser.printHelpOn(System.out);
+			System.exit(0);
+		}
 
-			if (debug)
-				System.out.println("Using PC/SC provier: " + tf.getProvider().getName());
+		if (args.has(OPT_VERSION)) {
+			System.out.println("OpenKMS GlobalPlatform version " + GlobalPlatform.sdk_version);
+		}
 
-			CardTerminals terminals = tf.terminals();
-			List<CardTerminal> terms = terminals.list();
+		TerminalFactory tf = TerminalManager.getTerminalFactory();
+		CardTerminals terminals = tf.terminals();
 
-			// list readers in debug mode and with -readers
-			if (debug || listReaders) {
-				System.out.println("# Detected readers");
-				for (CardTerminal term : terms) {
-					System.out.println(term.getName() + (term.isCardPresent() ? "  CARD" : " EMPTY"));
-				}
-				System.out.println();
+		// List terminals if needed
+		if (args.has(OPT_DEBUG)) {
+			System.out.println("# Detected readers");
+			for (CardTerminal term : terminals.list()) {
+				System.out.println((term.isCardPresent() ? "[*] " : "[ ] ") + term.getName());
+			}
+		}
+
+		// Select terminals to work on
+		List<CardTerminal> do_readers;
+		if (args.has(OPT_READER)) {
+			CardTerminal t = terminals.getTerminal((String) args.valueOf(OPT_READER));
+			if (t == null) {
+				System.err.println("Reader \"" + (String) args.valueOf(OPT_READER) + "\" not found.");
+				System.exit(1);
+			}
+			do_readers = Arrays.asList(t);
+		} else {
+			do_readers = terminals.list(State.CARD_PRESENT);
+			if (do_readers.size() > 1 && !args.hasArgument(OPT_DO_ALL_READERS)) {
+				System.err.println("More than one reader with a card found.");
+				System.err.println("Run with --"+OPT_DO_ALL_READERS+" to work with all found cards");
+				System.exit(1);
+			}
+		}
+
+		// Parameters for opening the secure channel
+		KeySet ks = new KeySet(GlobalPlatformData.defaultKey);
+
+		// Load a CAP file, if specified
+		CapFile cap = null;
+		if (args.has(OPT_CAP)) {
+			File capfile = (File) args.valueOf(OPT_CAP);
+			cap = new CapFile(new FileInputStream(capfile));
+		}
+
+		// Work all readers
+		for (CardTerminal reader: do_readers) {
+			// Wrap with logging
+			if (args.has(OPT_DEBUG)) {
+				reader = LoggingCardTerminal.getInstance(reader);
 			}
 
-
-			// Do what is needed, connecting to all terminals with a reader
-			for (CardTerminal terminal : terminals.list(CardTerminals.State.CARD_PRESENT)) {
-				Card c = null;
+			Card card = null;
+			try {
+				// Establish connection
 				try {
-					// Wrap the terminal with a logging wrapper if needed.
-					if (debug) {
-						terminal = LoggingCardTerminal.getInstance(terminal);
-					}
-
-					try {
-						c = terminal.connect("*");
-					} catch (CardException e) {
-						if (e.getCause() != null && e.getCause().getMessage() != null) {
-							String msg = e.getCause().getMessage();
-							if (msg != null) {
-								if (msg.equalsIgnoreCase("SCARD_E_NO_SMARTCARD")) {
-									System.err.println("No card in reader \"" + terminal.getName() + "\": " + e.getCause().getMessage());
-									continue;
-								} else if (msg.equalsIgnoreCase("SCARD_W_UNPOWERED_CARD")) {
-									System.err.println("No card in reader \"" + terminal.getName() + "\": " + e.getCause().getMessage());
-									System.err.println("  TIP: Make sure that the card is properly inserted and the chip is clean!");
-									continue;
-								}
-							}
-						} else {
-							System.err.println("Could not connect to card in " + terminal.getName());
-							e.printStackTrace();
-							continue;
-						}
+					card = reader.connect("*");
+				} catch (CardException e) {
+					if (args.has(OPT_CONTINUE)) {
 						e.printStackTrace();
-
-					}
-
-					if (verbose || showInfo) {
-						System.out.println("Found card in reader: " + terminal.getName());
-						System.out.println("ATR: " + GPUtils.byteArrayToString(c.getATR().getBytes()));
-					}
-
-					GlobalPlatform service = new GlobalPlatform(c.getBasicChannel());
-					if (verbose)
-						service.beVerboseTo(System.out);
-					service.setStrict(!relax);
-
-					// Select sdAID
-					service.select(sdAID);
-
-					// Show info
-					if (showInfo) {
-						System.out.println("***** Card info (not authenticated):");
-						print_card_info(service);
-					}
-
-					// Only authenticate if needed
-					auth = auth || deleteDefault || format || deleteAID.size() > 0 || installs.size() > 0 || listApplets;
-
-					if (auth) {
-						service.openSecureChannel(ks, GlobalPlatform.SCP_ANY, apduMode);
-						if (showInfo) {
-							System.out.println("***** Card info (authenticated):");
-							print_card_info(service);
-						}
-						AIDRegistry registry = service.getStatus();
-
-						if (deleteAID.size() > 0) {
-							for (AID aid : deleteAID) {
-								try {
-									service.deleteAID(aid, deleteDeps);
-								} catch (GPException gpe) {
-									if (!registry.entries.contains(aid)) {
-										System.out.println("Could not delete AID (not present on card): " + aid);
-									} else {
-										System.out.println("Could not delete AID: " + aid);
-										gpe.printStackTrace();
-									}
-								}
-							}
-						} else if (format) {
-							for (AIDRegistryEntry entry : registry.allApplets()) {
-								try {
-									service.deleteAID(entry.getAID(), true);
-								} catch (GPException e) {
-									System.out.println("Could not delete AID when formatting: " + entry.getAID() + " : 0x" + Integer.toHexString(e.sw));
-								}
-							}
-						} else if (deleteDefault) {
-							AID  aid = registry.getDefaultSelectedPackageAID();
-							if (aid != null) {
-								try {
-									service.deleteAID(aid, true);
-								} catch (GPException e) {
-									System.out.println("Could not delete default applet: " + aid + " : 0x" + Integer.toHexString(e.sw));
-								}
-							} else {
-								System.out.println("Card has no DefaultSelected applet");
-							}
-						}
-
-						CapFile cap = null;
-
-						if (capFileUrl != null) {
-							// TODO: make the APDU mode a parameter, properly adjust
-							// loadSize accordingly
-							int neededExtraSize = apduMode == GlobalPlatform.APDU_CLR ? 0 : (apduMode == GlobalPlatform.APDU_MAC ? 8 : 16);
-							if ((loadSize + neededExtraSize) > GlobalPlatform.defaultLoadSize) {
-								loadSize -= neededExtraSize;
-							}
-							cap = new CapFile(capFileUrl.openStream());
-							service.loadCapFile(cap, loadDebug, loadCompSep, loadSize, loadParam, useHash);
-						}
-
-						if (installs.size() > 0) {
-							for (InstallEntry install : installs) {
-								if (install.appletAID == null) {
-									AID p = cap.getPackageAID();
-									for (AID a : cap.getAppletAIDs()) {
-										service.installAndMakeSelecatable(p, a, null, (byte) install.priv, install.params, null);
-									}
-								} else {
-									service.installAndMakeSelecatable(install.packageAID, install.appletAID, null, (byte) install.priv, install.params, null);
-								}
-							}
-
-						}
-
-						if (defaultAID != null)
-							service.makeDefaultSelected(defaultAID, (byte) 0x04);
-
-						if (listApplets) {
-							registry = service.getStatus();
-							for (AIDRegistryEntry e : registry) {
-								AID aid = e.getAID();
-								System.out.println("AID: " + GPUtils.byteArrayToString(aid.getBytes()) + " (" + GPUtils.byteArrayToReadableString(aid.getBytes()) + ")");
-								System.out.println("     " + e.getKind().toShortString() + " " + e.getLifeCycleString() + ": " + e.getPrivilegesString());
-
-								for (AID a : e.getExecutableAIDs()) {
-									System.out.println("     " + GPUtils.byteArrayToString(a.getBytes()) + " (" + GPUtils.byteArrayToReadableString(a.getBytes()) + ")");
-								}
-								System.out.println();
-							}
-						}
-					}
-				} finally {
-					if (c != null) {
-						TerminalManager.disconnect(c, true);
+						continue;
+					} else {
+						throw e;
 					}
 				}
-			}
-		} catch (CardException e) {
-			e.printStackTrace();
-			if (e.getCause().getMessage().equalsIgnoreCase("SCARD_E_NO_READERS_AVAILABLE")) {
-				System.out.println("No smart card readers found (No readers available)");
-			} else {
+
+				// GlobalPlatform specific
+				GlobalPlatform gp = new GlobalPlatform(card.getBasicChannel());
+				if (args.has(OPT_VERBOSE))
+					gp.beVerboseTo(System.out);
+
+				// Be strict unless told otherwise
+				gp.setStrict(!args.has(OPT_RELAX));
+
+				if (args.has(CMD_INFO)) {
+					System.out.println("Reader: " + reader.getName());
+					System.out.println("ATR: " + GPUtils.byteArrayToString(card.getATR().getBytes()));
+				}
+
+				// Talk to the card manager
+				gp.select((AID) args.valueOf(OPT_SDAID));
+
+				// Fetch some data
+				if (args.has(CMD_INFO)) {
+					System.out.println("***** Card info (not authenticated):");
+					GlobalPlatformData.print_card_info(gp);
+				}
+
+				// Authenticate, only if needed
+				if (args.has(CMD_LIST) || args.has(CMD_INSTALL) || args.has(CMD_DELETE) || args.has(CMD_CREATE) || args.has(CMD_LOCK) || args.has(CMD_UNLOCK) ) {
+					// MAC by default.
+					EnumSet<GlobalPlatform.APDUMode> mode = EnumSet.of(GlobalPlatform.APDUMode.MAC);
+					if (args.has(OPT_MODE)) {
+						mode.clear();
+						mode.add((GlobalPlatform.APDUMode) args.valueOf(OPT_MODE));
+					}
+					// Possibly brick the card now.
+					gp.openSecureChannel(ks, GlobalPlatform.SCP_ANY, mode);
+
+					// --delete <aid> or --delete --default
+					if (args.has(CMD_DELETE)) {
+						if (args.has(OPT_DEFAULT)) {
+							gp.uninstallDefaultSelected(args.has(OPT_DELETEDEPS));
+						}
+						@SuppressWarnings("unchecked")
+						List<AID> aids = (List<AID>) args.valuesOf(CMD_DELETE);
+						for (AID aid: aids) {
+							try {
+								gp.deleteAID(aid, args.has(OPT_DELETEDEPS));
+							} catch (GPException e) {
+								if (!gp.getRegistry().allAIDs().contains(aid)) {
+									System.out.println("Could not delete AID (not present on card): " + aid);
+								} else {
+									System.out.println("Could not delete AID: " + aid);
+									if (e.sw == 0x6985) {
+										System.out.println("TIP: Maybe try with --" + OPT_DELETEDEPS);
+									}
+									throw e;
+								}
+							}
+						}
+					}
+
+					// --install <applet.cap>
+					if (args.has(CMD_INSTALL)) {
+						AID def = gp.getRegistry().getDefaultSelectedAID();
+						if (def != null && args.has(OPT_DEFAULT)) {
+							if (args.has(OPT_REINSTALL)) {
+								gp.verbose("Removing current default applet/package");
+								// Remove all instances of default selected app
+								def = gp.getRegistry().getDefaultSelectedPackageAID();
+								gp.deleteAID(def, true); // XXX: What about different instances ?
+							}
+						}
+
+						File capfile = (File) args.valueOf(CMD_INSTALL);
+						CapFile instcap = new CapFile(new FileInputStream(capfile));
+
+						// Check if already installed, for some reason
+						AID aid = instcap.getAppletAIDs().get(0);
+
+						if (gp.getRegistry().allAIDs().contains(aid)) {
+							System.err.println("WARNING: Applet " + aid + " already present on card");
+						}
+
+						gp.verbose("Installing applet from package " + instcap.getPackageName());
+						gp.loadCapFile(instcap);
+						// instance will be aid, which is first applet from package
+						gp.installAndMakeSelecatable(instcap.getPackageAID(), aid, null, args.has(OPT_DEFAULT) ? (byte) 0x04 : 0x00, null, null);
+					}
+
+					// --create <aid> (--applet <aid> --package <aid> or --cap <cap>)
+					if (args.has(CMD_CREATE)) {
+						AID packageAID = null;
+						AID appletAID = null;
+						// Load from cap if present
+						if (cap != null) {
+							packageAID = cap.getPackageAID();
+							appletAID = cap.getAppletAIDs().get(0);
+						}
+						// override if needed
+						packageAID = (AID) args.valueOf(OPT_PACKAGE);
+						appletAID = (AID) args.valueOf(OPT_APPLET);
+
+						// check
+						if (packageAID == null || appletAID == null)
+							throw new IllegalArgumentException("Need --" + OPT_PACKAGE + " and --" + OPT_APPLET + " or --" + OPT_CAP);
+
+						// shoot
+						AID instanceAID = (AID) args.valueOf(CMD_CREATE);
+						gp.installAndMakeSelecatable(packageAID, appletAID, instanceAID, (byte) 0x00, null, null);
+					}
+
+					// --list
+					if (args.has(CMD_LIST)) {
+						AIDRegistry registry = gp.getStatus();
+						registry = gp.getStatus();
+						for (AIDRegistryEntry e : registry) {
+							AID aid = e.getAID();
+							System.out.println("AID: " + GPUtils.byteArrayToString(aid.getBytes()) + " (" + GPUtils.byteArrayToReadableString(aid.getBytes()) + ")");
+							System.out.println("     " + e.getKind().toShortString() + " " + e.getLifeCycleString() + ": " + e.getPrivilegesString());
+
+							for (AID a : e.getExecutableAIDs()) {
+								System.out.println("     " + GPUtils.byteArrayToString(a.getBytes()) + " (" + GPUtils.byteArrayToReadableString(a.getBytes()) + ")");
+							}
+							System.out.println();
+						}
+					}
+				}
+			} catch (GPException e) {
+				// All GP exceptions halt the program unless it is run with -relax
+				if (!args.has(OPT_RELAX)) {
+					e.printStackTrace();
+					System.exit(1);
+				}
 				e.printStackTrace();
+			} catch (CardException e) {
+				// Card exceptions skip to the next reader, if available and allowed
+				if (args.has(OPT_CONTINUE)) {
+					continue;
+				} else {
+					e.printStackTrace();
+					throw e; // No catch.
+				}
+			} finally {
+				if (card != null)
+					TerminalManager.disconnect(card, true);
 			}
-		} catch (NoSuchAlgorithmException e) {
-			if (e.getCause().getMessage().equalsIgnoreCase("SCARD_E_NO_SERVICE")) {
-				System.out.println("No smart card readers found (PC/SC service not running)");
-			} else {
-				e.printStackTrace();
-			}
-		} catch (Exception e) {
-			System.out.println("Terminated by escaping exception: " + e.getClass().getName());
-			e.printStackTrace();
-			System.exit(1);
+
 		}
-
-	}
-	// TODO public for debuggin purposes
-	public static void print_card_info(GlobalPlatform gp) throws CardException, GPException {
-		// Print CPLC
-		GlobalPlatformData.pretty_print_cplc(gp.getCPLC(), System.out);
-		// Requires GP?
-		// Print CardData
-		System.out.println("***** CARD DATA");
-		byte [] card_data = gp.fetchCardData();
-		GlobalPlatformData.pretty_print_card_data(card_data, System.out);
-		// Print Key Info Template
-		System.out.println("***** KEY INFO");
-		GlobalPlatformData.pretty_print_key_template(gp.getKeyInfoTemplate(), System.out);
-
-	}
-	private static void usage() {
-		System.out.println("Usage:");
-		System.out.println("  java -jar openkms-globalplatform.jar <options>");
-		System.out.println("");
-		System.out.println("Options:");
-		System.out.println(" -debug            print APDU-s exchanged with the card");
-		System.out.println(" -verbose          print more information about card and ");
-		System.out.println(" -readers          print all found card raders");
-		System.out.println(" -relax            relax checks (lockup warning!)");
-		System.out.println(" -info             show interesting information about cards");
-		System.out.println(" -sdaid <aid>      security Domain AID (default: auto-detect)");
-		System.out.println(" -keyver <num>     use key version <num> (default: 0)");
-		System.out.println(" -keyid <num>      use key ID <num> (default: 0)");
-		System.out.println(" -mode <apduMode>  use APDU mode, CLR, MAC, or ENC (default: MAC)");
-		System.out.println(" -enc <key>        define ENC key (default: 40..4F)");
-		System.out.println(" -mac <key>        define MAC key (default: 40..4F)");
-		System.out.println(" -kek <key>        define KEK key (default: 40..4F)");
-		System.out.println(" -visa2            use VISA2 key diversification (only key version 0), default off");
-		System.out.println(" -emv              use EMV key diversification (only key version 0), default off");
-		System.out.println(" -deletedeps       also delete depending packages/applets, default off");
-		System.out.println(" -delete <aid>     delete package/applet");
-		System.out.println(" -format           format the card (try to delete all content)");
-		System.out.println(" -load <cap>       load <cap> file to the card, <cap> can be file name or URL");
-		System.out.println(" -loadsize <num>   load block size, default " + GlobalPlatform.defaultLoadSize);
-		System.out.println(" -loadsep          load CAP components separately, default off");
-		System.out.println(" -loaddebug        load the Debug & Descriptor component, default off");
-		System.out.println(" -loadparam        set install for load code size parameter");
-		System.out.println("                      (e.g. for CyberFlex cards), default off");
-		System.out.println(" -loadhash         check code hash during loading");
-		System.out.println(" -install          install applet:");
-		System.out.println("   -applet <aid>   applet AID, default: take all AIDs from the CAP file");
-		System.out.println("   -package <aid>  package AID, default: take from the CAP file");
-		System.out.println("   -priv <num>     privileges, default 0");
-		System.out.println("   -param <bytes>  install parameters, default: C900");
-		System.out.println("   -default        install as default selected (same as -priv 4)");
-		System.out.println(" -default <aid>    make the specified AID default selected");
-
-		System.out.println(" -list             list card registry");
-		System.out.println(" -h|-help|--help   print this usage info");
-		System.out.println("");
-		System.out.println("Multiple -load/-install/-delete and -list take the following precedence:");
-		System.out.println("  delete(s), load, install(s), list");
-		System.out.println("");
-		System.out.println("All -load/-install/-delete/-list actions will be performed on");
-		System.out.println("the basic logical channel of all cards currently connected.");
-		System.out.println("By default all connected PC/SC readers are searched.");
-		System.out.println("");
-		System.out.println("Examples:");
-		System.out.println("");
-		System.out.println("  [prog] -list");
-		System.out.println("  [prog] -load applet.cap -install -list");
-		System.out.println("  [prog] -deletedeps -delete 360000000001 -load applet.cap -install -list");
-		System.out.println("  [prog] -emv -enc 404142434445464748494A4B4C4D4E4F -list");
-		System.out.println("");
+		System.exit(0);
 	}
 }

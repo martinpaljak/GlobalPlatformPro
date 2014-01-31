@@ -3,3 +3,6 @@
 *~
 /gp.jar
 /javadoc/
+/gp.exe
+/cov-int
+/ext/launch4j

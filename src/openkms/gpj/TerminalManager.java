@@ -2,6 +2,7 @@ package openkms.gpj;
 
 import java.io.File;
 import java.security.NoSuchAlgorithmException;
+import java.util.List;
 
 import javax.smartcardio.Card;
 import javax.smartcardio.CardException;
@@ -67,10 +68,17 @@ public class TerminalManager {
 		try {
 			TerminalFactory tf = getTerminalFactory();
 			CardTerminals tl = tf.terminals();
-			if (tl.list(State.CARD_PRESENT).size() != 1) {
-				throw new RuntimeException("This application expect one and only one card reader with an inserted card");
+			List<CardTerminal> list = tl.list(State.CARD_PRESENT);
+			if (list.size() == 0) {
+				// No readers with cards. Maybe empty readers?
+				list = tl.list(State.ALL);
 			}
-			return tl.list().get(0);
+
+			if (list.size() != 1) {
+				throw new RuntimeException("This application expect one and only one card reader with an inserted card");
+			} else {
+				return tl.list().get(0);
+			}
 		} catch (NoSuchAlgorithmException e) {
 			throw new CardException(e);
 		}

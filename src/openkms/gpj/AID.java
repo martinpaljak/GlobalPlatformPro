@@ -23,17 +23,8 @@
 package openkms.gpj;
 
 import java.util.Arrays;
-import java.util.Map;
-import java.util.TreeMap;
 
 public class AID {
-
-	public static Map<String, AID> SD_AIDS = new TreeMap<String, AID>();
-
-	static {
-		SD_AIDS.put("OP201", new AID(new byte[] { (byte) 0xa0, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00 }));
-		SD_AIDS.put("GP211", new AID(new byte[] { (byte) 0xa0, 0x00, 0x00, 0x01, 0x51, 0x00, 0x00 }));
-	}
 
 	private byte[] aidBytes = null;
 
@@ -50,6 +41,10 @@ public class AID {
 		this(bytes, 0, bytes.length);
 	}
 
+
+	public AID(String str) {
+		this(GPUtils.stringToByteArray(str));
+	}
 	/**
 	 * Construct an application identifier from a part of a byte array.
 	 *
@@ -63,7 +58,7 @@ public class AID {
 	 *
 	 */
 	public AID(byte[] bytes, int offset, int length) {
-		this(bytes, offset, length, false);
+		this(bytes, offset, length, true);
 	}
 
 	/**
@@ -115,4 +110,9 @@ public class AID {
 		}
 		return false;
 	}
+
+	public static AID valueOf(String s) {
+		return new AID(s);
+	}
+
 }

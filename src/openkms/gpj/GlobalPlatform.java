@@ -26,14 +26,13 @@ package openkms.gpj;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.net.URL;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
-import java.util.Map;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -56,6 +55,7 @@ import openkms.gpj.KeySet.KeyType;
  * functionality for managing GP compliant smart cards.
  */
 public class GlobalPlatform {
+	public static final String sdk_version = "v0.2";
 	public static final short SHORT_0 = 0;
 	public static final int SCP_ANY = 0;
 	public static final int SCP_01_05 = 1;
@@ -68,10 +68,24 @@ public class GlobalPlatform {
 	public static final int SCP_02_15 = 8;
 	public static final int SCP_02_1A = 9;
 	public static final int SCP_02_1B = 10;
-	public static final int APDU_CLR = 0x00;
-	public static final int APDU_MAC = 0x01;
-	public static final int APDU_ENC = 0x02;
-	public static final int APDU_RMAC = 0x10;
+	public enum APDUMode {
+		// bit values as expected by EXTERNAL AUTHENTICATE
+		CLR(0x00), MAC(0x01), ENC(0x02), RMAC(0x10);
+
+		private final int value;
+		private APDUMode(int value) {this.value = value;}
+
+		public static int getSetValue(EnumSet<APDUMode> s) {
+			int v = 0;
+			for (APDUMode m : s) {
+				v |= m.value;
+			}
+			return v;
+		}
+	};
+
+
+	// Implementation details
 	private static final byte CLA_GP = (byte) 0x80;
 	private static final byte CLA_MAC = (byte) 0x84;
 	private static final byte INS_INITIALIZE_UPDATE = (byte) 0x50;
@@ -84,22 +98,22 @@ public class GlobalPlatform {
 
 	// AID of the card successfully selected or null
 	public AID sdAID = null;
-	private int scpMajorVersion = 0;
 
-	public static final byte[] defaultKey = { 0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F };
+	// Either 1 or 2
+	private int scpMajorVersion = 0;
 
 	private static final byte[] iv_null_bytes = new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 	private static final IvParameterSpec iv_null = new IvParameterSpec(iv_null_bytes);
 
 	public static final int defaultLoadSize = 255; // TODO: Check CardData
 	private SecureChannelWrapper wrapper = null;
-	private KeySet staticKeys;
+	private KeySet staticKeys = null;
 	private CardChannel channel = null;
-	protected int scpVersion = SCP_ANY;
 
 	private byte[] cplc = null;
+	private AIDRegistry registry = null;
+	private boolean dirty = true; // True if registry is dirty.
 	private PrintStream verboseTo = null;
-	protected boolean debug = false;
 	protected boolean strict = true;
 
 
@@ -114,25 +128,6 @@ public class GlobalPlatform {
 	public GlobalPlatform(CardChannel channel) {
 		this.channel = channel;
 	}
-
-	/**
-	 * Set the channel and the scpVersion and use the default security domain
-	 * AID.
-	 *
-	 * @param channel
-	 *            channel to talk to
-	 * @param scpVersion
-	 * @throws IllegalArgumentException
-	 *             if {@code scpVersion} is out of range or {@code channel} is
-	 *             null.
-	 */
-	//	public GlobalPlatform(CardChannel channel, int scpVersion) {
-	//		if ((scpVersion != SCP_ANY) && (scpVersion != SCP_02_0A) && (scpVersion != SCP_02_0B) && (scpVersion != SCP_02_1A) && (scpVersion != SCP_02_1B)) {
-	//			throw new IllegalArgumentException("Only implicit secure channels can be set through the constructor.");
-	//		}
-	//		this.channel = channel;
-	//		this.scpVersion = scpVersion;
-	//	}
 
 	protected boolean beVerbose() {
 		return verboseTo != null;
@@ -154,8 +149,8 @@ public class GlobalPlatform {
 
 	public void imFeelingLucky() throws CardException, GPException {
 		select(null);
-		KeySet ks = new KeySet(defaultKey, GlobalPlatformData.suggestDiversification(getCPLC()));
-		openSecureChannel(ks, SCP_ANY, APDU_MAC);
+		KeySet ks = new KeySet(GlobalPlatformData.defaultKey, GlobalPlatformData.suggestDiversification(getCPLC()));
+		openSecureChannel(ks, SCP_ANY, EnumSet.of(APDUMode.MAC));
 	}
 
 	protected void printStrictWarning(String message) throws GPException {
@@ -173,9 +168,13 @@ public class GlobalPlatform {
 		return CLA_GP;
 	}
 	public boolean select(AID sdAID) throws GPException, CardException {
-		// 1. Try to select ISD without giving the sdAID
-		// Works on most cards. Notice the coding of Le in CommandAPDU
-		CommandAPDU command = new CommandAPDU(ISO7816.CLA_ISO7816, ISO7816.INS_SELECT, 0x04, 0x00, 256);
+		// Try to select ISD without giving the sdAID
+		CommandAPDU command = null;
+		if (sdAID == null )
+			command = new CommandAPDU(ISO7816.CLA_ISO7816, ISO7816.INS_SELECT, 0x04, 0x00, 256);
+		else
+			command = new CommandAPDU(ISO7816.CLA_ISO7816, ISO7816.INS_SELECT, 0x04, 0x00, sdAID.getBytes(), 256);
+
 		ResponseAPDU resp = channel.transmit(command);
 
 		if (resp.getSW() == 0x6A82) {
@@ -199,10 +198,11 @@ public class GlobalPlatform {
 			}
 			this.sdAID = sdAID == null ? detectedAID : sdAID;
 			return true;
-			// TODO: parse the maximum command size as well.
+			// TODO: parse the maximum command size as well and use with defaultLoadSize
 		}
 		return false;
 	}
+
 	/**
 	 * Establish a connection to the security domain specified in the
 	 * constructor or discovered. This method is required before doing
@@ -214,16 +214,7 @@ public class GlobalPlatform {
 	 *             on data transmission errors
 	 */
 	public void select() throws GPException, CardException, IOException {
-		// Try to locate the security domain if not given as a parameter.
 		if (!select(null)) {
-			for (Map.Entry<String, AID> entry : AID.SD_AIDS.entrySet()) {
-				if (select(entry.getValue())) {
-					break;
-				}
-			}
-		}
-
-		if (this.sdAID == null) {
 			throw new GPException("Could not select security domain!");
 		}
 	}
@@ -332,16 +323,17 @@ public class GlobalPlatform {
 	 * @throws CardException
 	 *             if some communication problem is encountered.
 	 */
-	public void openSecureChannel(KeySet staticKeys, int scpVersion, int securityLevel)
+	public void openSecureChannel(KeySet staticKeys, int scpVersion, EnumSet<APDUMode> securityLevel)
 			throws CardException, GPException {
 
 		if (sdAID == null)
 			throw new IllegalStateException("No selected ISD!");
 
 		this.staticKeys = staticKeys;
+		KeySet sessionKeys = null;
 
 		// check for diversification
-		if (staticKeys.getKey(KeyType.MAC).equals(defaultKey) && strict) {
+		if (Arrays.equals(staticKeys.getKey(KeyType.MAC), GlobalPlatformData.defaultKey) && strict) {
 			if (GlobalPlatformData.suggestDiversification(getCPLC()) != KeyDiversification.NONE
 					&& !staticKeys.needsDiversity() && staticKeys.getKeyVersion() == 0x00)
 				printStrictWarning("Card probably requires EMV diversification but no diversification specified!");
@@ -355,14 +347,9 @@ public class GlobalPlatform {
 			throw new IllegalArgumentException("Implicit secure channels cannot be initialized explicitly (use the constructor).");
 		}
 
-		int mask = ~(APDU_MAC | APDU_ENC | APDU_RMAC);
-
-		if ((securityLevel & mask) != 0) {
-			throw new IllegalArgumentException("Wrong security level specification");
-		}
-		if ((securityLevel & APDU_ENC) != 0) {
-			securityLevel |= APDU_MAC;
-		}
+		// ENC requires MAC
+		if (securityLevel.contains(APDUMode.ENC))
+			securityLevel.add(APDUMode.MAC);
 
 		// Parameters check done.
 		byte[] rand = new byte[8];
@@ -371,7 +358,7 @@ public class GlobalPlatform {
 
 		// P1 key version (SCP1)
 		// P2 either key ID (SCP01) or 0 (SCP2)
-		// TODO: use it here?
+		// TODO: use it here for KeyID?
 		CommandAPDU initUpdate = new CommandAPDU(CLA_GP, INS_INITIALIZE_UPDATE, staticKeys.getKeyVersion(), staticKeys.getKeyID(), rand);
 
 		ResponseAPDU response = channel.transmit(initUpdate);
@@ -383,13 +370,13 @@ public class GlobalPlatform {
 		}
 
 		// Detect all other errors
-		if (sw != ISO7816.SW_NO_ERROR) {
-			throw new GPException(sw, "INITIALIZE UPDATE failed");
-		}
+		check(response, "INITIALIZE UPDATE failed");
+
 		byte[] update_response = response.getData();
 		if (update_response.length != 28) {
 			throw new GPException("Wrong INITIALIZE UPDATE response length: " + update_response.length);
 		}
+		// Set default SCP version based on major version
 		if (scpVersion == SCP_ANY) {
 			scpVersion = update_response[11] == 2 ? SCP_02_15 : SCP_01_05;
 		}
@@ -397,9 +384,9 @@ public class GlobalPlatform {
 		if (scpMajorVersion != update_response[11]) {
 			throw new GPException("Secure Channel Protocol version mismatch: " + scpMajorVersion + " vs " + update_response[11]);
 		}
-		if ((scpMajorVersion == 1) && ((scpVersion & APDU_RMAC) != 0)) {
-			scpVersion &= ~APDU_RMAC;
-		}
+		// Remove RMAC if SCP01 TODO: this should be generic sanitizer somewhere
+		if (scpMajorVersion == 1)
+			securityLevel.remove(APDUMode.RMAC);
 
 		// Only diversify default key sets that require it.
 		if ((staticKeys.getKeyVersion() == 0) || (staticKeys.getKeyVersion() == 255)) {
@@ -407,19 +394,23 @@ public class GlobalPlatform {
 				staticKeys.diversify(update_response);
 			}
 		}
+		verbose("Using SCP0" + scpMajorVersion + " with static version " + (update_response[10] & 0xff) + " keys: " + staticKeys);
 
+		// If using explicit key version, it must match.
 		if ((staticKeys.getKeyVersion() > 0) && ((update_response[10] & 0xff) != staticKeys.getKeyVersion())) {
 			throw new GPException("Key set mismatch.");
 		}
 
-		KeySet sessionKeys = null;
-
 		if (scpMajorVersion == 1) {
 			sessionKeys = deriveSessionKeysSCP01(staticKeys, rand, update_response);
-		} else {
+		} else if (scpMajorVersion == 2) {
 			byte [] seq = Arrays.copyOfRange(update_response, 12, 14);
 			sessionKeys = deriveSessionKeysSCP02(staticKeys, seq, false);
+		} else {
+			throw new GPException("SCP03 is still unexplored");
 		}
+		verbose("Session keys: " + sessionKeys);
+
 
 		ByteArrayOutputStream bo = new ByteArrayOutputStream();
 
@@ -435,7 +426,7 @@ public class GlobalPlatform {
 		byte[] cardCryptogram = new byte[8];
 		System.arraycopy(update_response, 20, cardCryptogram, 0, 8);
 		if (!Arrays.equals(cardCryptogram, myCryptogram)) {
-			throw new GPException("Card cryptogram invalid.\nExp: " + GPUtils.byteArrayToString(cardCryptogram)+ "\nAct: "+GPUtils.byteArrayToString(myCryptogram));
+			throw new GPException("Card cryptogram invalid.\nExp: " + GPUtils.byteArrayToString(cardCryptogram) + "\nAct: "+GPUtils.byteArrayToString(myCryptogram));
 		}
 
 		try {
@@ -448,19 +439,19 @@ public class GlobalPlatform {
 
 		byte[] authData = GPUtils.mac_3des(sessionKeys.getKey(KeyType.ENC), GPUtils.pad80(bo.toByteArray()), iv_null_bytes);
 
-		wrapper = new SecureChannelWrapper(sessionKeys, scpVersion, APDU_MAC, null, null);
-		CommandAPDU externalAuthenticate = new CommandAPDU(CLA_MAC, ISO7816.INS_EXTERNAL_AUTHENTICATE_82, securityLevel, 0, authData);
+		wrapper = new SecureChannelWrapper(sessionKeys, scpVersion, EnumSet.of(APDUMode.MAC), null, null);
+
+		int P1 = APDUMode.getSetValue(securityLevel);
+		CommandAPDU externalAuthenticate = new CommandAPDU(CLA_MAC, ISO7816.INS_EXTERNAL_AUTHENTICATE_82, P1, 0, authData);
 		response = transmit(externalAuthenticate);
-		sw = response.getSW();
-		if (sw != ISO7816.SW_NO_ERROR) {
-			throw new GPException(sw, "External authenticate failed");
-		}
+
+		check(response, "External authenticate failed");
+
 		wrapper.setSecurityLevel(securityLevel);
-		if ((securityLevel & APDU_RMAC) != 0) {
+		if (securityLevel.contains(APDUMode.RMAC)) {
 			wrapper.ricv = new byte[8];
 			System.arraycopy(wrapper.icv, 0, wrapper.ricv, 0, 8);
 		}
-		this.scpVersion = scpVersion;
 	}
 
 	private KeySet deriveSessionKeysSCP01(KeySet staticKeys, byte[] hostRandom, byte[] cardResponse) {
@@ -532,7 +523,7 @@ public class GlobalPlatform {
 			cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(staticKeys.get3DES(KeyType.KEK), "DESede"), iv_null);
 			sessionKeys.setKey(KeyType.KEK, cipher.doFinal(derivationData));
 
-		}  catch (BadPaddingException e) {
+		} catch (BadPaddingException e) {
 			throw new RuntimeException("Session keys calculation failed.", e);
 		} catch (NoSuchAlgorithmException e) {
 			throw new RuntimeException("Session keys calculation failed.", e);
@@ -563,39 +554,24 @@ public class GlobalPlatform {
 	}
 
 
-	/**
-	 *
-	 * Convenience method, opens {@code fileName} and calls then
-	 * {@link #loadCapFile(CapFile, boolean, boolean, int, boolean, boolean)}
-	 * with otherwise unmodified parameters.
-	 *
-	 * @param fileName
-	 *            file name of the applet cap file
-	 * @param includeDebug
-	 * @param separateComponents
-	 * @param blockSize
-	 * @param loadParam
-	 * @param useHash
-	 * @throws GPInstallForLoadException
-	 *             if the install-for-load command fails with a non 9000
-	 *             response status
-	 * @throws GPLoadException
-	 *             if one of the cap file APDU's fails with a non 9000 response
-	 *             status
-	 * @throws CardException
-	 *             for low-level communication problems
-	 * @throws IOException
-	 *             if opening {@code fileName} fails
-	 */
-	public void loadCapFile(URL url, boolean includeDebug, boolean separateComponents, int blockSize, boolean loadParam, boolean useHash)
-			throws IOException, GPException, CardException {
-		CapFile cap = new CapFile(url.openStream());
-		loadCapFile(cap, includeDebug, separateComponents, blockSize, loadParam, useHash);
+	public AIDRegistry getRegistry() throws GPException, CardException{
+		if (dirty) {
+			registry = getStatus();
+			dirty = false;
+		}
+		return registry;
 	}
 
-	public void loadCapFile(CapFile cap, boolean includeDebug, boolean separateComponents, int blockSize, boolean loadParam, boolean useHash)
+	public void loadCapFile(CapFile cap) throws CardException, GPException{
+		loadCapFile(cap, false, false, false, false);
+	}
+
+	private void loadCapFile(CapFile cap, boolean includeDebug, boolean separateComponents, boolean loadParam, boolean useHash)
 			throws GPException, CardException {
 
+		if (getRegistry().allAIDs().contains(cap.getPackageAID())) {
+			printStrictWarning("Package with AID " + cap.getPackageAID() + " is already present on card");
+		}
 		byte[] hash = useHash ? cap.getLoadFileDataHash(includeDebug) : new byte[0];
 		int len = cap.getCodeLength(includeDebug);
 		byte[] loadParams = loadParam ? new byte[] { (byte) 0xEF, 0x04, (byte) 0xC6, 0x02, (byte) ((len & 0xFF00) >> 8),
@@ -622,18 +598,13 @@ public class GlobalPlatform {
 
 		CommandAPDU installForLoad = new CommandAPDU(CLA_GP, INS_INSTALL, 0x02, 0x00, bo.toByteArray());
 		ResponseAPDU response = transmit(installForLoad);
-		int sw = response.getSW();
-		if (sw != ISO7816.SW_NO_ERROR) {
-			throw new GPException(sw, "Install for Load failed");
-		}
-		List<byte[]> blocks = cap.getLoadBlocks(includeDebug, separateComponents, blockSize);
+		check(response, "Install for Load failed");
+
+		List<byte[]> blocks = cap.getLoadBlocks(includeDebug, separateComponents, wrapper.getBlockSize());
 		for (int i = 0; i < blocks.size(); i++) {
 			CommandAPDU load = new CommandAPDU(CLA_GP, INS_LOAD, (i == (blocks.size() - 1)) ? 0x80 : 0x00, (byte) i, blocks.get(i));
 			response = transmit(load);
-			sw = response.getSW();
-			if (sw != ISO7816.SW_NO_ERROR) {
-				throw new GPException(sw, "Load failed");
-			}
+			check(response, "LOAD failed");
 		}
 	}
 
@@ -665,11 +636,15 @@ public class GlobalPlatform {
 	 */
 	public void installAndMakeSelecatable(AID packageAID, AID appletAID, AID instanceAID, byte privileges, byte[] installParams,
 			byte[] installToken) throws GPException, CardException {
-		if (installParams == null) {
-			installParams = new byte[] { (byte) 0xC9, 0x00 };
-		}
+
 		if (instanceAID == null) {
 			instanceAID = appletAID;
+		}
+		if (getRegistry().allAppletAIDs().contains(instanceAID)) {
+			printStrictWarning("Applet with instance AID " + instanceAID + " is already present on card");
+		}
+		if (installParams == null) {
+			installParams = new byte[] { (byte) 0xC9, 0x00 };
 		}
 		if (installToken == null) {
 			installToken = new byte[0];
@@ -687,6 +662,7 @@ public class GlobalPlatform {
 
 			bo.write(1);
 			bo.write(privileges);
+
 			bo.write(installParams.length);
 			bo.write(installParams);
 
@@ -698,17 +674,14 @@ public class GlobalPlatform {
 
 		CommandAPDU install = new CommandAPDU(CLA_GP, INS_INSTALL, 0x0C, 0x00, bo.toByteArray());
 		ResponseAPDU response = transmit(install);
-		int sw = response.getSW();
-		if (sw != ISO7816.SW_NO_ERROR) {
-			throw new GPException(sw, "Install for Install and make selectable failed");
-		}
-
+		check(response, "Install for Install and make selectable failed");
+		dirty = true;
 	}
 
 
 	public void makeDefaultSelected(AID aid, byte privileges) throws CardException, GPException {
 		ByteArrayOutputStream bo = new ByteArrayOutputStream();
-		// Only supported privilege
+		// Only supported privilege. FIXME: for command interface, make it changeable
 		privileges = 0x04;
 		try {
 			bo.write(0);
@@ -719,27 +692,26 @@ public class GlobalPlatform {
 			bo.write(privileges);
 			bo.write(0);
 			bo.write(0);
-
-			CommandAPDU install = new CommandAPDU(CLA_GP, INS_INSTALL, 0x08, 0x00, bo.toByteArray());
-			ResponseAPDU response = transmit(install);
-			int sw = response.getSW();
-			if (sw != ISO7816.SW_NO_ERROR) {
-				throw new GPException(sw, "Install for make selectable failed");
-			}
-
 		} catch (IOException ioe) {
 			throw new RuntimeException(ioe);
 		}
+
+		CommandAPDU install = new CommandAPDU(CLA_GP, INS_INSTALL, 0x08, 0x00, bo.toByteArray());
+		ResponseAPDU response = transmit(install);
+		check(response, "Install for make selectable failed");
+		dirty = true;
 	}
 
-	public void uninstallDefaultSelected() throws CardException, GPException {
-		AIDRegistry reg = getStatus();
-		deleteAID(reg.getDefaultSelectedPackageAID(), true);
+	// TODO package vs applet
+	public void uninstallDefaultSelected(boolean deps) throws CardException, GPException {
+		AID def = getRegistry().getDefaultSelectedPackageAID();
+		if (def != null) {
+			deleteAID(def, deps);
+		} else {
+			verbose("No default selected applet!");
+		}
 	}
 
-	public void reinstallDefaultSelected(CapFile cap) throws CardException, GPException {
-		uninstallDefaultSelected();
-	}
 
 
 	/**
@@ -766,10 +738,8 @@ public class GlobalPlatform {
 		}
 		CommandAPDU delete = new CommandAPDU(CLA_GP, INS_DELETE, 0x00, deleteDeps ? 0x80 : 0x00, bo.toByteArray());
 		ResponseAPDU response = transmit(delete);
-		int sw = response.getSW();
-		if (sw != ISO7816.SW_NO_ERROR) {
-			throw new GPException(sw, "Deletion failed");
-		}
+		check(response, "Deletion failed");
+		dirty = true;
 	}
 
 	// FIXME: remove the withCheck parameter, as always true?
@@ -796,7 +766,17 @@ public class GlobalPlatform {
 				bytearrayoutputstream.write(0);
 			}
 			return bytearrayoutputstream.toByteArray();
-		} catch (Exception e) {
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		} catch (InvalidKeyException e) {
+			throw new RuntimeException(e);
+		} catch (IllegalBlockSizeException e) {
+			throw new RuntimeException(e);
+		} catch (BadPaddingException e) {
+			throw new RuntimeException(e);
+		} catch (NoSuchAlgorithmException e) {
+			throw new RuntimeException(e);
+		} catch (NoSuchPaddingException e) {
 			throw new RuntimeException(e);
 		}
 	}
@@ -837,10 +817,7 @@ public class GlobalPlatform {
 
 		CommandAPDU command = new CommandAPDU(CLA_GP, INS_PUT_KEY, P1, P2, bo.toByteArray());
 		ResponseAPDU response = transmit(command);
-		int sw = response.getSW();
-		if (sw != ISO7816.SW_NO_ERROR) {
-			throw new GPException(sw, "PUT KEY failed");
-		}
+		check(response,"PUT KEY failed");
 	}
 
 
@@ -869,7 +846,6 @@ public class GlobalPlatform {
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
-
 		return bo.toByteArray();
 	}
 
@@ -936,8 +912,14 @@ public class GlobalPlatform {
 	}
 
 
+	private static void check(ResponseAPDU r, String msg) throws GPException {
+		int sw = r.getSW();
+		if (sw != ISO7816.SW_NO_ERROR) {
+			throw new GPException(sw, msg);
+		}
+	}
 
-	public class SecureChannelWrapper {
+	public static class SecureChannelWrapper {
 		private KeySet sessionKeys = null;
 		private byte[] icv = null;
 		private byte[] ricv = null;
@@ -954,7 +936,7 @@ public class GlobalPlatform {
 		private boolean enc = false;
 		private boolean rmac = false;
 
-		private SecureChannelWrapper(KeySet sessionKeys, int scp, int securityLevel, byte[] icv, byte[] ricv) {
+		private SecureChannelWrapper(KeySet sessionKeys, int scp, EnumSet<APDUMode> securityLevel, byte[] icv, byte[] ricv) {
 			this.sessionKeys = sessionKeys;
 			this.icv = icv;
 			this.ricv = ricv;
@@ -962,39 +944,37 @@ public class GlobalPlatform {
 			setSecurityLevel(securityLevel);
 		}
 
-		public void setSecurityLevel(int securityLevel) {
-			if ((securityLevel & APDU_MAC) != 0) {
-				mac = true;
-			} else {
-				mac = false;
-			}
-			if ((securityLevel & APDU_ENC) != 0) {
-				enc = true;
-			} else {
-				enc = false;
-			}
-
-			if ((securityLevel & APDU_RMAC) != 0) {
-				rmac = true;
-			} else {
-				rmac = false;
-			}
+		public void setSecurityLevel(EnumSet<APDUMode> securityLevel) {
+			mac = securityLevel.contains(APDUMode.MAC);
+			enc = securityLevel.contains(APDUMode.ENC);
+			rmac = securityLevel.contains(APDUMode.RMAC);
 		}
 
 		protected boolean doesMAC() {
 			return mac;
 		}
+
+		protected int getBlockSize() {
+			int res = GlobalPlatform.defaultLoadSize; // 255
+			if (mac)
+				res = res - 8;
+			if (enc)
+				res = res - 8;
+			return res;
+		}
 		public void setSCPVersion(int scp) {
+			// Major version of wrapper
 			this.scp = 2;
 			if (scp < SCP_02_04) {
 				this.scp = 1;
 			}
+
+			// modes
 			if ((scp == SCP_01_15) || (scp == SCP_02_14) || (scp == SCP_02_15) || (scp == SCP_02_1A) || (scp == SCP_02_1B)) {
 				icvEnc = true;
 			} else {
 				icvEnc = false;
 			}
-
 			if ((scp == SCP_01_05) || (scp == SCP_01_15) || (scp == SCP_02_04) || (scp == SCP_02_05) || (scp == SCP_02_14) || (scp == SCP_02_15)) {
 				preAPDU = true;
 			} else {
@@ -1016,8 +996,7 @@ public class GlobalPlatform {
 		}
 
 		private CommandAPDU wrap(CommandAPDU command) throws CardException {
-			if (debug) {
-			}
+
 			try {
 				if (rmac) {
 					rMac.reset();
@@ -1069,7 +1048,6 @@ public class GlobalPlatform {
 						if (scp == 1) {
 							c = Cipher.getInstance("DESede/ECB/NoPadding");
 							c.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(sessionKeys.get3DES(KeyType.MAC), "DESede"));
-
 						} else {
 							c = Cipher.getInstance("DES/ECB/NoPadding");
 							c.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(sessionKeys.getDES(KeyType.MAC), "DES"));
@@ -1182,4 +1160,5 @@ public class GlobalPlatform {
 			return response;
 		}
 	}
+
 }

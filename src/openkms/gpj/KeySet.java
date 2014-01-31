@@ -13,7 +13,6 @@ public class KeySet {
 
 
 	public static class Key {
-		private int algorithm = 0;
 		private int version = 0;
 		private int id = 0;
 		private int length = -1;
@@ -42,7 +41,14 @@ public class KeySet {
 			this.version = version;
 			this.id = id;
 			this.length = length;
-			this.algorithm = type;
+		}
+
+		public Key(String s) {
+			this.id = 0x00;
+			this.version = 0x00;
+			this.value = GPUtils.stringToByteArray(s);
+			if (this.value.length != 16)
+				throw new IllegalArgumentException("Key must be 16 bytes long");
 		}
 	}
 
@@ -218,8 +224,8 @@ public class KeySet {
 
 	@Override
 	public String toString() {
-		return new String("\nKeys:\nENC: " + GPUtils.byteArrayToString(getKey(KeyType.ENC)) + "\nMAC: "
-				+ GPUtils.byteArrayToString(getKey(KeyType.MAC)) + "\nKEK: " + GPUtils.byteArrayToString(getKey(KeyType.KEK)) + "\n");
+		return new String("\nENC: " + GPUtils.byteArrayToString(getKey(KeyType.ENC)) + "\nMAC: "
+				+ GPUtils.byteArrayToString(getKey(KeyType.MAC)) + "\nKEK: " + GPUtils.byteArrayToString(getKey(KeyType.KEK)));
 	}
 
 	public int getKeyID() {

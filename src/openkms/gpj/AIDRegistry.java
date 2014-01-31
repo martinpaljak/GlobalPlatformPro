@@ -55,6 +55,7 @@ public class AIDRegistry implements Iterable<AIDRegistryEntry> {
 		return entries.iterator();
 	}
 
+
 	/**
 	 * Returns a list of all packages in this registry.
 	 *
@@ -70,6 +71,31 @@ public class AIDRegistry implements Iterable<AIDRegistryEntry> {
 		return res;
 	}
 
+	public List<AID> allPackageAIDs() {
+		List<AID> res = new ArrayList<AID>();
+		for (AIDRegistryEntry e : entries) {
+			if (e.isPackage()) {
+				res.add(e.getAID());
+			}
+		}
+		return res;
+	}
+	public List<AID> allAppletAIDs() {
+		List<AID> res = new ArrayList<AID>();
+		for (AIDRegistryEntry e : entries) {
+			if (e.isApplet()) {
+				res.add(e.getAID());
+			}
+		}
+		return res;
+	}
+	public List<AID> allAIDs() {
+		List<AID> res = new ArrayList<AID>();
+		for (AIDRegistryEntry e : entries) {
+			res.add(e.getAID());
+		}
+		return res;
+	}
 	/**
 	 * Returns a list of all applets in this registry.
 	 *

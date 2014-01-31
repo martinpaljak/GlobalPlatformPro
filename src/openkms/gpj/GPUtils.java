@@ -28,98 +28,29 @@ import javax.crypto.spec.SecretKeySpec;
 
 public class GPUtils {
 
-	public static boolean debug = true;
-
-	public static void debug(Object o) {
-		if (debug) {
-			System.err.println("DEBUG: " + o.toString());
-		}
-	}
-
 	public static String byteArrayToReadableString(byte[] array) {
 		if (array == null) {
-			return "NULL";
+			return "(null)";
 		}
-		String s = "";
+		StringBuffer s = new StringBuffer();
 		for (int i = 0; i < array.length; i++) {
 			char c = (char) array[i];
-			s += ((c >= 0x20) && (c < 0x7f)) ? (c) : (".");
+			s.append(((c >= 0x20) && (c < 0x7f)) ? (c) : ("."));
 		}
-		return "|" + s + "|";
+		return "|" + s.toString() + "|";
 	}
 
 	public static String byteArrayToString(byte[] a) {
-		String result = "";
-		String onebyte = null;
-		for (int i = 0; i < a.length; i++) {
-			onebyte = Integer.toHexString(a[i]);
-			if (onebyte.length() == 1) {
-				onebyte = "0" + onebyte;
-			} else {
-				onebyte = onebyte.substring(onebyte.length() - 2);
-			}
-			result = result + onebyte.toUpperCase() + " ";
-		}
-		return result.trim(); // Return the extra space
+		return LoggingCardTerminal.encodeHexString(a);
 	}
 
 	public static byte[] stringToByteArray(String s) {
-		java.util.Vector<Integer> v = new java.util.Vector<Integer>();
-		String operate = new String(s);
-		operate = operate.replaceAll(" ", "");
-		operate = operate.replaceAll("\t", "");
-		operate = operate.replaceAll("\n", "");
-		if (operate.endsWith(";")) {
-			operate = operate.substring(0, operate.length() - 1);
-		}
-		if ((operate.length() % 2) != 0) {
-			return null;
-		}
-		int num = 0;
-		while (operate.length() > 0) {
-			try {
-				num = Integer.parseInt(operate.substring(0, 2), 16);
-			} catch (NumberFormatException nfe) {
-				return null;
-			}
-			v.add(new Integer(num));
-			operate = operate.substring(2);
-		}
-		byte[] result = new byte[v.size()];
-		java.util.Iterator<Integer> it = v.iterator();
-		int i = 0;
-		while (it.hasNext()) {
-			result[i++] = it.next().byteValue();
-		}
-		return result;
-	}
-
-	private static String swToString(int sw1, int sw2) {
-		String result = "";
-		String onebyte = null;
-		onebyte = Integer.toHexString(sw1);
-		if (onebyte.length() == 1) {
-			onebyte = "0" + onebyte;
-		} else {
-			onebyte = onebyte.substring(onebyte.length() - 2);
-		}
-
-		result = result + onebyte.toUpperCase() + " ";
-		onebyte = Integer.toHexString(sw2);
-		if (onebyte.length() == 1) {
-			onebyte = "0" + onebyte;
-		} else {
-			onebyte = onebyte.substring(onebyte.length() - 2);
-		}
-
-		result = result + onebyte.toUpperCase() + " ";
-		return result;
+		s = s.replaceAll(" ", "").replaceAll(":", "").replaceAll("\t", "");
+		return LoggingCardTerminal.decodeHexString(s);
 	}
 
 	public static String swToString(int sw) {
-		int sw1 = (sw & 0x0000FF00) >> 8;
-			int sw2 = (sw & 0x000000FF);
-			return swToString(sw1, sw2);
+		return String.format("%04X", sw);
 	}
 
 	private static byte[] pad80(byte[] text, int offset, int length) {

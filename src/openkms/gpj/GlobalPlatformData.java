@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import javax.smartcardio.CardException;
+
 import openkms.gpj.KeySet.Key;
 import openkms.gpj.KeySet.KeyDiversification;
 
@@ -213,5 +215,22 @@ public class GlobalPlatformData {
 		out.println("IC Personalization Date: " + bytesAsHex(data, offset, offset + 2)); offset += 2;
 		out.println("IC Perso. Equipment ID: " + bytesAsHex(data, offset, offset + 4));	 offset += 4;
 	}
+
+
+	// TODO public for debuggin purposes
+	public static void print_card_info(GlobalPlatform gp) throws CardException, GPException {
+		// Print CPLC
+		pretty_print_cplc(gp.getCPLC(), System.out);
+		// Requires GP?
+		// Print CardData
+		System.out.println("***** CARD DATA");
+		byte [] card_data = gp.fetchCardData();
+		pretty_print_card_data(card_data, System.out);
+		// Print Key Info Template
+		System.out.println("***** KEY INFO");
+		pretty_print_key_template(gp.getKeyInfoTemplate(), System.out);
+	}
+
+	public static final byte[] defaultKey = { 0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F };
 
 }

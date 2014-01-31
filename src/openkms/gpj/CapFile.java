@@ -38,7 +38,7 @@ import java.util.zip.ZipInputStream;
 public class CapFile {
 
 	public static final String[] componentNames = { "Header", "Directory", "Import", "Applet", "Class", "Method", "StaticField", "Export",
-			"ConstantPool", "RefLocation", "Descriptor", "Debug" };
+		"ConstantPool", "RefLocation", "Descriptor", "Debug" };
 
 	private final HashMap<String, byte[]> capComponents = new HashMap<String, byte[]>();
 
@@ -80,9 +80,7 @@ public class CapFile {
 			throw new RuntimeException("Could not figure out the package name of the applet!");
 		}
 
-		GPUtils.debug("packagePath: " + packageName);
 		this.packageName = packageName.substring(0, packageName.lastIndexOf("/javacard/")).replace('/', '.');
-		GPUtils.debug("package: " + this.packageName);
 		for (String name : componentNames) {
 			String fullName = packageName + name + ".cap";
 			byte[] contents = entries.get(fullName);
@@ -125,7 +123,7 @@ public class CapFile {
 		// header[12] should be the length of AID
 		int len = header[i++];
 		packageAID = new AID(header, i, len);
-		GPUtils.debug("package AID: " + packageAID);
+		//GPUtils.debug("package AID: " + packageAID);
 
 		byte[] applet = capComponents.get("Applet");
 		if (applet != null) {
@@ -143,9 +141,9 @@ public class CapFile {
 				appletAIDs.add(new AID(applet, i, len));
 				i += len + 2;
 			}
-			GPUtils.debug("applet AIDs: " + appletAIDs);
+			//GPUtils.debug("applet AIDs: " + appletAIDs);
 		} else {
-			GPUtils.debug("No Applet component.");
+			//GPUtils.debug("No Applet component.");
 		}
 	}
 
@@ -178,6 +176,10 @@ public class CapFile {
 		List<AID> result = new ArrayList<AID>();
 		result.addAll(appletAIDs);
 		return result;
+	}
+
+	public String getPackageName() {
+		return packageName;
 	}
 
 	public int getCodeLength(boolean includeDebug) {
@@ -297,32 +299,6 @@ public class CapFile {
 			left -= currentLen;
 			offset += currentLen;
 		}
-		return result;
-	}
-
-	public String dump() {
-		String result = "";
-		for (String name : componentNames) {
-			result = result + name + ".cap:\n";
-			byte[] b = capComponents.get(name);
-			if (b != null) {
-				result = result + GPUtils.byteArrayToString(b) + "\n";
-			} else {
-				result = result + "(empty)\n";
-			}
-		}
-		List<List<byte[]>> tables = new ArrayList<List<byte[]>>();
-		tables.add(dapBlocks);
-		tables.add(loadTokens);
-		tables.add(installTokens);
-		String[] names = { "DAP Blocks", "Load Tokens", "Install Tokens" };
-		for (int i = 0; i < names.length; i++) {
-			result = result + names[i] + ":\n";
-			for (byte[] o : tables.get(i)) {
-				result = result + GPUtils.byteArrayToString(o) + "\n";
-			}
-		}
-
 		return result;
 	}
 }

@@ -69,9 +69,6 @@ Command line samples assume default test keys of ```40..4F```. If you need custo
 The ancestor of this code is GPJ (Global Platform for SmartCardIO)
 available from http://gpj.sourceforge.net.
 
-### License
-
- * [LGPL 3.0](http://www.gnu.org/licenses/lgpl-3.0.html)
 
 ### Credits (from GPJ):
  *  Wojciech Mostowski <woj@cs.ru.nl>,
@@ -113,6 +110,11 @@ The promise of OpenKMS is similar<sup>*</sup> to OpenSSL:
 In regard to GlobalPlatform, the goal is to make simple operations like installing and removing applets and locking the card with new keys as easy as next-next-done - you don't have to know the whole Global Platform specification by heart for that or buy a piece of proprietary software for a few hundred euros! For all those features that are not describe in the GlobalPlatform specification that actually make your card work... you still have to use those proprietary commands, but OpenKMS GlobalPlatform toolkit's flexibility (and its license) should allow you to do that as well.
 
 <sup>*</sup> <sub>With the difference that OpenKMS thrives for a secure, easily usable and pleasantly readable codebase. And yes, you have probably already sold your soul to the devil...</sub>
+
+### License
+
+ * [LGPL 3.0](http://www.gnu.org/licenses/lgpl-3.0.html)
+
 
 #### Legal disclaimer
  The casual: trademarks to their owners, copyrights to authors, patents to hell, legal letters to ~~/dev/null~~ PGP key 0x307E3452.

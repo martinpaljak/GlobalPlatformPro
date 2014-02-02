@@ -4,7 +4,7 @@ Load and manage applets on compatible JavaCards from command line or from your J
 
 > Provides a **high level** and **easy to use** **open source** interface that most of the time **JustWorks<sup>(TM)</sup>** yet is as **flexible** as GPShell. Fully **open source**.
 
-## Jump to ...
+#### Jump to ...
  * [Download](#get-it-now)
  * [Usage](#usage)
  * [Supported cards](#supported-cards)
@@ -109,11 +109,11 @@ The promise of OpenKMS is similar<sup>*</sup> to OpenSSL:
 
 In regard to GlobalPlatform, the goal is to make simple operations like installing and removing applets and locking the card with new keys as easy as next-next-done - you don't have to know the whole Global Platform specification by heart for that or buy a piece of proprietary software for a few hundred euros! For all those features that are not describe in the GlobalPlatform specification that actually make your card work... you still have to use those proprietary commands, but OpenKMS GlobalPlatform toolkit's flexibility (and its license) should allow you to do that as well.
 
-<sup>*</sup> <sub>With the difference that OpenKMS thrives for a secure, easily usable and pleasantly readable codebase. And yes, you have probably already sold your soul to the devil...</sub>
+\* <sub>With the difference that OpenKMS thrives for a easily usable and pleasantly readable, auditable and secure codebase. And yes, you have probably already sold your soul to the devil...</sub>
 
 ### License
 
- * [LGPL 3.0](http://www.gnu.org/licenses/lgpl-3.0.html)
+ * [LGPL 3.0](http://www.gnu.org/licenses/lgpl-3.0.html) both for original and derived code.
 
 
 #### Legal disclaimer

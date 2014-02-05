@@ -98,9 +98,16 @@ available from http://gpj.sourceforge.net.
    * not publicly available open source projects and thus not suitable for this comparision
 
 ## Upcoming releases
- * re-written command line utility
- * ```-lock``` and ```-unlock``` commands for changing secure channel keys
- * Simple GUI
+ * T+1
+  * Re-written command line utility
+  * Windows .exe for ease of use
+  * ```-lock``` and ```-unlock``` commands for changing secure channel keys
+ * T+2
+  * Support for storing card management keys in PKCS#11 tokens (HSM)
+  * Simple GUI
+ * T+X (wishlist)
+  * SCP03
+  * GPShell-style scripts
 
 ## About OpenKMS
 The promise of OpenKMS is similar<sup>*</sup> to OpenSSL: 
@@ -113,7 +120,7 @@ In regard to GlobalPlatform, the goal is to make simple operations like installi
 
 ### License
 
- * [LGPL 3.0](http://www.gnu.org/licenses/lgpl-3.0.html) both for original and derived code.
+ * [LGPL 3.0](http://www.gnu.org/licenses/lgpl-3.0.html) both for derived code and original code.
 
 
 #### Legal disclaimer

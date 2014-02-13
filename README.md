@@ -2,7 +2,7 @@
 
 Load and manage applets on compatible JavaCards from command line or from your Java project with a [DWIM](http://en.wikipedia.org/wiki/DWIM) approach.
 
-> Provides a **high level** and **easy to use** **open source** interface that most of the time **JustWorks<sup>(TM)</sup>** yet is as **flexible** as GPShell. Fully **open source**.
+> Provides a **high level** and **easy to use** interface that most of the time **JustWorks<sup>(TM)</sup>** yet is as **flexible** as GPShell. Fully **[open source](#license)**.
 
 #### Jump to ...
  * [Download](#get-it-now)
@@ -15,7 +15,7 @@ Load and manage applets on compatible JavaCards from command line or from your J
 
 ### Get it now!
  * Download latest pre-built JAR from [release area](https://github.com/martinpaljak/GlobalPlatform/releases)
- * Or fetch from github and build it yourself, it is easy:
+ * Or fetch from github and build it yourself, it is really easy:
 
         git clone https://github.com/martinpaljak/GlobalPlatform
         cd GlobalPlatform
@@ -57,6 +57,7 @@ Command line samples assume default test keys of ```40..4F```. If you need custo
  
 ### Supported cards
  * See [TestedCards](https://github.com/martinpaljak/GlobalPlatform/wiki/TestedCards)
+ * Generally speaking and modern JavaCard that speaks GlobalPlatform 2.1.1+
 
 ### Contact 
 
@@ -130,7 +131,7 @@ In regard to GlobalPlatform, the goal is to make simple operations like installi
  * [jnasmartcardio](https://github.com/jnasmartcardio/jnasmartcardio) for PC/SC access (CC0 / public domain)
 
 #### Legal disclaimer
- The casual: trademarks to their owners, copyrights to authors, patents to hell, legal letters to ~~/dev/null~~ PGP key 0x307E3452.
+ The casual: trademarks to their owners, copyrights to authors, patents to hell, legal letters to ~~/dev/null~~ PGP key 0x307E3452. Everything is provided as-is and there is a constant risk of death from lightning.
 
 ----
 OpenKMS - open source key management - [openkms.org](http://openkms.org)

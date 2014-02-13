@@ -4,4 +4,19 @@ jdk:
   - openjdk7
 script: ant dist
 
+env:
+  global:
+   # The next declration is the encrypted COVERITY_SCAN_TOKEN, created
+   #   via the "travis encrypt" command using the project repo's public key
+   - secure: "Zvff0Kxg/snBN+z3cCtMtuTBFbuKBU8sZhBp86is/sWFLskAKUKJeN6ZT5tDjCw3haopRBxQPZk8Tq9i+B7jlXOnLsligh4KM9be7M/ixkNOtAQx8RA0+i92JNoQcDzS2ZU4aYszI4ve184YgTT1SA+1bbvvQBbBljLNnbQtd/I="
+
+addons:
+  coverity_scan:
+    project:
+      name: "martinpaljak/GlobalPlatform"
+      description: "GlobalPlatform from OpenKMS"
+    notification_email: martin@martinpaljak.net
+    build_command_prepend:
+    build_command: ant compile
+    branch_pattern: coverity
 

@@ -14,7 +14,7 @@ Load and manage applets on compatible JavaCards from command line or from your J
 
 
 ### Get it now!
- * Download latest pre-built JAR from [release area](https://github.com/martinpaljak/GlobalPlatform/releases)
+ * Download latest pre-built JAR or .EXE from [release area](https://github.com/martinpaljak/GlobalPlatform/releases)
  * Or fetch from github and build it yourself, it is really easy:
 
         git clone https://github.com/martinpaljak/GlobalPlatform
@@ -30,8 +30,12 @@ Command line samples assume default test keys of ```40..4F```. If you need custo
  * Show some basic information about a card (failsafe):
 
         java -jar gp.jar -info
+        
+   * On Windows just replace ```java -jar gp.jar``` with ```gp.exe``` like this:
 
- * List applets (this and following commands can block your card):
+            gp.exe -info
+
+ * List applets (this and following commands can brick your card with wrong keys):
 
         java -jar gp.jar -list
 
@@ -41,7 +45,7 @@ Command line samples assume default test keys of ```40..4F```. If you need custo
 
  * Install applet.cap as default applet (with AID information from the CAP):
 
-        java -jar gp.jar -load applet.cap -install -default
+        java -jar gp.jar -install applet.cap -default
  
  * Show APDU-s sent to the card:
    
@@ -53,11 +57,11 @@ Command line samples assume default test keys of ```40..4F```. If you need custo
 
 ##### Usage from Java
  * For now consult the [command line utility source code](https://github.com/martinpaljak/GlobalPlatform/blob/master/src/openkms/gpj/GPJTool.java)
- * [Javadoc](http://martinpaljak.github.io/GlobalPlatform/) is in a bad shape but shall be fixed near v1.0
+ * [Javadoc](http://martinpaljak.github.io/GlobalPlatform/) is in a bad shape but shall be improved near v1.0
  
 ### Supported cards
  * See [TestedCards](https://github.com/martinpaljak/GlobalPlatform/wiki/TestedCards)
- * Generally speaking and modern JavaCard that speaks GlobalPlatform 2.1.1+
+ * Generally speaking any modern JavaCard that speaks GlobalPlatform 2.1.1+
 
 ### Contact 
 
@@ -99,10 +103,10 @@ available from http://gpj.sourceforge.net.
    * not publicly available open source projects and thus not suitable for this comparision
 
 ## Upcoming releases
- * T+1
-  * Re-written command line utility
-  * Windows .exe for ease of use
-  * ```-lock``` and ```-unlock``` commands for changing secure channel keys
+ * T+1 (v0.2.4)
+  * ~~Re-written command line utility~~
+  * ~~Windows .exe for ease of use~~
+  * ```-lock``` and ```-unlock``` commands for changing secure channel keys (moved to T+2)
  * T+2
   * Support for storing card management keys in PKCS#11 tokens (HSM)
   * Simple GUI
@@ -121,7 +125,7 @@ In regard to GlobalPlatform, the goal is to make simple operations like installi
 
 ### License
 
- * [LGPL 3.0](http://www.gnu.org/licenses/lgpl-3.0.html) both for derived code and original code.
+ * [LGPL 3.0](http://www.gnu.org/licenses/lgpl-3.0.html) for derived code and MIT/LGPL3 for original code.
 
 ### Included/used open source projects
 

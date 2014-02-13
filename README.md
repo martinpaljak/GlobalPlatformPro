@@ -122,6 +122,12 @@ In regard to GlobalPlatform, the goal is to make simple operations like installi
 
  * [LGPL 3.0](http://www.gnu.org/licenses/lgpl-3.0.html) both for derived code and original code.
 
+### Included/used open source projects
+
+ * [BouncyCastle](http://pholser.github.io/jopt-simple/) for OID parsing (MIT)
+ * [JOpt Simple](http://pholser.github.io/jopt-simple/) for parsing command line (MIT)
+ * [Launch4j](http://launch4j.sourceforge.net/) for generating .exe (BSD/MIT)
+ * [jnasmartcardio](https://github.com/jnasmartcardio/jnasmartcardio) for PC/SC access (CC0 / public domain)
 
 #### Legal disclaimer
  The casual: trademarks to their owners, copyrights to authors, patents to hell, legal letters to ~~/dev/null~~ PGP key 0x307E3452.

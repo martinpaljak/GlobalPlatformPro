@@ -25,7 +25,7 @@ Load and manage applets on compatible JavaCards from command line or from your J
 
 *Beware: [until v1.0 is released](#upcoming-releases), both command line and Java API are subject to change without notice. Check back often.*
 
-Command line samples assume default test keys of ```40..4F```. If you need custom keys, specify them with any or all of the following options: ```-keyid``` ```-keyver``` and ```-enc``` ```-mac``` ```-kek``` (you need to know the details or ask your card provider). Some cards require key diversification with ```-emv``` or ```-visa2``` (you should be notified if that's the case).
+Command line samples assume default test keys of ```40..4F```. If you need custom keys, specify them with any or all of the following options: ```-keyid``` ```-keyver``` and ```-enc``` ```-mac``` ```-kek``` or ```-key``` (for a single master key). You need to know the details or ask your card provider. Some cards require key diversification with ```-emv``` or ```-visa2``` (you should be notified if that's the case).
 
  * Show some basic information about a card (failsafe):
 
@@ -35,7 +35,7 @@ Command line samples assume default test keys of ```40..4F```. If you need custo
 
             gp.exe -info
 
- * List applets (this and following commands can brick your card with wrong keys):
+ * List applets (this and following commands can brick your card with wrong keys!):
 
         java -jar gp.jar -list
 
@@ -58,6 +58,8 @@ Command line samples assume default test keys of ```40..4F```. If you need custo
  * Set the default ```40..4F``` keys to a G&D card that uses EMV diversification:
 
         java -jar gp.jar -emv -unlock
+   
+   note that you will have to use ```--relax``` option after this operation to get rid of the warning about diversification.
 
  * Show APDU-s sent to the card:
    
@@ -66,6 +68,10 @@ Command line samples assume default test keys of ```40..4F```. If you need custo
  * Don't use MAC on commands (plain GlobalPlatform syntax):
 
    add ```-mode clr``` to your command (not supported on all cards)
+
+ * Show all options recognized by ```gp``` utility:
+
+   add ```-help``` or ```-h``` to your command
 
 ##### Usage from Java
  * For now consult the [command line utility source code](https://github.com/martinpaljak/GlobalPlatform/blob/master/src/openkms/gpj/GPJTool.java)
@@ -115,10 +121,10 @@ available from http://gpj.sourceforge.net.
    * not publicly available open source projects and thus not suitable for this comparision
 
 ## Upcoming releases
- * T+1 (v0.2.4)
+ * T+1 (v0.2.5)
   * ~~Re-written command line utility~~
   * ~~Windows .exe for ease of use~~
-  * ```-lock``` and ```-unlock``` commands for changing secure channel keys (moved to T+2)
+  * ~~-lock and -unlock commands for changing secure channel keys~~
  * T+2
   * Support for storing card management keys in PKCS#11 tokens (HSM)
   * Simple GUI

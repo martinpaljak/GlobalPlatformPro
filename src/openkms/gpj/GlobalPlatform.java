@@ -388,13 +388,15 @@ public class GlobalPlatform {
 		if (scpMajorVersion == 1)
 			securityLevel.remove(APDUMode.RMAC);
 
+		verbose("Using SCP0" + scpMajorVersion + " with static version " + (update_response[10] & 0xff) + " keys: " + staticKeys);
+
 		// Only diversify default key sets that require it.
 		if ((staticKeys.getKeyVersion() == 0) || (staticKeys.getKeyVersion() == 255)) {
 			if (staticKeys.needsDiversity()) {
 				staticKeys.diversify(update_response);
+				verbose("Diversififed keys: " + staticKeys);
 			}
 		}
-		verbose("Using SCP0" + scpMajorVersion + " with static version " + (update_response[10] & 0xff) + " keys: " + staticKeys);
 
 		// If using explicit key version, it must match.
 		if ((staticKeys.getKeyVersion() > 0) && ((update_response[10] & 0xff) != staticKeys.getKeyVersion())) {

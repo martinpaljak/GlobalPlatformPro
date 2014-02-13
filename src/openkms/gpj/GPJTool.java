@@ -16,6 +16,8 @@ import javax.smartcardio.TerminalFactory;
 import joptsimple.OptionException;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
+import openkms.gpj.KeySet.KeyDiversification;
+import openkms.gpj.KeySet.KeyType;
 
 
 public class GPJTool {
@@ -119,7 +121,7 @@ public class GPJTool {
 		// Parse arguments
 		try {
 			args = parser.parse(argv);
-			// Try to fetch all values
+			// Try to fetch all values so that format is checked before usage
 			for (String s: parser.recognizedOptions().keySet()) {args.valueOf(s);}
 		} catch (OptionException e) {
 			if (e.getCause() != null) {
@@ -172,7 +174,31 @@ public class GPJTool {
 		}
 
 		// Parameters for opening the secure channel
-		KeySet ks = new KeySet(GlobalPlatformData.defaultKey);
+		// Assume a single master key
+		KeySet ks = null;
+		if (args.has(OPT_KEY))
+			ks = new KeySet((KeySet.Key)args.valueOf(OPT_KEY));
+		else
+			ks = new KeySet(GlobalPlatformData.defaultKey);
+
+		// override if needed
+		if (args.has(OPT_MAC)) {
+			ks.setKey(KeyType.MAC, (KeySet.Key)args.valueOf(OPT_MAC));
+		}
+		if (args.has(OPT_ENC)) {
+			ks.setKey(KeyType.ENC, (KeySet.Key)args.valueOf(OPT_ENC));
+		}
+		if (args.has(OPT_KEK)) {
+			ks.setKey(KeyType.KEK, (KeySet.Key)args.valueOf(OPT_KEK));
+		}
+
+		// TODO: set KeyID and keyVersion. requires re-working KeySet.
+
+		// Set diversification if needed
+		if (args.has(OPT_VISA2))
+			ks.diversification = KeyDiversification.VISA2;
+		else if (args.has(OPT_EMV))
+			ks.diversification = KeyDiversification.EMV;
 
 		// Load a CAP file, if specified
 		CapFile cap = null;

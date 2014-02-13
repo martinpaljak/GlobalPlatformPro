@@ -92,6 +92,9 @@ public class KeySet {
 		this.diversification = diversification;
 	}
 
+	public KeySet(Key masterKey) {
+		this(masterKey.getValue(), masterKey.getValue(), masterKey.getValue());
+	}
 	public KeySet(byte[] masterKey) {
 		this(masterKey, masterKey, masterKey);
 	}
@@ -101,7 +104,9 @@ public class KeySet {
 		setKey(KeyType.MAC, macKey);
 		setKey(KeyType.KEK, kekKey);
 	}
-
+	public void setKey(KeyType type, Key value) {
+		setKey(type, value.getValue());
+	}
 	public void setKey(KeyType type, byte[] value) {
 		if (value.length < 16)
 			throw new IllegalArgumentException("Key must be at least 16 bytes");

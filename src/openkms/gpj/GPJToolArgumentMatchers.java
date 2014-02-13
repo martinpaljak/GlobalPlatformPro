@@ -54,7 +54,7 @@ public class GPJToolArgumentMatchers {
 			try {
 				return new Key(arg0);
 			} catch (IllegalArgumentException e) {
-				throw new ValueConversionException(arg0 + " is not a 3DES key!");
+				throw new ValueConversionException(arg0 + " is not a valid 3DES key!");
 			}
 		}
 	}

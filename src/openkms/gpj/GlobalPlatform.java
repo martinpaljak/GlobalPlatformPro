@@ -683,7 +683,7 @@ public class GlobalPlatform {
 
 	public void makeDefaultSelected(AID aid, byte privileges) throws CardException, GPException {
 		ByteArrayOutputStream bo = new ByteArrayOutputStream();
-		// Only supported privilege. FIXME: for command interface, make it changeable
+		// Only supported privilege.
 		privileges = 0x04;
 		try {
 			bo.write(0);
@@ -704,9 +704,8 @@ public class GlobalPlatform {
 		dirty = true;
 	}
 
-	// TODO package vs applet
 	public void uninstallDefaultSelected(boolean deps) throws CardException, GPException {
-		AID def = getRegistry().getDefaultSelectedPackageAID();
+		AID def = getRegistry().getDefaultSelectedAID();
 		if (def != null) {
 			deleteAID(def, deps);
 		} else {
@@ -861,7 +860,7 @@ public class GlobalPlatform {
 	 *             in case of communication errors
 	 * @throws GPException
 	 */
-	public AIDRegistry getStatus() throws CardException, GPException {
+	private AIDRegistry getStatus() throws CardException, GPException {
 		AIDRegistry registry = new AIDRegistry();
 		int[] p1s = { 0x80, 0x40 };
 		for (int p1 : p1s) {
@@ -1028,17 +1027,7 @@ public class GlobalPlatform {
 				int le = command.getNe();
 				ByteArrayOutputStream t = new ByteArrayOutputStream();
 
-				// TODO: get from CardData
-				int maxLen = 255;
-
-				if (mac) {
-					maxLen -= 8;
-				}
-				if (enc) {
-					maxLen -= 8;
-				}
-
-				if (origLc > maxLen) {
+				if (origLc > getBlockSize()) {
 					throw new IllegalArgumentException("APDU too long for wrapping.");
 				}
 

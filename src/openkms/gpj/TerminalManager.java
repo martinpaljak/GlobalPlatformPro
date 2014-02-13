@@ -1,3 +1,24 @@
+/*
+ * Copyright (c) 2014 Martin Paljak
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 package openkms.gpj;
 
 import java.io.File;
@@ -19,6 +40,9 @@ import javax.smartcardio.TerminalFactory;
  */
 public class TerminalManager {
 
+	private static final String debian_path = "/usr/lib/libpcsclite.so.1";
+	private static final String ubuntu_path = "/lib/libpcsclite.so.1";
+
 	private static boolean buggy = true;
 
 	public static TerminalFactory getTerminalFactory() throws NoSuchAlgorithmException {
@@ -26,12 +50,12 @@ public class TerminalManager {
 		// paths (without .1) See this blog post:
 		// http://ludovicrousseau.blogspot.com.es/2013/03/oracle-javaxsmartcardio-failures.html
 		if (System.getProperty("os.name").equalsIgnoreCase("Linux")) {
-			if (new File("/usr/lib/libpcsclite.so.1").exists()) {
+			if (new File(debian_path).exists()) {
 				// Debian
-				System.setProperty("sun.security.smartcardio.library", "/usr/lib/libpcsclite.so.1");
-			} else if (new File("/lib/libpcsclite.so.1").exists()) {
+				System.setProperty("sun.security.smartcardio.library", debian_path);
+			} else if (new File(ubuntu_path).exists()) {
 				// Ubuntu
-				System.setProperty("sun.security.smartcardio.library", "/lib/libpcsclite.so.1");
+				System.setProperty("sun.security.smartcardio.library", ubuntu_path);
 			}
 		}
 
@@ -54,7 +78,7 @@ public class TerminalManager {
 	/**
 	 * Calls {@link javax.smartcardio.Card#disconnect(boolean)} with the fixed reset parameter.
 	 *
-	 * The parameter is fixed based on the used provider.
+	 * The parameter is fixed based on the used provider and assumes that written code is correct.
 	 *
 	 * @param card The card on what to act
 	 * @param reset The intended operation after disconnect
@@ -75,7 +99,7 @@ public class TerminalManager {
 			}
 
 			if (list.size() != 1) {
-				throw new RuntimeException("This application expect one and only one card reader with an inserted card");
+				throw new RuntimeException("This application expects one and only one card reader (with an inserted card)");
 			} else {
 				return tl.list().get(0);
 			}

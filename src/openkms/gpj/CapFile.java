@@ -200,6 +200,7 @@ public class CapFile {
 		int len = getCodeLength(includeDebug);
 		ByteArrayOutputStream bo = new ByteArrayOutputStream();
 		bo.write((byte) 0xC4);
+		// FIXME: usual length encoding.
 		if (len < 0x80) {
 			bo.write((byte) len);
 		} else if (len <= 0xFF) {
@@ -227,7 +228,7 @@ public class CapFile {
 				bo.write(createHeader(includeDebug));
 				bo.write(getRawCode(includeDebug));
 			} catch (IOException ioe) {
-
+				throw new RuntimeException(ioe);
 			}
 			blocks = splitArray(bo.toByteArray(), blockSize);
 		} else {
@@ -246,7 +247,7 @@ public class CapFile {
 						bo.write(createHeader(includeDebug));
 						bo.write(currentComponent);
 					} catch (IOException ioe) {
-
+						throw new RuntimeException(ioe);
 					}
 					currentComponent = bo.toByteArray();
 				}
@@ -283,6 +284,7 @@ public class CapFile {
 
 	private List<byte[]> splitArray(byte[] array, int blockSize) {
 		List<byte[]> result = new ArrayList<byte[]>();
+
 		int len = array.length;
 		int offset = 0;
 		int left = len - offset;

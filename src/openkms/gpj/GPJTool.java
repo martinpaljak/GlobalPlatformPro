@@ -2,6 +2,7 @@ package openkms.gpj;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
@@ -16,6 +17,7 @@ import javax.smartcardio.TerminalFactory;
 import joptsimple.OptionException;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
+import openkms.gpj.KeySet.Key;
 import openkms.gpj.KeySet.KeyDiversification;
 import openkms.gpj.KeySet.KeyType;
 
@@ -106,7 +108,7 @@ public class GPJTool {
 		parser.accepts(OPT_KEK, "Specify KEK key").withRequiredArg().withValuesConvertedBy(GPJToolArgumentMatchers.key());
 		parser.accepts(OPT_KEY, "Specify master key").withRequiredArg().withValuesConvertedBy(GPJToolArgumentMatchers.key());
 		parser.accepts(CMD_LOCK, "Set new key").withRequiredArg().withValuesConvertedBy(GPJToolArgumentMatchers.key());
-		parser.accepts(CMD_UNLOCK, "Set default key").withRequiredArg().withValuesConvertedBy(GPJToolArgumentMatchers.key());
+		parser.accepts(CMD_UNLOCK, "Set default key");
 		parser.accepts(OPT_KEY_ID, "Specify key ID").withRequiredArg().ofType(Integer.class);
 		parser.accepts(OPT_KEY_VERSION, "Specify key version").withRequiredArg().ofType(Integer.class);
 
@@ -287,21 +289,22 @@ public class GPJTool {
 
 					// --install <applet.cap>
 					if (args.has(CMD_INSTALL)) {
-						AID def = gp.getRegistry().getDefaultSelectedAID();
+						AID def = gp.getRegistry().getDefaultSelectedPackageAID();
 						if (def != null && args.has(OPT_DEFAULT)) {
 							if (args.has(OPT_REINSTALL)) {
 								gp.verbose("Removing current default applet/package");
-								// Remove all instances of default selected app
-								def = gp.getRegistry().getDefaultSelectedPackageAID();
-								gp.deleteAID(def, true); // XXX: What about different instances ?
+								// Remove all instances of default selected app package
+								gp.deleteAID(def, true);
 							}
 						}
 
 						File capfile = (File) args.valueOf(CMD_INSTALL);
 						CapFile instcap = new CapFile(new FileInputStream(capfile));
 
-						// Check if already installed, for some reason
+						// Take the applet AID from CAP but allow to override
 						AID aid = instcap.getAppletAIDs().get(0);
+						if (args.has(OPT_APPLET))
+							aid = (AID) args.valueOf(OPT_APPLET);
 
 						if (gp.getRegistry().allAIDs().contains(aid)) {
 							System.err.println("WARNING: Applet " + aid + " already present on card");
@@ -309,7 +312,6 @@ public class GPJTool {
 
 						gp.verbose("Installing applet from package " + instcap.getPackageName());
 						gp.loadCapFile(instcap);
-						// instance will be aid, which is first applet from package
 						gp.installAndMakeSelecatable(instcap.getPackageAID(), aid, null, args.has(OPT_DEFAULT) ? (byte) 0x04 : 0x00, null, null);
 					}
 
@@ -337,9 +339,7 @@ public class GPJTool {
 
 					// --list
 					if (args.has(CMD_LIST)) {
-						AIDRegistry registry = gp.getStatus();
-						registry = gp.getStatus();
-						for (AIDRegistryEntry e : registry) {
+						for (AIDRegistryEntry e : gp.getRegistry()) {
 							AID aid = e.getAID();
 							System.out.println("AID: " + GPUtils.byteArrayToString(aid.getBytes()) + " (" + GPUtils.byteArrayToReadableString(aid.getBytes()) + ")");
 							System.out.println("     " + e.getKind().toShortString() + " " + e.getLifeCycleString() + ": " + e.getPrivilegesString());
@@ -350,6 +350,33 @@ public class GPJTool {
 							System.out.println();
 						}
 					}
+					// --lock
+					if (args.has(CMD_LOCK)) {
+						if (args.has(OPT_KEY) || args.has(OPT_MAC) || args.has(OPT_ENC) || args.has(OPT_KEK))
+							gp.printStrictWarning("Using --" + CMD_LOCK + " but specifying other keys");
+						byte[] new_key = ((Key)args.valueOf(CMD_LOCK)).getValue();
+						// Check that
+						List<KeySet.Key> keys = new ArrayList<KeySet.Key>();
+						keys.add(new KeySet.Key(01, 01, new_key));
+						keys.add(new KeySet.Key(01, 02, new_key));
+						keys.add(new KeySet.Key(01, 03, new_key));
+						gp.putKeys(keys, true);
+					}
+
+					// --unlock
+					if (args.has(CMD_UNLOCK)) {
+						// Check that
+						List<KeySet.Key> keys = new ArrayList<KeySet.Key>();
+						keys.add(new KeySet.Key(01, 01, GlobalPlatformData.defaultKey));
+						keys.add(new KeySet.Key(01, 02, GlobalPlatformData.defaultKey));
+						keys.add(new KeySet.Key(01, 03, GlobalPlatformData.defaultKey));
+						// Unlock with emv or visa keys writes new keys
+						if (args.has(OPT_VISA2) || args.has(OPT_EMV))
+							gp.putKeys(keys, false);
+						else
+							gp.putKeys(keys, true);
+					}
+
 				}
 			} catch (GPException e) {
 				// All GP exceptions halt the program unless it is run with -relax

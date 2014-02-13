@@ -46,12 +46,24 @@ Command line samples assume default test keys of ```40..4F```. If you need custo
  * Install applet.cap as default applet (with AID information from the CAP):
 
         java -jar gp.jar -install applet.cap -default
+
+ * Set ```010B0371D78377B801F2D62AFC671D95``` key to a card with default ```40..4F``` key:
+
+        java -jar gp.jar -lock 010B0371D78377B801F2D62AFC671D95
+
+ * Set default ```40..4F``` key to card that was  previously locked with ```010B0371D78377B801F2D62AFC671D95```:
+
+        java -jar gp.jar -key 010B0371D78377B801F2D62AFC671D95 -unlock
  
+ * Set the default ```40..4F``` keys to a G&D card that uses EMV diversification:
+
+        java -jar gp.jar -emv -unlock
+
  * Show APDU-s sent to the card:
    
    add ```-debug``` to your command
 
- * Don't use MAC on commands (plain GlobalPlatform commands):
+ * Don't use MAC on commands (plain GlobalPlatform syntax):
 
    add ```-mode clr``` to your command (not supported on all cards)
 

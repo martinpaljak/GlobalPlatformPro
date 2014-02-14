@@ -56,11 +56,11 @@ Command line samples assume default test keys of ```40..4F```. If you need custo
 
         java -jar gp.jar -key 010B0371D78377B801F2D62AFC671D95 -unlock
  
- * Set the default ```40..4F``` keys to a G&D card that uses EMV diversification:
+ * Set the default ```40..4F``` keys to a card that uses EMV diversification (like G&D):
 
         java -jar gp.jar -emv -unlock
    
-   note that you will have to use ```--relax``` option after this operation to get rid of the warning about diversification.
+   note that you will have to use ```--relax``` option after this operation to get rid of the warning about needed diversification, which is not true any more.
 
  * Show APDU-s sent to the card:
    
@@ -72,7 +72,7 @@ Command line samples assume default test keys of ```40..4F```. If you need custo
 
  * Show all options recognized by ```gp``` utility:
 
-   add ```-help``` or ```-h``` to your command
+   add ```-help``` or ```-h``` or ```--help``` to your ```gp``` command
 
 ##### Usage from Java
  * For now consult the [command line utility source code](https://github.com/martinpaljak/GlobalPlatform/blob/master/src/openkms/gpj/GPJTool.java)
@@ -118,6 +118,10 @@ available from http://gpj.sourceforge.net.
    * old and not maintained
  * gpjNG - https://github.com/SimplyTapp/gpjNG (LGPL)
    * fork of gpj with minor additions, mostly a "script mode" that makes it similar to GPShell
+ * Ruby smartcard module - http://smartcard.rubyforge.org/classes/Smartcard/Gp/GpCardMixin.html (MIT)
+   * written in ruby
+   * does not seem to expose all functionality
+   * no command line utility
  * JCOP tools, RADIII, JCardManager4 etc
    * not publicly available open source projects and thus not suitable for this comparision
 

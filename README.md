@@ -126,9 +126,13 @@ The ancestor of this code is GPJ (Global Platform for SmartCardIO) which is (sti
  * gpjNG - https://github.com/SimplyTapp/gpjNG (LGPL)
    * fork of gpj with minor additions, mostly a "script mode" that makes it similar to GPShell
  * Ruby smartcard module - http://smartcard.rubyforge.org/classes/Smartcard/Gp/GpCardMixin.html (MIT)
-   * written in ruby
+   * written in Ruby
    * does not seem to expose all functionality (key diversification, key change etc)
    * no command line utility
+ * JGPShell - https://sourceforge.net/projects/jgpshell/ (GPL2)
+   * written in Java
+   * GPShell-style scripting goal
+   * not really usable and also abandoned.
  * JCOP tools, RADIII, JCardManager4 etc
    * not publicly available open source projects and thus not suitable for this comparision
 

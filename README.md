@@ -44,15 +44,23 @@ Command line samples assume default test keys of ```40..4F```. If you need custo
 
         java -jar gp.jar -delete -default
 
+ * Delete module ```D27600012401``` and all applets from it:
+
+        java -jar gp.jar -delete D27600012401 -deletedeps
+
  * Install applet.cap as default applet (with AID information from the CAP):
 
         java -jar gp.jar -install applet.cap -default
 
- * Set ```010B0371D78377B801F2D62AFC671D95``` key to a card with default ```40..4F``` key:
+ * Install applet.cap (with AID information from the CAP):
+
+        java -jar gp.jar -install applet.cap
+
+ * Set ```010B0371D78377B801F2D62AFC671D95``` key to a card with default ```40..4F``` keys:
 
         java -jar gp.jar -lock 010B0371D78377B801F2D62AFC671D95
 
- * Set default ```40..4F``` key to card that was  previously locked with ```010B0371D78377B801F2D62AFC671D95```:
+ * Set default ```40..4F``` keys to card that was previously locked with key ```010B0371D78377B801F2D62AFC671D95```:
 
         java -jar gp.jar -key 010B0371D78377B801F2D62AFC671D95 -unlock
  
@@ -60,7 +68,7 @@ Command line samples assume default test keys of ```40..4F```. If you need custo
 
         java -jar gp.jar -emv -unlock
    
-   note that you will have to use ```--relax``` option after this operation to get rid of the warning about needed diversification, which is not true any more.
+   \* note that you will have to use ```--relax``` option after this operation to get rid of the warning about probably needed diversification, which is not true any more.
 
  * Show APDU-s sent to the card:
    
@@ -90,8 +98,7 @@ Command line samples assume default test keys of ```40..4F```. If you need custo
 
 ### History
 
-The ancestor of this code is GPJ (Global Platform for SmartCardIO)
-available from http://gpj.sourceforge.net.
+The ancestor of this code is GPJ (Global Platform for SmartCardIO) which is (still) available from http://gpj.sourceforge.net.
 
 
 ### Credits (from GPJ):
@@ -110,17 +117,17 @@ available from http://gpj.sourceforge.net.
  * GPShell + globalplatform library - http://sourceforge.net/projects/globalplatform/ (LGPL)
    * written in C
    * often referred to as the de facto open source GlobalPlatform implementation.
-   * several components need to be installed and compiled before usage
+   * several components need to be compiled and installed before usage
    * requires more complex "script files" and does not provide a command line utility
  * jcManager - http://www.brokenmill.com/2010/03/java-secure-card-manager/ (LGPL)
    * written in Java  
-   * has a GUI
+   * has a basic GUI
    * old and not maintained
  * gpjNG - https://github.com/SimplyTapp/gpjNG (LGPL)
    * fork of gpj with minor additions, mostly a "script mode" that makes it similar to GPShell
  * Ruby smartcard module - http://smartcard.rubyforge.org/classes/Smartcard/Gp/GpCardMixin.html (MIT)
    * written in ruby
-   * does not seem to expose all functionality
+   * does not seem to expose all functionality (key diversification, key change etc)
    * no command line utility
  * JCOP tools, RADIII, JCardManager4 etc
    * not publicly available open source projects and thus not suitable for this comparision
@@ -132,7 +139,7 @@ available from http://gpj.sourceforge.net.
   * ~~-lock and -unlock commands for changing secure channel keys~~
  * T+2
   * Support for storing card management keys in PKCS#11 tokens (HSM)
-  * Simple GUI
+  * Simple GUI for basic operations/browsing
  * T+X (wishlist)
   * SCP03
   * GPShell-style scripts
@@ -158,7 +165,7 @@ In regard to GlobalPlatform, the goal is to make simple operations like installi
  * [jnasmartcardio](https://github.com/jnasmartcardio/jnasmartcardio) for PC/SC access (CC0 / public domain)
 
 #### Legal disclaimer
- The casual: trademarks to their owners, copyrights to authors, patents to hell, legal letters to ~~/dev/null~~ PGP key 0x307E3452. Everything is provided as-is and there is a constant risk of death from lightning.
+ The casual: trademarks to their owners, copyrights to authors, patents to hell, legal letters to ~~/dev/null~~ PGP key 0x307E3452. Everything is provided as-is and there is a constant risk of death from sudden lightning.
 
 ----
 OpenKMS - open source key management - [openkms.org](http://openkms.org)

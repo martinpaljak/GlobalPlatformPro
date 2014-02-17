@@ -24,6 +24,7 @@ package openkms.gp;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 /**
@@ -35,7 +36,7 @@ import java.util.List;
  */
 public class AIDRegistry implements Iterable<AIDRegistryEntry> {
 
-	List<AIDRegistryEntry> entries = new ArrayList<AIDRegistryEntry>();
+	LinkedHashMap<AID, AIDRegistryEntry> entries = new LinkedHashMap<AID, AIDRegistryEntry>();
 
 	/**
 	 * Add one entry to this registry.
@@ -43,7 +44,7 @@ public class AIDRegistry implements Iterable<AIDRegistryEntry> {
 	 * @param entry
 	 */
 	public void add(AIDRegistryEntry entry) {
-		entries.add(entry);
+		entries.put(entry.getAID(), entry);
 	}
 
 	/**
@@ -52,7 +53,7 @@ public class AIDRegistry implements Iterable<AIDRegistryEntry> {
 	 * @return iterator
 	 */
 	public Iterator<AIDRegistryEntry> iterator() {
-		return entries.iterator();
+		return entries.values().iterator();
 	}
 
 
@@ -63,7 +64,7 @@ public class AIDRegistry implements Iterable<AIDRegistryEntry> {
 	 */
 	public List<AIDRegistryEntry> allPackages() {
 		List<AIDRegistryEntry> res = new ArrayList<AIDRegistryEntry>();
-		for (AIDRegistryEntry e : entries) {
+		for (AIDRegistryEntry e : entries.values()) {
 			if (e.isPackage()) {
 				res.add(e);
 			}
@@ -73,7 +74,7 @@ public class AIDRegistry implements Iterable<AIDRegistryEntry> {
 
 	public List<AID> allPackageAIDs() {
 		List<AID> res = new ArrayList<AID>();
-		for (AIDRegistryEntry e : entries) {
+		for (AIDRegistryEntry e : entries.values()) {
 			if (e.isPackage()) {
 				res.add(e.getAID());
 			}
@@ -82,7 +83,7 @@ public class AIDRegistry implements Iterable<AIDRegistryEntry> {
 	}
 	public List<AID> allAppletAIDs() {
 		List<AID> res = new ArrayList<AID>();
-		for (AIDRegistryEntry e : entries) {
+		for (AIDRegistryEntry e : entries.values()) {
 			if (e.isApplet()) {
 				res.add(e.getAID());
 			}
@@ -91,7 +92,7 @@ public class AIDRegistry implements Iterable<AIDRegistryEntry> {
 	}
 	public List<AID> allAIDs() {
 		List<AID> res = new ArrayList<AID>();
-		for (AIDRegistryEntry e : entries) {
+		for (AIDRegistryEntry e : entries.values()) {
 			res.add(e.getAID());
 		}
 		return res;
@@ -103,7 +104,7 @@ public class AIDRegistry implements Iterable<AIDRegistryEntry> {
 	 */
 	public List<AIDRegistryEntry> allApplets() {
 		List<AIDRegistryEntry> res = new ArrayList<AIDRegistryEntry>();
-		for (AIDRegistryEntry e : entries) {
+		for (AIDRegistryEntry e : entries.values()) {
 			if (e.isApplet()) {
 				res.add(e);
 			}

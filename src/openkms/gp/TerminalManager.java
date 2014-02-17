@@ -109,6 +109,7 @@ public class TerminalManager {
 	// Given an instance of some Exception from a PC/SC system,
 	// return a meaningful PC/SC error name.
 	public static String getExceptionMessage(Exception e) {
+		String classname = e.getClass().getCanonicalName();
 		if (e instanceof CardException) {
 			// This comes from SunPCSC most probably and already contains the PC/SC error in the cause
 			if (e.getCause() != null) {
@@ -119,7 +120,7 @@ public class TerminalManager {
 				}
 			}
 		}
-		if (e.getClass().getCanonicalName().equalsIgnoreCase("jnasmartcardio.Smartcardio.EstablishContextException")) {
+		if (classname != null && classname.equalsIgnoreCase("jnasmartcardio.Smartcardio.EstablishContextException")) {
 			if (e.getCause().getMessage().indexOf("SCARD_E_NO_SERVICE") != -1)
 				return "SCARD_E_NO_SERVICE";
 		}

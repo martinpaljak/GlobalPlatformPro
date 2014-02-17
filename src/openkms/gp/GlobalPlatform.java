@@ -894,7 +894,8 @@ public class GlobalPlatform {
 				registry.add(entry);
 			}
 		}
-		p1s = new int[] { 0x10, 0x20 };
+		// Order is important here, so that ExM info would get to the set later
+		p1s = new int[] { 0x20, 0x10 };
 		for (int p1 : p1s) {
 			int index = 0;
 			byte[] data = getConcatenatedStatus(p1, new byte[] { 0x4F, 0x00 });

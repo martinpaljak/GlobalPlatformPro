@@ -511,7 +511,7 @@ public class GlobalPlatform {
 
 			byte[] constantRMAC = new byte[] { (byte) 0x01, (byte) 0x02 };
 			System.arraycopy(constantRMAC, 0, derivationData, 0, 2);
-			cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(staticKeys.get3DES(KeyType.RMAC), "DESede"), iv_null);
+			cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(staticKeys.get3DES(KeyType.MAC), "DESede"), iv_null);
 			sessionKeys.setKey(KeyType.RMAC, cipher.doFinal(derivationData));;
 
 
@@ -786,11 +786,18 @@ public class GlobalPlatform {
 	public void putKeys(List<KeySet.Key> keys, boolean replace) throws GPException, CardException {
 		if (keys.size() < 1 || keys.size() > 3)
 			throw new IllegalArgumentException("Can add keys up to 3 at a time");
-		if (keys.size() > 1)
+		if (keys.size() > 1) {
 			for (int i = 1; i < keys.size(); i++) {
 				if (keys.get(i-1).getID() != keys.get(i).getID() -1)
 					throw new IllegalArgumentException("Key ID-s of multiple keys must be sequential!");
 			}
+		}
+		// Check if factory keys
+		List<Key> tmpl = getKeyInfoTemplate();
+		if ((tmpl.get(0).getVersion() < 1 || tmpl.get(0).getVersion() > 0x7F) && replace) {
+			printStrictWarning("Trying to replace factory keys? Is this a virgin card?");
+		}
+
 		int P1 = 0x00; // New key in single command unless replace
 		if (replace)
 			P1 = keys.get(0).getVersion();

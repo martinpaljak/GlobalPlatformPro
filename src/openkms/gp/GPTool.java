@@ -51,6 +51,7 @@ public class GPTool {
 	private final static String OPT_DEBUG = "debug";
 	private final static String OPT_VERBOSE = "verbose";
 	private final static String OPT_REINSTALL = "reinstall";
+	private final static String OPT_VIRGIN = "virgin";
 
 	private final static String OPT_MODE = "mode";
 
@@ -107,6 +108,8 @@ public class GPTool {
 		parser.accepts(OPT_KEK, "Specify KEK key").withRequiredArg().withValuesConvertedBy(GPToolArgumentMatchers.key());
 		parser.accepts(OPT_KEY, "Specify master key").withRequiredArg().withValuesConvertedBy(GPToolArgumentMatchers.key());
 		parser.accepts(CMD_LOCK, "Set new key").withRequiredArg().withValuesConvertedBy(GPToolArgumentMatchers.key());
+		parser.accepts(OPT_VIRGIN, "Card has virgin keys");
+
 		parser.accepts(CMD_UNLOCK, "Set default key");
 		parser.accepts(OPT_KEY_ID, "Specify key ID").withRequiredArg().ofType(Integer.class);
 		parser.accepts(OPT_KEY_VERSION, "Specify key version").withRequiredArg().ofType(Integer.class);
@@ -163,8 +166,13 @@ public class GPTool {
 		if (args.has(OPT_KEK)) {
 			ks.setKey(KeyType.KEK, (KeySet.Key)args.valueOf(OPT_KEK));
 		}
-
-		// TODO: set KeyID and keyVersion. requires re-working KeySet.
+		// Key ID and Version
+		if (args.has(OPT_KEY_ID)) {
+			ks.setKeyID((int) args.valueOf(OPT_KEY_ID));
+		}
+		if (args.has(OPT_KEY_VERSION)) {
+			ks.setKeyVersion((int) args.valueOf(OPT_KEY_VERSION));
+		}
 
 		// Set diversification if needed
 		if (args.has(OPT_VISA2))
@@ -195,9 +203,10 @@ public class GPTool {
 			// Select terminals to work on
 			List<CardTerminal> do_readers;
 			if (args.has(OPT_READER)) {
-				CardTerminal t = terminals.getTerminal((String) args.valueOf(OPT_READER));
+				String reader = (String) args.valueOf(OPT_READER);
+				CardTerminal t = terminals.getTerminal(reader);
 				if (t == null) {
-					System.err.println("Reader \"" + (String) args.valueOf(OPT_READER) + "\" not found.");
+					System.err.println("Reader \"" + reader + "\" not found.");
 					System.exit(1);
 				}
 				do_readers = Arrays.asList(t);
@@ -222,6 +231,7 @@ public class GPTool {
 					// Establish connection
 					try {
 						card = reader.connect("*");
+						card.beginExclusive();
 					} catch (CardException e) {
 						if (args.has(OPT_CONTINUE)) {
 							e.printStackTrace();
@@ -244,7 +254,7 @@ public class GPTool {
 						System.out.println("ATR: " + GPUtils.byteArrayToString(card.getATR().getBytes()));
 					}
 
-					// Talk to the card manager
+					// Talk to the card manager (can be null)
 					gp.select((AID) args.valueOf(OPT_SDAID));
 
 					// Fetch some possibly interesting data
@@ -364,21 +374,30 @@ public class GPTool {
 							keys.add(new KeySet.Key(01, 01, new_key));
 							keys.add(new KeySet.Key(01, 02, new_key));
 							keys.add(new KeySet.Key(01, 03, new_key));
-							gp.putKeys(keys, true);
+							if (args.has(OPT_EMV) || args.has(OPT_VISA2) || args.has(OPT_VIRGIN)) {
+								gp.putKeys(keys, false);
+							} else {
+								// normally replace
+								gp.putKeys(keys, true);
+							}
+							System.out.println("Card locked with key: " + GPUtils.byteArrayToString(keys.get(0).getValue()));
+							System.out.println("Write this down, DO NOT FORGET/LOSE IT!");
 						}
 
 						// --unlock
 						if (args.has(CMD_UNLOCK)) {
-							// Check that
+							// Write default keys
 							List<KeySet.Key> keys = new ArrayList<KeySet.Key>();
 							keys.add(new KeySet.Key(01, 01, GlobalPlatformData.defaultKey));
 							keys.add(new KeySet.Key(01, 02, GlobalPlatformData.defaultKey));
 							keys.add(new KeySet.Key(01, 03, GlobalPlatformData.defaultKey));
-							// Unlock with emv or visa keys writes new keys
-							if (args.has(OPT_VISA2) || args.has(OPT_EMV))
+							// "add keys" if default factory keys or otherwise virgin card
+							if (args.has(OPT_EMV) || args.has(OPT_VISA2) || args.has(OPT_VIRGIN)) {
 								gp.putKeys(keys, false);
-							else
+							} else {
+								// normally replace
 								gp.putKeys(keys, true);
+							}
 						}
 
 						// --make-default <aid>
@@ -387,7 +406,7 @@ public class GPTool {
 						}
 					}
 				} catch (GPException e) {
-					// All GP exceptions halt the program unless it is run with -relax
+					// All unhandled GP exceptions halt the program unless it is run with -relax
 					if (!args.has(OPT_RELAX)) {
 						e.printStackTrace();
 						System.exit(1);
@@ -402,12 +421,12 @@ public class GPTool {
 						throw e; // No catch.
 					}
 				} finally {
-					if (card != null)
+					if (card != null) {
+						card.endExclusive();
 						TerminalManager.disconnect(card, true);
+					}
 				}
-
 			}
-
 		} catch (Exception e) {
 			// Sensible wrapper for the different PC/SC exceptions
 			if (TerminalManager.getExceptionMessage(e) != null) {

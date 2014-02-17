@@ -49,7 +49,6 @@ public class GlobalPlatformData {
 		return "UNKNOWN";
 	}
 
-
 	// Print the key template
 	public static void pretty_print_key_template(List<KeySet.Key> list, PrintStream out) {
 		boolean factory_keys = false;
@@ -153,7 +152,8 @@ public class GlobalPlatformData {
 			String oid;
 			oid = ASN1ObjectIdentifier.fromByteArray(TLVUtils.getTLVValueAsBytes(data, offset)).toString();
 			if (oid.startsWith("1.2.840.114283.4")) {
-				return oid.substring("1.2.840.114283.4.".length());
+				String[] p = oid.substring("1.2.840.114283.4.".length()).split("\\.");
+				return "SCP_0" +p[0] + "_" + String.format("%02x",Integer.valueOf(p[1]));
 			} else {
 				return "unknown";
 			}

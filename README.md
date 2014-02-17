@@ -8,7 +8,7 @@ Load and manage applets on compatible JavaCards from command line or from your J
  * [Download](#get-it-now)
  * [Usage](#usage)
  * [Supported cards](#supported-cards)
- * [Contact](#contact)
+ * [Contact & support](#contact)
  * [Similar projects](#similar-projects)
  * [About OpenKMS & legal](#about-openkms)
 
@@ -141,7 +141,7 @@ The ancestor of this code is GPJ (Global Platform for SmartCardIO) which is (sti
   * ~~Re-written command line utility~~
   * ~~Windows .exe for ease of use~~
   * ~~-lock and -unlock commands for changing secure channel keys~~
- * T+2
+ * T+2/3/4
   * Support for storing card management keys in PKCS#11 tokens (HSM)
   * Simple GUI for basic operations/browsing
  * T+X (wishlist)
@@ -169,7 +169,7 @@ In regard to GlobalPlatform, the goal is to make simple operations like installi
  * [jnasmartcardio](https://github.com/jnasmartcardio/jnasmartcardio) for PC/SC access (CC0 / public domain)
 
 #### Legal disclaimer
- The casual: trademarks to their owners, copyrights to authors, patents to hell, legal letters to ~~/dev/null~~ PGP key 0x307E3452. Everything is provided as-is and there is a constant risk of death from sudden lightning.
+ The casual: trademarks to their owners, copyrights to authors, software patents to hell, legal letters to ~~/dev/null~~ PGP key 0x307E3452. Everything is provided AS-IS AND THERE IS A CONSTANT RISK OF DEATH FROM SUDDEN LIGHTNING. Writing in all caps made it look like serious, didn't it?
 
 ----
 OpenKMS - open source key management - [openkms.org](http://openkms.org)

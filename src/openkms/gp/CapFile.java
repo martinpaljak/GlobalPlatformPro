@@ -20,7 +20,7 @@
  *
  */
 
-package openkms.gpj;
+package openkms.gp;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

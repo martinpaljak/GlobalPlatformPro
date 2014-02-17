@@ -1,4 +1,4 @@
-package openkms.gpj;
+package openkms.gp;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -16,12 +16,12 @@ import javax.smartcardio.TerminalFactory;
 import joptsimple.OptionException;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
-import openkms.gpj.KeySet.Key;
-import openkms.gpj.KeySet.KeyDiversification;
-import openkms.gpj.KeySet.KeyType;
+import openkms.gp.KeySet.Key;
+import openkms.gp.KeySet.KeyDiversification;
+import openkms.gp.KeySet.KeyType;
 
 
-public class GPJTool {
+public class GPTool {
 
 	private final static String CMD_INFO = "info";
 
@@ -92,21 +92,21 @@ public class GPJTool {
 		parser.accepts(OPT_DEFAULT, "Indicate Default Selected");
 		parser.accepts(OPT_DELETEDEPS, "Also delete dependencies");
 		parser.accepts(OPT_REINSTALL, "Remove card content during installation");
-		parser.accepts(CMD_MAKE_DEFAULT, "Make AID the default").withRequiredArg().withValuesConvertedBy(GPJToolArgumentMatchers.aid());
+		parser.accepts(CMD_MAKE_DEFAULT, "Make AID the default").withRequiredArg().withValuesConvertedBy(GPToolArgumentMatchers.aid());
 
-		parser.accepts(CMD_DELETE, "Delete something").requiredIf(OPT_DELETEDEPS).withOptionalArg().withValuesConvertedBy(GPJToolArgumentMatchers.aid());
+		parser.accepts(CMD_DELETE, "Delete something").requiredIf(OPT_DELETEDEPS).withOptionalArg().withValuesConvertedBy(GPToolArgumentMatchers.aid());
 
-		parser.accepts(CMD_CREATE, "Create new instance of an applet").withRequiredArg().withValuesConvertedBy(GPJToolArgumentMatchers.aid());
-		parser.accepts(OPT_APPLET, "Applet AID").withRequiredArg().withValuesConvertedBy(GPJToolArgumentMatchers.aid());
-		parser.accepts(OPT_PACKAGE, "Package AID").withRequiredArg().withValuesConvertedBy(GPJToolArgumentMatchers.aid());
-		parser.accepts(OPT_INSTANCE, "Instance AID").withRequiredArg().withValuesConvertedBy(GPJToolArgumentMatchers.aid());
+		parser.accepts(CMD_CREATE, "Create new instance of an applet").withRequiredArg().withValuesConvertedBy(GPToolArgumentMatchers.aid());
+		parser.accepts(OPT_APPLET, "Applet AID").withRequiredArg().withValuesConvertedBy(GPToolArgumentMatchers.aid());
+		parser.accepts(OPT_PACKAGE, "Package AID").withRequiredArg().withValuesConvertedBy(GPToolArgumentMatchers.aid());
+		parser.accepts(OPT_INSTANCE, "Instance AID").withRequiredArg().withValuesConvertedBy(GPToolArgumentMatchers.aid());
 
 		// Key options
-		parser.accepts(OPT_MAC, "Specify MAC key").withRequiredArg().withValuesConvertedBy(GPJToolArgumentMatchers.key());
-		parser.accepts(OPT_ENC, "Specify ENC key").withRequiredArg().withValuesConvertedBy(GPJToolArgumentMatchers.key());
-		parser.accepts(OPT_KEK, "Specify KEK key").withRequiredArg().withValuesConvertedBy(GPJToolArgumentMatchers.key());
-		parser.accepts(OPT_KEY, "Specify master key").withRequiredArg().withValuesConvertedBy(GPJToolArgumentMatchers.key());
-		parser.accepts(CMD_LOCK, "Set new key").withRequiredArg().withValuesConvertedBy(GPJToolArgumentMatchers.key());
+		parser.accepts(OPT_MAC, "Specify MAC key").withRequiredArg().withValuesConvertedBy(GPToolArgumentMatchers.key());
+		parser.accepts(OPT_ENC, "Specify ENC key").withRequiredArg().withValuesConvertedBy(GPToolArgumentMatchers.key());
+		parser.accepts(OPT_KEK, "Specify KEK key").withRequiredArg().withValuesConvertedBy(GPToolArgumentMatchers.key());
+		parser.accepts(OPT_KEY, "Specify master key").withRequiredArg().withValuesConvertedBy(GPToolArgumentMatchers.key());
+		parser.accepts(CMD_LOCK, "Set new key").withRequiredArg().withValuesConvertedBy(GPToolArgumentMatchers.key());
 		parser.accepts(CMD_UNLOCK, "Set default key");
 		parser.accepts(OPT_KEY_ID, "Specify key ID").withRequiredArg().ofType(Integer.class);
 		parser.accepts(OPT_KEY_VERSION, "Specify key version").withRequiredArg().ofType(Integer.class);
@@ -114,9 +114,9 @@ public class GPJTool {
 		// Key diversification and AID options
 		parser.accepts(OPT_EMV, "Use EMV diversification");
 		parser.accepts(OPT_VISA2, "Use VISA2 diversification");
-		parser.accepts(OPT_MODE, "APDU mode to use (mac/enc/clr)").withRequiredArg().withValuesConvertedBy(GPJToolArgumentMatchers.mode());;
+		parser.accepts(OPT_MODE, "APDU mode to use (mac/enc/clr)").withRequiredArg().withValuesConvertedBy(GPToolArgumentMatchers.mode());;
 
-		parser.accepts(OPT_SDAID, "ISD AID").withRequiredArg().withValuesConvertedBy(GPJToolArgumentMatchers.aid());
+		parser.accepts(OPT_SDAID, "ISD AID").withRequiredArg().withValuesConvertedBy(GPToolArgumentMatchers.aid());
 
 
 		// Parse arguments

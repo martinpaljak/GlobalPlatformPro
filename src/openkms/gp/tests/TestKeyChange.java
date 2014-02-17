@@ -1,15 +1,15 @@
-package openkms.gpj.tests;
+package openkms.gp.tests;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.smartcardio.CardException;
 
-import openkms.gpj.GPException;
-import openkms.gpj.GlobalPlatform;
-import openkms.gpj.GlobalPlatformData;
-import openkms.gpj.KeySet;
-import openkms.gpj.KeySet.KeyDiversification;
+import openkms.gp.GPException;
+import openkms.gp.GlobalPlatform;
+import openkms.gp.GlobalPlatformData;
+import openkms.gp.KeySet;
+import openkms.gp.KeySet.KeyDiversification;
 
 import org.junit.Test;
 

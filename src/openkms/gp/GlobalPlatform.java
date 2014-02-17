@@ -21,7 +21,7 @@
  *
  */
 
-package openkms.gpj;
+package openkms.gp;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -45,9 +45,9 @@ import javax.smartcardio.CardException;
 import javax.smartcardio.CommandAPDU;
 import javax.smartcardio.ResponseAPDU;
 
-import openkms.gpj.KeySet.Key;
-import openkms.gpj.KeySet.KeyDiversification;
-import openkms.gpj.KeySet.KeyType;
+import openkms.gp.KeySet.Key;
+import openkms.gp.KeySet.KeyDiversification;
+import openkms.gp.KeySet.KeyType;
 
 
 /**

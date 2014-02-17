@@ -1,4 +1,4 @@
-package openkms.gpj;
+package openkms.gp;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -8,8 +8,8 @@ import java.util.List;
 
 import javax.smartcardio.CardException;
 
-import openkms.gpj.KeySet.Key;
-import openkms.gpj.KeySet.KeyDiversification;
+import openkms.gp.KeySet.Key;
+import openkms.gp.KeySet.KeyDiversification;
 
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 

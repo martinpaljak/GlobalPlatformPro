@@ -1,11 +1,11 @@
-package openkms.gpj;
+package openkms.gp;
 
 import joptsimple.ValueConversionException;
 import joptsimple.ValueConverter;
-import openkms.gpj.GlobalPlatform.APDUMode;
-import openkms.gpj.KeySet.Key;
+import openkms.gp.GlobalPlatform.APDUMode;
+import openkms.gp.KeySet.Key;
 
-public class GPJToolArgumentMatchers {
+public class GPToolArgumentMatchers {
 
 	public static ValueConverter<AID> aid() {
 		return new AIDMatcher();

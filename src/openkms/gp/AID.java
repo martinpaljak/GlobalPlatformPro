@@ -20,7 +20,7 @@
  *
  */
 
-package openkms.gpj;
+package openkms.gp;
 
 import java.util.Arrays;
 

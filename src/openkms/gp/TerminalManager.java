@@ -19,7 +19,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package openkms.gpj;
+package openkms.gp;
 
 import java.io.File;
 import java.security.NoSuchAlgorithmException;

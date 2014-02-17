@@ -20,7 +20,7 @@
  *
  */
 
-package openkms.gpj;
+package openkms.gp;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;

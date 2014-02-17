@@ -20,7 +20,7 @@
  *
  */
 
-package openkms.gpj;
+package openkms.gp;
 
 /**
  * Constants interface for ISO 7816 (and friends).

@@ -21,7 +21,7 @@
  *
  */
 
-package openkms.gpj;
+package openkms.gp;
 
 /**
  * Root exception class for all global platform protocol errors.

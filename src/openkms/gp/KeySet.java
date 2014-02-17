@@ -1,4 +1,4 @@
-package openkms.gpj;
+package openkms.gp;
 
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;

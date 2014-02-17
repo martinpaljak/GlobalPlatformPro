@@ -7,12 +7,13 @@
 -outjars optimized-globalplatform.jar
 -dontobfuscate
 -dontoptimize
--keep public class openkms.gpj.GlobalPlatform {
+-keep public class openkms.gp.GlobalPlatform {
     public <methods>;
 }
--keep public class openkms.gpj.GPJTool {
+-keep public class openkms.gp.GPTool {
     public static void main(java.lang.String[]);
 }
+# For enum-s (why this is not default?)
 -keepclassmembers,allowoptimization enum * {
     public static **[] values();
     public static ** valueOf(java.lang.String);

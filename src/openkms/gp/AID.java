@@ -41,24 +41,8 @@ public class AID {
 		this(bytes, 0, bytes.length);
 	}
 
-
 	public AID(String str) {
 		this(GPUtils.stringToByteArray(str));
-	}
-	/**
-	 * Construct an application identifier from a part of a byte array.
-	 *
-	 * @param bytes
-	 * @param offset
-	 *            start index of the application identifier
-	 * @param length
-	 *            length
-	 * @throws IllegalArgumentException
-	 *             if the length is outside the permitted range (5-16)
-	 *
-	 */
-	public AID(byte[] bytes, int offset, int length) {
-		this(bytes, offset, length, true);
 	}
 
 	/**
@@ -80,8 +64,8 @@ public class AID {
 	 *             thrown
 	 *
 	 */
-	public AID(byte[] bytes, int offset, int length, boolean checkLength) throws IllegalArgumentException {
-		if (checkLength && ((length < 5) || (length > 16))) {
+	public AID(byte[] bytes, int offset, int length) throws IllegalArgumentException {
+		if ((length < 5) || (length > 16)) {
 			throw new IllegalArgumentException("AID's are between 5 and 16 bytes");
 		}
 		aidBytes = new byte[length];
@@ -110,9 +94,4 @@ public class AID {
 		}
 		return false;
 	}
-
-	public static AID valueOf(String s) {
-		return new AID(s);
-	}
-
 }

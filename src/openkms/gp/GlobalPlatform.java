@@ -191,7 +191,7 @@ public class GlobalPlatform {
 			short aid_offset = TLVUtils.findTag(fci, TLVUtils.skipTagAndLength(fci, (short) 0, (byte) 0x6F), (byte) 0x84);
 			int aid_length = TLVUtils.getTagLength(fci, aid_offset);
 
-			AID detectedAID = new AID(fci, aid_offset + 2, aid_length, true);
+			AID detectedAID = new AID(fci, aid_offset + 2, aid_length);
 			verbose("Auto-detected ISD AID: " + detectedAID);
 			if (sdAID != null && !detectedAID.equals(sdAID)) {
 				printStrictWarning("SD AID in FCI does not match the requested AID!");

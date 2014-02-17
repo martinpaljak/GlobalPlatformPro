@@ -51,10 +51,8 @@ public class TerminalManager {
 		// http://ludovicrousseau.blogspot.com.es/2013/03/oracle-javaxsmartcardio-failures.html
 		if (System.getProperty("os.name").equalsIgnoreCase("Linux")) {
 			if (new File(debian_path).exists()) {
-				// Debian
 				System.setProperty("sun.security.smartcardio.library", debian_path);
 			} else if (new File(ubuntu_path).exists()) {
-				// Ubuntu
 				System.setProperty("sun.security.smartcardio.library", ubuntu_path);
 			}
 		}
@@ -106,5 +104,25 @@ public class TerminalManager {
 		} catch (NoSuchAlgorithmException e) {
 			throw new CardException(e);
 		}
+	}
+
+	// Given an instance of some Exception from a PC/SC system,
+	// return a meaningful PC/SC error name.
+	public static String getExceptionMessage(Exception e) {
+		if (e instanceof CardException) {
+			// This comes from SunPCSC most probably and already contains the PC/SC error in the cause
+			if (e.getCause() != null) {
+				if (e.getCause().getMessage() != null) {
+					if (e.getCause().getMessage().indexOf("SCARD_") != -1) {
+						return e.getCause().getMessage();
+					}
+				}
+			}
+		}
+		if (e.getClass().getCanonicalName().equalsIgnoreCase("jnasmartcardio.Smartcardio.EstablishContextException")) {
+			if (e.getCause().getMessage().indexOf("SCARD_E_NO_SERVICE") != -1)
+				return "SCARD_E_NO_SERVICE";
+		}
+		return null;
 	}
 }

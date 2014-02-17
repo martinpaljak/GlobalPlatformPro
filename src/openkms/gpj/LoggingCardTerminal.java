@@ -114,7 +114,8 @@ public class LoggingCardTerminal extends CardTerminal {
 		private final Card card;
 		private LoggingCard(CardTerminal term, String protocol) throws CardException {
 			card = terminal.connect(protocol);
-			System.out.println("SCardConnect(\""+terminal.getName() +"\", " + protocol + ") -> " + card.getProtocol());
+			System.out.println("SCardConnect(\"" + terminal.getName() + "\", " + (protocol == "*" ? "T=*" : protocol) + ") -> "
+					+ card.getProtocol());
 		}
 
 		@Override

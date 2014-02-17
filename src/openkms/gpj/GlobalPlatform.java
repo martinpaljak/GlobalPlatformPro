@@ -51,7 +51,7 @@ import openkms.gpj.KeySet.KeyType;
 
 
 /**
- * The main Global Platform Service class. Provides most of the Global Platform
+ * The main Global Platform class. Provides most of the Global Platform
  * functionality for managing GP compliant smart cards.
  */
 public class GlobalPlatform {
@@ -83,7 +83,7 @@ public class GlobalPlatform {
 			return v;
 		}
 	};
-
+	public EnumSet<APDUMode> defaultMode = EnumSet.of(APDUMode.MAC);
 
 	// Implementation details
 	private static final byte CLA_GP = (byte) 0x80;
@@ -511,7 +511,7 @@ public class GlobalPlatform {
 
 			byte[] constantRMAC = new byte[] { (byte) 0x01, (byte) 0x02 };
 			System.arraycopy(constantRMAC, 0, derivationData, 0, 2);
-			cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(staticKeys.get3DES(KeyType.MAC), "DESede"), iv_null);
+			cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(staticKeys.get3DES(KeyType.RMAC), "DESede"), iv_null);
 			sessionKeys.setKey(KeyType.RMAC, cipher.doFinal(derivationData));;
 
 

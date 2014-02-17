@@ -44,16 +44,16 @@ public class KeySet {
 		}
 
 		public Key(String s) {
-			this.id = 0x00;
-			this.version = 0x00;
 			this.value = GPUtils.stringToByteArray(s);
 			if (this.value.length != 16)
-				throw new IllegalArgumentException("Key must be 16 bytes long");
+				throw new IllegalArgumentException("3DES key must be 16 bytes long");
+			this.id = 0x00;
+			this.version = 0x00;
 		}
 	}
 
 	public enum KeyType {
-		// ID is as used in diversification
+		// ID is as used in diversification/derivation
 		// That is - one based.
 		ENC(1), MAC(2), KEK(3), RMAC(4);
 
@@ -238,8 +238,14 @@ public class KeySet {
 	}
 
 	public int getKeyVersion() {
-		// TODO Auto-generated method stub
 		return keyVersion;
 	}
 
+	public void setKeyID(int keyID) {
+		this.keyID = keyID;
+	}
+
+	public void setKeyVersion(int keyVersion) {
+		this.keyVersion = keyVersion;
+	}
 }

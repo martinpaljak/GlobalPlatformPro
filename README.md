@@ -135,8 +135,9 @@ The ancestor of this code is GPJ (Global Platform for SmartCardIO) which is (sti
    * not really usable and also abandoned.
  * OPAL - https://bitbucket.org/ssd/opal (CeCILL, GPLv2 compatible)
    * written in Java
-   * has SCP03 support
+   * claims to have SCP03 support
    * looks "heavy"
+   * smoke tests give exceptions and don't work on OSX or Debian.
  * JCOP tools, RADIII, JCardManager4 etc
    * not publicly available open source projects and thus not suitable for this comparision
 

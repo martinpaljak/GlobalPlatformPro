@@ -67,12 +67,17 @@ Command line samples assume default test keys of ```40..4F```. If you need custo
  * Set the default ```40..4F``` keys to a card that uses EMV diversification (like G&D):
 
         java -jar gp.jar -emv -unlock
-   
-   \* note that you will have to use ```--relax``` option after this operation to get rid of the warning about probably needed diversification, which is not true any more.
+ 
+    \* note that you will have to use ```--relax``` option after this operation to get rid of the warning about probably needed diversification, which is not true any more.
+
+ * Set the default ```40..4F``` keys to a card that uses VISA2 diversification with the well-known mother key on a Gemalto card:
+
+        java -jar gp.jar -visa2 -key 47454D5850524553534F53414D504C45 -unlock -mode clr
+
 
  * Show APDU-s sent to the card:
    
-   add ```-debug``` to your command
+   add ```-debug``` or ```-d``` to your command
 
  * Don't use MAC on commands (plain GlobalPlatform syntax):
 
@@ -85,16 +90,19 @@ Command line samples assume default test keys of ```40..4F```. If you need custo
 ##### Usage from Java
  * For now consult the [command line utility source code](https://github.com/martinpaljak/GlobalPlatform/blob/master/src/openkms/gpj/GPJTool.java)
  * [Javadoc](http://martinpaljak.github.io/GlobalPlatform/) is in a bad shape but shall be improved near v1.0
- 
+ * Expect RuntimeException-s when things go horribly wrong, CardException-s when link layer fails and GPException-s when protocol layer fails.
+
 ### Supported cards
  * See [TestedCards](https://github.com/martinpaljak/GlobalPlatform/wiki/TestedCards)
  * Generally speaking any modern JavaCard that speaks GlobalPlatform 2.1.1+
+ * Cards available from all major vendors have been tested for basic compatibility: [Athena](http://www.athena-scs.com/), [Gemalto](http://www.gemalto.com/), [Giesecke & Devrient](http://www.gi-de.com/), [NXP (JCOP)](http://www.nxp.com/), [Oberthur](http://www.oberthur.com/)
+ * If you are a smart card vendor please do get in touch for clarification and better support!
 
 ### Contact 
 
  * martin@martinpaljak.net
  * File an issue on Github. Better yet - a pull request!
- * For general conversation: [google forum](https://groups.google.com/forum/#!forum/openkms)
+ * For general conversation: [OpenKMS forum](https://groups.google.com/forum/#!forum/openkms)
 
 ### History
 
@@ -135,13 +143,13 @@ The ancestor of this code is GPJ (Global Platform for SmartCardIO) which is (sti
    * not really usable and also abandoned.
  * OPAL - https://bitbucket.org/ssd/opal (CeCILL, GPLv2 compatible)
    * written in Java
-   * claims to have SCP03 support
+   * claims to have SCP03 support (but no tested cards)
    * looks "heavy"
-   * smoke tests give exceptions and don't work on OSX or Debian.
+   * smoke tests give exceptions and doesn't work on OSX nor Debian.
  * JCOP tools, RADIII, JCardManager4 etc
    * not publicly available open source projects and thus not suitable for this comparision
 
-## Upcoming releases
+## Upcoming releases and major new features
  * T+1 (v0.2.5)
   * ~~Re-written command line utility~~
   * ~~Windows .exe for ease of use~~
@@ -152,6 +160,13 @@ The ancestor of this code is GPJ (Global Platform for SmartCardIO) which is (sti
  * T+X (wishlist)
   * SCP03
   * GPShell-style scripts
+
+## Design principles
+ * focus on: real life, practical, simple use cases
+ * KISS, YAGNI, DWIM
+ * javax.smartcardio access to (most probably real) tokens 
+ * thin and self-contained, re-usable
+ * easily readable, auditable and secure codebase
 
 ## About OpenKMS
 The promise of OpenKMS is similar<sup>*</sup> to OpenSSL: 

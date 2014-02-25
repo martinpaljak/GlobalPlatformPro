@@ -10,6 +10,8 @@
 -keep public class openkms.gp.GlobalPlatform {
     public <methods>;
 }
+-keep public class openkms.gp.** { public <methods>; public <fields>; }
+
 -keep public class openkms.gp.GPTool {
     public static void main(java.lang.String[]);
 }

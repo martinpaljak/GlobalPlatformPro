@@ -5,22 +5,27 @@ Load and manage applets on compatible JavaCards from command line or from your J
 > Provides a **high level** and **easy to use** interface that most of the time **JustWorks<sup>(TM)</sup>** yet is as **flexible** as GPShell. Fully **[open source](#license)**.
 
 #### Jump to ...
- * [Download](#get-it-now)
- * [Usage](#usage)
- * [Supported cards](#supported-cards)
- * [Contact & support](#contact)
- * [Similar projects](#similar-projects)
- * [About OpenKMS & legal](#about-openkms)
+* [Download](#get-it-now)
+* [Usage](#usage)
+* [Supported cards](#supported-cards)
+* [Contact & support](#contact)
+* [Similar projects](#similar-projects)
+* [About OpenKMS & legal](#about-openkms)
 
 
 ### Get it now!
- * Download latest pre-built JAR or .EXE from [release area](https://github.com/martinpaljak/GlobalPlatform/releases)
- * Or fetch from github and build it yourself, it is really easy:
+* Download latest pre-built JAR or .EXE from [release area](https://github.com/martinpaljak/GlobalPlatform/releases)
+* Or fetch from github and build it yourself, it is really easy:
 
-        git clone https://github.com/martinpaljak/GlobalPlatform
-        cd GlobalPlatform
-        ant
- * Status: [![Build Status](https://travis-ci.org/martinpaljak/GlobalPlatform.png?branch=master)](https://travis-ci.org/martinpaljak/GlobalPlatform)  [![Coverity status](https://scan.coverity.com/projects/1300/badge.svg?flat=1)](https://scan.coverity.com/projects/1300/)
+```shell
+git clone https://github.com/martinpaljak/GlobalPlatform
+cd GlobalPlatform
+ant
+```
+
+* Status
+  * Travis - [![Build Status](https://travis-ci.org/martinpaljak/GlobalPlatform.png?branch=master)](https://travis-ci.org/martinpaljak/GlobalPlatform)
+  * Coverity - [![Coverity status](https://scan.coverity.com/projects/1300/badge.svg?flat=1)](https://scan.coverity.com/projects/1300/)
 
 ### Usage
 
@@ -100,9 +105,11 @@ Command line samples assume default test keys of ```40..4F```. If you need custo
 
 ### Contact 
 
- * martin@martinpaljak.net
- * File an issue on Github. Better yet - a pull request!
- * For general conversation: [OpenKMS forum](https://groups.google.com/forum/#!forum/openkms)
+* martin@martinpaljak.net
+* [File an issue on Github](https://github.com/martinpaljak/GlobalPlatform/issues/new). Better yet - a pull request!
+* For support:
+  * re-run your failing command with ```-d -v -i``` switches and send the output, information about your card and applet
+* For general conversation: [OpenKMS forum](https://groups.google.com/forum/#!forum/openkms)
 
 ### History
 
@@ -110,12 +117,12 @@ The ancestor of this code is GPJ (Global Platform for SmartCardIO) which is (sti
 
 
 ### Credits (from GPJ):
- *  Wojciech Mostowski <woj@cs.ru.nl>,
- *  Francois Kooman <F.Kooman@student.science.ru.nl>
- *  Martijn Oostdijk <martijn.oostdijk@gmail.com>
- *  Martin Paljak <martin@martinpaljak.net>
- *  Hendrik Tews
- *  Dusan Kovacevic
+*  Wojciech Mostowski <woj@cs.ru.nl>,
+*  Francois Kooman <F.Kooman@student.science.ru.nl>
+*  Martijn Oostdijk <martijn.oostdijk@gmail.com>
+*  Martin Paljak <martin@martinpaljak.net>
+*  Hendrik Tews
+*  Dusan Kovacevic
 
 ### Similar projects
  * gpj (the grandparent) - http://gpj.sf.net (LGPL)

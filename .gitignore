@@ -2,6 +2,7 @@
 /build/
 *~
 /gp.jar
+/openkms-gp.jar
 /javadoc/
 /gp.exe
 /cov-int

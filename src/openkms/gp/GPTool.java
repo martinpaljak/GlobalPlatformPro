@@ -252,6 +252,9 @@ public class GPTool {
 					if (args.has(CMD_INFO) || args.has(OPT_VERBOSE)) {
 						System.out.println("Reader: " + reader.getName());
 						System.out.println("ATR: " + GPUtils.byteArrayToString(card.getATR().getBytes()));
+						System.out.println("More information about your card:");
+						System.out.println("    http://smartcard-atr.appspot.com/parse?ATR="+GPUtils.byteArrayToString(card.getATR().getBytes()));
+						System.out.println();
 					}
 
 					// Talk to the card manager (can be null)

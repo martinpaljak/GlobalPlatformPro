@@ -22,6 +22,7 @@
         <pathelement location="ext/proguard.jar"/>
       </classpath>
     </java>
+    <jar destfile="openkms-gp.jar" level="9" basedir="build"/>
     <jar manifest="Manifest.mf" destfile="gp.jar" level="9">
       <zipfileset src="lib/jnasmartcardio.jar"/>
       <zipfileset src="optimized-globalplatform.jar" excludes="org/bouncycastle/x509/"/>

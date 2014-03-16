@@ -32,6 +32,7 @@ import javax.smartcardio.CardTerminal;
 import javax.smartcardio.CommandAPDU;
 import javax.smartcardio.ResponseAPDU;
 
+// TODO: Unify the APDU related code with ByteBuffer so that both would log nicely
 public class LoggingCardTerminal extends CardTerminal {
 	// This code has been taken from Apache commons-codec 1.7 (License: Apache 2.0)
 	private static final char[] LOWER_HEX = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
@@ -116,6 +117,7 @@ public class LoggingCardTerminal extends CardTerminal {
 			card = terminal.connect(protocol);
 			System.out.println("SCardConnect(\"" + terminal.getName() + "\", " + (protocol.equals("*") ? "T=*" : protocol) + ") -> "
 					+ card.getProtocol());
+			System.out.flush();
 		}
 
 		@Override
@@ -188,15 +190,24 @@ public class LoggingCardTerminal extends CardTerminal {
 
 			@Override
 			public ResponseAPDU transmit(CommandAPDU apdu) throws CardException {
-
+				byte [] d = apdu.getBytes();
 				int len = apdu.getData().length > 255 ? 7 : 5;
 				System.out.print("A>> " + card.getProtocol() + " (4+" + String.format("%04d", apdu.getData().length) + ")");
-				System.out.print(" " + encodeHexString(Arrays.copyOfRange(apdu.getBytes(), 0, 4)));
+				System.out.print(" " + encodeHexString(Arrays.copyOfRange(d, 0, 4)));
 
 				// Only if Case 2, 3 or 4 APDU
 				if (apdu.getBytes().length > 4) {
-					System.out.print(" " + encodeHexString(Arrays.copyOfRange(apdu.getBytes(), 4, len)));
-					System.out.println(" " + encodeHexString(Arrays.copyOfRange(apdu.getBytes(), len, apdu.getBytes().length)));
+					int cmdlen = d[ISO7816.OFFSET_LC];
+					if (cmdlen == 0 && apdu.getData().length > 6) {
+						cmdlen  = ((d[ISO7816.OFFSET_LC +1] & 0xff << 8) | d[ISO7816.OFFSET_LC+2] & 0xff);
+					}
+					System.out.print(" " + encodeHexString(Arrays.copyOfRange(d, 4, len)));
+					System.out.print(" " + encodeHexString(Arrays.copyOfRange(d, len, len + cmdlen)));
+					if (len + cmdlen < d.length) {
+						System.out.println(" " + encodeHexString(Arrays.copyOfRange(d, len + cmdlen, d.length)));
+					} else {
+						System.out.println();
+					}
 				} else {
 					System.out.println();
 				}

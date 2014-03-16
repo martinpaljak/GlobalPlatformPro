@@ -177,9 +177,6 @@ public class GlobalPlatform {
 
 		ResponseAPDU resp = channel.transmit(command);
 
-		if (resp.getSW() == 0x6A82) {
-			printStrictWarning("SELECT ISD returned 6A82 - unfused JCOP?");
-		}
 		if (resp.getSW() == 0x6283) {
 			printStrictWarning("SELECT ISD returned 6283 - CARD_LOCKED");
 		}

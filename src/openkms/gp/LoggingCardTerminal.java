@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright (c) 2014 Martin Paljak
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -67,17 +67,11 @@ public class LoggingCardTerminal extends CardTerminal {
 	}
 	// End of copied code from commons-codec
 
-	protected static CardTerminal terminal = null;
-	private static LoggingCardTerminal instance;
+	// The actual terminal
+	protected CardTerminal terminal = null;
 
 	public static LoggingCardTerminal getInstance(CardTerminal term) {
-		if (instance == null) {
-			instance = new LoggingCardTerminal(term);
-		}
-		if (!term.equals(terminal)) {
-			instance = new LoggingCardTerminal(term);
-		}
-		return instance;
+		return new LoggingCardTerminal(term);
 	}
 
 	private LoggingCardTerminal (CardTerminal term) {
@@ -111,12 +105,13 @@ public class LoggingCardTerminal extends CardTerminal {
 	}
 
 
-	public final static class LoggingCard extends Card {
+	public final class LoggingCard extends Card {
 		private final Card card;
 		private LoggingCard(CardTerminal term, String protocol) throws CardException {
+			System.out.print("SCardConnect(\"" + terminal.getName() + "\", " + (protocol.equals("*") ? "T=*" : protocol) + ")");
+			System.out.flush();
 			card = terminal.connect(protocol);
-			System.out.println("SCardConnect(\"" + terminal.getName() + "\", " + (protocol.equals("*") ? "T=*" : protocol) + ") -> "
-					+ card.getProtocol());
+			System.out.println(" -> " + card.getProtocol());
 			System.out.flush();
 		}
 
@@ -158,15 +153,15 @@ public class LoggingCardTerminal extends CardTerminal {
 
 		@Override
 		public CardChannel openLogicalChannel() throws CardException {
-			return null;
+			throw new CardException("Logical channels not supported");
 		}
 
 		@Override
 		public byte[] transmitControlCommand(int arg0, byte[] arg1) throws CardException {
-			return null;
+			throw new CardException("Control commands not supported");
 		}
 
-		public final static class LoggingCardChannel extends CardChannel {
+		public final class LoggingCardChannel extends CardChannel {
 			private final CardChannel channel;
 			private final Card card;
 			public LoggingCardChannel(Card card) {
@@ -190,21 +185,21 @@ public class LoggingCardTerminal extends CardTerminal {
 
 			@Override
 			public ResponseAPDU transmit(CommandAPDU apdu) throws CardException {
-				byte [] d = apdu.getBytes();
+				byte [] cb = apdu.getBytes();
 				int len = apdu.getData().length > 255 ? 7 : 5;
 				System.out.print("A>> " + card.getProtocol() + " (4+" + String.format("%04d", apdu.getData().length) + ")");
-				System.out.print(" " + encodeHexString(Arrays.copyOfRange(d, 0, 4)));
+				System.out.print(" " + encodeHexString(Arrays.copyOfRange(cb, 0, 4)));
 
 				// Only if Case 2, 3 or 4 APDU
 				if (apdu.getBytes().length > 4) {
-					int cmdlen = d[ISO7816.OFFSET_LC];
+					int cmdlen = cb[ISO7816.OFFSET_LC];
 					if (cmdlen == 0 && apdu.getData().length > 6) {
-						cmdlen  = ((d[ISO7816.OFFSET_LC +1] & 0xff << 8) | d[ISO7816.OFFSET_LC+2] & 0xff);
+						cmdlen  = ((cb[ISO7816.OFFSET_LC +1] & 0xff << 8) | cb[ISO7816.OFFSET_LC+2] & 0xff);
 					}
-					System.out.print(" " + encodeHexString(Arrays.copyOfRange(d, 4, len)));
-					System.out.print(" " + encodeHexString(Arrays.copyOfRange(d, len, len + cmdlen)));
-					if (len + cmdlen < d.length) {
-						System.out.println(" " + encodeHexString(Arrays.copyOfRange(d, len + cmdlen, d.length)));
+					System.out.print(" " + encodeHexString(Arrays.copyOfRange(cb, 4, len)));
+					System.out.print(" " + encodeHexString(Arrays.copyOfRange(cb, len, len + cmdlen)));
+					if (len + cmdlen < cb.length) {
+						System.out.println(" " + encodeHexString(Arrays.copyOfRange(cb, len + cmdlen, cb.length)));
 					} else {
 						System.out.println();
 					}
@@ -220,11 +215,12 @@ public class LoggingCardTerminal extends CardTerminal {
 				if (ms > 1000) {
 					time = ms / 1000 + "s" + ms % 1000 + "ms";
 				}
+				byte [] rb = response.getBytes();
 				System.out.print("A<< (" + String.format("%04d", response.getData().length) + "+2) (" + time + ")");
 				if (response.getData().length > 2) {
 					System.out.print(" " + encodeHexString(response.getData()));
 				}
-				System.out.println(" " + encodeHexString(Arrays.copyOfRange(response.getBytes(), response.getBytes().length-2, response.getBytes().length)));
+				System.out.println(" " + encodeHexString(Arrays.copyOfRange(rb, rb.length-2, rb.length)));
 				System.out.flush();
 
 				return response;

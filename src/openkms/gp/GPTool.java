@@ -28,6 +28,7 @@ public class GPTool {
 	private final static String CMD_LIST = "list";
 	private final static String CMD_LOCK = "lock";
 	private final static String CMD_INSTALL = "install";
+	private final static String CMD_UNINSTALL = "uninstall";
 	private final static String CMD_DELETE = "delete";
 	private final static String CMD_CREATE = "create";
 	private final static String CMD_LOAD = "load";
@@ -93,6 +94,7 @@ public class GPTool {
 		parser.accepts(CMD_LOAD, "Load a CAP file").withRequiredArg().ofType(File.class);
 
 		parser.accepts(CMD_INSTALL, "Install applet").withOptionalArg().ofType(File.class);
+		parser.accepts(CMD_UNINSTALL, "Install applet/package").withRequiredArg().ofType(File.class);
 		parser.accepts(OPT_DEFAULT, "Indicate Default Selected");
 		parser.accepts(OPT_DELETEDEPS, "Also delete dependencies");
 		parser.accepts(OPT_REINSTALL, "Remove card content during installation");
@@ -272,7 +274,7 @@ public class GPTool {
 
 					// Authenticate, only if needed
 					if (args.has(CMD_LIST) || args.has(CMD_INSTALL) || args.has(CMD_DELETE) || args.has(CMD_CREATE)
-							|| args.has(CMD_LOCK) || args.has(CMD_UNLOCK) || args.has(CMD_MAKE_DEFAULT)) {
+							|| args.has(CMD_LOCK) || args.has(CMD_UNLOCK) || args.has(CMD_MAKE_DEFAULT) || args.has(CMD_UNINSTALL)) {
 
 						// Override default mode if needed.
 						if (args.has(OPT_MODE)) {
@@ -305,6 +307,15 @@ public class GPTool {
 									}
 								}
 							}
+						}
+
+						// --uninstall <cap>
+						if (args.has(CMD_UNINSTALL)) {
+							File capfile = (File) args.valueOf(CMD_UNINSTALL);
+							CapFile instcap = new CapFile(new FileInputStream(capfile));
+							AID aid = instcap.getPackageAID();
+							gp.deleteAID(aid, true);
+							System.out.println(aid + " deleted.");
 						}
 
 						// --install <applet.cap>
@@ -405,6 +416,7 @@ public class GPTool {
 								// normally replace
 								gp.putKeys(keys, true);
 							}
+							System.out.println("Default " + GPUtils.byteArrayToString(GlobalPlatformData.defaultKey) + " set as master key.");
 						}
 
 						// --make-default <aid>

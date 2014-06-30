@@ -41,6 +41,7 @@ public class GPTool {
 	private final static String OPT_PACKAGE = "package";
 	private final static String OPT_INSTANCE = "instance";
 	private final static String OPT_DO_ALL_READERS = "all";
+	private final static String OPT_NOFIX = "nofix";
 
 
 	private final static String OPT_CONTINUE = "skip-error";
@@ -84,6 +85,8 @@ public class GPTool {
 		// Special options
 		parser.accepts(OPT_RELAX, "Relaxed error checking");
 		parser.accepts(OPT_DO_ALL_READERS, "Work with multiple readers");
+		parser.accepts(OPT_NOFIX, "Do not try to fix PCSC/Java/OS issues");
+
 
 		// Applet operation options
 		parser.accepts(OPT_CAP, "Use a CAP file as source").withRequiredArg().ofType(File.class);
@@ -109,6 +112,7 @@ public class GPTool {
 		parser.accepts(OPT_KEY, "Specify master key").withRequiredArg().withValuesConvertedBy(GPToolArgumentMatchers.key());
 		parser.accepts(CMD_LOCK, "Set new key").withRequiredArg().withValuesConvertedBy(GPToolArgumentMatchers.key());
 		parser.accepts(OPT_VIRGIN, "Card has virgin keys");
+
 
 		parser.accepts(CMD_UNLOCK, "Set default key");
 		parser.accepts(OPT_KEY_ID, "Specify key ID").withRequiredArg().ofType(Integer.class);
@@ -189,12 +193,12 @@ public class GPTool {
 
 		// Now actually talk to possible terminals
 		try {
-			TerminalFactory tf = TerminalManager.getTerminalFactory();
+			TerminalFactory tf = TerminalManager.getTerminalFactory(args.has(OPT_NOFIX) ? false : true);
 			CardTerminals terminals = tf.terminals();
 
 			// List terminals if needed
 			if (args.has(OPT_DEBUG)) {
-				System.out.println("# Detected readers");
+				System.out.println("# Detected readers from " + tf.getProvider().getName());
 				for (CardTerminal term : terminals.list()) {
 					System.out.println((term.isCardPresent() ? "[*] " : "[ ] ") + term.getName());
 				}

@@ -46,6 +46,10 @@ public class TerminalManager {
 	private static boolean buggy = true;
 
 	public static TerminalFactory getTerminalFactory() throws NoSuchAlgorithmException {
+		return getTerminalFactory(true);
+	}
+
+	public static TerminalFactory getTerminalFactory(boolean fix) throws NoSuchAlgorithmException {
 		// Set necessary parameters for seamless PC/SC access. OpenJDK has wrong
 		// paths (without .1) See this blog post:
 		// http://ludovicrousseau.blogspot.com.es/2013/03/oracle-javaxsmartcardio-failures.html
@@ -60,9 +64,11 @@ public class TerminalManager {
 		TerminalFactory tf = TerminalFactory.getDefault();
 		// OSX is horribly broken. Use JNA based approach if not already
 		// installed and used as default
-		if (System.getProperty("os.name").equalsIgnoreCase("Mac OS X")) {
-			if (tf.getProvider().getName() != jnasmartcardio.Smartcardio.PROVIDER_NAME) {
-				tf = TerminalFactory.getInstance("PC/SC", null, new jnasmartcardio.Smartcardio());
+		if (fix) {
+			if (System.getProperty("os.name").equalsIgnoreCase("Mac OS X")) {
+				if (tf.getProvider().getName() != jnasmartcardio.Smartcardio.PROVIDER_NAME) {
+					tf = TerminalFactory.getInstance("PC/SC", null, new jnasmartcardio.Smartcardio());
+				}
 			}
 		}
 

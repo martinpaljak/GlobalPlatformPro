@@ -186,20 +186,20 @@ public class LoggingCardTerminal extends CardTerminal {
 			@Override
 			public ResponseAPDU transmit(CommandAPDU apdu) throws CardException {
 				byte [] cb = apdu.getBytes();
-				int len = apdu.getData().length > 255 ? 7 : 5;
+				int len_end = apdu.getData().length > 255 ? 7 : 5;
 				System.out.print("A>> " + card.getProtocol() + " (4+" + String.format("%04d", apdu.getData().length) + ")");
 				System.out.print(" " + encodeHexString(Arrays.copyOfRange(cb, 0, 4)));
 
 				// Only if Case 2, 3 or 4 APDU
 				if (apdu.getBytes().length > 4) {
-					int cmdlen = cb[ISO7816.OFFSET_LC];
+					int cmdlen = cb[ISO7816.OFFSET_LC] & 0xFF;
 					if (cmdlen == 0 && apdu.getData().length > 6) {
-						cmdlen  = ((cb[ISO7816.OFFSET_LC +1] & 0xff << 8) | cb[ISO7816.OFFSET_LC+2] & 0xff);
+						cmdlen = ((cb[ISO7816.OFFSET_LC +1] & 0xff << 8) | cb[ISO7816.OFFSET_LC+2] & 0xff);
 					}
-					System.out.print(" " + encodeHexString(Arrays.copyOfRange(cb, 4, len)));
-					System.out.print(" " + encodeHexString(Arrays.copyOfRange(cb, len, len + cmdlen)));
-					if (len + cmdlen < cb.length) {
-						System.out.println(" " + encodeHexString(Arrays.copyOfRange(cb, len + cmdlen, cb.length)));
+					System.out.print(" " + encodeHexString(Arrays.copyOfRange(cb, 4, len_end)));
+					System.out.print(" " + encodeHexString(Arrays.copyOfRange(cb, len_end, len_end + cmdlen)));
+					if (len_end + cmdlen < cb.length) {
+						System.out.println(" " + encodeHexString(Arrays.copyOfRange(cb, len_end + cmdlen, cb.length)));
 					} else {
 						System.out.println();
 					}

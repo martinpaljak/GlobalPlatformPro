@@ -45,7 +45,8 @@ public class GPUtils {
 	}
 
 	public static byte[] stringToByteArray(String s) {
-		s = s.replaceAll(" ", "").replaceAll(":", "").replaceAll("\t", "");
+		s = s.toLowerCase().replaceAll(" ", "").replaceAll(":", "");
+		s = s.replaceAll("0x", "").replaceAll("\n", "").replaceAll("\t", "");
 		return LoggingCardTerminal.decodeHexString(s);
 	}
 

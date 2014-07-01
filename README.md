@@ -61,6 +61,10 @@ Command line samples assume default test keys of ```40..4F```. If you need custo
 
         java -jar gp.jar -install applet.cap
 
+ * Unistall applet.cap (with AID information from the CAP):
+
+        java -jar gp.jar -uninstall applet.cap
+
  * Set ```010B0371D78377B801F2D62AFC671D95``` key to a card with default ```40..4F``` keys:
 
         java -jar gp.jar -lock 010B0371D78377B801F2D62AFC671D95
@@ -84,6 +88,10 @@ Command line samples assume default test keys of ```40..4F```. If you need custo
    
    add ```-debug``` or ```-d``` to your command
 
+ * Be more verbose about decisions and conditions:
+   
+   add ```-verbose``` or ```-v``` to your command
+
  * Don't use MAC on commands (plain GlobalPlatform syntax):
 
    add ```-mode clr``` to your command (not supported on all cards)
@@ -100,8 +108,8 @@ Command line samples assume default test keys of ```40..4F```. If you need custo
 ### Supported cards
  * See [TestedCards](https://github.com/martinpaljak/GlobalPlatform/wiki/TestedCards)
  * Generally speaking any modern JavaCard that speaks GlobalPlatform 2.1.1+
- * Cards available from all major vendors have been tested for basic compatibility: [Athena](http://www.athena-scs.com/), [Gemalto](http://www.gemalto.com/), [Giesecke & Devrient](http://www.gi-de.com/), [NXP (JCOP)](http://www.nxp.com/), [Oberthur](http://www.oberthur.com/)
- * If you are a smart card vendor please do get in touch for clarification and better support!
+ * Available cards from all major vendors have been tested for basic compatibility: [Athena](http://www.athena-scs.com/), [Gemalto](http://www.gemalto.com/), [Giesecke & Devrient](http://www.gi-de.com/), [NXP (JCOP)](http://www.nxp.com/), [Oberthur](http://www.oberthur.com/)
+   * If you are a smart card vendor please do *get in touch* for clarification and better support!
 
 ### Contact 
 

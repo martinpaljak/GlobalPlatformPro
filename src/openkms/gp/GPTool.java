@@ -314,8 +314,12 @@ public class GPTool {
 							File capfile = (File) args.valueOf(CMD_UNINSTALL);
 							CapFile instcap = new CapFile(new FileInputStream(capfile));
 							AID aid = instcap.getPackageAID();
-							gp.deleteAID(aid, true);
-							System.out.println(aid + " deleted.");
+							if (!gp.getRegistry().allAIDs().contains(aid)) {
+								System.out.println(aid + " is not present on card!");
+							} else {
+								gp.deleteAID(aid, true);
+								System.out.println(aid + " deleted.");
+							}
 						}
 
 						// --install <applet.cap>

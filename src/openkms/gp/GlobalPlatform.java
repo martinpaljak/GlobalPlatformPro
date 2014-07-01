@@ -424,8 +424,9 @@ public class GlobalPlatform {
 
 		byte[] cardCryptogram = new byte[8];
 		System.arraycopy(update_response, 20, cardCryptogram, 0, 8);
+		// This is the main check for successful authentication.
 		if (!Arrays.equals(cardCryptogram, myCryptogram)) {
-			throw new GPException("Card cryptogram invalid.\nExp: " + GPUtils.byteArrayToString(cardCryptogram) + "\nAct: "+GPUtils.byteArrayToString(myCryptogram));
+			throw new GPException("Card cryptogram invalid.\nExp: " + GPUtils.byteArrayToString(cardCryptogram) + "\nAct: "+GPUtils.byteArrayToString(myCryptogram) + "\n!!! DO NOT RE-TRY THE SAME COMMAND/KEYS OR YOU MAY BRICK YOUR CARD !!!");
 		}
 
 		try {

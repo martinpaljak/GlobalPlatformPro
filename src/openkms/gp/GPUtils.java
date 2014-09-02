@@ -54,12 +54,12 @@ public class GPUtils {
 		return String.format("%04X", sw);
 	}
 
-	private static byte[] pad80(byte[] text, int offset, int length) {
+	private static byte[] pad80(byte[] text, int offset, int length, int blocksize) {
 		if (length == -1) {
 			length = text.length - offset;
 		}
 		int totalLength = length;
-		for (totalLength++; (totalLength % 8) != 0; totalLength++) {
+		for (totalLength++; (totalLength % blocksize) != 0; totalLength++) {
 			;
 		}
 		int padlength = totalLength - length;
@@ -72,22 +72,22 @@ public class GPUtils {
 		return result;
 	}
 
-	public static byte[] pad80(byte[] text) {
-		return pad80(text, 0, text.length);
+	public static byte[] pad80(byte[] text, int blocksize) {
+		return pad80(text, 0, text.length, blocksize);
 	}
 
 	public static byte[] mac_3des(byte[] key, byte[] text, byte[] cv)  {
 		return mac_3des(key, text, 0, text.length, cv);
 	}
 
-	private static byte[] mac_3des(byte[] key, byte[] text, int offset, int length, byte[] cv) {
+	private static byte[] mac_3des(byte[] key, byte[] text, int offset, int length, byte[] iv) {
 		if (length == -1) {
 			length = text.length - offset;
 		}
 
 		try {
 			Cipher cipher = Cipher.getInstance("DESede/CBC/NoPadding");
-			cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(getKey(key, 24), "DESede"), new IvParameterSpec(cv));
+			cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(KeySet.getKey(key, 24), "DESede"), new IvParameterSpec(iv));
 			byte[] result = new byte[8];
 			byte[] res = cipher.doFinal(text, offset, length);
 			System.arraycopy(res, res.length - 8, result, 0, 8);
@@ -109,9 +109,9 @@ public class GPUtils {
 		try {
 
 			Cipher cipher1 = Cipher.getInstance("DES/CBC/NoPadding");
-			cipher1.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(getKey(key, 8), "DES"), new IvParameterSpec(iv));
+			cipher1.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(KeySet.getKey(key, 8), "DES"), new IvParameterSpec(iv));
 			Cipher cipher2 = Cipher.getInstance("DESede/CBC/NoPadding");
-			cipher2.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(getKey(key, 24), "DESede"), new IvParameterSpec(iv));
+			cipher2.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(KeySet.getKey(key, 24), "DESede"), new IvParameterSpec(iv));
 
 			byte[] result = new byte[8];
 			byte[] temp;
@@ -119,7 +119,7 @@ public class GPUtils {
 			if (length > 8) {
 				temp = cipher1.doFinal(text, offset, length - 8);
 				System.arraycopy(temp, temp.length - 8, result, 0, 8);
-				cipher2.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(getKey(key, 24), "DESede"), new IvParameterSpec(result));
+				cipher2.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(KeySet.getKey(key, 24), "DESede"), new IvParameterSpec(result));
 			}
 			temp = cipher2.doFinal(text, (offset + length) - 8, 8);
 			System.arraycopy(temp, temp.length - 8, result, 0, 8);
@@ -127,19 +127,6 @@ public class GPUtils {
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException("MAC computation failed.", e);
-		}
-	}
-
-	public static byte[] getKey(byte[] key, int length) {
-		if (length == 24) {
-			byte[] key24 = new byte[24];
-			System.arraycopy(key, 0, key24, 0, 16);
-			System.arraycopy(key, 0, key24, 16, 8);
-			return key24;
-		} else {
-			byte[] key8 = new byte[8];
-			System.arraycopy(key, 0, key8, 0, 8);
-			return key8;
 		}
 	}
 

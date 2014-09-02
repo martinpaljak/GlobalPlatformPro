@@ -16,6 +16,8 @@ public class KeySet {
 		private int version = 0;
 		private int id = 0;
 		private int length = -1;
+		private int type = -1;
+
 		private byte [] value = null;
 		public int getID() {
 			return id;
@@ -41,6 +43,7 @@ public class KeySet {
 			this.version = version;
 			this.id = id;
 			this.length = length;
+			this.type = type;
 		}
 
 		public Key(String s) {
@@ -111,46 +114,54 @@ public class KeySet {
 		if (value.length < 16)
 			throw new IllegalArgumentException("Key must be at least 16 bytes");
 		switch (type) {
-		case ENC:
-			enc_key = value;
-			break;
-		case MAC:
-			mac_key = value;
-			break;
-		case KEK:
-			kek_key = value;
-			break;
-		case RMAC:
-			rmac_key = value;
-			break;
-		default:
-			break;
+			case ENC:
+				enc_key = value;
+				break;
+			case MAC:
+				mac_key = value;
+				break;
+			case KEK:
+				kek_key = value;
+				break;
+			case RMAC:
+				rmac_key = value;
+				break;
+			default:
+				break;
 		}
 	}
 
 	public byte[] getKey(KeyType type) {
 		switch (type) {
-		case ENC:
-			return enc_key;
-		case MAC:
-			return mac_key;
-		case KEK:
-			return kek_key;
-		case RMAC:
-			return rmac_key;
-		default:
-			return null;
+			case ENC:
+				return enc_key;
+			case MAC:
+				return mac_key;
+			case KEK:
+				return kek_key;
+			case RMAC:
+				return rmac_key;
+			default:
+				return null;
 		}
 	}
 
-	public byte[] get3DES(KeyType type) {
+	public java.security.Key get3DESKey(KeyType type) {
+		return new SecretKeySpec(getKey(getKey(type), 24), "DESede");
+	}
+
+	public java.security.Key getDESKey(KeyType type) {
+		return new SecretKeySpec(getKey(getKey(type), 8), "DES");
+	}
+
+	private byte[] get3DES(KeyType type) {
 		byte[] key24 = new byte[24];
 		System.arraycopy(getKey(type), 0, key24, 0, 16);
 		System.arraycopy(getKey(type), 0, key24, 16, 8);
 		return key24;
 	}
 
-	public byte[] getDES(KeyType type) {
+	private byte[] getDES(KeyType type) {
 		byte[] key8 = new byte[8];
 		System.arraycopy(getKey(type), 0, key8, 0, 8);
 		return key8;
@@ -247,5 +258,18 @@ public class KeySet {
 
 	public void setKeyVersion(int keyVersion) {
 		this.keyVersion = keyVersion;
+	}
+
+	protected static byte[] getKey(byte[] key, int length) {
+		if (length == 24) {
+			byte[] key24 = new byte[24];
+			System.arraycopy(key, 0, key24, 0, 16);
+			System.arraycopy(key, 0, key24, 16, 8);
+			return key24;
+		} else {
+			byte[] key8 = new byte[8];
+			System.arraycopy(key, 0, key8, 0, 8);
+			return key8;
+		}
 	}
 }

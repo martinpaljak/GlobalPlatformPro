@@ -49,7 +49,6 @@ import openkms.gp.KeySet.Key;
 import openkms.gp.KeySet.KeyDiversification;
 import openkms.gp.KeySet.KeyType;
 
-
 /**
  * The main Global Platform class. Provides most of the Global Platform
  * functionality for managing GP compliant smart cards.
@@ -99,7 +98,7 @@ public class GlobalPlatform {
 	// AID of the card successfully selected or null
 	public AID sdAID = null;
 
-	// Either 1 or 2
+	// Either 1 or 2 or 3
 	private int scpMajorVersion = 0;
 
 	private static final byte[] iv_null_bytes = new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
@@ -420,7 +419,7 @@ public class GlobalPlatform {
 			throw new RuntimeException(ioe);
 		}
 
-		byte[] myCryptogram = GPUtils.mac_3des(sessionKeys.getKey(KeyType.ENC), GPUtils.pad80(bo.toByteArray()), iv_null_bytes);
+		byte[] myCryptogram = GPUtils.mac_3des(sessionKeys.getKey(KeyType.ENC), GPUtils.pad80(bo.toByteArray(), 8), iv_null_bytes);
 
 		byte[] cardCryptogram = new byte[8];
 		System.arraycopy(update_response, 20, cardCryptogram, 0, 8);
@@ -437,7 +436,7 @@ public class GlobalPlatform {
 			throw new RuntimeException(ioe);
 		}
 
-		byte[] authData = GPUtils.mac_3des(sessionKeys.getKey(KeyType.ENC), GPUtils.pad80(bo.toByteArray()), iv_null_bytes);
+		byte[] authData = GPUtils.mac_3des(sessionKeys.getKey(KeyType.ENC), GPUtils.pad80(bo.toByteArray(), 8), iv_null_bytes);
 
 		wrapper = new SecureChannelWrapper(sessionKeys, scpVersion, EnumSet.of(APDUMode.MAC), null, null);
 
@@ -467,7 +466,7 @@ public class GlobalPlatform {
 			Cipher cipher = Cipher.getInstance("DESede/ECB/NoPadding");
 			for (KeyType v: KeyType.values()) {
 				if (v == KeyType.RMAC) continue;
-				cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(staticKeys.get3DES(v), "DESede"));
+				cipher.init(Cipher.ENCRYPT_MODE, staticKeys.get3DESKey(v));
 				sessionKeys.setKey(v, cipher.doFinal(derivationData));
 			}
 		} catch (BadPaddingException e) {
@@ -498,7 +497,7 @@ public class GlobalPlatform {
 
 			byte[] constantMAC = new byte[] { (byte) 0x01, (byte) 0x01 };
 			System.arraycopy(constantMAC, 0, derivationData, 0, 2);
-			cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(staticKeys.get3DES(KeyType.MAC), "DESede"), iv_null);
+			cipher.init(Cipher.ENCRYPT_MODE, staticKeys.get3DESKey(KeyType.MAC), iv_null);
 			sessionKeys.setKey(KeyType.MAC, cipher.doFinal(derivationData));
 
 			// TODO: is this correct? - increment by one for all other than C-MAC
@@ -509,18 +508,18 @@ public class GlobalPlatform {
 
 			byte[] constantRMAC = new byte[] { (byte) 0x01, (byte) 0x02 };
 			System.arraycopy(constantRMAC, 0, derivationData, 0, 2);
-			cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(staticKeys.get3DES(KeyType.MAC), "DESede"), iv_null);
+			cipher.init(Cipher.ENCRYPT_MODE, staticKeys.get3DESKey(KeyType.MAC), iv_null);
 			sessionKeys.setKey(KeyType.RMAC, cipher.doFinal(derivationData));;
 
 
 			byte[] constantENC = new byte[] { (byte) 0x01, (byte) 0x82 };
 			System.arraycopy(constantENC, 0, derivationData, 0, 2);
-			cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(staticKeys.get3DES(KeyType.ENC), "DESede"), iv_null);
+			cipher.init(Cipher.ENCRYPT_MODE, staticKeys.get3DESKey(KeyType.ENC), iv_null);
 			sessionKeys.setKey(KeyType.ENC, cipher.doFinal(derivationData));
 
 			byte[] constantDEK = new byte[] { (byte) 0x01, (byte) 0x81 };
 			System.arraycopy(constantDEK, 0, derivationData, 0, 2);
-			cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(staticKeys.get3DES(KeyType.KEK), "DESede"), iv_null);
+			cipher.init(Cipher.ENCRYPT_MODE, staticKeys.get3DESKey(KeyType.KEK), iv_null);
 			sessionKeys.setKey(KeyType.KEK, cipher.doFinal(derivationData));
 
 		} catch (BadPaddingException e) {
@@ -742,29 +741,29 @@ public class GlobalPlatform {
 	}
 
 	// FIXME: remove the withCheck parameter, as always true?
-	private byte[] encodeKey(KeySet.Key key, byte []kek, boolean withCheck) {
+	private byte[] encodeKey(KeySet.Key key, java.security.Key kek, boolean withCheck) {
 		try {
-			ByteArrayOutputStream bytearrayoutputstream = new ByteArrayOutputStream();
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			// Only DES at the moment
-			bytearrayoutputstream.write(0x80);
+			baos.write(0x80);
 			// Length
-			bytearrayoutputstream.write(16);
+			baos.write(16);
 			// Encrypt key with KEK
 			Cipher cipher;
 			cipher = Cipher.getInstance("DESede/ECB/NoPadding");
-			cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(GPUtils.getKey(kek, 24), "DESede"));
-			bytearrayoutputstream.write(cipher.doFinal(key.getValue(), 0, 16));
+			cipher.init(Cipher.ENCRYPT_MODE, kek);
+			baos.write(cipher.doFinal(key.getValue(), 0, 16));
 			if (withCheck) {
 				// key check value, 3 bytes with new key over null bytes
-				bytearrayoutputstream.write(3);
-				SecretKeySpec ky = new SecretKeySpec(GPUtils.getKey(key.getValue(), 24), "DESede");
+				baos.write(3);
+				SecretKeySpec ky = new SecretKeySpec(Arrays.copyOfRange(key.getValue(), 0, 16), "DESede");
 				cipher.init(Cipher.ENCRYPT_MODE, ky);
 				byte check[] = cipher.doFinal(iv_null_bytes);
-				bytearrayoutputstream.write(check, 0, 3);
+				baos.write(check, 0, 3);
 			} else {
-				bytearrayoutputstream.write(0);
+				baos.write(0);
 			}
-			return bytearrayoutputstream.toByteArray();
+			return baos.toByteArray();
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		} catch (InvalidKeyException e) {
@@ -811,9 +810,9 @@ public class GlobalPlatform {
 			// Key data
 			for (Key k: keys) {
 				if (scpMajorVersion == 1) {
-					bo.write(encodeKey(k, staticKeys.get3DES(KeyType.KEK), true));
+					bo.write(encodeKey(k, staticKeys.get3DESKey(KeyType.KEK), true));
 				} else if (scpMajorVersion == 2) {
-					bo.write(encodeKey(k, wrapper.sessionKeys.get3DES(KeyType.KEK), true));
+					bo.write(encodeKey(k, wrapper.sessionKeys.get3DESKey(KeyType.KEK), true));
 				} else
 					throw new IllegalStateException("Unknown SCP version: " + scpMajorVersion);
 			}
@@ -1044,10 +1043,10 @@ public class GlobalPlatform {
 						Cipher c = null;
 						if (scp == 1) {
 							c = Cipher.getInstance("DESede/ECB/NoPadding");
-							c.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(sessionKeys.get3DES(KeyType.MAC), "DESede"));
+							c.init(Cipher.ENCRYPT_MODE, sessionKeys.get3DESKey(KeyType.MAC));
 						} else {
 							c = Cipher.getInstance("DES/ECB/NoPadding");
-							c.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(sessionKeys.getDES(KeyType.MAC), "DES"));
+							c.init(Cipher.ENCRYPT_MODE, sessionKeys.getDESKey(KeyType.MAC));
 						}
 						// encrypts the future ICV ?
 						icv = c.doFinal(icv);
@@ -1065,9 +1064,9 @@ public class GlobalPlatform {
 					t.write(origData);
 
 					if (scp == 1) {
-						icv = GPUtils.mac_3des(sessionKeys.getKey(KeyType.MAC), GPUtils.pad80(t.toByteArray()), icv);
+						icv = GPUtils.mac_3des(sessionKeys.getKey(KeyType.MAC), GPUtils.pad80(t.toByteArray(), 8), icv);
 					} else {
-						icv = GPUtils.mac_des_3des(sessionKeys.getKey(KeyType.MAC), GPUtils.pad80(t.toByteArray()), icv);
+						icv = GPUtils.mac_des_3des(sessionKeys.getKey(KeyType.MAC), GPUtils.pad80(t.toByteArray(), 8), icv);
 					}
 
 					if (postAPDU) {
@@ -1083,17 +1082,17 @@ public class GlobalPlatform {
 						t.write(origLc);
 						t.write(origData);
 						if ((t.size() % 8) != 0) {
-							byte[] x = GPUtils.pad80(t.toByteArray());
+							byte[] x = GPUtils.pad80(t.toByteArray(), 8);
 							t.reset();
 							t.write(x);
 						}
 					} else {
-						t.write(GPUtils.pad80(origData));
+						t.write(GPUtils.pad80(origData, 8));
 					}
 					newLc += t.size() - origData.length;
 
 					Cipher c = Cipher.getInstance("DESede/CBC/NoPadding");
-					c.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(sessionKeys.get3DES(KeyType.ENC), "DESede"), iv_null);
+					c.init(Cipher.ENCRYPT_MODE, sessionKeys.get3DESKey(KeyType.ENC), iv_null);
 					newData = c.doFinal(t.toByteArray());
 					t.reset();
 				}
@@ -1141,7 +1140,7 @@ public class GlobalPlatform {
 				rMac.write(response.getSW1());
 				rMac.write(response.getSW2());
 
-				ricv = GPUtils.mac_des_3des(sessionKeys.getKey(KeyType.RMAC), GPUtils.pad80(rMac.toByteArray()), ricv);
+				ricv = GPUtils.mac_des_3des(sessionKeys.getKey(KeyType.RMAC), GPUtils.pad80(rMac.toByteArray(), 8), ricv);
 
 				byte[] actualMac = new byte[8];
 				System.arraycopy(response.getData(), respLen, actualMac, 0, 8);

@@ -634,7 +634,7 @@ public class GlobalPlatform {
 	 *            (ie. no installation parameters) if null, if non-null the
 	 *            format is {@code 0xC9 len data...}
 	 */
-	public void installAndMakeSelecatable(AID packageAID, AID appletAID, AID instanceAID, byte privileges, byte[] installParams,
+	public void installAndMakeSelectable(AID packageAID, AID appletAID, AID instanceAID, byte privileges, byte[] installParams,
 			byte[] installToken) throws GPException, CardException {
 
 		if (instanceAID == null) {

@@ -347,7 +347,7 @@ public class GPTool {
 
 							gp.verbose("Installing applet from package " + instcap.getPackageName());
 							gp.loadCapFile(instcap);
-							gp.installAndMakeSelecatable(instcap.getPackageAID(), aid, null, args.has(OPT_DEFAULT) ? (byte) 0x04 : 0x00, null, null);
+							gp.installAndMakeSelectable(instcap.getPackageAID(), aid, null, args.has(OPT_DEFAULT) ? (byte) 0x04 : 0x00, null, null);
 						}
 
 						// --create <aid> (--applet <aid> --package <aid> or --cap <cap>)
@@ -369,7 +369,7 @@ public class GPTool {
 
 							// shoot
 							AID instanceAID = (AID) args.valueOf(CMD_CREATE);
-							gp.installAndMakeSelecatable(packageAID, appletAID, instanceAID, (byte) 0x00, null, null);
+							gp.installAndMakeSelectable(packageAID, appletAID, instanceAID, (byte) 0x00, null, null);
 						}
 
 						// --list

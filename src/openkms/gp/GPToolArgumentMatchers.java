@@ -5,6 +5,8 @@ import joptsimple.ValueConverter;
 import openkms.gp.GlobalPlatform.APDUMode;
 import openkms.gp.KeySet.Key;
 
+import java.math.BigInteger;
+
 public class GPToolArgumentMatchers {
 
 	public static ValueConverter<AID> aid() {
@@ -84,4 +86,30 @@ public class GPToolArgumentMatchers {
 			}
 		}
 	}
+
+    public static ValueConverter<InstallParams> installParams() {
+        return new InstallParamMatcher();
+    }
+
+    public static class InstallParamMatcher implements ValueConverter<InstallParams> {
+
+        @Override
+        public Class<InstallParams> valueType() {
+            return InstallParams.class;
+        }
+
+        @Override
+        public String valuePattern() {
+            return null;
+        }
+
+        @Override
+        public InstallParams convert(String hex) {
+            try {
+                return new InstallParams(hex);
+            } catch (IllegalArgumentException e) {
+                throw new ValueConversionException(hex + " is not an hex-encoded byte array!");
+            }
+        }
+    }
 }

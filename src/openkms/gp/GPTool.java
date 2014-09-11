@@ -43,6 +43,7 @@ public class GPTool {
 	private final static String OPT_INSTANCE = "instance";
 	private final static String OPT_DO_ALL_READERS = "all";
 	private final static String OPT_NOFIX = "nofix";
+    private final static String OPT_PARAMS = "params";
 
 
 	private final static String OPT_CONTINUE = "skip-error";
@@ -99,6 +100,7 @@ public class GPTool {
 		parser.accepts(OPT_DELETEDEPS, "Also delete dependencies");
 		parser.accepts(OPT_REINSTALL, "Remove card content during installation");
 		parser.accepts(CMD_MAKE_DEFAULT, "Make AID the default").withRequiredArg().withValuesConvertedBy(GPToolArgumentMatchers.aid());
+        parser.accepts(OPT_PARAMS, "Use hex-encoded install parameters").withRequiredArg().withValuesConvertedBy(GPToolArgumentMatchers.installParams());
 
 		parser.accepts(CMD_DELETE, "Delete something").requiredIf(OPT_DELETEDEPS).withOptionalArg().withValuesConvertedBy(GPToolArgumentMatchers.aid());
 
@@ -123,7 +125,7 @@ public class GPTool {
 		// Key diversification and AID options
 		parser.accepts(OPT_EMV, "Use EMV diversification");
 		parser.accepts(OPT_VISA2, "Use VISA2 diversification");
-		parser.accepts(OPT_MODE, "APDU mode to use (mac/enc/clr)").withRequiredArg().withValuesConvertedBy(GPToolArgumentMatchers.mode());;
+		parser.accepts(OPT_MODE, "APDU mode to use (mac/enc/clr)").withRequiredArg().withValuesConvertedBy(GPToolArgumentMatchers.mode());
 
 		parser.accepts(OPT_SDAID, "ISD AID").withRequiredArg().withValuesConvertedBy(GPToolArgumentMatchers.aid());
 
@@ -322,7 +324,7 @@ public class GPTool {
 							}
 						}
 
-						// --install <applet.cap>
+						// --install <applet.cap> (--params <installParam>)
 						if (args.has(CMD_INSTALL)) {
 							AID def = gp.getRegistry().getDefaultSelectedPackageAID();
 							if (def != null && args.has(OPT_DEFAULT)) {
@@ -332,6 +334,7 @@ public class GPTool {
 									gp.deleteAID(def, true);
 								}
 							}
+                            InstallParams installParams = (InstallParams)args.valueOf(OPT_PARAMS);
 
 							File capfile = (File) args.valueOf(CMD_INSTALL);
 							CapFile instcap = new CapFile(new FileInputStream(capfile));
@@ -347,7 +350,7 @@ public class GPTool {
 
 							gp.verbose("Installing applet from package " + instcap.getPackageName());
 							gp.loadCapFile(instcap);
-							gp.installAndMakeSelectable(instcap.getPackageAID(), aid, null, args.has(OPT_DEFAULT) ? (byte) 0x04 : 0x00, null, null);
+							gp.installAndMakeSelectable(instcap.getPackageAID(), aid, null, args.has(OPT_DEFAULT) ? (byte) 0x04 : 0x00, installParams != null ? installParams.getParamsBytes() : null, null);
 						}
 
 						// --create <aid> (--applet <aid> --package <aid> or --cap <cap>)

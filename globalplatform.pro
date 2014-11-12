@@ -1,6 +1,6 @@
 -injars build
 -injars lib/bcprov-jdk15on-150.jar(!META-INF/*)
--injars lib/jopt-simple-4.6.jar(!META-INF/*)
+-injars lib/jopt-simple-4.8.jar(!META-INF/*)
 # JNA is library because we package everything back in
 -libraryjars lib/jnasmartcardio.jar
 -libraryjars  <java.home>/lib/rt.jar

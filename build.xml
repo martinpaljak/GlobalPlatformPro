@@ -5,11 +5,11 @@
   <path id="build.classpath">
     <pathelement location="lib/jnasmartcardio.jar"/>
     <pathelement location="lib/bcprov-jdk15on-150.jar"/>
-    <pathelement location="lib/jopt-simple-4.6.jar"/>
+    <pathelement location="lib/jopt-simple-4.8.jar"/>
   </path>
   <target name="compile" description="compile the source">
     <mkdir dir="build"/>
-    <javac srcdir="src" destdir="build" includeantruntime="false" excludes="**/tests/**" target="1.7" debug="true" debuglevel="lines,vars,source">
+    <javac srcdir="src" destdir="build" includeantruntime="false" excludes="**/tests/**" target="1.7" source="1.7" debug="true" debuglevel="lines,vars,source">
       <compilerarg value="-Xlint"/>
       <classpath refid="build.classpath"/>
     </javac>

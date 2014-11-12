@@ -4,7 +4,7 @@
   <!-- Build the software -->
   <path id="build.classpath">
     <pathelement location="lib/jnasmartcardio.jar"/>
-    <pathelement location="lib/bcprov-jdk15on-150.jar"/>
+    <pathelement location="lib/bcprov-jdk15on-151.jar"/>
     <pathelement location="lib/jopt-simple-4.8.jar"/>
   </path>
   <target name="compile" description="compile the source">

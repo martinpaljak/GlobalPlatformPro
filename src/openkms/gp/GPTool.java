@@ -11,6 +11,7 @@ import javax.smartcardio.CardException;
 import javax.smartcardio.CardTerminal;
 import javax.smartcardio.CardTerminals;
 import javax.smartcardio.CardTerminals.State;
+import javax.smartcardio.CommandAPDU;
 import javax.smartcardio.TerminalFactory;
 
 import joptsimple.OptionException;
@@ -34,6 +35,7 @@ public class GPTool {
 	private final static String CMD_LOAD = "load";
 	private final static String CMD_UNLOCK = "unlock";
 	private final static String CMD_MAKE_DEFAULT = "make-default";
+	private final static String CMD_APDU = "apdu";
 
 	private final static String OPT_DELETEDEPS = "deletedeps";
 	private final static String OPT_DEFAULT = "default";
@@ -54,7 +56,6 @@ public class GPTool {
 	private final static String OPT_VERBOSE = "verbose";
 	private final static String OPT_REINSTALL = "reinstall";
 	private final static String OPT_VIRGIN = "virgin";
-
 	private final static String OPT_MODE = "mode";
 
 	private final static String OPT_MAC = "mac";
@@ -81,6 +82,7 @@ public class GPTool {
 		parser.acceptsAll(Arrays.asList("r", OPT_READER), "Use specific reader").withRequiredArg();
 		parser.acceptsAll(Arrays.asList("l", CMD_LIST), "List the contents of the card");
 		parser.acceptsAll(Arrays.asList("i", CMD_INFO), "Show information");
+		parser.acceptsAll(Arrays.asList("a", CMD_APDU), "Send raw APDU (hex)").withRequiredArg();
 		parser.accepts(OPT_VERSION, "Show information about the program");
 
 		// Special options
@@ -132,7 +134,7 @@ public class GPTool {
 		try {
 			args = parser.parse(argv);
 			// Try to fetch all values so that format is checked before usage
-			for (String s: parser.recognizedOptions().keySet()) {args.valueOf(s);}
+			for (String s: parser.recognizedOptions().keySet()) {args.valuesOf(s);}
 		} catch (OptionException e) {
 			if (e.getCause() != null) {
 				System.err.println(e.getMessage() + ": " + e.getCause().getMessage());
@@ -261,6 +263,14 @@ public class GPTool {
 						System.out.println("More information about your card:");
 						System.out.println("    http://smartcard-atr.appspot.com/parse?ATR="+GPUtils.byteArrayToString(card.getATR().getBytes()));
 						System.out.println();
+					}
+
+					// Send all raw APDU-s to the default-selected application of the card
+					if (args.has(CMD_APDU)) {
+						for (Object s: args.valuesOf(CMD_APDU)) {
+							CommandAPDU c = new CommandAPDU(GPUtils.stringToByteArray((String)s));
+							card.getBasicChannel().transmit(c);
+						}
 					}
 
 					// Talk to the card manager (can be null)

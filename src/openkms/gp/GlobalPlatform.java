@@ -756,7 +756,7 @@ public class GlobalPlatform {
 			if (withCheck) {
 				// key check value, 3 bytes with new key over null bytes
 				baos.write(3);
-				SecretKeySpec ky = new SecretKeySpec(Arrays.copyOfRange(key.getValue(), 0, 16), "DESede");
+				SecretKeySpec ky = new SecretKeySpec(KeySet.getKey(key.getValue(), 24), "DESede");
 				cipher.init(Cipher.ENCRYPT_MODE, ky);
 				byte check[] = cipher.doFinal(iv_null_bytes);
 				baos.write(check, 0, 3);

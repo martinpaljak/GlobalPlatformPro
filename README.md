@@ -106,7 +106,8 @@ Command line samples assume default test keys of ```40..4F```. If you need custo
  * Expect RuntimeException-s when things go horribly wrong, CardException-s when link layer fails and GPException-s when protocol layer fails.
 
 ### Supported cards
- * See [TestedCards](https://github.com/martinpaljak/GlobalPlatform/wiki/TestedCards)
+ * **NEW!** [JavaCard Buyer's Guide of winter 2014/2015](https://github.com/martinpaljak/GlobalPlatform/tree/master/docs/JavaCardBuyersGuide)
+ * See [TestedCards](https://github.com/martinpaljak/GlobalPlatform/tree/master/docs/TestedCards)
  * Generally speaking any modern JavaCard that speaks GlobalPlatform 2.1.1+
  * Available cards from all major vendors have been tested for basic compatibility: [Athena](http://www.athena-scs.com/), [Gemalto](http://www.gemalto.com/), [Giesecke & Devrient](http://www.gi-de.com/), [Infineon](http://www.infineon.com/), [NXP (JCOP)](http://www.nxp.com/), [Oberthur](http://www.oberthur.com/)
    * If you are a smart card vendor please do *get in touch* for clarification and better support!

@@ -139,7 +139,7 @@ The ancestor of this code is GPJ (Global Platform for SmartCardIO) which is (sti
    * harder to use from the command line
  * GPShell + globalplatform library - http://sourceforge.net/projects/globalplatform/ (LGPL)
    * written in C
-   * often referred to as the de facto open source GlobalPlatform implementation.
+   * often referred to as the de facto open source GlobalPlatform implementation
    * several components need to be compiled and installed before usage
    * requires more complex "script files" and does not provide a command line utility
  * jcManager - http://www.brokenmill.com/2010/03/java-secure-card-manager/ (LGPL)
@@ -155,12 +155,15 @@ The ancestor of this code is GPJ (Global Platform for SmartCardIO) which is (sti
  * JGPShell - https://sourceforge.net/projects/jgpshell/ (GPL2)
    * written in Java
    * GPShell-style scripting goal
-   * not really usable and also abandoned.
+   * not really usable and also abandoned
  * OPAL - https://bitbucket.org/ssd/opal (CeCILL, GPLv2 compatible)
    * written in Java
    * claims to have SCP03 support (but no tested cards)
    * looks "heavy"
    * smoke tests give exceptions and doesn't work on OSX nor Debian.
+ * gpcomm - https://code.google.com/p/gpcomm/
+   * written in Java
+   * incomplete and abandoned
  * JCOP tools, RADIII, JCardManager4 etc
    * not publicly available open source projects and thus not suitable for this comparision
 
@@ -177,7 +180,7 @@ The ancestor of this code is GPJ (Global Platform for SmartCardIO) which is (sti
   * GPShell-style scripts
 
 ## Design principles
- * focus on: real life, practical, simple use cases
+ * focus on: real life, simple and practical use cases
  * KISS, YAGNI, DWIM
  * javax.smartcardio access to (most probably real) tokens 
  * thin and self-contained, re-usable

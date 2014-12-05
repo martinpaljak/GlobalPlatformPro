@@ -36,6 +36,7 @@ public class GPTool {
 	private final static String CMD_UNLOCK = "unlock";
 	private final static String CMD_MAKE_DEFAULT = "make-default";
 	private final static String CMD_APDU = "apdu";
+	private final static String CMD_SECURE_APDU = "secure-apdu";
 
 	private final static String OPT_DELETEDEPS = "deletedeps";
 	private final static String OPT_DEFAULT = "default";
@@ -83,6 +84,8 @@ public class GPTool {
 		parser.acceptsAll(Arrays.asList("l", CMD_LIST), "List the contents of the card");
 		parser.acceptsAll(Arrays.asList("i", CMD_INFO), "Show information");
 		parser.acceptsAll(Arrays.asList("a", CMD_APDU), "Send raw APDU (hex)").withRequiredArg();
+		parser.acceptsAll(Arrays.asList("s", CMD_SECURE_APDU), "Send raw APDU (hex) via SCP").withRequiredArg();
+
 		parser.accepts(OPT_VERSION, "Show information about the program");
 
 		// Special options
@@ -283,8 +286,9 @@ public class GPTool {
 					}
 
 					// Authenticate, only if needed
-					if (args.has(CMD_LIST) || args.has(CMD_INSTALL) || args.has(CMD_DELETE) || args.has(CMD_CREATE)
-							|| args.has(CMD_LOCK) || args.has(CMD_UNLOCK) || args.has(CMD_MAKE_DEFAULT) || args.has(CMD_UNINSTALL)) {
+					if (args.has(CMD_LIST) || args.has(CMD_INSTALL) || args.has(CMD_DELETE)
+							|| args.has(CMD_CREATE) || args.has(CMD_LOCK) || args.has(CMD_UNLOCK)
+							|| args.has(CMD_MAKE_DEFAULT) || args.has(CMD_UNINSTALL) || args.has(CMD_SECURE_APDU)) {
 
 						// Override default mode if needed.
 						if (args.has(OPT_MODE)) {
@@ -294,6 +298,14 @@ public class GPTool {
 
 						// Possibly brick the card now, if keys don't match.
 						gp.openSecureChannel(ks, GlobalPlatform.SCP_ANY, gp.defaultMode);
+
+						// --secure-apdu or -s
+						if (args.has(CMD_SECURE_APDU)) {
+							for (Object s: args.valuesOf(CMD_SECURE_APDU)) {
+								CommandAPDU c = new CommandAPDU(GPUtils.stringToByteArray((String)s));
+								gp.transmit(c);
+							}
+						}
 
 						// --delete <aid> or --delete --default
 						if (args.has(CMD_DELETE)) {

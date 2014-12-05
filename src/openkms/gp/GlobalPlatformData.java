@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 import javax.smartcardio.CardException;
@@ -187,33 +188,14 @@ public class GlobalPlatformData {
 
 
 	public static void pretty_print_cplc(byte [] data, PrintStream out) {
+
+
 		if (data == null) {
 			out.println("NO CPLC");
 			return;
 		}
-		if (data.length < 3 || data[2] != 0x2A)
-			throw new IllegalArgumentException("CPLC must be 0x2A bytes long");
-		short offset = 3;
-		//offset = TLVUtils.skipTag(data, offset, (short)0x9F7F);
-		out.println("***** Card CPLC:");
-		out.println("IC Fabricator: " + bytesAsHex(data, offset, offset + 2)); offset += 2;
-		out.println("IC Type: " + bytesAsHex(data, offset, offset + 2)); offset += 2;
-		out.println("Operating System ID: " + bytesAsHex(data, offset, offset + 2)); offset += 2;
-		out.println("Operating System release date: " + bytesAsHex(data, offset, offset + 2)); offset += 2;
-		out.println("Operating System release level: " + bytesAsHex(data, offset, offset + 2)); offset += 2;
-		out.println("IC Fabrication Date: " + bytesAsHex(data, offset, offset + 2)); offset += 2;
-		out.println("IC Serial Number: " + bytesAsHex(data, offset, offset + 4)); offset += 4;
-		out.println("IC Batch Identifier: " + bytesAsHex(data, offset, offset + 2)); offset += 2;
-		out.println("IC Module Fabricator: " + bytesAsHex(data, offset, offset + 2)); offset += 2;
-		out.println("IC Module Packaging Date: " + bytesAsHex(data, offset, offset + 2)); offset += 2;
-		out.println("ICC Manufacturer: " + bytesAsHex(data, offset, offset + 2)); offset += 2;
-		out.println("IC Embedding Date: " + bytesAsHex(data, offset, offset + 2)); offset += 2;
-		out.println("IC Pre-Personalizer: " + bytesAsHex(data, offset, offset + 2)); offset += 2;
-		out.println("IC Pre-Perso. Equipment Date: " + bytesAsHex(data, offset, offset + 2)); offset += 2;
-		out.println("IC Pre-Perso. Equipment ID: " + bytesAsHex(data, offset, offset + 4)); offset += 4;
-		out.println("IC Personalizer: " + bytesAsHex(data, offset, offset + 2)); offset += 2;
-		out.println("IC Personalization Date: " + bytesAsHex(data, offset, offset + 2)); offset += 2;
-		out.println("IC Perso. Equipment ID: " + bytesAsHex(data, offset, offset + 4));	 offset += 4;
+		CPLC cplc = new CPLC(data);
+		out.println(cplc);
 	}
 
 
@@ -233,4 +215,65 @@ public class GlobalPlatformData {
 
 	public static final byte[] defaultKey = { 0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F };
 
+	public static final class CPLC {
+
+		public enum Field {
+			ICFabricator,
+			ICType,
+			OperatingSystemID,
+			OperatingSystemReleaseDate,
+			OperatingSystemReleaseLevel,
+			ICFabricationDate,
+			ICSerialNumber,
+			ICBatchIdentifier,
+			ICModuleFabricator,
+			ICModulePackagingDate,
+			ICCManufacturer,
+			ICEmbeddingDate,
+			ICPrePersonalizer,
+			ICPrePersonalizationEquipmentDate,
+			ICPrePersonalizationEquipmentID,
+			ICPersonalizer,
+			ICPersonalizationDate,
+			ICPersonalizationEquipmentID
+		};
+		private HashMap<Field, byte[]> values = null;
+
+		public CPLC(byte [] data) {
+			if (data == null) {
+				return;
+			}
+			if (data.length < 3 || data[2] != 0x2A)
+				throw new IllegalArgumentException("CPLC must be 0x2A bytes long");
+			//offset = TLVUtils.skipTag(data, offset, (short)0x9F7F);
+			short offset = 3;
+			values = new HashMap<>();
+			values.put(Field.ICFabricator, Arrays.copyOfRange(data, offset, offset + 2)); offset += 2;
+			values.put(Field.ICType, Arrays.copyOfRange(data, offset, offset + 2)); offset += 2;
+			values.put(Field.OperatingSystemID, Arrays.copyOfRange(data, offset, offset + 2)); offset += 2;
+			values.put(Field.OperatingSystemReleaseDate, Arrays.copyOfRange(data, offset, offset + 2)); offset += 2;
+			values.put(Field.OperatingSystemReleaseLevel, Arrays.copyOfRange(data, offset, offset + 2)); offset += 2;
+			values.put(Field.ICFabricationDate, Arrays.copyOfRange(data, offset, offset + 2)); offset += 2;
+			values.put(Field.ICSerialNumber, Arrays.copyOfRange(data, offset, offset + 4)); offset += 4;
+			values.put(Field.ICBatchIdentifier, Arrays.copyOfRange(data, offset, offset + 2)); offset += 2;
+			values.put(Field.ICModuleFabricator, Arrays.copyOfRange(data, offset, offset + 2)); offset += 2;
+			values.put(Field.ICModulePackagingDate, Arrays.copyOfRange(data, offset, offset + 2)); offset += 2;
+			values.put(Field.ICCManufacturer, Arrays.copyOfRange(data, offset, offset + 2)); offset += 2;
+			values.put(Field.ICEmbeddingDate, Arrays.copyOfRange(data, offset, offset + 2)); offset += 2;
+			values.put(Field.ICPrePersonalizer, Arrays.copyOfRange(data, offset, offset + 2)); offset += 2;
+			values.put(Field.ICPrePersonalizationEquipmentDate, Arrays.copyOfRange(data, offset, offset + 2)); offset += 2;
+			values.put(Field.ICPrePersonalizationEquipmentID, Arrays.copyOfRange(data, offset, offset + 4)); offset += 4;
+			values.put(Field.ICPersonalizer, Arrays.copyOfRange(data, offset, offset + 2)); offset += 2;
+			values.put(Field.ICPersonalizationDate, Arrays.copyOfRange(data, offset, offset + 2)); offset += 2;
+			values.put(Field.ICPersonalizationEquipmentID, Arrays.copyOfRange(data, offset, offset + 4)); offset += 4;
+		}
+
+		public String toString() {
+			String s = "Card CPLC:";
+			for (Field f: Field.values()) {
+				s += "\n" + f.name() + ": " + LoggingCardTerminal.encodeHexString(values.get(f));
+			}
+			return s;
+		}
+	}
 }

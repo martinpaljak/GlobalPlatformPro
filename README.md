@@ -2,7 +2,7 @@
 
 Load and manage applets on compatible JavaCards from command line or from your Java project with a [DWIM](http://en.wikipedia.org/wiki/DWIM) approach.
 
-> Provides a **high level** and **easy to use** interface that most of the time **JustWorks<sup>(TM)</sup>** yet is as **flexible** as GPShell. Fully **[open source](#license)**.
+> Provides a **high level** and **easy to use** interface that most of the time **JustWorks<sup>(TM)</sup>** and is also **flexible**. Fully **[open source](#license)**.
 
 #### Jump to ...
 * [Download](#get-it-now)

@@ -41,6 +41,12 @@ Command line samples assume default test keys of ```40..4F```. If you need custo
 
             gp.exe -info
 
+   * On Linux it is easier to add an alias to the shell like this:
+
+            alias gp="java -jar $(PWD)/gp.jar"
+            # Now you can avoid typing java -jar and gp works from any folder
+            gp -h
+
  * List applets (this and following commands can brick your card with wrong keys!):
 
         java -jar gp.jar -list
@@ -174,11 +180,11 @@ The ancestor of this code is GPJ (Global Platform for SmartCardIO) which is (sti
   * ~~Windows .exe for ease of use~~
   * ~~-lock and -unlock commands for changing secure channel keys~~
  * T+2/3/4
-  * Support for storing card management keys in PKCS#11 tokens (HSM)
-  * Simple GUI for basic operations/browsing
- * T+X (wishlist)
   * SCP03
+  * Support for storing card management keys in PKCS#11 tokens (HSM)
+ * T+X (wishlist)
   * GPShell-style scripts
+  * Simple GUI for basic operations/browsing
 
 ## Design principles
  * focus on: real life, simple and practical use cases

@@ -11,6 +11,8 @@ This is a cheat sheet for buying blank, **developer-friendly JavaCard-s from the
  * **GlobalPlatform default keys** (or **test keys**, with the value ```404142434445464748494A4B4C4D4E4F``` or ```40..4F``` for short): only if you get default test keys (or otherwise known keys) shall you be able to load applications to the card. You **shall not be able to load your application to the card without the keys**. Always be sure to ask for test keys for sample cards!
  * **Contact/Contactless interface**: for creating NFC applications you want to get a card with **dual interface** or even contactless-only.
  * **Proximity cards**: for opening doors, usually a different chip is present on the card for this single purpose. But a vendor can usually combine necessary physical access cards with a suitable JavaCard chip module.
+ * **Common Criteria / FIPS validation**: most *serious* smart cards have some form of certification. CC EAL5+ and FIPS 140 level 3 being common for the JavaCard part. **Bigger is better** but keep in mind, that " the use of a validated cryptographic module in a computer or telecommunications system does not guarantee the security of the overall system." (excerpt from FIPS 140-2)
+ * **GlobalPlatform lifecycle**: should OP_READY, but keep in mind that certain pre-personalization steps (like changin physical characteristics of the chip) can only be done before this state and are usually proprietary. Keep this in mind when actually rolling out.
 
 ## Manufacturers
 See also: [Java Card Forum](http://javacardforum.com/)

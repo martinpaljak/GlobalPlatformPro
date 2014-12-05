@@ -12,7 +12,7 @@ import javax.crypto.spec.SecretKeySpec;
 public class KeySet {
 
 
-	public static class Key {
+	public static final class Key {
 		private int version = 0;
 		private int id = 0;
 		private int length = -1;
@@ -52,6 +52,10 @@ public class KeySet {
 				throw new IllegalArgumentException("3DES key must be 16 bytes long");
 			this.id = 0x00;
 			this.version = 0x00;
+		}
+
+		public String toString() {
+			return "ID:" + this.id + " Ver:" + this.version + " Value:" + GPUtils.byteArrayToString(this.value);
 		}
 	}
 

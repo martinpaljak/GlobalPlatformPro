@@ -432,11 +432,19 @@ public class GPTool {
 						if (args.has(CMD_UNLOCK)) {
 							// Write default keys
 							List<KeySet.Key> keys = new ArrayList<KeySet.Key>();
-							keys.add(new KeySet.Key(01, 01, GlobalPlatformData.defaultKey));
-							keys.add(new KeySet.Key(01, 02, GlobalPlatformData.defaultKey));
-							keys.add(new KeySet.Key(01, 03, GlobalPlatformData.defaultKey));
+
+							// Fetch the current key information to get the used ID-s.
+							List<Key> current = gp.getKeyInfoTemplate();
+							if (current.size() != 3) {
+								throw new GPException("Template has bad length!");
+							}
+							// FIXME: this looks ugly
+							keys.add(new KeySet.Key(01, current.get(0).getID(), GlobalPlatformData.defaultKey));
+							keys.add(new KeySet.Key(01, current.get(1).getID(), GlobalPlatformData.defaultKey));
+							keys.add(new KeySet.Key(01, current.get(2).getID(), GlobalPlatformData.defaultKey));
+
 							// "add keys" if default factory keys or otherwise virgin card
-							if (args.has(OPT_EMV) || args.has(OPT_VISA2) || args.has(OPT_VIRGIN)) {
+							if (args.has(OPT_VIRGIN)) {
 								gp.putKeys(keys, false);
 							} else {
 								// normally replace

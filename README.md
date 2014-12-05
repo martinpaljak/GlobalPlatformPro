@@ -165,7 +165,7 @@ The ancestor of this code is GPJ (Global Platform for SmartCardIO) which is (sti
  * gpcomm - https://code.google.com/p/gpcomm/
    * written in Java
    * incomplete and abandoned
- * JCOP tools, RADIII, JCardManager4 etc
+ * JCOP tools, RADIII, JCardManager4, PyApduTool etc
    * not publicly available open source projects and thus not suitable for this comparision
 
 ## Upcoming releases and major new features

@@ -28,7 +28,7 @@ Known manufacturers of JavaCard compatible smart cards, in alphabetical order:
   
 
 ## Shops that sell JavaCard-s
-In alphabetical order:
+Also in small quantities. In alphabetical order:
 
  * [CryptoShop](http://www.cryptoshop.com/) (AT)
  * [MoTechno](http://www.motechno.com/) (DE)

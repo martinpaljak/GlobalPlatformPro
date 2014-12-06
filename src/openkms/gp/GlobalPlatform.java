@@ -792,7 +792,7 @@ public class GlobalPlatform {
 		// Check if factory keys
 		List<Key> tmpl = getKeyInfoTemplate();
 		if ((tmpl.get(0).getVersion() < 1 || tmpl.get(0).getVersion() > 0x7F) && replace) {
-			printStrictWarning("Trying to replace factory keys? Is this a virgin card?");
+			printStrictWarning("Trying to replace factory keys? Is this a virgin card? (use --virgin)");
 		}
 
 		int P1 = 0x00; // New key in single command unless replace

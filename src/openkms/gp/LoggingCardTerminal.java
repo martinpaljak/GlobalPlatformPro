@@ -54,7 +54,7 @@ public class LoggingCardTerminal extends CardTerminal {
 		char data[] = str.toCharArray();
 		final int len = data.length;
 		if ((len & 0x01) != 0) {
-			throw new IllegalArgumentException("Odd number of characters");
+			throw new IllegalArgumentException("Odd number of characters: " + str);
 		}
 		final byte[] out = new byte[len >> 1];
 		// two characters form the hex value.
@@ -123,9 +123,11 @@ public class LoggingCardTerminal extends CardTerminal {
 			log.print("SCardConnect(\"" + terminal.getName() + "\", " + (protocol.equals("*") ? "T=*" : protocol) + ")");
 			log.flush();
 			card = terminal.connect(protocol);
-			log.println(" -> " + card.getProtocol());
+			String atr = GPUtils.byteArrayToString(card.getATR().getBytes());
+			log.println(" -> " + card.getProtocol() + ", " + atr);
 			if (dump != null) {
-				dump.println("# ATR: " + GPUtils.byteArrayToString(card.getATR().getBytes()) + " PROTOCOL: " + card.getProtocol());
+				dump.println("# ATR: " + atr);
+				dump.println("# PROTOCOL: " + card.getProtocol());
 			}
 		}
 

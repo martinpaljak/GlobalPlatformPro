@@ -57,6 +57,7 @@ public class GPTool {
 	private final static String OPT_SDAID = "sdaid";
 	private final static String OPT_DEBUG = "debug";
 	private final static String OPT_DUMP = "dump";
+	private final static String OPT_REPLAY = "replay";
 	private final static String OPT_VERBOSE = "verbose";
 	private final static String OPT_REINSTALL = "reinstall";
 	private final static String OPT_VIRGIN = "virgin";
@@ -89,6 +90,8 @@ public class GPTool {
 		parser.acceptsAll(Arrays.asList("a", CMD_APDU), "Send raw APDU (hex)").withRequiredArg();
 		parser.acceptsAll(Arrays.asList("s", CMD_SECURE_APDU), "Send raw APDU (hex) via SCP").withRequiredArg();
 		parser.accepts(OPT_DUMP, "Dump APDU communication to <File>").withRequiredArg().ofType(File.class);
+		parser.accepts(OPT_REPLAY, "Replay APDU responses from <File>").withRequiredArg().ofType(File.class);
+
 		parser.accepts(OPT_VERSION, "Show information about the program");
 
 		// Special options
@@ -102,7 +105,7 @@ public class GPTool {
 		parser.accepts(CMD_LOAD, "Load a CAP file").withRequiredArg().ofType(File.class);
 
 		parser.accepts(CMD_INSTALL, "Install applet").withOptionalArg().ofType(File.class);
-		parser.accepts(CMD_UNINSTALL, "Install applet/package").withRequiredArg().ofType(File.class);
+		parser.accepts(CMD_UNINSTALL, "Uninstall applet/package").withRequiredArg().ofType(File.class);
 		parser.accepts(OPT_DEFAULT, "Indicate Default Selected");
 		parser.accepts(OPT_DELETEDEPS, "Also delete dependencies");
 		parser.accepts(OPT_REINSTALL, "Remove card content during installation");
@@ -204,6 +207,13 @@ public class GPTool {
 		// Now actually talk to possible terminals
 		try {
 			TerminalFactory tf = TerminalManager.getTerminalFactory(args.has(OPT_NOFIX) ? false : true);
+
+			// Replay responses from a file
+			if (args.has(OPT_REPLAY)) {
+				File f = (File) args.valueOf(OPT_REPLAY);
+				tf = TerminalFactory.getInstance("PC/SC", new FileInputStream(f), new APDUReplayProvider());
+			}
+
 			CardTerminals terminals = tf.terminals();
 
 			// List terminals if needed

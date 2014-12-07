@@ -21,6 +21,8 @@
  */
 package openkms.gp;
 
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
@@ -69,13 +71,23 @@ public class LoggingCardTerminal extends CardTerminal {
 
 	// The actual terminal
 	protected CardTerminal terminal = null;
+	protected PrintStream dump = null;
+	protected PrintStream log = null;
 
 	public static LoggingCardTerminal getInstance(CardTerminal term) {
-		return new LoggingCardTerminal(term);
+		return new LoggingCardTerminal(term, System.out, null);
 	}
 
-	private LoggingCardTerminal (CardTerminal term) {
-		terminal = term;
+	public static LoggingCardTerminal getInstance(CardTerminal term, OutputStream dump) {
+		return new LoggingCardTerminal(term, System.out, dump);
+	}
+
+	private LoggingCardTerminal (CardTerminal term, OutputStream log, OutputStream dump) {
+		this.terminal = term;
+		this.log = new PrintStream(log, true);
+		if (dump != null) {
+			this.dump = new PrintStream(dump, true);
+		}
 	}
 
 	@Override
@@ -108,31 +120,33 @@ public class LoggingCardTerminal extends CardTerminal {
 	public final class LoggingCard extends Card {
 		private final Card card;
 		private LoggingCard(CardTerminal term, String protocol) throws CardException {
-			System.out.print("SCardConnect(\"" + terminal.getName() + "\", " + (protocol.equals("*") ? "T=*" : protocol) + ")");
-			System.out.flush();
+			log.print("SCardConnect(\"" + terminal.getName() + "\", " + (protocol.equals("*") ? "T=*" : protocol) + ")");
+			log.flush();
 			card = terminal.connect(protocol);
-			System.out.println(" -> " + card.getProtocol());
-			System.out.flush();
+			log.println(" -> " + card.getProtocol());
+			if (dump != null) {
+				dump.println("# ATR: " + GPUtils.byteArrayToString(card.getATR().getBytes()) + " PROTOCOL: " + card.getProtocol());
+			}
 		}
 
 		@Override
 		public void beginExclusive() throws CardException {
-			System.out.println("SCardBeginTransaction(\""+terminal.getName() +"\")");
-			System.out.flush();
+			log.println("SCardBeginTransaction(\""+terminal.getName() +"\")");
 			card.beginExclusive();
 		}
 
 		@Override
 		public void disconnect(boolean arg0) throws CardException {
-			System.out.println("SCardDisconnect(\""+terminal.getName() +"\", " + arg0 +")");
-			System.out.flush();
+			log.println("SCardDisconnect(\""+terminal.getName() +"\", " + arg0 +")");
+			if (dump != null) {
+				dump.close();
+			}
 			card.disconnect(arg0);
 		}
 
 		@Override
 		public void endExclusive() throws CardException {
-			System.out.println("SCardEndTransaction()");
-			System.out.flush();
+			log.println("SCardEndTransaction()");
 			card.endExclusive();
 		}
 
@@ -187,8 +201,8 @@ public class LoggingCardTerminal extends CardTerminal {
 			public ResponseAPDU transmit(CommandAPDU apdu) throws CardException {
 				byte [] cb = apdu.getBytes();
 				int len_end = apdu.getData().length > 255 ? 7 : 5;
-				System.out.print("A>> " + card.getProtocol() + " (4+" + String.format("%04d", apdu.getData().length) + ")");
-				System.out.print(" " + encodeHexString(Arrays.copyOfRange(cb, 0, 4)));
+				log.print("A>> " + card.getProtocol() + " (4+" + String.format("%04d", apdu.getData().length) + ")");
+				log.print(" " + encodeHexString(Arrays.copyOfRange(cb, 0, 4)));
 
 				// Only if Case 2, 3 or 4 APDU
 				if (apdu.getBytes().length > 4) {
@@ -196,17 +210,17 @@ public class LoggingCardTerminal extends CardTerminal {
 					if (cmdlen == 0 && apdu.getData().length > 6) {
 						cmdlen = ((cb[ISO7816.OFFSET_LC +1] & 0xff << 8) | cb[ISO7816.OFFSET_LC+2] & 0xff);
 					}
-					System.out.print(" " + encodeHexString(Arrays.copyOfRange(cb, 4, len_end)));
-					System.out.print(" " + encodeHexString(Arrays.copyOfRange(cb, len_end, len_end + cmdlen)));
+					log.print(" " + encodeHexString(Arrays.copyOfRange(cb, 4, len_end)));
+					log.print(" " + encodeHexString(Arrays.copyOfRange(cb, len_end, len_end + cmdlen)));
 					if (len_end + cmdlen < cb.length) {
-						System.out.println(" " + encodeHexString(Arrays.copyOfRange(cb, len_end + cmdlen, cb.length)));
+						log.println(" " + encodeHexString(Arrays.copyOfRange(cb, len_end + cmdlen, cb.length)));
 					} else {
-						System.out.println();
+						log.println();
 					}
 				} else {
-					System.out.println();
+					log.println();
 				}
-				System.out.flush();
+				log.flush();
 
 				long t = System.currentTimeMillis();
 				ResponseAPDU response = channel.transmit(apdu);
@@ -218,11 +232,13 @@ public class LoggingCardTerminal extends CardTerminal {
 				byte [] rb = response.getBytes();
 				System.out.print("A<< (" + String.format("%04d", response.getData().length) + "+2) (" + time + ")");
 				if (response.getData().length > 2) {
-					System.out.print(" " + encodeHexString(response.getData()));
+					log.print(" " + encodeHexString(response.getData()));
 				}
-				System.out.println(" " + encodeHexString(Arrays.copyOfRange(rb, rb.length-2, rb.length)));
-				System.out.flush();
-
+				log.println(" " + encodeHexString(Arrays.copyOfRange(rb, rb.length-2, rb.length)));
+				if (dump != null) {
+					dump.println("# " + GPUtils.byteArrayToString(cb));
+					dump.println(GPUtils.byteArrayToString(rb));
+				}
 				return response;
 			}
 
@@ -232,14 +248,15 @@ public class LoggingCardTerminal extends CardTerminal {
 				cmd.get(commandBytes);
 				cmd.position(0);
 
-				System.out.println("B>> " + card.getProtocol() + " (" + commandBytes.length + ") " + encodeHexString(commandBytes));
-				System.out.flush();
+				log.println("B>> " + card.getProtocol() + " (" + commandBytes.length + ") " + encodeHexString(commandBytes));
 				int response = channel.transmit(cmd, rsp);
 				byte[] responseBytes = new byte[response];
 				rsp.get(responseBytes);
 				rsp.position(0);
-				System.out.println("B<< (" + responseBytes.length + ") " + encodeHexString(responseBytes));
-				System.out.flush();
+				log.println("B<< (" + responseBytes.length + ") " + encodeHexString(responseBytes));
+				if (dump != null) {
+					dump.println(GPUtils.byteArrayToString(responseBytes));
+				}
 				return response;
 			}
 		}

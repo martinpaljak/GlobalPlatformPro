@@ -75,7 +75,7 @@ public class APDUReplayProvider extends Provider {
 					responses.add(r);
 				}
 				if (atr == null || protocol == null || responses.size() == 0)
-					throw new RuntimeException("Incomplete APDU dump!");
+					throw new IllegalArgumentException("Incomplete APDU dump!");
 			}
 
 			@Override

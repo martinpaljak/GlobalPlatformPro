@@ -2,6 +2,8 @@ package openkms.gp;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -54,6 +56,7 @@ public class GPTool {
 	private final static String OPT_VERSION = "version";
 	private final static String OPT_SDAID = "sdaid";
 	private final static String OPT_DEBUG = "debug";
+	private final static String OPT_DUMP = "dump";
 	private final static String OPT_VERBOSE = "verbose";
 	private final static String OPT_REINSTALL = "reinstall";
 	private final static String OPT_VIRGIN = "virgin";
@@ -85,7 +88,7 @@ public class GPTool {
 		parser.acceptsAll(Arrays.asList("i", CMD_INFO), "Show information");
 		parser.acceptsAll(Arrays.asList("a", CMD_APDU), "Send raw APDU (hex)").withRequiredArg();
 		parser.acceptsAll(Arrays.asList("s", CMD_SECURE_APDU), "Send raw APDU (hex) via SCP").withRequiredArg();
-
+		parser.accepts(OPT_DUMP, "Dump APDU communication to <File>").withRequiredArg().ofType(File.class);
 		parser.accepts(OPT_VERSION, "Show information about the program");
 
 		// Special options
@@ -234,7 +237,13 @@ public class GPTool {
 			for (CardTerminal reader: do_readers) {
 				// Wrap with logging if requested
 				if (args.has(OPT_DEBUG)) {
-					reader = LoggingCardTerminal.getInstance(reader);
+					// And with APDU dumping
+					OutputStream o = null;
+					if (args.has(OPT_DUMP)) {
+						File f = (File) args.valueOf(OPT_DUMP);
+						o = new FileOutputStream(f);
+					}
+					reader = LoggingCardTerminal.getInstance(reader, o);
 				}
 
 				Card card = null;

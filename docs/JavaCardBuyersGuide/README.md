@@ -1,6 +1,6 @@
 # JavaCard Buyer's Guide of winter 2014/2015
 
-JavaCard is an *almost-a-commodity* platform for creating small applications that run inside a smart card chip. Such applications usually deal with handling of cryptographic keys or otherwise processing cryptographic secrets.
+JavaCard is an *almost-a-commodity* software platform for creating small applications that run inside a smart card chip. Such applications usually deal with handling of cryptographic keys or otherwise processing cryptographic secrets.
 
 This is a cheat sheet for buying blank, **developer-friendly JavaCard-s from the Internet**. It comes as-is, with no endorsements nor warranty!
 

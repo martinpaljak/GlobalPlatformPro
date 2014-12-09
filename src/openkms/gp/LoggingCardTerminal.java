@@ -24,7 +24,9 @@ package openkms.gp;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Calendar;
 
 import javax.smartcardio.ATR;
 import javax.smartcardio.Card;
@@ -126,6 +128,9 @@ public class LoggingCardTerminal extends CardTerminal {
 			String atr = GPUtils.byteArrayToString(card.getATR().getBytes());
 			log.println(" -> " + card.getProtocol() + ", " + atr);
 			if (dump != null) {
+				String ts = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss Z").format(Calendar.getInstance().getTime());
+				dump.println("# Generated on " + ts);
+				dump.println("# Using " + terminal.getName());
 				dump.println("# ATR: " + atr);
 				dump.println("# PROTOCOL: " + card.getProtocol());
 			}

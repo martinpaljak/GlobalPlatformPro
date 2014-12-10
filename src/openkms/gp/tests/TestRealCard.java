@@ -4,11 +4,12 @@ import javax.smartcardio.Card;
 import javax.smartcardio.CardTerminal;
 
 import openkms.gp.GlobalPlatform;
-import openkms.gp.LoggingCardTerminal;
-import openkms.gp.TerminalManager;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+
+import apdu4j.LoggingCardTerminal;
+import apdu4j.TerminalManager;
 
 public abstract class TestRealCard {
 

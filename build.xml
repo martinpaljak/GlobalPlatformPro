@@ -3,9 +3,9 @@
   <description>ANT build file for OpenKMS GlobalPlatform</description>
   <!-- Build the software -->
   <path id="build.classpath">
-    <pathelement location="lib/jnasmartcardio.jar"/>
-    <pathelement location="lib/bcprov-jdk15on-151.jar"/>
     <pathelement location="lib/jopt-simple-4.8.jar"/>
+    <pathelement location="lib/apdu4j.jar"/>
+    <pathelement location="lib/bcprov-jdk15on-151.jar"/>
   </path>
   <target name="compile" description="compile the source">
     <mkdir dir="build"/>
@@ -24,7 +24,7 @@
     </java>
     <jar destfile="openkms-gp.jar" level="9" basedir="build"/>
     <jar destfile="gp.jar" level="9">
-      <zipfileset src="lib/jnasmartcardio.jar"/>
+      <zipfileset src="lib/apdu4j.jar"/>
       <zipfileset src="optimized-globalplatform.jar" excludes="org/bouncycastle/x509/"/>
       <manifest><attribute name="Main-Class" value="openkms.gp.GPTool"/></manifest>
     </jar>

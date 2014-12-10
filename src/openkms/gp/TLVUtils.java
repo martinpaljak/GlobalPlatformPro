@@ -2,6 +2,8 @@ package openkms.gp;
 
 import java.util.Arrays;
 
+import apdu4j.HexUtils;
+
 public final class TLVUtils {
 
 	static short skipTag(byte[] data, short offset, byte tag) {
@@ -52,7 +54,7 @@ public final class TLVUtils {
 
 	static String getTLVValueAsHex(byte[] data, short offset) {
 		short len = getTagLength(data, offset);
-		return LoggingCardTerminal.encodeHexString(Arrays.copyOfRange(data, offset + 2, offset + 2 + len));
+		return HexUtils.encodeHexString(Arrays.copyOfRange(data, offset + 2, offset + 2 + len));
 	}
 
 	static byte[] getTLVValueAsBytes(byte[] data, short offset) {

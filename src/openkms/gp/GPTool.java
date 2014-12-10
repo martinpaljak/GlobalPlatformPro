@@ -22,6 +22,9 @@ import joptsimple.OptionSet;
 import openkms.gp.KeySet.Key;
 import openkms.gp.KeySet.KeyDiversification;
 import openkms.gp.KeySet.KeyType;
+import apdu4j.APDUReplayProvider;
+import apdu4j.LoggingCardTerminal;
+import apdu4j.TerminalManager;
 
 
 public class GPTool {

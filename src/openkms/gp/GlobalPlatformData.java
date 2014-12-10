@@ -14,6 +14,8 @@ import openkms.gp.KeySet.KeyDiversification;
 
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 
+import apdu4j.HexUtils;
+
 public class GlobalPlatformData {
 
 	// GP 2.1.1 9.1.6
@@ -183,7 +185,7 @@ public class GlobalPlatformData {
 
 
 	private static String bytesAsHex(byte[] data, short offset, int len) {
-		return LoggingCardTerminal.encodeHexString(Arrays.copyOfRange(data, offset, len));
+		return HexUtils.encodeHexString(Arrays.copyOfRange(data, offset, len));
 	}
 
 
@@ -271,7 +273,7 @@ public class GlobalPlatformData {
 		public String toString() {
 			String s = "Card CPLC:";
 			for (Field f: Field.values()) {
-				s += "\n" + f.name() + ": " + LoggingCardTerminal.encodeHexString(values.get(f));
+				s += "\n" + f.name() + ": " + HexUtils.encodeHexString(values.get(f));
 			}
 			return s;
 		}

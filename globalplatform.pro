@@ -2,7 +2,7 @@
 -injars lib/bcprov-jdk15on-151.jar(!META-INF/*)
 -injars lib/jopt-simple-4.8.jar(!META-INF/*)
 # JNA is library because we package everything back in
--libraryjars lib/jnasmartcardio.jar
+-libraryjars lib/apdu4j.jar
 -libraryjars  <java.home>/lib/rt.jar
 -libraryjars  <java.home>/lib/jce.jar
 -outjars optimized-globalplatform.jar

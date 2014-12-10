@@ -26,6 +26,8 @@ import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
+import apdu4j.HexUtils;
+
 public class GPUtils {
 
 	public static String byteArrayToReadableString(byte[] array) {
@@ -41,13 +43,13 @@ public class GPUtils {
 	}
 
 	public static String byteArrayToString(byte[] a) {
-		return LoggingCardTerminal.encodeHexString(a);
+		return HexUtils.encodeHexString(a);
 	}
 
 	public static byte[] stringToByteArray(String s) {
 		s = s.toLowerCase().replaceAll(" ", "").replaceAll(":", "");
 		s = s.replaceAll("0x", "").replaceAll("\n", "").replaceAll("\t", "");
-		return LoggingCardTerminal.decodeHexString(s);
+		return HexUtils.decodeHexString(s);
 	}
 
 	public static String swToString(int sw) {

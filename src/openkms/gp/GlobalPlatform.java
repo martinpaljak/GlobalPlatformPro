@@ -48,6 +48,8 @@ import javax.smartcardio.ResponseAPDU;
 import openkms.gp.KeySet.Key;
 import openkms.gp.KeySet.KeyDiversification;
 import openkms.gp.KeySet.KeyType;
+import apdu4j.HexUtils;
+import apdu4j.ISO7816;
 
 /**
  * The main Global Platform class. Provides most of the Global Platform
@@ -260,7 +262,7 @@ public class GlobalPlatform {
 		CommandAPDU command = new CommandAPDU(CLA_GP, ISO7816.INS_GET_DATA, 0x00, 0x42, 256);
 		ResponseAPDU resp = channel.transmit(command);
 		if (resp.getSW() == 0x9000) {
-			System.out.println("IIN " + LoggingCardTerminal.encodeHexString(resp.getData()));
+			System.out.println("IIN " + HexUtils.encodeHexString(resp.getData()));
 		} else {
 			System.out.println("GET DATA(IIN) not supported");
 		}
@@ -269,7 +271,7 @@ public class GlobalPlatform {
 		command = new CommandAPDU(CLA_GP, ISO7816.INS_GET_DATA, 0x00, 0x45, 256);
 		resp = channel.transmit(command);
 		if (resp.getSW() == 0x9000) {
-			System.out.println("CIN " + LoggingCardTerminal.encodeHexString(resp.getData()));
+			System.out.println("CIN " + HexUtils.encodeHexString(resp.getData()));
 		} else {
 			System.out.println("GET DATA(CIN) not supported");
 		}
@@ -280,7 +282,7 @@ public class GlobalPlatform {
 		if (resp.getSW() == 0x9000) {
 			byte [] ssc = resp.getData();
 			TLVUtils.expectTag(ssc, SHORT_0, (byte) 0xC1);
-			System.out.println("SSC " + LoggingCardTerminal.encodeHexString(TLVUtils.getTLVValueAsBytes(ssc, SHORT_0)));
+			System.out.println("SSC " + HexUtils.encodeHexString(TLVUtils.getTLVValueAsBytes(ssc, SHORT_0)));
 		} else {
 			System.out.println("GET DATA(SSC) not supported");
 		}

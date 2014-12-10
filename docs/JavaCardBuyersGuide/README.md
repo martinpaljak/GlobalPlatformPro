@@ -40,6 +40,11 @@ Also in small quantities. In alphabetical order:
 
 [TestedCards](https://github.com/martinpaljak/GlobalPlatform/wiki/TestedCards) contains a list of smart cards that have been checked to work with the [GlobalPlatform tool](https://github.com/martinpaljak/GlobalPlatform#globalplatform-from-openkms). Simple ```gp -l``` should get you going.
 
+## Similar documents
+ * [HSM Buyers' Guide](https://wiki.opendnssec.org/display/DOCREF/HSM+Buyers%27+Guide)
+
+**TO BE CONTINUED**
+
 ## Need help ?
 
 Contact [@martinpaljak](https://github.com/martinpaljak) with tips and questions by e-mailing martin@martinpaljak.net

@@ -171,8 +171,8 @@ The ancestor of this code is GPJ (Global Platform for SmartCardIO) which is (sti
  * gpcomm - https://code.google.com/p/gpcomm/
    * written in Java
    * incomplete and abandoned
- * JCOP tools, RADIII, JCardManager4, PyApduTool etc
-   * not publicly available open source projects and thus not suitable for this comparision
+ * JCOP tools, RADIII, JCardManager4, JLoad, PyApduTool etc
+   * not publicly available, not cross-platform open source projects and thus not suitable for this comparision
 
 ## Upcoming releases and major new features
  * T+1 (v0.2.5)
@@ -181,9 +181,9 @@ The ancestor of this code is GPJ (Global Platform for SmartCardIO) which is (sti
   * ~~-lock and -unlock commands for changing secure channel keys~~
  * T+2/3/4
   * SCP03
-  * Support for storing card management keys in PKCS#11 tokens (HSM)
  * T+X (wishlist)
-  * GPShell-style scripts
+  * Support for storing card management keys in PKCS#11 tokens (HSM) 
+  * GPShell-style scripts (instead of Java)
   * Simple GUI for basic operations/browsing
 
 ## Design principles

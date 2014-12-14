@@ -22,11 +22,6 @@
 
 package openkms.gp;
 
-import javax.crypto.Cipher;
-import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
-
-import apdu4j.HexUtils;
 
 public class GPUtils {
 
@@ -42,94 +37,14 @@ public class GPUtils {
 		return "|" + s.toString() + "|";
 	}
 
-	public static String byteArrayToString(byte[] a) {
-		return HexUtils.encodeHexString(a);
-	}
-
-	public static byte[] stringToByteArray(String s) {
-		s = s.toLowerCase().replaceAll(" ", "").replaceAll(":", "");
-		s = s.replaceAll("0x", "").replaceAll("\n", "").replaceAll("\t", "");
-		return HexUtils.decodeHexString(s);
-	}
-
 	public static String swToString(int sw) {
 		return String.format("%04X", sw);
 	}
-
-	private static byte[] pad80(byte[] text, int offset, int length, int blocksize) {
-		if (length == -1) {
-			length = text.length - offset;
-		}
-		int totalLength = length;
-		for (totalLength++; (totalLength % blocksize) != 0; totalLength++) {
-			;
-		}
-		int padlength = totalLength - length;
-		byte[] result = new byte[totalLength];
-		System.arraycopy(text, offset, result, 0, length);
-		result[length] = (byte) 0x80;
-		for (int i = 1; i < padlength; i++) {
-			result[length + i] = (byte) 0x00;
-		}
-		return result;
-	}
-
-	public static byte[] pad80(byte[] text, int blocksize) {
-		return pad80(text, 0, text.length, blocksize);
-	}
-
-	public static byte[] mac_3des(byte[] key, byte[] text, byte[] cv)  {
-		return mac_3des(key, text, 0, text.length, cv);
-	}
-
-	private static byte[] mac_3des(byte[] key, byte[] text, int offset, int length, byte[] iv) {
-		if (length == -1) {
-			length = text.length - offset;
-		}
-
-		try {
-			Cipher cipher = Cipher.getInstance("DESede/CBC/NoPadding");
-			cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(KeySet.getKey(key, 24), "DESede"), new IvParameterSpec(iv));
-			byte[] result = new byte[8];
-			byte[] res = cipher.doFinal(text, offset, length);
-			System.arraycopy(res, res.length - 8, result, 0, 8);
-			return result;
-		} catch (Exception e) {
-			throw new RuntimeException("MAC computation failed.", e);
-		}
-	}
-
-	public static byte[] mac_des_3des(byte[] key, byte[] text, byte[] iv) {
-		return mac_des_3des(key, text, 0, text.length, iv);
-	}
-
-	private static byte[] mac_des_3des(byte[] key, byte[] text, int offset, int length, byte[] iv) {
-		if (length == -1) {
-			length = text.length - offset;
-		}
-
-		try {
-
-			Cipher cipher1 = Cipher.getInstance("DES/CBC/NoPadding");
-			cipher1.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(KeySet.getKey(key, 8), "DES"), new IvParameterSpec(iv));
-			Cipher cipher2 = Cipher.getInstance("DESede/CBC/NoPadding");
-			cipher2.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(KeySet.getKey(key, 24), "DESede"), new IvParameterSpec(iv));
-
-			byte[] result = new byte[8];
-			byte[] temp;
-
-			if (length > 8) {
-				temp = cipher1.doFinal(text, offset, length - 8);
-				System.arraycopy(temp, temp.length - 8, result, 0, 8);
-				cipher2.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(KeySet.getKey(key, 24), "DESede"), new IvParameterSpec(result));
-			}
-			temp = cipher2.doFinal(text, (offset + length) - 8, 8);
-			System.arraycopy(temp, temp.length - 8, result, 0, 8);
-			return result;
-		} catch (Exception e) {
-			e.printStackTrace();
-			throw new RuntimeException("MAC computation failed.", e);
-		}
+	public static byte[] concatenate(byte[] a, byte[] b) {
+		byte[] s = new byte[a.length + b.length];
+		System.arraycopy(a, 0, s, 0, a.length);
+		System.arraycopy(b, 0, s, a.length, b.length);
+		return s;
 	}
 
 }

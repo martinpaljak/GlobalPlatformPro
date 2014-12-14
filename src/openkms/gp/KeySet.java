@@ -9,6 +9,8 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
 
+import apdu4j.HexUtils;
+
 public class KeySet {
 
 
@@ -31,6 +33,9 @@ public class KeySet {
 		public int getLength() {
 			return length;
 		}
+		public int getType() {
+			return type;
+		}
 
 		public Key(int version, int id, byte[] value) {
 			this.version = version;
@@ -47,15 +52,15 @@ public class KeySet {
 		}
 
 		public Key(String s) {
-			this.value = GPUtils.stringToByteArray(s);
-			if (this.value.length != 16)
+			value = HexUtils.stringToBin(s);
+			if (value.length != 16)
 				throw new IllegalArgumentException("3DES key must be 16 bytes long");
-			this.id = 0x00;
-			this.version = 0x00;
+			id = 0x00;
+			version = 0x00;
 		}
 
 		public String toString() {
-			return "ID:" + this.id + " Ver:" + this.version + " Value:" + GPUtils.byteArrayToString(this.value);
+			return "ID:" + id + " Ver:" + version + " Value:" + HexUtils.encodeHexString(value);
 		}
 	}
 
@@ -188,23 +193,22 @@ public class KeySet {
 
 		try {
 			Cipher cipher = Cipher.getInstance("DESede/ECB/NoPadding");
-			byte[] data = new byte[16];
 			for (KeyType v : KeyType.values()) {
 				if (v == KeyType.RMAC)
 					continue;
-
+				byte [] kv = null;
 				// shift around and fill initialize update data as required.
 				if (diversification == KeyDiversification.VISA2) {
-					fillVisa(data, initialize_update_response, v);
+					kv = fillVisa(initialize_update_response, v);
 				} else if (diversification == KeyDiversification.EMV) {
-					fillEmv(data, initialize_update_response, v);
+					kv = fillEmv(initialize_update_response, v);
 				}
 
 				// Encrypt with current master key
-				cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(get3DES(v), "DESede"));
+				cipher.init(Cipher.ENCRYPT_MODE, get3DESKey(v));
 
 				// Replace the key
-				setKey(v, cipher.doFinal(data));
+				setKey(v, cipher.doFinal(kv));
 			}
 
 			diversified = true;
@@ -221,7 +225,8 @@ public class KeySet {
 		}
 	}
 
-	private void fillVisa(byte[] data, byte[] init_update_response, KeyType key) {
+	public static byte[] fillVisa(byte[] init_update_response, KeyType key) {
+		byte[] data = new byte[16];
 		System.arraycopy(init_update_response, 0, data, 0, 2);
 		System.arraycopy(init_update_response, 4, data, 2, 4);
 		data[6] = (byte) 0xF0;
@@ -230,9 +235,11 @@ public class KeySet {
 		System.arraycopy(init_update_response, 4, data, 10, 4);
 		data[14] = (byte) 0x0F;
 		data[15] = (byte) key.value;
+		return data;
 	}
 
-	private void fillEmv(byte[] data, byte[] init_update_response, KeyType key) {
+	public static byte[] fillEmv(byte[] init_update_response, KeyType key) {
+		byte[] data = new byte[16];
 		// 6 rightmost bytes of init update response (which is 10 bytes)
 		System.arraycopy(init_update_response, 4, data, 0, 6);
 		data[6] = (byte) 0xF0;
@@ -240,12 +247,16 @@ public class KeySet {
 		System.arraycopy(init_update_response, 4, data, 8, 6);
 		data[14] = (byte) 0x0F;
 		data[15] = (byte) key.value;
+		return data;
 	}
 
 	@Override
 	public String toString() {
-		return new String("\nENC: " + GPUtils.byteArrayToString(getKey(KeyType.ENC)) + "\nMAC: "
-				+ GPUtils.byteArrayToString(getKey(KeyType.MAC)) + "\nKEK: " + GPUtils.byteArrayToString(getKey(KeyType.KEK)));
+		String s = "\nVersion " + getKeyVersion() + " ID: " + getKeyID();
+		s += "\nMAC: " + HexUtils.encodeHexString(getKey(KeyType.MAC));
+		s += "\nENC: " + HexUtils.encodeHexString(getKey(KeyType.ENC));
+		s += "\nKEK: " + HexUtils.encodeHexString(getKey(KeyType.KEK));
+		return s;
 	}
 
 	public int getKeyID() {

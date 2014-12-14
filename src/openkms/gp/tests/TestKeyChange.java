@@ -19,7 +19,7 @@ public class TestKeyChange extends TestRealCard {
 
 	@Test
 	public void testAddNewWithDefault() throws CardException, GPException {
-		gp.openSecureChannel(new KeySet(GlobalPlatformData.defaultKey), GlobalPlatform.SCP_ANY, gp.defaultMode);
+		gp.openSecureChannel(new KeySet(GlobalPlatformData.defaultKey), null, GlobalPlatform.SCP_ANY, gp.defaultMode);
 
 		List<KeySet.Key> keys = new ArrayList<KeySet.Key>();
 		// Version 1, id 1
@@ -34,7 +34,7 @@ public class TestKeyChange extends TestRealCard {
 
 	@Test
 	public void testReplaceNewWithDefault() throws CardException, GPException {
-		gp.openSecureChannel(new KeySet(TestKeyChange.newKey), GlobalPlatform.SCP_ANY, gp.defaultMode);
+		gp.openSecureChannel(new KeySet(TestKeyChange.newKey), null, GlobalPlatform.SCP_ANY, gp.defaultMode);
 
 		List<KeySet.Key> keys = new ArrayList<KeySet.Key>();
 		keys.add(new KeySet.Key(01, 01, GlobalPlatformData.defaultKey));
@@ -48,7 +48,7 @@ public class TestKeyChange extends TestRealCard {
 
 	@Test
 	public void testReplaceDefaultWithNew() throws CardException, GPException {
-		gp.openSecureChannel(new KeySet(GlobalPlatformData.defaultKey, KeyDiversification.EMV), GlobalPlatform.SCP_ANY, gp.defaultMode);
+		gp.openSecureChannel(new KeySet(GlobalPlatformData.defaultKey, KeyDiversification.EMV), null, GlobalPlatform.SCP_ANY, gp.defaultMode);
 		List<KeySet.Key> keys = new ArrayList<KeySet.Key>();
 
 		keys.add(new KeySet.Key(01, 01, TestKeyChange.newKey));

@@ -23,6 +23,7 @@ import openkms.gp.KeySet.Key;
 import openkms.gp.KeySet.KeyDiversification;
 import openkms.gp.KeySet.KeyType;
 import apdu4j.APDUReplayProvider;
+import apdu4j.HexUtils;
 import apdu4j.LoggingCardTerminal;
 import apdu4j.TerminalManager;
 
@@ -42,6 +43,7 @@ public class GPTool {
 	private final static String CMD_MAKE_DEFAULT = "make-default";
 	private final static String CMD_APDU = "apdu";
 	private final static String CMD_SECURE_APDU = "secure-apdu";
+	private final static String OPT_SCP = "scp";
 
 	private final static String OPT_DELETEDEPS = "deletedeps";
 	private final static String OPT_DEFAULT = "default";
@@ -75,8 +77,6 @@ public class GPTool {
 
 	private final static String OPT_EMV = "emv";
 	private final static String OPT_VISA2 = "visa2";
-
-
 
 
 	public static void main(String[] argv) throws Exception {
@@ -126,13 +126,14 @@ public class GPTool {
 		parser.accepts(OPT_ENC, "Specify ENC key").withRequiredArg().withValuesConvertedBy(GPToolArgumentMatchers.key());
 		parser.accepts(OPT_KEK, "Specify KEK key").withRequiredArg().withValuesConvertedBy(GPToolArgumentMatchers.key());
 		parser.accepts(OPT_KEY, "Specify master key").withRequiredArg().withValuesConvertedBy(GPToolArgumentMatchers.key());
-		parser.accepts(CMD_LOCK, "Set new key").withRequiredArg().withValuesConvertedBy(GPToolArgumentMatchers.key());
-		parser.accepts(OPT_VIRGIN, "Card has virgin keys");
-
-
-		parser.accepts(CMD_UNLOCK, "Set default key");
 		parser.accepts(OPT_KEY_ID, "Specify key ID").withRequiredArg().ofType(Integer.class);
 		parser.accepts(OPT_KEY_VERSION, "Specify key version").withRequiredArg().ofType(Integer.class);
+		parser.accepts(CMD_LOCK, "Set new key").withRequiredArg().withValuesConvertedBy(GPToolArgumentMatchers.key());
+		parser.accepts(CMD_UNLOCK, "Set default key");
+		parser.accepts(OPT_SCP, "Force the use of SCP0X").withRequiredArg().ofType(Integer.class);
+
+		parser.accepts(OPT_VIRGIN, "Card has virgin keys");
+
 
 		// Key diversification and AID options
 		parser.accepts(OPT_EMV, "Use EMV diversification");
@@ -284,16 +285,16 @@ public class GPTool {
 
 					if (args.has(CMD_INFO) || args.has(OPT_VERBOSE)) {
 						System.out.println("Reader: " + reader.getName());
-						System.out.println("ATR: " + GPUtils.byteArrayToString(card.getATR().getBytes()));
+						System.out.println("ATR: " + HexUtils.encodeHexString(card.getATR().getBytes()));
 						System.out.println("More information about your card:");
-						System.out.println("    http://smartcard-atr.appspot.com/parse?ATR="+GPUtils.byteArrayToString(card.getATR().getBytes()));
+						System.out.println("    http://smartcard-atr.appspot.com/parse?ATR="+HexUtils.encodeHexString(card.getATR().getBytes()));
 						System.out.println();
 					}
 
 					// Send all raw APDU-s to the default-selected application of the card
 					if (args.has(CMD_APDU)) {
 						for (Object s: args.valuesOf(CMD_APDU)) {
-							CommandAPDU c = new CommandAPDU(GPUtils.stringToByteArray((String)s));
+							CommandAPDU c = new CommandAPDU(HexUtils.stringToBin((String)s));
 							card.getBasicChannel().transmit(c);
 						}
 					}
@@ -318,13 +319,19 @@ public class GPTool {
 							gp.defaultMode.add((GlobalPlatform.APDUMode) args.valueOf(OPT_MODE));
 						}
 
+						// Override SCP version
+						int scp_version = 0;
+						if (args.has(OPT_SCP)) {
+							scp_version = (int) args.valueOf(OPT_SCP);
+						}
+
 						// Possibly brick the card now, if keys don't match.
-						gp.openSecureChannel(ks, GlobalPlatform.SCP_ANY, gp.defaultMode);
+						gp.openSecureChannel(ks, null, scp_version, gp.defaultMode);
 
 						// --secure-apdu or -s
 						if (args.has(CMD_SECURE_APDU)) {
 							for (Object s: args.valuesOf(CMD_SECURE_APDU)) {
-								CommandAPDU c = new CommandAPDU(GPUtils.stringToByteArray((String)s));
+								CommandAPDU c = new CommandAPDU(HexUtils.stringToBin((String)s));
 								gp.transmit(c);
 							}
 						}
@@ -420,11 +427,11 @@ public class GPTool {
 						if (args.has(CMD_LIST)) {
 							for (AIDRegistryEntry e : gp.getRegistry()) {
 								AID aid = e.getAID();
-								System.out.println("AID: " + GPUtils.byteArrayToString(aid.getBytes()) + " (" + GPUtils.byteArrayToReadableString(aid.getBytes()) + ")");
+								System.out.println("AID: " + HexUtils.encodeHexString(aid.getBytes()) + " (" + GPUtils.byteArrayToReadableString(aid.getBytes()) + ")");
 								System.out.println("     " + e.getKind().toShortString() + " " + e.getLifeCycleString() + ": " + e.getPrivilegesString());
 
 								for (AID a : e.getExecutableAIDs()) {
-									System.out.println("     " + GPUtils.byteArrayToString(a.getBytes()) + " (" + GPUtils.byteArrayToReadableString(a.getBytes()) + ")");
+									System.out.println("     " + HexUtils.encodeHexString(a.getBytes()) + " (" + GPUtils.byteArrayToReadableString(a.getBytes()) + ")");
 								}
 								System.out.println();
 							}
@@ -446,7 +453,7 @@ public class GPTool {
 								// normally replace
 								gp.putKeys(keys, true);
 							}
-							System.out.println("Card locked with key: " + GPUtils.byteArrayToString(keys.get(0).getValue()));
+							System.out.println("Card locked with key: " + HexUtils.encodeHexString(keys.get(0).getValue()));
 							System.out.println("Write this down, DO NOT FORGET/LOSE IT!");
 						}
 
@@ -472,7 +479,7 @@ public class GPTool {
 								// normally replace
 								gp.putKeys(keys, true);
 							}
-							System.out.println("Default " + GPUtils.byteArrayToString(GlobalPlatformData.defaultKey) + " set as master key.");
+							System.out.println("Default " + HexUtils.encodeHexString(GlobalPlatformData.defaultKey) + " set as master key.");
 						}
 
 						// --make-default <aid>

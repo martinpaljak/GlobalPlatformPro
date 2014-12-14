@@ -18,14 +18,49 @@ import apdu4j.HexUtils;
 
 public class GlobalPlatformData {
 
+	public enum KeyType {
+		// ID is as used in diversification/derivation
+		// That is - one based.
+		ENC(1), MAC(2), KEK(3), RMAC(4);
+
+		private final int value;
+
+		private KeyType(int value) {
+			this.value = value;
+		}
+
+		public byte getValue() {
+			return (byte) (value & 0xFF);
+		}
+	};
+
 	// GP 2.1.1 9.1.6
+	// GP 2.2.1 11.1.8
 	public static String get_key_type_coding_string(int type) {
 		if ((0x00 <= type) && (type <= 0x7f))
 			return "Reserved for private use";
+		// symmetric
 		if (0x80 == type)
 			return "DES - mode (ECB/CBC) implicitly known";
-		if ((0x81 <= type) && (type <= 0x9F))
-			return "RFU (symmetric algorithms)";
+		if (0x81 == type)
+			return "Reserved (Triple DES)";
+		if (0x82 == type)
+			return "￼Triple DES in CBC mode";
+		if (0x83 == type)
+			return "￼DES in ECB mode";
+		if (0x84 == type)
+			return "￼DES in CBC mode";
+		if (0x85 == type)
+			return "￼Pre-Shared Key for Transport Layer Security";
+		if (0x88 == type)
+			return "￼AES (16, 24, or 32 long keys)";
+		if (0x90 == type)
+			return "￼HMAC-SHA1 – length of HMAC is implicitly known";
+		if (0x91 == type)
+			return "MAC-SHA1-160 – length of HMAC is 160 bits";
+		if (type == 0x86 || type == 0x87 || ((0x89 <= type) && (type <= 0x8F)) || ((0x92 <= type) && (type <= 0x9F)))
+			return "RFU (asymmetric algorithms)";
+		// asymmetric
 		if (0xA0 == type)
 			return "RSA Public Key - public exponent e component (clear text)";
 		if (0xA1 == type)
@@ -47,7 +82,7 @@ public class GlobalPlatformData {
 		if ((0xA9 <= type) && (type <= 0xFE))
 			return "RFU (asymmetric algorithms)";
 		if (0xFF == type)
-			return "Not Available";
+			return "Extened Format";
 
 		return "UNKNOWN";
 	}
@@ -57,28 +92,30 @@ public class GlobalPlatformData {
 		boolean factory_keys = false;
 		out.flush();
 		for (Key k: list) {
-			out.println("Key ID:" + k.getID() + " VER:" + k.getVersion() + " LEN:" + k.getLength());
-			if (k.getVersion() == 0x00|| k.getVersion() == 0xFF)
+			out.println("Key ID:" + k.getID() + " TYPE: "+ get_key_type_coding_string(k.getType()) + " VER:" + k.getVersion() + " LEN:" + k.getLength());
+			if (k.getVersion() == 0x00 || k.getVersion() == 0xFF)
 				factory_keys = true;
 		}
-		if (factory_keys)
+		if (factory_keys) {
 			out.println("Key version suggests factory keys");
+		}
 		out.flush();
 	}
 
 	// GP 2.1.1 9.3.3.1
-	public static List<KeySet.Key> get_key_template_list(byte[] data, short offset) {
+	public static List<KeySet.Key> get_key_template_list(byte[] data, short offset) throws GPException {
 
 		// Return empty list if no data from card.
 		// FIXME: not really a clean solution
 		if (data == null)
 			return new ArrayList<Key>();
-
+		// Expect template 0x0E
 		offset = TLVUtils.skip_tag_or_throw(data, offset, (byte) 0xe0);
 		offset = TLVUtils.skipLength(data, offset);
 
 		ArrayList<KeySet.Key> list = new ArrayList<Key>();
 		while (offset < data.length) {
+			// Objects with tag 0xC0
 			offset = TLVUtils.skipTag(data, offset, (byte) 0xC0);
 			int component_len = offset + TLVUtils.get_length(data, offset);
 			offset = TLVUtils.skipLength(data, offset);
@@ -88,8 +125,12 @@ public class GlobalPlatformData {
 			int version = TLVUtils.get_byte_value(data, offset);
 			offset++;
 			while (offset < component_len) {
+				// Check for extended format here.
 				int type = TLVUtils.get_byte_value(data, offset);
 				offset++;
+				if (type == 0xFF) {
+					throw new GPException("Extneded format key template not yet supported!");
+				}
 				int length = TLVUtils.get_byte_value(data, offset);
 				offset++;
 				list.add(new Key(version, id, length, type));

@@ -24,6 +24,8 @@ package openkms.gp;
 
 import java.util.Arrays;
 
+import apdu4j.HexUtils;
+
 public class AID {
 
 	private byte[] aidBytes = null;
@@ -42,7 +44,7 @@ public class AID {
 	}
 
 	public AID(String str) {
-		this(GPUtils.stringToByteArray(str));
+		this(HexUtils.decodeHexString(str));
 	}
 
 	/**
@@ -81,7 +83,7 @@ public class AID {
 	}
 
 	public String toString() {
-		return GPUtils.byteArrayToString(aidBytes);
+		return HexUtils.encodeHexString(aidBytes);
 	}
 
 	public int hashCode() {

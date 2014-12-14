@@ -179,8 +179,8 @@ The ancestor of this code is GPJ (Global Platform for SmartCardIO) which is (sti
   * ~~Re-written command line utility~~
   * ~~Windows .exe for ease of use~~
   * ~~-lock and -unlock commands for changing secure channel keys~~
- * T+2/3/4
-  * SCP03
+ * T+2 (v0.3.0)
+  * SCP03 v1.1.1 and GP2.2.1 (probably partial)
  * T+X (wishlist)
   * Support for storing card management keys in PKCS#11 tokens (HSM) 
   * GPShell-style scripts (instead of Java)

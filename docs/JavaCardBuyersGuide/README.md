@@ -35,10 +35,11 @@ Also in small quantities. In alphabetical order:
  * [CryptoShop](http://www.cryptoshop.com/) (AT)
  * [MoTechno](http://www.motechno.com/) (DE)
  * [SmartcardFocus](http://www.smartcardfocus.com/) (UK, US)
+ * [SmartcardSource](http://www.smartcardsource.com/) (CA)
 
 ## Checking for compatibility
 
-[TestedCards](https://github.com/martinpaljak/GlobalPlatform/wiki/TestedCards) contains a list of smart cards that have been checked to work with the [GlobalPlatform tool](https://github.com/martinpaljak/GlobalPlatform#globalplatform-from-openkms). Simple ```gp -l``` should get you going.
+[TestedCards document](https://github.com/martinpaljak/GlobalPlatformPro/tree/master/docs/TestedCards) contains a list of smart cards that have been checked to work with [GlobalPlatformPro tool](https://github.com/martinpaljak/GlobalPlatformPro). Simple ```gp -l``` should get you going.
 
 ## Similar documents
  * OpenDNSSEC 2012 [HSM Buyers' Guide](https://wiki.opendnssec.org/display/DOCREF/HSM+Buyers%27+Guide)

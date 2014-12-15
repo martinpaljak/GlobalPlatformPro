@@ -1,5 +1,5 @@
-# Contributing to OpenKMS
-
+# Contributing to GlobalPlatformPro
+ * Use the software!
  * Send card information
  * Send debug logs
- * All patches assume LGPL license
+ * All patches must be with MIT license.

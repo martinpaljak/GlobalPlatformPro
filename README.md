@@ -1,6 +1,6 @@
-# GlobalPlatform from [OpenKMS](http://openkms.org)
+# GlobalPlatformPro from [OpenKMS](http://openkms.org)
 
-Load and manage applets on compatible JavaCards from command line or from your Java project with a [DWIM](http://en.wikipedia.org/wiki/DWIM) approach.
+Load and manage applets on compatible JavaCards from command line or from your Java project with a [Do What I Mean](http://en.wikipedia.org/wiki/DWIM) approach.
 
 > Provides a **high level** and **easy to use** interface that most of the time **JustWorks<sup>(TM)</sup>** and is also **flexible**. Fully **[open source](#license)**.
 
@@ -116,15 +116,7 @@ Command line samples assume default test keys of ```40..4F```. If you need custo
  * See [TestedCards](https://github.com/martinpaljak/GlobalPlatform/tree/master/docs/TestedCards)
  * Generally speaking any modern JavaCard that speaks GlobalPlatform 2.1.1+
  * Available cards from all major vendors have been tested for basic compatibility: [Athena](http://www.athena-scs.com/), [Gemalto](http://www.gemalto.com/), [Giesecke & Devrient](http://www.gi-de.com/), [Infineon](http://www.infineon.com/), [NXP (JCOP)](http://www.nxp.com/), [Oberthur](http://www.oberthur.com/)
-   * If you are a smart card vendor please do *get in touch* for clarification and better support!
-
-### Contact 
-
-* martin@martinpaljak.net
-* [File an issue on Github](https://github.com/martinpaljak/GlobalPlatform/issues/new). Better yet - a pull request!
-* For support:
-  * re-run your failing command with ```-d -v -i``` switches and send the output, information about your card and applet
-* For general conversation: [OpenKMS forum](https://groups.google.com/forum/#!forum/openkms)
+   * If you are a smart card vendor please do *[get in touch](#contact)* for clarification and better support!
 
 ### History
 
@@ -208,13 +200,20 @@ In regard to GlobalPlatform, the goal is to make simple operations like installi
 
 ### Included/used open source projects
 
- * [BouncyCastle](http://pholser.github.io/jopt-simple/) for OID parsing (MIT)
+ * [BouncyCastle](http://pholser.github.io/jopt-simple/) for OID parsing and NIST SP 800-108/NIST SP 800-38B (MIT)
  * [JOpt Simple](http://pholser.github.io/jopt-simple/) for parsing command line (MIT)
- * [Launch4j](http://launch4j.sourceforge.net/) for generating .exe (BSD/MIT)
- * [jnasmartcardio](https://github.com/jnasmartcardio/jnasmartcardio) for PC/SC access (CC0 / public domain)
+ * [Launch4j](http://launch4j.sourceforge.net/) for generating the .exe (BSD/MIT)
+ * [apdu4j](https://github.com/martinpaljak/apdu4j) for APDU access/logging/replaying (MIT)
+
+### Contact 
+
+* martin@martinpaljak.net
+* [File an issue on Github](https://github.com/martinpaljak/GlobalPlatform/issues/new). Better yet - a pull request!
+* For support:
+  * re-run your failing command with ```-d -v -i``` switches and send the output, information about your card and applet
 
 #### Legal disclaimer
  The casual: trademarks to their owners, copyrights to authors, software patents to hell, legal letters to ~~/dev/null~~ PGP key 0x307E3452. Everything is provided AS-IS AND THERE IS A CONSTANT RISK OF DEATH FROM SUDDEN LIGHTNING. Writing in all caps made it look like serious, didn't it?
 
 ----
-OpenKMS - open source key management - [openkms.org](http://openkms.org)
+OpenKMS - open source key management - [openkms.org](http://openkms.org) / [JavaCard.Pro](http://javacard.pro)

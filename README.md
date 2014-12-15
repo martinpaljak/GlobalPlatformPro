@@ -23,7 +23,7 @@ ant
 ```
 
 * Status
-  * Travis - [![Build Status](https://travis-ci.org/martinpaljak/GlobalPlatform.png?branch=master)](https://travis-ci.org/martinpaljak/GlobalPlatform)
+  * Travis - [![Build Status](https://travis-ci.org/martinpaljak/GlobalPlatformPro.png?branch=master)](https://travis-ci.org/martinpaljak/GlobalPlatformPro)
   * Coverity - [![Coverity status](https://scan.coverity.com/projects/1300/badge.svg?flat=1)](https://scan.coverity.com/projects/1300/)
 
 ### Usage

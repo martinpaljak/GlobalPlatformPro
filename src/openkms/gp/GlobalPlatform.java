@@ -410,6 +410,7 @@ public class GlobalPlatform {
 			} else if (scpMajorVersion == 2) {
 				scpVersion = SCP_02_15;
 			} else if (scpMajorVersion == 3) {
+				verbose("SCP03 i=" + scp_i);
 				scpVersion = 3; // FIXME: the symbolic numbering of versions needs to be gixed.
 			}
 		} else if (scpVersion != scpMajorVersion) {
@@ -425,7 +426,7 @@ public class GlobalPlatform {
 		}
 
 		// Remove RMAC if SCP01 TODO: this should be generic sanitizer somewhere
-		if (scpMajorVersion == 1) {
+		if (scpMajorVersion == 1 && securityLevel.contains(APDUMode.RMAC)) {
 			verbose("SCP01 does not support RMAC, removing.");
 			securityLevel.remove(APDUMode.RMAC);
 		}

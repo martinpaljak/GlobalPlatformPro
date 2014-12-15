@@ -2,7 +2,7 @@
 
 Load and manage applets on compatible JavaCards from command line or from your Java project with a [Do What I Mean](http://en.wikipedia.org/wiki/DWIM) approach.
 
-> Provides a **high level** and **easy to use** interface that most of the time **JustWorks<sup>(TM)</sup>** and is also **flexible**. Fully **[open source](#license)**.
+> Provides a **high level** and **easy to use** interface that most of the time **JustWorks<sup>(TM)</sup>**, is **flexible** and 100% **[open source](#license)**!
 
 #### Jump to ...
 * [Download](#get-it-now)
@@ -12,14 +12,13 @@ Load and manage applets on compatible JavaCards from command line or from your J
 * [Similar projects](#similar-projects)
 * [About OpenKMS & legal](#about-openkms)
 
-
 ### Get it now!
-* Download latest pre-built JAR or .EXE from [release area](https://github.com/martinpaljak/GlobalPlatform/releases)
+* Download latest pre-built .JAR or .EXE from [release area](https://github.com/martinpaljak/GlobalPlatformPro/releases)
 * Or fetch from github and build it yourself, it is really easy:
 
 ```shell
-git clone https://github.com/martinpaljak/GlobalPlatform
-cd GlobalPlatform
+git clone https://github.com/martinpaljak/GlobalPlatformPro
+cd GlobalPlatformPro
 ant
 ```
 
@@ -107,13 +106,13 @@ Command line samples assume default test keys of ```40..4F```. If you need custo
    add ```-help``` or ```-h``` or ```--help``` to your ```gp``` command
 
 ##### Usage from Java
- * For now consult the [command line utility source code](https://github.com/martinpaljak/GlobalPlatform/blob/master/src/openkms/gp/GPTool.java)
- * [Javadoc](http://martinpaljak.github.io/GlobalPlatform/) is in a bad shape but shall be improved near v1.0
+ * For now consult the [command line utility source code](https://github.com/martinpaljak/GlobalPlatformPro/blob/master/src/openkms/gp/GPTool.java)
+ * [Javadoc](http://martinpaljak.github.io/GlobalPlatformPro/) is in a bad shape but shall be improved near v1.0
  * Expect RuntimeException-s when things go horribly wrong, CardException-s when link layer fails and GPException-s when protocol layer fails.
 
 ### Supported cards
- * **NEW!** [JavaCard Buyer's Guide of winter 2014/2015](https://github.com/martinpaljak/GlobalPlatform/tree/master/docs/JavaCardBuyersGuide)
- * See [TestedCards](https://github.com/martinpaljak/GlobalPlatform/tree/master/docs/TestedCards)
+ * **NEW!** [JavaCard Buyer's Guide of winter 2014/2015](https://github.com/martinpaljak/GlobalPlatformPro/tree/master/docs/JavaCardBuyersGuide)
+ * See [TestedCards](https://github.com/martinpaljak/GlobalPlatformPro/tree/master/docs/TestedCards)
  * Generally speaking any modern JavaCard that speaks GlobalPlatform 2.1.1+
  * Available cards from all major vendors have been tested for basic compatibility: [Athena](http://www.athena-scs.com/), [Gemalto](http://www.gemalto.com/), [Giesecke & Devrient](http://www.gi-de.com/), [Infineon](http://www.infineon.com/), [NXP (JCOP)](http://www.nxp.com/), [Oberthur](http://www.oberthur.com/)
    * If you are a smart card vendor please do *[get in touch](#contact)* for clarification and better support!
@@ -208,7 +207,7 @@ In regard to GlobalPlatform, the goal is to make simple operations like installi
 ### Contact 
 
 * martin@martinpaljak.net
-* [File an issue on Github](https://github.com/martinpaljak/GlobalPlatform/issues/new). Better yet - a pull request!
+* [File an issue on Github](https://github.com/martinpaljak/GlobalPlatformPro/issues/new). Better yet - a pull request!
 * For support:
   * re-run your failing command with ```-d -v -i``` switches and send the output, information about your card and applet
 

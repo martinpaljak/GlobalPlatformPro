@@ -28,7 +28,7 @@ ant
 
 ### Usage
 
-*Beware: [until v1.0 is released](#upcoming-releases-and-major-new-features), both command line and Java API are subject to change without notice. Check back often.*
+*Beware: [until v0.5 is released](https://github.com/martinpaljak/GlobalPlatformPro/milestones), both command line and Java API are subject to change without notice. Check back often.*
 
 Command line samples assume default test keys of ```40..4F```. If you need custom keys, specify them with any or all of the following options: ```-keyid``` ```-keyver``` and ```-enc``` ```-mac``` ```-kek``` or ```-key``` (for a single master key). You need to know the details or ask your card provider. Some cards require key diversification with ```-emv``` or ```-visa2``` (you should be notified if that's the case).
 
@@ -166,12 +166,13 @@ The ancestor of this code is GPJ (Global Platform for SmartCardIO) which is (sti
    * not publicly available, not cross-platform open source projects and thus not suitable for this comparision
 
 ## Upcoming releases and major new features
+ * **NEW!** Have a look at [milestones](https://github.com/martinpaljak/GlobalPlatformPro/milestones)
  * T+1 (v0.2.5)
   * ~~Re-written command line utility~~
   * ~~Windows .exe for ease of use~~
   * ~~-lock and -unlock commands for changing secure channel keys~~
  * T+2 (v0.3.0)
-  * SCP03 v1.1.1 and GP2.2.1 (probably partial)
+  * SCP03 v1.1.1 and GP2.2.1
  * T+X (wishlist)
   * Support for storing card management keys in PKCS#11 tokens (HSM) 
   * GPShell-style scripts (instead of Java)
@@ -180,7 +181,7 @@ The ancestor of this code is GPJ (Global Platform for SmartCardIO) which is (sti
 ## Design principles
  * focus on: real life, simple and practical use cases
  * KISS, YAGNI, DWIM
- * javax.smartcardio access to (most probably real) tokens 
+ * APDU-chat over javax.smartcardio to (most probably real) tokens 
  * thin and self-contained, re-usable
  * easily readable, auditable and secure codebase
 

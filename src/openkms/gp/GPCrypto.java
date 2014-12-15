@@ -71,8 +71,7 @@ public class GPCrypto {
 		return mac_3des(key, d, 0, d.length, iv);
 	}
 	public static byte[] mac_3des_nulliv(byte[] key, byte[] d)  {
-		//byte [] d = pad80(text, 8);
-		return mac_3des(key, d, 0, d.length, null_bytes_8);
+		return mac_3des(key, d, null_bytes_8);
 	}
 
 	static byte[] mac_3des(byte[] key, byte[] text, int offset, int length, byte[] iv) {

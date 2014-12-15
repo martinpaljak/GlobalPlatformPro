@@ -131,14 +131,12 @@ public class GlobalPlatform {
 		return verboseTo != null;
 	}
 	public void beVerboseTo(PrintStream out) {
-		this.verboseTo = out;
+		this.verboseTo = new PrintStream(out, true);
 	}
 	protected void verbose(String s) {
 		if (!beVerbose())
 			return;
-		verboseTo.flush();
 		verboseTo.println(s);
-		verboseTo.flush();
 	}
 
 	public void setStrict(boolean strict) {
@@ -146,7 +144,7 @@ public class GlobalPlatform {
 	}
 
 	public void imFeelingLucky() throws CardException, GPException {
-		select(null);
+		select(null); // auto-detect ISD AID
 		KeySet ks = new KeySet(GlobalPlatformData.defaultKey, GlobalPlatformData.suggestDiversification(getCPLC()));
 		openSecureChannel(ks, null, 0, EnumSet.of(APDUMode.MAC));
 	}
@@ -402,8 +400,8 @@ public class GlobalPlatform {
 			throw new GPException("Key version mismatch: " + staticKeys.getKeyVersion() + " != " + keyVersion);
 		}
 
-		verbose("Card reports SCP0" + scpMajorVersion + " with static version " + keyVersion + " keys");
-		verbose("Configured master keys: " + staticKeys);
+		verbose("Card reports SCP0" + scpMajorVersion + " with version " + keyVersion + " keys");
+		verbose("Master keys: " + staticKeys);
 
 		// Set default SCP version based on major version, if not explicitly known.
 		if (scpVersion == SCP_ANY) {
@@ -412,8 +410,7 @@ public class GlobalPlatform {
 			} else if (scpMajorVersion == 2) {
 				scpVersion = SCP_02_15;
 			} else if (scpMajorVersion == 3) {
-				// FIXME
-				System.out.println("The SCP03 i is " + scp_i);
+				scpVersion = 3; // FIXME: the symbolic numbering of versions needs to be gixed.
 			}
 		} else if (scpVersion != scpMajorVersion) {
 			verbose("Overriding SCP version: card reports " + scpMajorVersion + " but user requested " + scpVersion);
@@ -429,6 +426,7 @@ public class GlobalPlatform {
 
 		// Remove RMAC if SCP01 TODO: this should be generic sanitizer somewhere
 		if (scpMajorVersion == 1) {
+			verbose("SCP01 does not support RMAC, removing.");
 			securityLevel.remove(APDUMode.RMAC);
 		}
 
@@ -438,7 +436,7 @@ public class GlobalPlatform {
 		if ((staticKeys.getKeyVersion() == 0) || (staticKeys.getKeyVersion() == 255)) {
 			if (staticKeys.needsDiversity()) {
 				staticKeys.diversify(update_response);
-				verbose("Diversififed static master keys: " + staticKeys);
+				verbose("Diversififed master keys: " + staticKeys);
 			}
 		}
 
@@ -448,23 +446,19 @@ public class GlobalPlatform {
 			sessionKeys = deriveSessionKeysSCP01(staticKeys, host_challenge, card_challenge);
 		} else if (scpMajorVersion == 2) {
 			seq = Arrays.copyOfRange(update_response, 12, 14);
-			System.out.println("SEQ: " + HexUtils.encodeHexString(seq));
 			sessionKeys = deriveSessionKeysSCP02(staticKeys, seq, false);
 		} else if (scpMajorVersion == 3) {
 			if (update_response.length == 32) {
 				seq = Arrays.copyOfRange(update_response, 29, 32);
 			}
 			sessionKeys = deriveSessionKeysSCP03(staticKeys, host_challenge, card_challenge);
-		} else {
-			throw new GPException("SCP is still unexplored: " + scpMajorVersion);
 		}
+
 		verbose("Derived session keys: " + sessionKeys);
 
-		// Calculate card cryptogram for verification
-		byte[] my_card_cryptogram = null;
-
 		// Verify card cryptogram
-		byte [] cntx =  GPUtils.concatenate(host_challenge, card_challenge);
+		byte[] my_card_cryptogram = null;
+		byte[] cntx = GPUtils.concatenate(host_challenge, card_challenge);
 		if (scpMajorVersion == 1 || scpMajorVersion == 2) {
 			my_card_cryptogram = GPCrypto.mac_3des_nulliv(sessionKeys.getKey(KeyType.ENC), cntx);
 		} else {
@@ -473,15 +467,14 @@ public class GlobalPlatform {
 
 		// This is the main check for possible successful authentication.
 		if (!Arrays.equals(card_cryptogram, my_card_cryptogram)) {
-			throw new GPException("Card cryptogram invalid.\nCard: " + HexUtils.encodeHexString(card_cryptogram) + "\nHost: "+ HexUtils.encodeHexString(my_card_cryptogram) + "\n!!! DO NOT RE-TRY THE SAME COMMAND/KEYS OR YOU MAY BRICK YOUR CARD !!!");
+			throw new GPException("Card cryptogram invalid!\nCard: " + HexUtils.encodeHexString(card_cryptogram) + "\nHost: "+ HexUtils.encodeHexString(my_card_cryptogram) + "\n!!! DO NOT RE-TRY THE SAME COMMAND/KEYS OR YOU MAY BRICK YOUR CARD !!!");
 		} else {
-			verbose("Verified card cryptogram: " + HexUtils.encodeHexString(card_cryptogram));
+			verbose("Verified card cryptogram: " + HexUtils.encodeHexString(my_card_cryptogram));
 		}
 
 		// Calculate host cryptogram and initialize SCP wrapper
 		byte[] host_cryptogram = null;
 		if (scpMajorVersion == 1 || scpMajorVersion == 2) {
-			// Construct host cryptogram
 			host_cryptogram = GPCrypto.mac_3des_nulliv(sessionKeys.getKey(KeyType.ENC), GPUtils.concatenate(card_challenge, host_challenge));
 			wrapper = new SCP0102Wrapper(sessionKeys, scpVersion, EnumSet.of(APDUMode.MAC), null, null);
 		} else {
@@ -493,9 +486,7 @@ public class GlobalPlatform {
 		int P1 = APDUMode.getSetValue(securityLevel);
 		CommandAPDU externalAuthenticate = new CommandAPDU(CLA_MAC, ISO7816.INS_EXTERNAL_AUTHENTICATE_82, P1, 0, host_cryptogram);
 		response = transmit(externalAuthenticate);
-
 		check(response, "External authenticate failed");
-
 		wrapper.setSecurityLevel(securityLevel);
 
 		// FIXME: ugly stuff, ugly...
@@ -524,6 +515,9 @@ public class GlobalPlatform {
 				cipher.init(Cipher.ENCRYPT_MODE, staticKeys.get3DESKey(v));
 				sessionKeys.setKey(v, cipher.doFinal(derivationData));
 			}
+			// KEK is the same
+			sessionKeys.setKey(KeyType.KEK, staticKeys.getKey(KeyType.KEK));
+			return sessionKeys;
 		} catch (BadPaddingException e) {
 			throw new RuntimeException("Session keys calculation failed.", e);
 		} catch (NoSuchAlgorithmException e) {
@@ -535,10 +529,6 @@ public class GlobalPlatform {
 		} catch (IllegalBlockSizeException e) {
 			throw new RuntimeException("Session keys calculation failed.", e);
 		}
-
-		// KEK is the same
-		sessionKeys.setKey(KeyType.KEK, staticKeys.getKey(KeyType.KEK));
-		return sessionKeys;
 	}
 
 	private KeySet deriveSessionKeysSCP02(KeySet staticKeys, byte[] sequence, boolean implicitChannel) {
@@ -575,6 +565,7 @@ public class GlobalPlatform {
 			System.arraycopy(constantDEK, 0, derivationData, 0, 2);
 			cipher.init(Cipher.ENCRYPT_MODE, staticKeys.get3DESKey(KeyType.KEK), GPCrypto.iv_null_des);
 			sessionKeys.setKey(KeyType.KEK, cipher.doFinal(derivationData));
+			return sessionKeys;
 
 		} catch (BadPaddingException e) {
 			throw new RuntimeException("Session keys calculation failed.", e);
@@ -589,11 +580,9 @@ public class GlobalPlatform {
 		} catch (InvalidAlgorithmParameterException e) {
 			throw new RuntimeException("Session keys calculation failed.", e);
 		}
-		return sessionKeys;
-
 	}
 
-	private KeySet deriveSessionKeysSCP03(KeySet staticKeys, byte[] host_challenge, byte[] card_challenge) throws GPException {
+	private KeySet deriveSessionKeysSCP03(KeySet staticKeys, byte[] host_challenge, byte[] card_challenge) {
 		KeySet sessionKeys = new KeySet();
 		final byte mac_constant = 0x06;
 		final byte enc_constant = 0x04;
@@ -1254,12 +1243,9 @@ public class GlobalPlatform {
 						byte [] d = GPCrypto.pad80(command.getData(), 16);
 						// Encrypt with S-ENC, after increasing the counter
 						Cipher c = Cipher.getInstance("AES/CBC/NoPadding");
-						System.out.println("Counter: " + HexUtils.encodeHexString(encryption_counter));
 						c.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(sessionKeys.getKey(KeyType.ENC), "AES"), GPCrypto.iv_null_aes);
 						byte [] iv = c.doFinal(encryption_counter);
-						System.out.println("IV: " + HexUtils.encodeHexString(iv));
 						// Now encrypt the data.
-						System.out.println("Encrypting: " + HexUtils.encodeHexString(d));
 						c.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(sessionKeys.getKey(KeyType.ENC), "AES"), new IvParameterSpec(iv));
 						data = c.doFinal(d);
 						lc = data.length;
@@ -1279,17 +1265,11 @@ public class GlobalPlatform {
 					bo.write(lc);
 					bo.write(data);
 					byte [] cmac_input = bo.toByteArray();
-					System.out.println("macing: " + HexUtils.encodeHexString(cmac_input));
-
 					byte [] cmac = GPCrypto.scp03_mac(sessionKeys.getKey(KeyType.MAC), cmac_input, 128);
-					System.out.println("cmac/new chaining value: " + HexUtils.encodeHexString(cmac));
-
 					// Set new chaining value
 					System.arraycopy(cmac, 0, chaining_value, 0, chaining_value.length);
 					// 8 bytes for actual mac
 					cmd_mac = Arrays.copyOf(cmac, 8);
-					System.out.println("mac: " + HexUtils.encodeHexString(cmd_mac));
-
 				}
 				// Construct new command
 				ByteArrayOutputStream na = new ByteArrayOutputStream();

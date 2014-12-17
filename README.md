@@ -2,7 +2,7 @@
 
 Load and manage applets on compatible JavaCards from command line or from your Java project with a [Do What I Mean](http://en.wikipedia.org/wiki/DWIM) approach.
 
-> Provides a **high level** and **easy to use** interface that most of the time **JustWorks<sup>(TM)</sup>**, is **flexible** and 100% **[open source](#license)**!
+> Provides an **easy to use** and **high level** interface that most of the time **JustWorks<sup>(TM)</sup>**, is **flexible** and **[100% open source](#license)**!
 
 #### Jump to ...
 * [Download](#get-it-now)
@@ -11,6 +11,7 @@ Load and manage applets on compatible JavaCards from command line or from your J
 * [Contact & support](#contact)
 * [Similar projects](#similar-projects)
 * [About OpenKMS & legal](#about-openkms)
+
 
 ### Get it now!
 * Download latest pre-built .JAR or .EXE from [release area](https://github.com/martinpaljak/GlobalPlatformPro/releases)
@@ -22,7 +23,13 @@ cd GlobalPlatformPro
 ant
 ```
 
-* Status
+## NEWS
+ * Tentative [milestones](https://github.com/martinpaljak/GlobalPlatformPro/milestones)
+   * SCP03 support coming in [next release](https://github.com/martinpaljak/GlobalPlatformPro/milestones/v0.3.0)!
+ * [JavaCard Buyer's Guide of winter 2014/2015](https://github.com/martinpaljak/GlobalPlatformPro/tree/master/docs/JavaCardBuyersGuide)
+   * More detailed overview of supported cards and where to get them.
+
+### Build status
   * Travis - [![Build Status](https://travis-ci.org/martinpaljak/GlobalPlatformPro.png?branch=master)](https://travis-ci.org/martinpaljak/GlobalPlatformPro)
   * Coverity - [![Coverity status](https://scan.coverity.com/projects/1300/badge.svg?flat=1)](https://scan.coverity.com/projects/1300/)
 
@@ -48,45 +55,45 @@ Command line samples assume default test keys of ```40..4F```. If you need custo
 
  * List applets (this and following commands can brick your card with wrong keys!):
 
-        java -jar gp.jar -list
+        gp -list # or gp -l
 
  * Delete current default applet:
 
-        java -jar gp.jar -delete -default
+        gp -delete -default
 
  * Delete module ```D27600012401``` and all applets from it:
 
-        java -jar gp.jar -delete D27600012401 -deletedeps
+        gp -delete D27600012401 -deletedeps
 
  * Install applet.cap as default applet (with AID information from the CAP):
 
-        java -jar gp.jar -install applet.cap -default
+        gp -install applet.cap -default
 
  * Install applet.cap (with AID information from the CAP):
 
-        java -jar gp.jar -install applet.cap
+        gp -install applet.cap
 
  * Unistall applet.cap (with AID information from the CAP):
 
-        java -jar gp.jar -uninstall applet.cap
+        gp -uninstall applet.cap
 
  * Set ```010B0371D78377B801F2D62AFC671D95``` key to a card with default ```40..4F``` keys:
 
-        java -jar gp.jar -lock 010B0371D78377B801F2D62AFC671D95
+        gp -lock 010B0371D78377B801F2D62AFC671D95
 
  * Set default ```40..4F``` keys to card that was previously locked with key ```010B0371D78377B801F2D62AFC671D95```:
 
-        java -jar gp.jar -key 010B0371D78377B801F2D62AFC671D95 -unlock
+        gp -key 010B0371D78377B801F2D62AFC671D95 -unlock
  
  * Set the default ```40..4F``` keys to a card that uses EMV diversification (like G&D):
 
-        java -jar gp.jar -emv -unlock
+        gp -emv -unlock
  
     \* note that you will have to use ```--relax``` option after this operation to get rid of the warning about probably needed diversification, which is not true any more.
 
  * Set the default ```40..4F``` keys to a card that uses VISA2 diversification with the well-known mother key on a Gemalto card:
 
-        java -jar gp.jar -visa2 -key 47454D5850524553534F53414D504C45 -unlock -mode clr
+        gp -visa2 -key 47454D5850524553534F53414D504C45 -unlock -mode clr
 
 
  * Show APDU-s sent to the card:
@@ -108,7 +115,10 @@ Command line samples assume default test keys of ```40..4F```. If you need custo
 ##### Usage from Java
  * For now consult the [command line utility source code](https://github.com/martinpaljak/GlobalPlatformPro/blob/master/src/openkms/gp/GPTool.java)
  * [Javadoc](http://martinpaljak.github.io/GlobalPlatformPro/) is in a bad shape but shall be improved near v1.0
- * Expect RuntimeException-s when things go horribly wrong, CardException-s when link layer fails and GPException-s when protocol layer fails.
+ * General rules:
+   * Expect ```RuntimeException```-s when things go unexpectedly wrong
+   * ```CardException```-s when link layer fails
+   * ```GPException```-s when protocol layer fails
 
 ### Supported cards
  * **NEW!** [JavaCard Buyer's Guide of winter 2014/2015](https://github.com/martinpaljak/GlobalPlatformPro/tree/master/docs/JavaCardBuyersGuide)
@@ -119,7 +129,7 @@ Command line samples assume default test keys of ```40..4F```. If you need custo
 
 ### History
 
-The ancestor of this code is GPJ (Global Platform for SmartCardIO) which is (still) available from http://gpj.sourceforge.net.
+The ancestor of this code is GPJ (Global Platform for SmartCardIO) which is (still) available from http://gpj.sourceforge.net. I started the project because I felt that messing with cryptic script files was not nice and I wanted to have a simple, open source, usable and native-to-the-rest-of-development-environment (Java) toolchain.
 
 
 ### Credits (from GPJ):
@@ -135,11 +145,12 @@ The ancestor of this code is GPJ (Global Platform for SmartCardIO) which is (sti
    * written in Java 
    * not maintained
    * harder to use from the command line
+   * no new features or standards
  * GPShell + globalplatform library - http://sourceforge.net/projects/globalplatform/ (LGPL)
    * written in C
    * often referred to as the de facto open source GlobalPlatform implementation
    * several components need to be compiled and installed before usage
-   * requires more complex "script files" and does not provide a command line utility
+   * requires more complex "script files" and does not provide a direct command line utility
  * jcManager - http://www.brokenmill.com/2010/03/java-secure-card-manager/ (LGPL)
    * written in Java  
    * has a basic GUI
@@ -157,33 +168,33 @@ The ancestor of this code is GPJ (Global Platform for SmartCardIO) which is (sti
  * OPAL - https://bitbucket.org/ssd/opal (CeCILL, GPLv2 compatible)
    * written in Java
    * claims to have SCP03 support (but no tested cards)
-   * looks "heavy"
+   * looks "heavy" and over-engineered
    * smoke tests give exceptions and doesn't work on OSX nor Debian.
  * gpcomm - https://code.google.com/p/gpcomm/
    * written in Java
    * incomplete and abandoned
  * JCOP tools, RADIII, JCardManager4, JLoad, PyApduTool etc
-   * not publicly available, not cross-platform open source projects and thus not suitable for this comparision
+   * not publicly available cross-platform open source projects and thus not suitable for this comparision
 
 ## Upcoming releases and major new features
  * **NEW!** Have a look at [milestones](https://github.com/martinpaljak/GlobalPlatformPro/milestones)
  * T+1 (v0.2.5)
-  * ~~Re-written command line utility~~
-  * ~~Windows .exe for ease of use~~
-  * ~~-lock and -unlock commands for changing secure channel keys~~
+   * ~~Re-written command line utility~~
+   * ~~Windows .exe for ease of use~~
+   * ~~-lock and -unlock commands for changing secure channel keys~~
  * T+2 (v0.3.0)
-  * SCP03 v1.1.1 and GP2.2.1
+   * SCP03 v1.1.1 and GP2.2.1
  * T+X (wishlist)
-  * Support for storing card management keys in PKCS#11 tokens (HSM) 
-  * GPShell-style scripts (instead of Java)
-  * Simple GUI for basic operations/browsing
+   * Support for storing card management keys in PKCS#11 tokens (HSM)
+   * GPShell-style scripts (instead of Java)
+   * Simple GUI for basic operations/browsing
 
 ## Design principles
- * focus on: real life, simple and practical use cases
- * KISS, YAGNI, DWIM
+ * focus on real life and practical daily use cases
+ * KISS, YAGNI, DWIM, no-NIH
  * APDU-chat over javax.smartcardio to (most probably real) tokens 
- * thin and self-contained, re-usable
- * easily readable, auditable and secure codebase
+ * thin and self-contained, re-usable, easy to integrate
+ * easily readable, auditable and secure codebase (less is more)
 
 ## About OpenKMS
 The promise of OpenKMS is similar<sup>*</sup> to OpenSSL: 
@@ -207,10 +218,11 @@ In regard to GlobalPlatform, the goal is to make simple operations like installi
 
 ### Contact 
 
-* martin@martinpaljak.net
+* Generic enquiries: martin@martinpaljak.net
+* For technical support:
+  * re-run your failing command with ```-d -v -i``` switches and send the output, information about your card and applet/CAP
 * [File an issue on Github](https://github.com/martinpaljak/GlobalPlatformPro/issues/new). Better yet - a pull request!
-* For support:
-  * re-run your failing command with ```-d -v -i``` switches and send the output, information about your card and applet
+* Want to **donate**? E-mail or paypal to martin@martinpaljak.net
 
 #### Legal disclaimer
  The casual: trademarks to their owners, copyrights to authors, software patents to hell, legal letters to ~~/dev/null~~ PGP key 0x307E3452. Everything is provided AS-IS AND THERE IS A CONSTANT RISK OF DEATH FROM SUDDEN LIGHTNING. Writing in all caps made it look like serious, didn't it?

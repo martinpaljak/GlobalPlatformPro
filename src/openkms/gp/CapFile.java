@@ -22,9 +22,11 @@
 
 package openkms.gp;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -32,8 +34,12 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.jar.Attributes;
+import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+
+import apdu4j.HexUtils;
 
 public class CapFile {
 
@@ -53,6 +59,7 @@ public class CapFile {
 	private final List<byte[]> loadTokens = new ArrayList<byte[]>();
 
 	private final List<byte[]> installTokens = new ArrayList<byte[]>();
+	private Manifest manifest = null;
 
 	public CapFile(InputStream in) throws IOException {
 		this(in, null);
@@ -74,6 +81,14 @@ public class CapFile {
 				}
 			}
 		}
+
+		// Parse manifest
+		byte [] mf = entries.remove("META-INF/MANIFEST.MF");
+		if (mf == null) {
+			throw new RuntimeException("No manifest in CAP!");
+		}
+		ByteArrayInputStream mfi = new ByteArrayInputStream(mf);
+		manifest = new Manifest(mfi);
 
 		// Avoid a possible NPE
 		if (packageName == null) {
@@ -153,9 +168,6 @@ public class CapFile {
 			ZipEntry entry = in.getNextEntry();
 			if (entry == null) {
 				break;
-			}
-			if (entry.getName().indexOf("MANIFEST.MF") != -1) {
-				continue;
 			}
 			ByteArrayOutputStream bos = new ByteArrayOutputStream();
 			byte[] buf = new byte[1024];
@@ -302,5 +314,58 @@ public class CapFile {
 			offset += currentLen;
 		}
 		return result;
+	}
+
+	public void dump(PrintStream out) {
+		// Print information about CAP
+		Attributes mains = manifest.getMainAttributes();
+
+		// iterate all packages
+		Map<String, Attributes> ent = manifest.getEntries();
+		if (ent.keySet().size() > 1) {
+			throw new IllegalArgumentException("Too many elments in CAP");
+		}
+		Attributes caps = ent.get(ent.keySet().toArray()[0]);
+		// Generic
+		String jdk_name = mains.getValue("Created-By");
+		// JC specific
+		String cap_version = caps.getValue("Java-Card-CAP-File-Version");
+		String cap_creation_time = caps.getValue("Java-Card-CAP-Creation-Time");
+		String converter_version = caps.getValue("Java-Card-Converter-Version");
+		String converter_provider = caps.getValue("Java-Card-Converter-Provider");
+		String package_name = caps.getValue("Java-Card-Package-Name");
+		String package_version = caps.getValue("Java-Card-Package-Version");
+
+
+		int num_applets = 0;
+		int num_imports = 0;
+		// Count applets and imports
+		for (Object e: caps.keySet()) {
+			Attributes.Name an = (Attributes.Name) e;
+			String s = an.toString();
+			if (s.startsWith("Java-Card-Applet-") && s.endsWith("-Name")) {
+				num_applets++;
+			} else if (s.startsWith("Java-Card-Imported-Package-") && s.endsWith("-AID")) {
+				num_imports++;
+			} else {
+				continue;
+			}
+		}
+		out.println("CAP file (v" + cap_version + ") generated on " + cap_creation_time);
+		out.println("By " + converter_provider + " v" + converter_version + " with JDK " + jdk_name);
+		out.println("Package: " + package_name + " v" + package_version);
+		for (int i = 1; i<=num_applets; i++) {
+			String applet_name = caps.getValue("Java-Card-Applet-" + i + "-Name");
+			String applet_aid = caps.getValue("Java-Card-Applet-" + i + "-AID");
+			String hexaid = HexUtils.encodeHexString(HexUtils.stringToBin(applet_aid));
+			out.println("Applet: " + applet_name + " with AID " + hexaid);
+		}
+		for (int i = 1; i<=num_imports; i++) {
+			String import_aid = caps.getValue("Java-Card-Imported-Package-" + i + "-AID");
+			String import_version = caps.getValue("Java-Card-Imported-Package-" + i + "-Version");
+			String hexaid = HexUtils.encodeHexString(HexUtils.stringToBin(import_aid));
+			out.println("Import: " + hexaid + " v" + import_version);
+
+		}
 	}
 }

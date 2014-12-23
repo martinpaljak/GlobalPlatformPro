@@ -5,11 +5,11 @@ import java.util.List;
 
 import javax.smartcardio.CardException;
 
+import openkms.gp.GPData;
 import openkms.gp.GPException;
+import openkms.gp.GPKeySet;
+import openkms.gp.GPKeySet.Diversification;
 import openkms.gp.GlobalPlatform;
-import openkms.gp.GlobalPlatformData;
-import openkms.gp.KeySet;
-import openkms.gp.KeySet.KeyDiversification;
 
 import org.junit.Test;
 
@@ -19,44 +19,44 @@ public class TestKeyChange extends TestRealCard {
 
 	@Test
 	public void testAddNewWithDefault() throws CardException, GPException {
-		gp.openSecureChannel(new KeySet(GlobalPlatformData.defaultKey), null, GlobalPlatform.SCP_ANY, gp.defaultMode);
+		gp.openSecureChannel(new GPKeySet(GPData.defaultKey), null, GlobalPlatform.SCP_ANY, gp.defaultMode);
 
-		List<KeySet.Key> keys = new ArrayList<KeySet.Key>();
+		List<GPKeySet.GPKey> keys = new ArrayList<GPKeySet.GPKey>();
 		// Version 1, id 1
-		keys.add(new KeySet.Key(01, 01, newKey));
-		keys.add(new KeySet.Key(01, 02, newKey));
-		keys.add(new KeySet.Key(01, 03, newKey));
+		keys.add(new GPKeySet.GPKey(01, 01, newKey));
+		keys.add(new GPKeySet.GPKey(01, 02, newKey));
+		keys.add(new GPKeySet.GPKey(01, 03, newKey));
 
-		GlobalPlatformData.print_card_info(gp);
+		GPData.print_card_info(gp);
 		gp.putKeys(keys, false);
-		GlobalPlatformData.print_card_info(gp);
+		GPData.print_card_info(gp);
 	}
 
 	@Test
 	public void testReplaceNewWithDefault() throws CardException, GPException {
-		gp.openSecureChannel(new KeySet(TestKeyChange.newKey), null, GlobalPlatform.SCP_ANY, gp.defaultMode);
+		gp.openSecureChannel(new GPKeySet(TestKeyChange.newKey), null, GlobalPlatform.SCP_ANY, gp.defaultMode);
 
-		List<KeySet.Key> keys = new ArrayList<KeySet.Key>();
-		keys.add(new KeySet.Key(01, 01, GlobalPlatformData.defaultKey));
-		keys.add(new KeySet.Key(01, 02, GlobalPlatformData.defaultKey));
-		keys.add(new KeySet.Key(01, 03, GlobalPlatformData.defaultKey));
+		List<GPKeySet.GPKey> keys = new ArrayList<GPKeySet.GPKey>();
+		keys.add(new GPKeySet.GPKey(01, 01, GPData.defaultKey));
+		keys.add(new GPKeySet.GPKey(01, 02, GPData.defaultKey));
+		keys.add(new GPKeySet.GPKey(01, 03, GPData.defaultKey));
 
-		GlobalPlatformData.print_card_info(gp);
+		GPData.print_card_info(gp);
 		gp.putKeys(keys, true);
-		GlobalPlatformData.print_card_info(gp);
+		GPData.print_card_info(gp);
 	}
 
 	@Test
 	public void testReplaceDefaultWithNew() throws CardException, GPException {
-		gp.openSecureChannel(new KeySet(GlobalPlatformData.defaultKey, KeyDiversification.EMV), null, GlobalPlatform.SCP_ANY, gp.defaultMode);
-		List<KeySet.Key> keys = new ArrayList<KeySet.Key>();
+		gp.openSecureChannel(new GPKeySet(GPData.defaultKey, Diversification.EMV), null, GlobalPlatform.SCP_ANY, gp.defaultMode);
+		List<GPKeySet.GPKey> keys = new ArrayList<GPKeySet.GPKey>();
 
-		keys.add(new KeySet.Key(01, 01, TestKeyChange.newKey));
-		keys.add(new KeySet.Key(01, 02, TestKeyChange.newKey));
-		keys.add(new KeySet.Key(01, 03, TestKeyChange.newKey));
-		GlobalPlatformData.print_card_info(gp);
+		keys.add(new GPKeySet.GPKey(01, 01, TestKeyChange.newKey));
+		keys.add(new GPKeySet.GPKey(01, 02, TestKeyChange.newKey));
+		keys.add(new GPKeySet.GPKey(01, 03, TestKeyChange.newKey));
+		GPData.print_card_info(gp);
 		gp.putKeys(keys, true);
-		GlobalPlatformData.print_card_info(gp);
+		GPData.print_card_info(gp);
 	}
 
 }

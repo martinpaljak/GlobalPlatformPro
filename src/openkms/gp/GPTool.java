@@ -19,9 +19,10 @@ import javax.smartcardio.TerminalFactory;
 import joptsimple.OptionException;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
-import openkms.gp.KeySet.Key;
-import openkms.gp.KeySet.KeyDiversification;
-import openkms.gp.KeySet.KeyType;
+import openkms.gp.GPData.KeyType;
+import openkms.gp.GPKeySet.Diversification;
+import openkms.gp.GPKeySet.GPKey;
+import openkms.gp.GPKeySet.GPKey.Type;
 import apdu4j.APDUReplayProvider;
 import apdu4j.HexUtils;
 import apdu4j.LoggingCardTerminal;
@@ -74,6 +75,7 @@ public class GPTool {
 	private final static String OPT_KEY = "key";
 	private final static String OPT_KEY_VERSION = "keyver";
 	private final static String OPT_KEY_ID = "keyid";
+	private final static String OPT_NEW_KEY_VERSION = "new-keyver";
 
 	private final static String OPT_EMV = "emv";
 	private final static String OPT_VISA2 = "visa2";
@@ -131,6 +133,7 @@ public class GPTool {
 		parser.accepts(CMD_LOCK, "Set new key").withRequiredArg().withValuesConvertedBy(GPToolArgumentMatchers.key());
 		parser.accepts(CMD_UNLOCK, "Set default key");
 		parser.accepts(OPT_SCP, "Force the use of SCP0X").withRequiredArg().ofType(Integer.class);
+		parser.accepts(OPT_NEW_KEY_VERSION, "key version for the new key").withRequiredArg().ofType(Integer.class);
 
 		parser.accepts(OPT_VIRGIN, "Card has virgin keys");
 
@@ -171,22 +174,23 @@ public class GPTool {
 
 		// Parameters for opening the secure channel
 		// Assume a single master key
-		KeySet ks = null;
-		if (args.has(OPT_KEY))
-			ks = new KeySet((KeySet.Key)args.valueOf(OPT_KEY));
-		else
-			ks = new KeySet(GlobalPlatformData.defaultKey);
-
+		GPKeySet ks = null;
+		if (args.has(OPT_KEY)) {
+			ks = new GPKeySet((GPKeySet.GPKey)args.valueOf(OPT_KEY));
+		} else {
+			ks = new GPKeySet(new GPKey(GPData.defaultKey, Type.DES3));
+		}
 		// override if needed
 		if (args.has(OPT_MAC)) {
-			ks.setKey(KeyType.MAC, (KeySet.Key)args.valueOf(OPT_MAC));
+			ks.setKey(KeyType.MAC, (GPKeySet.GPKey)args.valueOf(OPT_MAC));
 		}
 		if (args.has(OPT_ENC)) {
-			ks.setKey(KeyType.ENC, (KeySet.Key)args.valueOf(OPT_ENC));
+			ks.setKey(KeyType.ENC, (GPKeySet.GPKey)args.valueOf(OPT_ENC));
 		}
 		if (args.has(OPT_KEK)) {
-			ks.setKey(KeyType.KEK, (KeySet.Key)args.valueOf(OPT_KEK));
+			ks.setKey(KeyType.KEK, (GPKeySet.GPKey)args.valueOf(OPT_KEK));
 		}
+
 		// Key ID and Version
 		if (args.has(OPT_KEY_ID)) {
 			ks.setKeyID((int) args.valueOf(OPT_KEY_ID));
@@ -195,17 +199,22 @@ public class GPTool {
 			ks.setKeyVersion((int) args.valueOf(OPT_KEY_VERSION));
 		}
 
-		// Set diversification if needed
-		if (args.has(OPT_VISA2))
-			ks.diversification = KeyDiversification.VISA2;
-		else if (args.has(OPT_EMV))
-			ks.diversification = KeyDiversification.EMV;
+		// Set diversification if specified
+		if (args.has(OPT_VISA2)) {
+			ks.diversification = Diversification.VISA2;
+		} else if (args.has(OPT_EMV)) {
+			ks.diversification = Diversification.EMV;
+		}
 
 		// Load a CAP file, if specified
 		CapFile cap = null;
 		if (args.has(OPT_CAP)) {
 			File capfile = (File) args.valueOf(OPT_CAP);
 			cap = new CapFile(new FileInputStream(capfile));
+			if (args.has(OPT_VERBOSE)) {
+				System.out.println("**** CAP info:");
+				cap.dump(System.out);
+			}
 		}
 
 		// Now actually talk to possible terminals
@@ -305,7 +314,17 @@ public class GPTool {
 					// Fetch some possibly interesting data
 					if (args.has(CMD_INFO)) {
 						System.out.println("***** Card info:");
-						GlobalPlatformData.print_card_info(gp);
+						GPData.print_card_info(gp);
+					}
+
+					// check for possible diversification for virgin cards
+					if (Arrays.equals(ks.getKey(KeyType.MAC).getValue(), GPData.defaultKey) && args.has(OPT_VIRGIN) && !args.has(OPT_RELAX)) {
+						if (GPData.suggestDiversification(gp.getCPLC()) != Diversification.NONE && ks.getKeyVersion() == 0x00) {
+							System.err.println("A virgin card that has not been used with GlobalPlatformPro before");
+							System.err.println("probably requires EMV diversification but is not asked for.");
+							System.err.println("Use -emv for EMV diversification. Or don't run with -virgin or use -relax.");
+							System.exit(1);
+						}
 					}
 
 					// Authenticate, only if needed
@@ -387,6 +406,9 @@ public class GPTool {
 							File capfile = (File) args.valueOf(CMD_INSTALL);
 							CapFile instcap = new CapFile(new FileInputStream(capfile));
 
+							if (args.has(OPT_VERBOSE)) {
+								instcap.dump(System.out);
+							}
 							// Take the applet AID from CAP but allow to override
 							AID aid = instcap.getAppletAIDs().get(0);
 							if (args.has(OPT_APPLET))
@@ -439,47 +461,57 @@ public class GPTool {
 
 						// --lock
 						if (args.has(CMD_LOCK)) {
-							if (args.has(OPT_KEY) || args.has(OPT_MAC) || args.has(OPT_ENC) || args.has(OPT_KEK))
+							if (args.has(OPT_KEY) || args.has(OPT_MAC) || args.has(OPT_ENC) || args.has(OPT_KEK) && !args.has(OPT_RELAX))
 								gp.printStrictWarning("Using --" + CMD_LOCK + " but specifying other keys");
-							byte[] new_key = ((Key)args.valueOf(CMD_LOCK)).getValue();
+							GPKey new_key = ((GPKey)args.valueOf(CMD_LOCK));
 							// Check that
-							List<KeySet.Key> keys = new ArrayList<KeySet.Key>();
-							keys.add(new KeySet.Key(01, 01, new_key));
-							keys.add(new KeySet.Key(01, 02, new_key));
-							keys.add(new KeySet.Key(01, 03, new_key));
+							int new_version = 1;
+
+							if (args.has(OPT_NEW_KEY_VERSION)) {
+								new_version = (int) args.valueOf(OPT_NEW_KEY_VERSION);
+							}
+							List<GPKeySet.GPKey> keys = new ArrayList<GPKeySet.GPKey>();
+							keys.add(new GPKeySet.GPKey(new_version, 01, new_key));
+							keys.add(new GPKeySet.GPKey(new_version, 02, new_key));
+							keys.add(new GPKeySet.GPKey(new_version, 03, new_key));
+							// Add new keys if virgin
 							if (args.has(OPT_EMV) || args.has(OPT_VISA2) || args.has(OPT_VIRGIN)) {
 								gp.putKeys(keys, false);
 							} else {
 								// normally replace
 								gp.putKeys(keys, true);
 							}
-							System.out.println("Card locked with key: " + HexUtils.encodeHexString(keys.get(0).getValue()));
+							System.out.println("Card locked with: " + new_key.toStringKey());
 							System.out.println("Write this down, DO NOT FORGET/LOSE IT!");
 						}
 
 						// --unlock
 						if (args.has(CMD_UNLOCK)) {
 							// Write default keys
-							List<KeySet.Key> keys = new ArrayList<KeySet.Key>();
+							List<GPKeySet.GPKey> keys = new ArrayList<GPKeySet.GPKey>();
 
 							// Fetch the current key information to get the used ID-s.
-							List<Key> current = gp.getKeyInfoTemplate();
+							List<GPKey> current = gp.getKeyInfoTemplate();
 							if (current.size() != 3) {
 								throw new GPException("Template has bad length!");
 							}
+							// FIXME: new key must adhere to currently used SCP version.
+							GPKey new_key = new GPKey(GPData.defaultKey, gp.getSCPVersion() == 3 ? Type.AES : Type.DES3);
+
 							// FIXME: this looks ugly
-							keys.add(new KeySet.Key(01, current.get(0).getID(), GlobalPlatformData.defaultKey));
-							keys.add(new KeySet.Key(01, current.get(1).getID(), GlobalPlatformData.defaultKey));
-							keys.add(new KeySet.Key(01, current.get(2).getID(), GlobalPlatformData.defaultKey));
+							keys.add(new GPKeySet.GPKey(01, current.get(0).getID(), new_key));
+							keys.add(new GPKeySet.GPKey(01, current.get(1).getID(), new_key));
+							keys.add(new GPKeySet.GPKey(01, current.get(2).getID(), new_key));
 
 							// "add keys" if default factory keys or otherwise virgin card
+							// because version FF can not be addressed
 							if (args.has(OPT_VIRGIN)) {
 								gp.putKeys(keys, false);
 							} else {
-								// normally replace
+								// normally replace existing keys
 								gp.putKeys(keys, true);
 							}
-							System.out.println("Default " + HexUtils.encodeHexString(GlobalPlatformData.defaultKey) + " set as master key.");
+							System.out.println("Default " + new_key.toStringKey() + " set as master key.");
 						}
 
 						// --make-default <aid>

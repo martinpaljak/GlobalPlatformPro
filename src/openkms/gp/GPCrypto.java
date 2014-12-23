@@ -4,6 +4,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
+import java.security.Key;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
@@ -13,7 +14,9 @@ import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
+
+import openkms.gp.GPKeySet.GPKey;
+import openkms.gp.GPKeySet.GPKey.Type;
 
 import org.bouncycastle.crypto.BlockCipher;
 import org.bouncycastle.crypto.engines.AESEngine;
@@ -26,6 +29,13 @@ public class GPCrypto {
 	public static final byte[] null_bytes_8 = new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 	public static final byte[] null_bytes_16 = new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 	public static final byte[] one_bytes_16 = new byte[] { 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01};
+
+	// List of used ciphers.
+	public static final String DES3_CBC_CIPHER = "DESede/CBC/NoPadding";
+	public static final String DES3_ECB_CIPHER = "DESede/ECB/NoPadding";
+	public static final String DES_CBC_CIPHER = "DES/CBC/NoPadding";
+	public static final String DES_ECB_CIPHER = "DES/ECB/NoPadding";
+	public static final String AES_CBC_CIPHER = "AES/CBC/NoPadding";
 
 	public static final IvParameterSpec iv_null_des = new IvParameterSpec(null_bytes_8);
 	public static final IvParameterSpec iv_null_aes = new IvParameterSpec(null_bytes_16);
@@ -66,22 +76,24 @@ public class GPCrypto {
 	public static void buffer_increment(byte[] buffer) {
 		buffer_increment(buffer, 0, buffer.length);
 	}
-	public static byte[] mac_3des(byte[] key, byte[] text, byte[] iv)  {
+
+	// 3des mac
+	public static byte[] mac_3des(GPKey key, byte[] text, byte[] iv)  {
 		byte [] d = pad80(text, 8);
-		return mac_3des(key, d, 0, d.length, iv);
+		return mac_3des(key.getKey(), d, 0, d.length, iv);
 	}
-	public static byte[] mac_3des_nulliv(byte[] key, byte[] d)  {
+	// 3des mac with null iv
+	public static byte[] mac_3des_nulliv(GPKey key, byte[] d) {
 		return mac_3des(key, d, null_bytes_8);
 	}
-
-	static byte[] mac_3des(byte[] key, byte[] text, int offset, int length, byte[] iv) {
+	static byte[] mac_3des(Key key, byte[] text, int offset, int length, byte[] iv) {
 		if (length == -1) {
 			length = text.length - offset;
 		}
 
 		try {
-			Cipher cipher = Cipher.getInstance("DESede/CBC/NoPadding");
-			cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(KeySet.getKey(key, 24), "DESede"), new IvParameterSpec(iv));
+			Cipher cipher = Cipher.getInstance(DES3_CBC_CIPHER);
+			cipher.init(Cipher.ENCRYPT_MODE, key, new IvParameterSpec(iv));
 			byte[] result = new byte[8];
 			byte[] res = cipher.doFinal(text, offset, length);
 			System.arraycopy(res, res.length - 8, result, 0, 8);
@@ -91,22 +103,23 @@ public class GPCrypto {
 		}
 	}
 
-	public static byte[] mac_des_3des(byte[] key, byte[] text, byte[] iv) {
+	// The weird mac
+	public static byte[] mac_des_3des(GPKey key, byte[] text, byte[] iv) {
 		byte [] d = pad80(text, 8);
 		return mac_des_3des(key, d, 0, d.length, iv);
 	}
 
-	static byte[] mac_des_3des(byte[] key, byte[] text, int offset, int length, byte[] iv) {
+	private static byte[] mac_des_3des(GPKey key, byte[] text, int offset, int length, byte[] iv) {
 		if (length == -1) {
 			length = text.length - offset;
 		}
 
 		try {
 
-			Cipher cipher1 = Cipher.getInstance("DES/CBC/NoPadding");
-			cipher1.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(KeySet.getKey(key, 8), "DES"), new IvParameterSpec(iv));
-			Cipher cipher2 = Cipher.getInstance("DESede/CBC/NoPadding");
-			cipher2.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(KeySet.getKey(key, 24), "DESede"), new IvParameterSpec(iv));
+			Cipher cipher1 = Cipher.getInstance(DES_CBC_CIPHER);
+			cipher1.init(Cipher.ENCRYPT_MODE, key.getKey(Type.DES), new IvParameterSpec(iv));
+			Cipher cipher2 = Cipher.getInstance(DES3_CBC_CIPHER);
+			cipher2.init(Cipher.ENCRYPT_MODE, key.getKey(Type.DES3), new IvParameterSpec(iv));
 
 			byte[] result = new byte[8];
 			byte[] temp;
@@ -114,7 +127,7 @@ public class GPCrypto {
 			if (length > 8) {
 				temp = cipher1.doFinal(text, offset, length - 8);
 				System.arraycopy(temp, temp.length - 8, result, 0, 8);
-				cipher2.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(KeySet.getKey(key, 24), "DESede"), new IvParameterSpec(result));
+				cipher2.init(Cipher.ENCRYPT_MODE, key.getKey(Type.DES3), new IvParameterSpec(result));
 			}
 			temp = cipher2.doFinal(text, (offset + length) - 8, 8);
 			System.arraycopy(temp, temp.length - 8, result, 0, 8);
@@ -125,6 +138,10 @@ public class GPCrypto {
 		}
 	}
 
+	// SCP03 related
+	public static byte[] scp03_mac(GPKey key, byte[] msg, int lengthbits) {
+		return scp03_mac(key.getValue(), msg, lengthbits);
+	}
 	public static byte[] scp03_mac(byte[] keybytes, byte[] msg, int lengthBits) {
 		// Use BouncyCastle light interface. Maybe use JCE and deal with ProGuard?
 		// FIXME: programmatically set the crypto backend
@@ -137,9 +154,12 @@ public class GPCrypto {
 		return Arrays.copyOf(out, lengthBits/8);
 	}
 
-
 	// GP 2.2.1 Amendment D v 1.1.1
-	public static byte [] scp03_kdf(byte [] key, byte constant, byte[] context, int blocklen_bits) {
+	public static byte [] scp03_kdf(GPKey key, byte constant, byte[] context, int blocklen_bits) {
+		return scp03_kdf(key.getValue(), constant, context, blocklen_bits);
+	}
+
+	private static byte [] scp03_kdf(byte [] key, byte constant, byte[] context, int blocklen_bits) {
 		// 11 bytes
 		byte [] label = new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
@@ -166,61 +186,51 @@ public class GPCrypto {
 		return cgram;
 	}
 
-	public static byte[] scp03_key_check_value(byte [] key) {
+	public static byte[] scp03_key_check_value(GPKey key) {
 		try {
-			Cipher c = Cipher.getInstance("AES/CBC/NoPadding");
-			c.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key, "AES"));
+			Cipher c = Cipher.getInstance(AES_CBC_CIPHER);
+			c.init(Cipher.ENCRYPT_MODE, key.getKey(), iv_null_aes);
 			byte[] cv = c.doFinal(one_bytes_16);
 			return Arrays.copyOfRange(cv, 0, 3);
-		}
-		catch (NoSuchAlgorithmException e) {
+		} catch (NoSuchAlgorithmException e) {
 			throw new RuntimeException("Could not calculate key check value: ", e);
-		}
-		catch (NoSuchPaddingException e) {
+		} catch (NoSuchPaddingException e) {
 			throw new RuntimeException("Could not calculate key check value: ", e);
-		}
-		catch (InvalidKeyException e) {
+		} catch (InvalidKeyException e) {
 			throw new RuntimeException("Could not calculate key check value: ", e);
-		}
-		catch (IllegalBlockSizeException e) {
+		} catch (IllegalBlockSizeException e) {
 			throw new RuntimeException("Could not calculate key check value: ", e);
-		}
-		catch (BadPaddingException e) {
+		} catch (BadPaddingException e) {
+			throw new RuntimeException("Could not calculate key check value: ", e);
+		} catch (InvalidAlgorithmParameterException e) {
 			throw new RuntimeException("Could not calculate key check value: ", e);
 		}
 	}
 
-	public static byte[] scp03_encrypt_key(byte [] kek, byte[] key) {
+	public static byte[] scp03_encrypt_key(GPKey kek, GPKey key) {
 		try {
 			// Pad with random
-			int n = key.length % 16;
-			if (n != 0) n = key.length % 16 + 1;
+			int n = key.getLength() % 16 + 1;
 			byte [] plaintext = new byte[n*16];
 			SecureRandom sr = new SecureRandom();
 			sr.nextBytes(plaintext);
-			System.arraycopy(key, 0, plaintext, 0, key.length);
+			System.arraycopy(key.getValue(), 0, plaintext, 0, key.getLength());
 			// encrypt
-			Cipher c = Cipher.getInstance("AES/CBC/NoPadding");
-			c.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key, "AES"), iv_null_aes);
+			Cipher c = Cipher.getInstance(AES_CBC_CIPHER);
+			c.init(Cipher.ENCRYPT_MODE, kek.getKey(), iv_null_aes);
 			byte[] cgram = c.doFinal(plaintext);
 			return cgram;
-		}
-		catch (NoSuchAlgorithmException e) {
+		} catch (NoSuchAlgorithmException e) {
 			throw new RuntimeException("Could not calculate key check value: ", e);
-		}
-		catch (NoSuchPaddingException e) {
+		} catch (NoSuchPaddingException e) {
 			throw new RuntimeException("Could not calculate key check value: ", e);
-		}
-		catch (InvalidKeyException e) {
+		} catch (InvalidKeyException e) {
 			throw new RuntimeException("Could not calculate key check value: ", e);
-		}
-		catch (IllegalBlockSizeException e) {
+		} catch (IllegalBlockSizeException e) {
 			throw new RuntimeException("Could not calculate key check value: ", e);
-		}
-		catch (BadPaddingException e) {
+		} catch (BadPaddingException e) {
 			throw new RuntimeException("Could not calculate key check value: ", e);
-		}
-		catch (InvalidAlgorithmParameterException e) {
+		} catch (InvalidAlgorithmParameterException e) {
 			throw new RuntimeException("Could not calculate key check value: ", e);
 		}
 	}

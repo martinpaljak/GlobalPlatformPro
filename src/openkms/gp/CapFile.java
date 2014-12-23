@@ -352,7 +352,7 @@ public class CapFile {
 			}
 		}
 		out.println("CAP file (v" + cap_version + ") generated on " + cap_creation_time);
-		out.println("By " + converter_provider + " v" + converter_version + " with JDK " + jdk_name);
+		out.println("By " + converter_provider + " converter " + converter_version + " with JDK " + jdk_name);
 		out.println("Package: " + package_name + " v" + package_version);
 		for (int i = 1; i<=num_applets; i++) {
 			String applet_name = caps.getValue("Java-Card-Applet-" + i + "-Name");

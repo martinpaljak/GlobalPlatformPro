@@ -2,8 +2,10 @@ package openkms.gp;
 
 import joptsimple.ValueConversionException;
 import joptsimple.ValueConverter;
+import openkms.gp.GPKeySet.GPKey;
+import openkms.gp.GPKeySet.GPKey.Type;
 import openkms.gp.GlobalPlatform.APDUMode;
-import openkms.gp.KeySet.Key;
+import apdu4j.HexUtils;
 
 public class GPToolArgumentMatchers {
 
@@ -33,15 +35,15 @@ public class GPToolArgumentMatchers {
 		}
 	}
 
-	public static ValueConverter<Key> key() {
+	public static ValueConverter<GPKey> key() {
 		return new KeyMatcher();
 	}
 
-	public static class KeyMatcher implements ValueConverter<Key> {
+	public static class KeyMatcher implements ValueConverter<GPKey> {
 
 		@Override
-		public Class<Key> valueType() {
-			return Key.class;
+		public Class<GPKey> valueType() {
+			return GPKey.class;
 		}
 
 		@Override
@@ -50,11 +52,19 @@ public class GPToolArgumentMatchers {
 		}
 
 		@Override
-		public Key convert(String arg0) {
+		public GPKey convert(String arg0) {
 			try {
-				return new Key(arg0);
+				String s = arg0.toLowerCase();
+				if (s.startsWith("aes:")) {
+					return new GPKey(HexUtils.decodeHexString(s.substring("aes:".length())), Type.AES);
+				} else if (s.startsWith("des:")) {
+					return new GPKey(HexUtils.decodeHexString(s.substring("des:".length())), Type.DES3);
+				} else {
+					// FIXME: not rally nice to fall back to 3DES, but works for 90% of usecases.
+					return new GPKey(HexUtils.decodeHexString(arg0), Type.DES3);
+				}
 			} catch (IllegalArgumentException e) {
-				throw new ValueConversionException(arg0 + " is not a valid 3DES key!");
+				throw new ValueConversionException(arg0 + " is not a valid key!");
 			}
 		}
 	}

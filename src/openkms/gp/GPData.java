@@ -9,14 +9,14 @@ import java.util.List;
 
 import javax.smartcardio.CardException;
 
-import openkms.gp.KeySet.Key;
-import openkms.gp.KeySet.KeyDiversification;
+import openkms.gp.GPKeySet.Diversification;
+import openkms.gp.GPKeySet.GPKey;
 
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 
 import apdu4j.HexUtils;
 
-public class GlobalPlatformData {
+public class GPData {
 
 	public enum KeyType {
 		// ID is as used in diversification/derivation
@@ -88,11 +88,11 @@ public class GlobalPlatformData {
 	}
 
 	// Print the key template
-	public static void pretty_print_key_template(List<KeySet.Key> list, PrintStream out) {
+	public static void pretty_print_key_template(List<GPKeySet.GPKey> list, PrintStream out) {
 		boolean factory_keys = false;
 		out.flush();
-		for (Key k: list) {
-			out.println("Key ID:" + k.getID() + " TYPE: "+ get_key_type_coding_string(k.getType()) + " VER:" + k.getVersion() + " LEN:" + k.getLength());
+		for (GPKey k: list) {
+			out.println("VER:" + k.getVersion() + " ID:" + k.getID() + " TYPE:"+ k.getType() + " LEN:" + k.getLength());
 			if (k.getVersion() == 0x00 || k.getVersion() == 0xFF)
 				factory_keys = true;
 		}
@@ -103,17 +103,17 @@ public class GlobalPlatformData {
 	}
 
 	// GP 2.1.1 9.3.3.1
-	public static List<KeySet.Key> get_key_template_list(byte[] data, short offset) throws GPException {
+	public static List<GPKeySet.GPKey> get_key_template_list(byte[] data, short offset) throws GPException {
 
 		// Return empty list if no data from card.
 		// FIXME: not really a clean solution
 		if (data == null)
-			return new ArrayList<Key>();
+			return new ArrayList<GPKey>();
 		// Expect template 0x0E
 		offset = TLVUtils.skip_tag_or_throw(data, offset, (byte) 0xe0);
 		offset = TLVUtils.skipLength(data, offset);
 
-		ArrayList<KeySet.Key> list = new ArrayList<Key>();
+		ArrayList<GPKeySet.GPKey> list = new ArrayList<GPKey>();
 		while (offset < data.length) {
 			// Objects with tag 0xC0
 			offset = TLVUtils.skipTag(data, offset, (byte) 0xC0);
@@ -129,11 +129,11 @@ public class GlobalPlatformData {
 				int type = TLVUtils.get_byte_value(data, offset);
 				offset++;
 				if (type == 0xFF) {
-					throw new GPException("Extneded format key template not yet supported!");
+					throw new GPException("Extended format key template not yet supported!");
 				}
 				int length = TLVUtils.get_byte_value(data, offset);
 				offset++;
-				list.add(new Key(version, id, length, type));
+				list.add(new GPKey(version, id, length, type));
 				break; // FIXME:
 			}
 		}
@@ -214,19 +214,14 @@ public class GlobalPlatformData {
 	}
 
 
-	public static KeyDiversification suggestDiversification(byte[] cplc) {
+	public static Diversification suggestDiversification(byte[] cplc) {
 		if (cplc != null) {
 			// G&D
 			if (cplc[7] == 0x16 && cplc[8] == 0x71)
-				return KeyDiversification.EMV;
+				return Diversification.EMV;
 			// TODO: Gemalto
 		}
-		return KeyDiversification.NONE;
-	}
-
-
-	private static String bytesAsHex(byte[] data, short offset, int len) {
-		return HexUtils.encodeHexString(Arrays.copyOfRange(data, offset, len));
+		return Diversification.NONE;
 	}
 
 

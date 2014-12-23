@@ -39,15 +39,15 @@ import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
 import javax.smartcardio.CardChannel;
 import javax.smartcardio.CardException;
 import javax.smartcardio.CommandAPDU;
 import javax.smartcardio.ResponseAPDU;
 
-import openkms.gp.KeySet.Key;
-import openkms.gp.KeySet.KeyDiversification;
-import openkms.gp.KeySet.KeyType;
+import openkms.gp.GPData.KeyType;
+import openkms.gp.GPKeySet.Diversification;
+import openkms.gp.GPKeySet.GPKey;
+import openkms.gp.GPKeySet.GPKey.Type;
 import apdu4j.HexUtils;
 import apdu4j.ISO7816;
 
@@ -105,7 +105,7 @@ public class GlobalPlatform {
 
 	public static final int defaultLoadSize = 255; // TODO: Check CardData
 	private SCPWrapper wrapper = null;
-	private KeySet staticKeys = null;
+	private GPKeySet staticKeys = null;
 	private CardChannel channel = null;
 
 	private byte[] cplc = null;
@@ -145,7 +145,8 @@ public class GlobalPlatform {
 
 	public void imFeelingLucky() throws CardException, GPException {
 		select(null); // auto-detect ISD AID
-		KeySet ks = new KeySet(GlobalPlatformData.defaultKey, GlobalPlatformData.suggestDiversification(getCPLC()));
+		Diversification div = GPData.suggestDiversification(getCPLC());
+		GPKeySet ks = new GPKeySet(new GPKey(GPData.defaultKey, Type.DES3), div);
 		openSecureChannel(ks, null, 0, EnumSet.of(APDUMode.MAC));
 	}
 
@@ -157,7 +158,7 @@ public class GlobalPlatform {
 			System.err.println(message);
 		}
 	}
-
+	// XXX: remove
 	private int getGPCLA() {
 		if (wrapper != null && wrapper.mac)
 			return CLA_MAC;
@@ -213,7 +214,7 @@ public class GlobalPlatform {
 	}
 
 
-	public List<KeySet.Key> getKeyInfoTemplate() throws CardException, GPException {
+	public List<GPKeySet.GPKey> getKeyInfoTemplate() throws CardException, GPException {
 		// Key Information Template
 		CommandAPDU command = new CommandAPDU(getGPCLA(), ISO7816.INS_GET_DATA, 0x00, 0xE0, 256);
 		ResponseAPDU resp = always_transmit(command);
@@ -223,11 +224,11 @@ public class GlobalPlatform {
 			resp = always_transmit(command);
 		}
 		if (resp.getSW() == ISO7816.SW_NO_ERROR) {
-			return GlobalPlatformData.get_key_template_list(resp.getData(), SHORT_0);
+			return GPData.get_key_template_list(resp.getData(), SHORT_0);
 		} else {
 			verbose("GET DATA(Key Information Template) not supported");
 		}
-		return GlobalPlatformData.get_key_template_list(null, SHORT_0);
+		return GPData.get_key_template_list(null, SHORT_0);
 	}
 
 	public byte[] fetchCardData() throws CardException, GPException {
@@ -246,9 +247,9 @@ public class GlobalPlatform {
 	public void discoverCardProperties() throws CardException, GPException {
 
 		// Key Information Template
-		List<Key> key_templates = getKeyInfoTemplate();
+		List<GPKey> key_templates = getKeyInfoTemplate();
 		if (key_templates != null && key_templates.size() > 0) {
-			GlobalPlatformData.pretty_print_key_template(key_templates, System.out);
+			GPData.pretty_print_key_template(key_templates, System.out);
 		}
 
 		System.out.println("***** GET DATA:");
@@ -316,21 +317,15 @@ public class GlobalPlatform {
 	 * @throws CardException
 	 *             if some communication problem is encountered.
 	 */
-	public void openSecureChannel(KeySet staticKeys, byte[] host_challenge, int scpVersion, EnumSet<APDUMode> securityLevel)
+	public void openSecureChannel(GPKeySet staticKeys, byte[] host_challenge, int scpVersion, EnumSet<APDUMode> securityLevel)
 			throws CardException, GPException {
 
-		if (sdAID == null)
+		if (sdAID == null) {
 			throw new IllegalStateException("No selected ISD!");
+		}
 
 		this.staticKeys = staticKeys;
-		KeySet sessionKeys = null;
-
-		// check for diversification
-		if (Arrays.equals(staticKeys.getKey(KeyType.MAC), GlobalPlatformData.defaultKey) && strict) {
-			if (GlobalPlatformData.suggestDiversification(getCPLC()) != KeyDiversification.NONE
-					&& !staticKeys.needsDiversity() && staticKeys.getKeyVersion() == 0x00)
-				printStrictWarning("Card probably requires EMV diversification but no diversification specified!");
-		}
+		GPKeySet sessionKeys = null;
 
 		// ENC requires MAC
 		if (securityLevel.contains(APDUMode.ENC)) {
@@ -434,10 +429,20 @@ public class GlobalPlatform {
 		// Response processed. Derive keys.
 
 		// Only diversify default key sets that require it.
+		// FIXME: keyset version does not matter here.
 		if ((staticKeys.getKeyVersion() == 0) || (staticKeys.getKeyVersion() == 255)) {
-			if (staticKeys.needsDiversity()) {
-				staticKeys.diversify(update_response);
+			if (staticKeys.diversification != Diversification.NONE) {
+				staticKeys.diversify(update_response, scpMajorVersion);
 				verbose("Diversififed master keys: " + staticKeys);
+			}
+		}
+
+		// Check that SCP03 would be using AES keys
+		if (scpMajorVersion == 3) {
+			for (GPKey k: staticKeys.getKeys().values()) {
+				if (k.getType() != Type.AES) {
+					printStrictWarning("Usign SCP03 but key set has 3DES keys?");
+				}
 			}
 		}
 
@@ -447,6 +452,7 @@ public class GlobalPlatform {
 			sessionKeys = deriveSessionKeysSCP01(staticKeys, host_challenge, card_challenge);
 		} else if (scpMajorVersion == 2) {
 			seq = Arrays.copyOfRange(update_response, 12, 14);
+			verbose("Sequnce counter: " + HexUtils.encodeHexString(seq));
 			sessionKeys = deriveSessionKeysSCP02(staticKeys, seq, false);
 		} else if (scpMajorVersion == 3) {
 			if (update_response.length == 32) {
@@ -454,7 +460,6 @@ public class GlobalPlatform {
 			}
 			sessionKeys = deriveSessionKeysSCP03(staticKeys, host_challenge, card_challenge);
 		}
-
 		verbose("Derived session keys: " + sessionKeys);
 
 		// Verify card cryptogram
@@ -463,12 +468,12 @@ public class GlobalPlatform {
 		if (scpMajorVersion == 1 || scpMajorVersion == 2) {
 			my_card_cryptogram = GPCrypto.mac_3des_nulliv(sessionKeys.getKey(KeyType.ENC), cntx);
 		} else {
-			my_card_cryptogram = GPCrypto.scp03_kdf(sessionKeys.mac_key, (byte) 0x00, cntx, 64);
+			my_card_cryptogram = GPCrypto.scp03_kdf(sessionKeys.getKey(KeyType.MAC), (byte) 0x00, cntx, 64);
 		}
 
 		// This is the main check for possible successful authentication.
 		if (!Arrays.equals(card_cryptogram, my_card_cryptogram)) {
-			throw new GPException("Card cryptogram invalid!\nCard: " + HexUtils.encodeHexString(card_cryptogram) + "\nHost: "+ HexUtils.encodeHexString(my_card_cryptogram) + "\n!!! DO NOT RE-TRY THE SAME COMMAND/KEYS OR YOU MAY BRICK YOUR CARD !!!");
+			printStrictWarning("Card cryptogram invalid!\nCard: " + HexUtils.encodeHexString(card_cryptogram) + "\nHost: "+ HexUtils.encodeHexString(my_card_cryptogram) + "\n!!! DO NOT RE-TRY THE SAME COMMAND/KEYS OR YOU MAY BRICK YOUR CARD !!!");
 		} else {
 			verbose("Verified card cryptogram: " + HexUtils.encodeHexString(my_card_cryptogram));
 		}
@@ -479,7 +484,7 @@ public class GlobalPlatform {
 			host_cryptogram = GPCrypto.mac_3des_nulliv(sessionKeys.getKey(KeyType.ENC), GPUtils.concatenate(card_challenge, host_challenge));
 			wrapper = new SCP0102Wrapper(sessionKeys, scpVersion, EnumSet.of(APDUMode.MAC), null, null);
 		} else {
-			host_cryptogram = GPCrypto.scp03_kdf(sessionKeys.mac_key, (byte) 0x01, cntx, 64);
+			host_cryptogram = GPCrypto.scp03_kdf(sessionKeys.getKey(KeyType.MAC), (byte) 0x01, cntx, 64);
 			wrapper = new SCP03Wrapper(sessionKeys, scpVersion, EnumSet.of(APDUMode.MAC), null, null);
 		}
 
@@ -499,8 +504,8 @@ public class GlobalPlatform {
 		}
 	}
 
-	private KeySet deriveSessionKeysSCP01(KeySet staticKeys, byte[] host_challenge, byte[] card_challenge) {
-		KeySet sessionKeys = new KeySet();
+	private GPKeySet deriveSessionKeysSCP01(GPKeySet staticKeys, byte[] host_challenge, byte[] card_challenge) {
+		GPKeySet sessionKeys = new GPKeySet();
 
 		byte[] derivationData = new byte[16];
 		System.arraycopy(card_challenge, 4, derivationData, 0, 4);
@@ -513,8 +518,9 @@ public class GlobalPlatform {
 			for (KeyType v: KeyType.values()) {
 				if (v == KeyType.RMAC) // skip RMAC key
 					continue;
-				cipher.init(Cipher.ENCRYPT_MODE, staticKeys.get3DESKey(v));
-				sessionKeys.setKey(v, cipher.doFinal(derivationData));
+				cipher.init(Cipher.ENCRYPT_MODE, staticKeys.getKeyFor(v));
+				GPKey nk = new GPKey(cipher.doFinal(derivationData), Type.DES3);
+				sessionKeys.setKey(v, nk);
 			}
 			// KEK is the same
 			sessionKeys.setKey(KeyType.KEK, staticKeys.getKey(KeyType.KEK));
@@ -532,8 +538,8 @@ public class GlobalPlatform {
 		}
 	}
 
-	private KeySet deriveSessionKeysSCP02(KeySet staticKeys, byte[] sequence, boolean implicitChannel) {
-		KeySet sessionKeys = new KeySet();
+	private GPKeySet deriveSessionKeysSCP02(GPKeySet staticKeys, byte[] sequence, boolean implicitChannel) {
+		GPKeySet sessionKeys = new GPKeySet();
 
 		try {
 			Cipher cipher = Cipher.getInstance("DESede/CBC/NoPadding");
@@ -543,8 +549,9 @@ public class GlobalPlatform {
 
 			byte[] constantMAC = new byte[] { (byte) 0x01, (byte) 0x01 };
 			System.arraycopy(constantMAC, 0, derivationData, 0, 2);
-			cipher.init(Cipher.ENCRYPT_MODE, staticKeys.get3DESKey(KeyType.MAC), GPCrypto.iv_null_des);
-			sessionKeys.setKey(KeyType.MAC, cipher.doFinal(derivationData));
+			cipher.init(Cipher.ENCRYPT_MODE, staticKeys.getKeyFor(KeyType.MAC), GPCrypto.iv_null_des);
+			GPKey nk = new GPKey(cipher.doFinal(derivationData), Type.DES3);
+			sessionKeys.setKey(KeyType.MAC, nk);
 
 			// TODO: is this correct? - increment by one for all other than C-MAC
 			if (implicitChannel) {
@@ -553,19 +560,22 @@ public class GlobalPlatform {
 
 			byte[] constantRMAC = new byte[] { (byte) 0x01, (byte) 0x02 };
 			System.arraycopy(constantRMAC, 0, derivationData, 0, 2);
-			cipher.init(Cipher.ENCRYPT_MODE, staticKeys.get3DESKey(KeyType.MAC), GPCrypto.iv_null_des);
-			sessionKeys.setKey(KeyType.RMAC, cipher.doFinal(derivationData));;
+			cipher.init(Cipher.ENCRYPT_MODE, staticKeys.getKeyFor(KeyType.MAC), GPCrypto.iv_null_des);
+			nk = new GPKey(cipher.doFinal(derivationData), Type.DES3);
+			sessionKeys.setKey(KeyType.RMAC, nk);
 
 
 			byte[] constantENC = new byte[] { (byte) 0x01, (byte) 0x82 };
 			System.arraycopy(constantENC, 0, derivationData, 0, 2);
-			cipher.init(Cipher.ENCRYPT_MODE, staticKeys.get3DESKey(KeyType.ENC), GPCrypto.iv_null_des);
-			sessionKeys.setKey(KeyType.ENC, cipher.doFinal(derivationData));
+			cipher.init(Cipher.ENCRYPT_MODE, staticKeys.getKeyFor(KeyType.ENC), GPCrypto.iv_null_des);
+			nk = new GPKey(cipher.doFinal(derivationData), Type.DES3);
+			sessionKeys.setKey(KeyType.ENC, nk);
 
 			byte[] constantDEK = new byte[] { (byte) 0x01, (byte) 0x81 };
 			System.arraycopy(constantDEK, 0, derivationData, 0, 2);
-			cipher.init(Cipher.ENCRYPT_MODE, staticKeys.get3DESKey(KeyType.KEK), GPCrypto.iv_null_des);
-			sessionKeys.setKey(KeyType.KEK, cipher.doFinal(derivationData));
+			cipher.init(Cipher.ENCRYPT_MODE, staticKeys.getKeyFor(KeyType.KEK), GPCrypto.iv_null_des);
+			nk = new GPKey(cipher.doFinal(derivationData), Type.DES3);
+			sessionKeys.setKey(KeyType.KEK, nk);
 			return sessionKeys;
 
 		} catch (BadPaddingException e) {
@@ -583,8 +593,8 @@ public class GlobalPlatform {
 		}
 	}
 
-	private KeySet deriveSessionKeysSCP03(KeySet staticKeys, byte[] host_challenge, byte[] card_challenge) {
-		KeySet sessionKeys = new KeySet();
+	private GPKeySet deriveSessionKeysSCP03(GPKeySet staticKeys, byte[] host_challenge, byte[] card_challenge) {
+		GPKeySet sessionKeys = new GPKeySet();
 		final byte mac_constant = 0x06;
 		final byte enc_constant = 0x04;
 		final byte rmac_constant = 0x07;
@@ -593,13 +603,13 @@ public class GlobalPlatform {
 
 		// MAC
 		byte []kdf = GPCrypto.scp03_kdf(staticKeys.getKey(KeyType.MAC), mac_constant, context, 128);
-		sessionKeys.setKey(KeyType.MAC, kdf);
+		sessionKeys.setKey(KeyType.MAC, new GPKey(kdf, Type.AES));
 		// ENC
 		kdf = GPCrypto.scp03_kdf(staticKeys.getKey(KeyType.ENC), enc_constant, context, 128);
-		sessionKeys.setKey(KeyType.ENC, kdf);
+		sessionKeys.setKey(KeyType.ENC, new GPKey(kdf, Type.AES));
 		// RMAC
 		kdf = GPCrypto.scp03_kdf(staticKeys.getKey(KeyType.MAC), rmac_constant, context, 128);
-		sessionKeys.setKey(KeyType.RMAC, kdf);
+		sessionKeys.setKey(KeyType.RMAC, new GPKey(kdf, Type.AES));
 
 		// KEK remains the same
 		sessionKeys.setKey(KeyType.KEK, staticKeys.getKey(KeyType.KEK));
@@ -627,6 +637,10 @@ public class GlobalPlatform {
 			dirty = false;
 		}
 		return registry;
+	}
+
+	public int getSCPVersion() {
+		return scpMajorVersion;
 	}
 
 	public void loadCapFile(CapFile cap) throws CardException, GPException{
@@ -809,27 +823,39 @@ public class GlobalPlatform {
 	}
 
 	// FIXME: remove the withCheck parameter, as always true?
-	private byte[] encodeKey(KeySet.Key key, java.security.Key kek, boolean withCheck) {
+	private byte[] encodeKey(GPKey key, GPKey kek, boolean withCheck) {
 		try {
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			// Only DES at the moment
-			baos.write(0x80);
-			// Length
-			baos.write(16);
-			// Encrypt key with KEK
-			Cipher cipher;
-			cipher = Cipher.getInstance("DESede/ECB/NoPadding");
-			cipher.init(Cipher.ENCRYPT_MODE, kek);
-			baos.write(cipher.doFinal(key.getValue(), 0, 16));
-			if (withCheck) {
-				// key check value, 3 bytes with new key over null bytes
-				baos.write(3);
-				SecretKeySpec ky = new SecretKeySpec(KeySet.getKey(key.getValue(), 24), "DESede");
-				cipher.init(Cipher.ENCRYPT_MODE, ky);
-				byte check[] = cipher.doFinal(GPCrypto.null_bytes_8);
-				baos.write(check, 0, 3);
+			if (key.getType()== Type.DES3) {
+				baos.write(0x80); // 3DES
+				// Length
+				baos.write(16);
+				// Encrypt key with KEK
+				Cipher cipher;
+				cipher = Cipher.getInstance("DESede/ECB/NoPadding");
+				cipher.init(Cipher.ENCRYPT_MODE, kek.getKey());
+				baos.write(cipher.doFinal(key.getValue(), 0, 16));
+				if (withCheck) {
+					// key check value, 3 bytes with new key over 8 null bytes
+					baos.write(3);
+					cipher.init(Cipher.ENCRYPT_MODE, key.getKey());
+					byte check[] = cipher.doFinal(GPCrypto.null_bytes_8);
+					baos.write(check, 0, 3);
+				} else {
+					baos.write(0);
+				}
+			} else if (key.getType() == Type.AES) {
+				//	baos.write(0xFF);
+				baos.write(0x88); // AES
+				baos.write(0x11); // 128b keys only currently
+				byte [] cgram = GPCrypto.scp03_encrypt_key(kek, key);
+				baos.write(cgram.length);
+				baos.write(cgram);
+				byte [] check = GPCrypto.scp03_key_check_value(key);
+				baos.write(check.length);
+				baos.write(check);
 			} else {
-				baos.write(0);
+				throw new RuntimeException("Don't know how to handle " + key.getType());
 			}
 			return baos.toByteArray();
 		} catch (IOException e) {
@@ -848,21 +874,47 @@ public class GlobalPlatform {
 	}
 
 
-	public void putKeys(List<KeySet.Key> keys, boolean replace) throws GPException, CardException {
-		if (keys.size() < 1 || keys.size() > 3)
-			throw new IllegalArgumentException("Can add keys up to 3 at a time");
-		if (keys.size() > 1) {
-			for (int i = 1; i < keys.size(); i++) {
-				if (keys.get(i-1).getID() != keys.get(i).getID() -1)
-					throw new IllegalArgumentException("Key ID-s of multiple keys must be sequential!");
-			}
-		}
-		// Check if factory keys
-		List<Key> tmpl = getKeyInfoTemplate();
-		if ((tmpl.get(0).getVersion() < 1 || tmpl.get(0).getVersion() > 0x7F) && replace) {
-			printStrictWarning("Trying to replace factory keys? Is this a virgin card? (use --virgin)");
+	public void putKeys(List<GPKeySet.GPKey> keys, boolean replace) throws GPException, CardException {
+		if (keys.size() < 1 || keys.size() > 3) {
+			throw new IllegalArgumentException("Can add 1 or up to 3 keys at a time");
 		}
 
+		// Debug
+		verbose("Replace: " + replace);
+		for (GPKey k: keys) {
+			verbose("PUT KEY:" + k);
+		}
+
+		// Check for sainity.
+		if (keys.size() > 1) {
+			for (int i = 1; i < keys.size(); i++) {
+				if (keys.get(i-1).getID() != keys.get(i).getID() -1) {
+					throw new IllegalArgumentException("Key ID-s of multiple keys must be sequential!");
+				}
+			}
+		}
+
+		// Check if factory keys
+		List<GPKey> tmpl = getKeyInfoTemplate();
+		if ((tmpl.get(0).getVersion() < 1 || tmpl.get(0).getVersion() > 0x7F) && replace) {
+			printStrictWarning("Trying to replace factory keys, when you need to add new ones? Is this a virgin card? (use --virgin)");
+		}
+
+		// Check if key types and lengths are the same when replacing
+		if (replace && (keys.get(0).getType() != tmpl.get(0).getType() || keys.get(0).getLength() != tmpl.get(0).getLength())) {
+			throw new IllegalArgumentException("Can not replace keys of different type or size.");
+		}
+
+		// Check for matching version numbers if replacing and vice versa
+		if (!replace && (keys.get(0).getVersion() == tmpl.get(0).getVersion())) {
+			throw new IllegalArgumentException("Not adding keys and version matches existing?");
+		}
+
+		if (replace && (keys.get(0).getVersion() != tmpl.get(0).getVersion())) {
+			throw new IllegalArgumentException("Replacing keys and versions don't match existing?");
+		}
+
+		// Construct APDU
 		int P1 = 0x00; // New key in single command unless replace
 		if (replace)
 			P1 = keys.get(0).getVersion();
@@ -876,11 +928,13 @@ public class GlobalPlatform {
 			// New key version
 			bo.write(keys.get(0).getVersion());
 			// Key data
-			for (Key k: keys) {
+			for (GPKey k: keys) {
 				if (scpMajorVersion == 1) {
-					bo.write(encodeKey(k, staticKeys.get3DESKey(KeyType.KEK), true));
+					bo.write(encodeKey(k, staticKeys.getKey(KeyType.KEK), true));
 				} else if (scpMajorVersion == 2) {
-					bo.write(encodeKey(k, wrapper.sessionKeys.get3DESKey(KeyType.KEK), true));
+					bo.write(encodeKey(k, wrapper.sessionKeys.getKey(KeyType.KEK), true));
+				} else if (scpMajorVersion == 3) {
+					bo.write(encodeKey(k, wrapper.sessionKeys.getKey(KeyType.KEK), true));
 				} else
 					throw new IllegalStateException("Unknown SCP version: " + scpMajorVersion);
 			}
@@ -1008,7 +1062,7 @@ public class GlobalPlatform {
 
 
 
-		private SCP0102Wrapper(KeySet sessionKeys, int scp, EnumSet<APDUMode> securityLevel, byte[] icv, byte[] ricv) {
+		private SCP0102Wrapper(GPKeySet sessionKeys, int scp, EnumSet<APDUMode> securityLevel, byte[] icv, byte[] ricv) {
 			this.sessionKeys = sessionKeys;
 			this.icv = icv;
 			this.ricv = ricv;
@@ -1097,11 +1151,11 @@ public class GlobalPlatform {
 					} else if (icvEnc) {
 						Cipher c = null;
 						if (scp == 1) {
-							c = Cipher.getInstance("DESede/ECB/NoPadding");
-							c.init(Cipher.ENCRYPT_MODE, sessionKeys.get3DESKey(KeyType.MAC));
+							c = Cipher.getInstance(GPCrypto.DES3_ECB_CIPHER);
+							c.init(Cipher.ENCRYPT_MODE, sessionKeys.getKeyFor(KeyType.MAC));
 						} else {
-							c = Cipher.getInstance("DES/ECB/NoPadding");
-							c.init(Cipher.ENCRYPT_MODE, sessionKeys.getDESKey(KeyType.MAC));
+							c = Cipher.getInstance(GPCrypto.DES_ECB_CIPHER);
+							c.init(Cipher.ENCRYPT_MODE, sessionKeys.getKey(KeyType.MAC).getKey(Type.DES));
 						}
 						// encrypts the future ICV ?
 						icv = c.doFinal(icv);
@@ -1146,8 +1200,8 @@ public class GlobalPlatform {
 					}
 					newLc += t.size() - origData.length;
 
-					Cipher c = Cipher.getInstance("DESede/CBC/NoPadding");
-					c.init(Cipher.ENCRYPT_MODE, sessionKeys.get3DESKey(KeyType.ENC), GPCrypto.iv_null_des);
+					Cipher c = Cipher.getInstance(GPCrypto.DES3_CBC_CIPHER);
+					c.init(Cipher.ENCRYPT_MODE, sessionKeys.getKeyFor(KeyType.ENC), GPCrypto.iv_null_des);
 					newData = c.doFinal(t.toByteArray());
 					t.reset();
 				}
@@ -1217,7 +1271,7 @@ public class GlobalPlatform {
 		byte [] chaining_value = new byte[16];
 		byte [] encryption_counter = new byte[16];
 
-		private SCP03Wrapper(KeySet sessionKeys, int scp, EnumSet<APDUMode> securityLevel, byte[] icv, byte[] ricv) {
+		private SCP03Wrapper(GPKeySet sessionKeys, int scp, EnumSet<APDUMode> securityLevel, byte[] icv, byte[] ricv) {
 			this.sessionKeys = sessionKeys;
 			// initialize chaining value.
 			System.arraycopy(GPCrypto.null_bytes_16, 0, chaining_value, 0, GPCrypto.null_bytes_16.length);
@@ -1243,11 +1297,11 @@ public class GlobalPlatform {
 					if (command.getData().length > 0) {
 						byte [] d = GPCrypto.pad80(command.getData(), 16);
 						// Encrypt with S-ENC, after increasing the counter
-						Cipher c = Cipher.getInstance("AES/CBC/NoPadding");
-						c.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(sessionKeys.getKey(KeyType.ENC), "AES"), GPCrypto.iv_null_aes);
+						Cipher c = Cipher.getInstance(GPCrypto.AES_CBC_CIPHER);
+						c.init(Cipher.ENCRYPT_MODE, sessionKeys.getKeyFor(KeyType.ENC), GPCrypto.iv_null_aes);
 						byte [] iv = c.doFinal(encryption_counter);
-						// Now encrypt the data.
-						c.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(sessionKeys.getKey(KeyType.ENC), "AES"), new IvParameterSpec(iv));
+						// Now encrypt the data with S-ENC.
+						c.init(Cipher.ENCRYPT_MODE, sessionKeys.getKeyFor(KeyType.ENC), new IvParameterSpec(iv));
 						data = c.doFinal(d);
 						lc = data.length;
 					}
@@ -1314,7 +1368,7 @@ public class GlobalPlatform {
 	}
 
 	public static abstract class SCPWrapper {
-		protected KeySet sessionKeys = null;
+		protected GPKeySet sessionKeys = null;
 		protected boolean mac = false;
 		protected boolean enc = false;
 		protected boolean rmac = false;

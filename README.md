@@ -15,7 +15,7 @@ Load and manage applets on compatible JavaCards from command line or from your J
 
 ### Get it now!
 * Download latest pre-built .JAR or .EXE from [release area](https://github.com/martinpaljak/GlobalPlatformPro/releases)
-* Or fetch from github and build it yourself, it is really easy:
+* Or fetch from GitHub and build it yourself, it is really easy:
 
 ```shell
 git clone https://github.com/martinpaljak/GlobalPlatformPro
@@ -26,7 +26,7 @@ ant
 ## NEWS
  * Tentative [milestones](https://github.com/martinpaljak/GlobalPlatformPro/milestones)
    * SCP03 support coming in [next release](https://github.com/martinpaljak/GlobalPlatformPro/milestones/v0.3.0)!
- * [JavaCard Buyer's Guide of winter 2014/2015](https://github.com/martinpaljak/GlobalPlatformPro/tree/master/docs/JavaCardBuyersGuide)
+ * [JavaCard Buyer's Guide of 2015](https://github.com/martinpaljak/GlobalPlatformPro/tree/master/docs/JavaCardBuyersGuide)
    * More detailed overview of supported cards and where to get them.
 
 ### Build status
@@ -36,6 +36,8 @@ ant
 ### Usage
 
 *Beware: [until v0.5 is released](https://github.com/martinpaljak/GlobalPlatformPro/milestones), both command line and Java API are subject to change without notice. Check back often.*
+
+#### Warning about correct keying
 
 Command line samples assume default test keys of ```40..4F```. If you need custom keys, specify them with any or all of the following options: ```-keyid``` ```-keyver``` and ```-enc``` ```-mac``` ```-kek``` or ```-key``` (for a single master key). You need to know the details or ask your card provider. Some cards require key diversification with ```-emv``` or ```-visa2``` (you should be notified if that's the case).
 
@@ -49,11 +51,13 @@ Command line samples assume default test keys of ```40..4F```. If you need custo
 
    * On Linux it is easier to add an alias to the shell like this:
 
-            alias gp="java -jar $(PWD)/gp.jar"
+            alias gp="java -jar $PWD/gp.jar"
             # Now you can avoid typing java -jar and gp works from any folder
             gp -h
 
- * List applets (this and following commands can brick your card with wrong keys!):
+#### List / install / delete applets
+
+ * List applets (this and following commands open the secure channel and thus can brick your card with wrong keys!):
 
         gp -list # or gp -l
 
@@ -77,6 +81,8 @@ Command line samples assume default test keys of ```40..4F```. If you need custo
 
         gp -uninstall applet.cap
 
+#### Lock / unlock usage
+
  * Set ```010B0371D78377B801F2D62AFC671D95``` key to a card with default ```40..4F``` keys:
 
         gp -lock 010B0371D78377B801F2D62AFC671D95
@@ -95,6 +101,7 @@ Command line samples assume default test keys of ```40..4F```. If you need custo
 
         gp -visa2 -key 47454D5850524553534F53414D504C45 -unlock -mode clr
 
+#### Debugging options
 
  * Show APDU-s sent to the card:
    
@@ -112,16 +119,16 @@ Command line samples assume default test keys of ```40..4F```. If you need custo
 
    add ```-help``` or ```-h``` or ```--help``` to your ```gp``` command
 
-##### Usage from Java
+### Usage from Java
  * For now consult the [command line utility source code](https://github.com/martinpaljak/GlobalPlatformPro/blob/master/src/openkms/gp/GPTool.java)
- * [Javadoc](http://martinpaljak.github.io/GlobalPlatformPro/) is in a bad shape but shall be improved near v1.0
+ * Rudimentary [Javadoc](http://martinpaljak.github.io/GlobalPlatformPro/)
  * General rules:
    * Expect ```RuntimeException```-s when things go unexpectedly wrong
    * ```CardException```-s when link layer fails
    * ```GPException```-s when protocol layer fails
 
 ### Supported cards
- * **NEW!** [JavaCard Buyer's Guide of winter 2014/2015](https://github.com/martinpaljak/GlobalPlatformPro/tree/master/docs/JavaCardBuyersGuide)
+ * **NEW!** [JavaCard Buyer's Guide of 2015](https://github.com/martinpaljak/GlobalPlatformPro/tree/master/docs/JavaCardBuyersGuide)
  * See [TestedCards](https://github.com/martinpaljak/GlobalPlatformPro/tree/master/docs/TestedCards)
  * Generally speaking any modern JavaCard that speaks GlobalPlatform 2.1.1+
  * Available cards from all major vendors have been tested for basic compatibility: [Athena](http://www.athena-scs.com/), [Gemalto](http://www.gemalto.com/), [Giesecke & Devrient](http://www.gi-de.com/), [Infineon](http://www.infineon.com/), [NXP (JCOP)](http://www.nxp.com/), [Oberthur](http://www.oberthur.com/)
@@ -201,7 +208,7 @@ The promise of OpenKMS is similar<sup>*</sup> to OpenSSL:
     
 > Why buy a smart card **software kit as a black box** when you can get an **open one for free**?
 
-In regard to GlobalPlatform, the goal is to make simple operations like installing and removing applets and locking the card with new keys as easy as next-next-done - you don't have to know the whole Global Platform specification by heart for that or buy a piece of proprietary software for a few hundred euros! For all those features that are not describe in the GlobalPlatform specification that actually make your card work... you still have to use those proprietary commands, but OpenKMS GlobalPlatform toolkit's flexibility (and its license) should allow you to do that as well.
+In regard to GlobalPlatform, the goal is to make simple operations like installing and removing applets and locking the card with new keys as easy as next-next-done - you don't have to know the whole Global Platform specification by heart for that or buy a piece of proprietary software for a few hundred euros! For all those features that are not described in the GlobalPlatform specification that actually make your card work... you still have to use those proprietary commands, but OpenKMS GlobalPlatformPro toolkit's flexibility (and its license) should allow you to do that as well.
 
 \* <sub>With the difference that OpenKMS thrives for a easily usable and pleasantly readable, auditable and secure codebase. And yes, you have probably already sold your soul to the devil...</sub>
 
@@ -228,4 +235,4 @@ In regard to GlobalPlatform, the goal is to make simple operations like installi
  The casual: trademarks to their owners, copyrights to authors, software patents to hell, legal letters to ~~/dev/null~~ PGP key 0x307E3452. Everything is provided AS-IS AND THERE IS A CONSTANT RISK OF DEATH FROM SUDDEN LIGHTNING. Writing in all caps made it look like serious, didn't it?
 
 ----
-OpenKMS - open source key management - [openkms.org](http://openkms.org) / [JavaCard.Pro](http://javacard.pro)
+OpenKMS - open source key management - [openkms.org](http://openkms.org) / [JavaCard.pro](http://javacard.pro)

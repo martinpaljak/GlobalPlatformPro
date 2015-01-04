@@ -309,13 +309,8 @@ public class GlobalPlatform {
 	}
 
 	/**
-	 * Establishes a secure channel to the security domain. The security domain
-	 * must have been selected with {@link open open} before.
+	 * Establishes a secure channel to the security domain.
 	 *
-	 * @throws IllegalArgumentException
-	 *             if the arguments are out of range or the keyset is undefined
-	 * @throws CardException
-	 *             if some communication problem is encountered.
 	 */
 	public void openSecureChannel(GPKeySet staticKeys, byte[] host_challenge, int scpVersion, EnumSet<APDUMode> securityLevel)
 			throws CardException, GPException {
@@ -802,8 +797,6 @@ public class GlobalPlatform {
 	 *            identifier of the file to delete
 	 * @param deleteDeps
 	 *            if true delete dependencies as well
-	 * @throws GPDelete
-	 *             if the delete command fails with a non 9000 response status
 	 * @throws CardException
 	 *             for low-level communication errors
 	 */

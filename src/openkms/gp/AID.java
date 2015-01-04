@@ -56,10 +56,6 @@ public class AID {
 	 *            start index of the application identifier
 	 * @param length
 	 *            length
-	 * @param checkLength
-	 *            perform length check if true (and throw an
-	 *            IllegalArgumentException if the length is outside the
-	 *            permitted range)
 	 * @throws IllegalArgumentException
 	 *             if the length is outside the permitted range (5-16); if
 	 *             checkLength is false no check is performed and no exception

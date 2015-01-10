@@ -24,10 +24,9 @@ ant
 ```
 
 ## NEWS
+ * SCP03 support now released.
  * Tentative [milestones](https://github.com/martinpaljak/GlobalPlatformPro/milestones)
-   * SCP03 support coming in [next release](https://github.com/martinpaljak/GlobalPlatformPro/milestones/v0.3.0)!
  * [JavaCard Buyer's Guide of 2015](https://github.com/martinpaljak/GlobalPlatformPro/tree/master/docs/JavaCardBuyersGuide)
-   * More detailed overview of supported cards and where to get them.
 
 ### Build status
   * Travis - [![Build Status](https://travis-ci.org/martinpaljak/GlobalPlatformPro.png?branch=master)](https://travis-ci.org/martinpaljak/GlobalPlatformPro)

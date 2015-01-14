@@ -3,6 +3,7 @@ package openkms.gp;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -81,7 +82,7 @@ public class GPTool {
 	private final static String OPT_VISA2 = "visa2";
 
 
-	public static void main(String[] argv) throws Exception {
+	private static OptionSet parseArguments(String[] argv) throws IOException {
 		OptionSet args = null;
 		OptionParser parser = new OptionParser();
 
@@ -167,6 +168,13 @@ public class GPTool {
 			parser.printHelpOn(System.out);
 			System.exit(0);
 		}
+
+		return args;
+	}
+
+	public static void main(String[] argv) throws Exception {
+
+		OptionSet args = parseArguments(argv);
 
 		if (args.has(OPT_VERSION)) {
 			System.out.println("OpenKMS GlobalPlatform version " + GlobalPlatform.sdk_version);

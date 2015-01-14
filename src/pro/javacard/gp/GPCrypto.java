@@ -1,4 +1,4 @@
-package openkms.gp;
+package pro.javacard.gp;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -15,15 +15,15 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.IvParameterSpec;
 
-import openkms.gp.GPKeySet.GPKey;
-import openkms.gp.GPKeySet.GPKey.Type;
-
 import org.bouncycastle.crypto.BlockCipher;
 import org.bouncycastle.crypto.engines.AESEngine;
 import org.bouncycastle.crypto.generators.KDFCounterBytesGenerator;
 import org.bouncycastle.crypto.macs.CMac;
 import org.bouncycastle.crypto.params.KDFCounterParameters;
 import org.bouncycastle.crypto.params.KeyParameter;
+
+import pro.javacard.gp.GPKeySet.GPKey;
+import pro.javacard.gp.GPKeySet.GPKey.Type;
 
 public class GPCrypto {
 	public static final byte[] null_bytes_8 = new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};

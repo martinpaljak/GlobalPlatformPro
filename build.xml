@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <project name="GlobalPlatform" default="dist" basedir=".">
-  <description>ANT build file for OpenKMS GlobalPlatform</description>
+  <description>ANT build file for GlobalPlatformPro (javacard.pro)</description>
   <!-- Build the software -->
   <path id="build.classpath">
     <pathelement location="lib/jopt-simple-4.8.jar"/>
@@ -26,7 +26,7 @@
     <jar destfile="gp.jar" level="9">
       <zipfileset src="lib/apdu4j.jar"/>
       <zipfileset src="optimized-globalplatform.jar" excludes="org/bouncycastle/x509/"/>
-      <manifest><attribute name="Main-Class" value="openkms.gp.GPTool"/></manifest>
+      <manifest><attribute name="Main-Class" value="pro.javacard.gp.GPTool"/></manifest>
     </jar>
     <delete file="optimized-globalplatform.jar"/>
   </target>
@@ -35,7 +35,7 @@
     <property name="launch4j.dir" location="ext/launch4j"/>
     <taskdef name="launch4j" classname="net.sf.launch4j.ant.Launch4jTask" classpath="${launch4j.dir}/launch4j.jar:${launch4j.dir}/lib/xstream.jar"/>
     <launch4j>
-      <config headerType="console" outfile="gp.exe" jar="gp.jar" errTitle="GlobalPlatform">
+      <config headerType="console" outfile="gp.exe" jar="gp.jar" errTitle="GlobalPlatformPro">
         <jre minVersion="1.7.0"/>
       </config>
     </launch4j>
@@ -48,10 +48,10 @@
   </target>
   <!-- Put javadocs online -->
   <target name="javadoc">
-    <javadoc destdir="javadoc" Doctitle="GlobalPlatform Java" access="public" linksource="true">
+    <javadoc destdir="javadoc" Doctitle="GlobalPlatformPro Java" access="public" linksource="true">
       <packageset dir="src">
-        <include name="openkms/gp/"/>
-        <exclude name="openkms/gp/tests/**"/>
+        <include name="pro/javacard/gp/"/>
+        <exclude name="pro/javacard/gp/tests/**"/>
       </packageset>
       <classpath refid="build.classpath"/>
     </javadoc>

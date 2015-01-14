@@ -1,4 +1,4 @@
-# GlobalPlatformPro from [OpenKMS](http://openkms.org)
+# GlobalPlatformPro from [JavaCard Pro](http://javacard.pro)
 
 Load and manage applets on compatible JavaCards from command line or from your Java project with a [Do What I Mean](http://en.wikipedia.org/wiki/DWIM) approach.
 
@@ -24,7 +24,7 @@ ant
 ```
 
 ## NEWS
- * SCP03 support now released.
+ * SCP03 support in [latest version](https://github.com/martinpaljak/GlobalPlatformPro/releases/tag/v0.3.0)
  * Tentative [milestones](https://github.com/martinpaljak/GlobalPlatformPro/milestones)
  * [JavaCard Buyer's Guide of 2015](https://github.com/martinpaljak/GlobalPlatformPro/tree/master/docs/JavaCardBuyersGuide)
 
@@ -119,7 +119,7 @@ Command line samples assume default test keys of ```40..4F```. If you need custo
    add ```-help``` or ```-h``` or ```--help``` to your ```gp``` command
 
 ### Usage from Java
- * For now consult the [command line utility source code](https://github.com/martinpaljak/GlobalPlatformPro/blob/master/src/openkms/gp/GPTool.java)
+ * For now consult the [command line utility source code](https://github.com/martinpaljak/GlobalPlatformPro/blob/master/src/pro/javacard/gp/GPTool.java)
  * Rudimentary [Javadoc](http://martinpaljak.github.io/GlobalPlatformPro/)
  * General rules:
    * Expect ```RuntimeException```-s when things go unexpectedly wrong

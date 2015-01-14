@@ -1,13 +1,12 @@
-package openkms.gp.tests;
+package pro.javacard.gp.tests;
 
 import javax.smartcardio.Card;
 import javax.smartcardio.CardTerminal;
 
-import openkms.gp.GlobalPlatform;
-
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
+import pro.javacard.gp.GlobalPlatform;
 import apdu4j.LoggingCardTerminal;
 import apdu4j.TerminalManager;
 

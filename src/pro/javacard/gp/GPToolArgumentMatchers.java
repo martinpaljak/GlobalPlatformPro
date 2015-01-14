@@ -1,10 +1,10 @@
-package openkms.gp;
+package pro.javacard.gp;
 
 import joptsimple.ValueConversionException;
 import joptsimple.ValueConverter;
-import openkms.gp.GPKeySet.GPKey;
-import openkms.gp.GPKeySet.GPKey.Type;
-import openkms.gp.GlobalPlatform.APDUMode;
+import pro.javacard.gp.GPKeySet.GPKey;
+import pro.javacard.gp.GPKeySet.GPKey.Type;
+import pro.javacard.gp.GlobalPlatform.APDUMode;
 import apdu4j.HexUtils;
 
 public class GPToolArgumentMatchers {

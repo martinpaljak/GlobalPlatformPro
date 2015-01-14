@@ -1,4 +1,4 @@
-package openkms.gp;
+package pro.javacard.gp;
 
 import java.security.InvalidKeyException;
 import java.security.Key;
@@ -12,8 +12,8 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
 
-import openkms.gp.GPData.KeyType;
-import openkms.gp.GPKeySet.GPKey.Type;
+import pro.javacard.gp.GPData.KeyType;
+import pro.javacard.gp.GPKeySet.GPKey.Type;
 import apdu4j.HexUtils;
 
 /**

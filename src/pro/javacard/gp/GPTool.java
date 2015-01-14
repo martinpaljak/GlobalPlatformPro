@@ -1,4 +1,4 @@
-package openkms.gp;
+package pro.javacard.gp;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -20,10 +20,10 @@ import javax.smartcardio.TerminalFactory;
 import joptsimple.OptionException;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
-import openkms.gp.GPData.KeyType;
-import openkms.gp.GPKeySet.Diversification;
-import openkms.gp.GPKeySet.GPKey;
-import openkms.gp.GPKeySet.GPKey.Type;
+import pro.javacard.gp.GPData.KeyType;
+import pro.javacard.gp.GPKeySet.Diversification;
+import pro.javacard.gp.GPKeySet.GPKey;
+import pro.javacard.gp.GPKeySet.GPKey.Type;
 import apdu4j.APDUReplayProvider;
 import apdu4j.HexUtils;
 import apdu4j.LoggingCardTerminal;

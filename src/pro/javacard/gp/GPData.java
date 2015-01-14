@@ -1,4 +1,4 @@
-package openkms.gp;
+package pro.javacard.gp;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -9,11 +9,10 @@ import java.util.List;
 
 import javax.smartcardio.CardException;
 
-import openkms.gp.GPKeySet.Diversification;
-import openkms.gp.GPKeySet.GPKey;
-
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 
+import pro.javacard.gp.GPKeySet.Diversification;
+import pro.javacard.gp.GPKeySet.GPKey;
 import apdu4j.HexUtils;
 
 public class GPData {

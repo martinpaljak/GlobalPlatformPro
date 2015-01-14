@@ -1,19 +1,19 @@
-package openkms.gp.tests;
+package pro.javacard.gp.tests;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.smartcardio.CardException;
 
-import openkms.gp.GPData;
-import openkms.gp.GPException;
-import openkms.gp.GPKeySet;
-import openkms.gp.GPKeySet.Diversification;
-import openkms.gp.GPKeySet.GPKey;
-import openkms.gp.GPKeySet.GPKey.Type;
-import openkms.gp.GlobalPlatform;
-
 import org.junit.Test;
+
+import pro.javacard.gp.GPData;
+import pro.javacard.gp.GPException;
+import pro.javacard.gp.GPKeySet;
+import pro.javacard.gp.GlobalPlatform;
+import pro.javacard.gp.GPKeySet.Diversification;
+import pro.javacard.gp.GPKeySet.GPKey;
+import pro.javacard.gp.GPKeySet.GPKey.Type;
 
 public class TestKeyChange extends TestRealCard {
 

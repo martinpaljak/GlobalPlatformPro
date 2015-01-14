@@ -8,12 +8,12 @@
 -outjars optimized-globalplatform.jar
 -dontobfuscate
 -dontoptimize
--keep public class openkms.gp.GlobalPlatform {
+-keep public class pro.javacard.gp.GlobalPlatform {
     public <methods>;
 }
--keep public class openkms.gp.** { public <methods>; public <fields>; }
+-keep public class pro.javacard.gp.** { public <methods>; public <fields>; }
 
--keep public class openkms.gp.GPTool {
+-keep public class pro.javacard.gp.GPTool {
     public static void main(java.lang.String[]);
 }
 # For enum-s (why this is not default?)

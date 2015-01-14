@@ -20,7 +20,7 @@
  *
  */
 
-package openkms.gp;
+package pro.javacard.gp;
 
 
 public class GPUtils {

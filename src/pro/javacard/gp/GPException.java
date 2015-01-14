@@ -21,7 +21,7 @@
  *
  */
 
-package openkms.gp;
+package pro.javacard.gp;
 
 /**
  * Root exception class for all global platform protocol errors.

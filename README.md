@@ -1,4 +1,4 @@
-# GlobalPlatformPro from [JavaCard Pro](http://javacard.pro)
+# GlobalPlatformPro from [javacard.pro](http://javacard.pro)
 
 Load and manage applets on compatible JavaCards from command line or from your Java project with a [Do What I Mean](http://en.wikipedia.org/wiki/DWIM) approach.
 

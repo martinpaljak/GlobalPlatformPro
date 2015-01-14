@@ -55,7 +55,7 @@ public class GPTool {
 	private final static String OPT_INSTANCE = "instance";
 	private final static String OPT_DO_ALL_READERS = "all";
 	private final static String OPT_NOFIX = "nofix";
-
+	private final static String OPT_PARAMS = "params";
 
 	private final static String OPT_CONTINUE = "skip-error";
 	private final static String OPT_RELAX = "relax";
@@ -111,6 +111,8 @@ public class GPTool {
 		parser.accepts(CMD_LOAD, "Load a CAP file").withRequiredArg().ofType(File.class);
 
 		parser.accepts(CMD_INSTALL, "Install applet").withOptionalArg().ofType(File.class);
+		parser.accepts(OPT_PARAMS, "Installation parameters").withRequiredArg();
+
 		parser.accepts(CMD_UNINSTALL, "Uninstall applet/package").withRequiredArg().ofType(File.class);
 		parser.accepts(OPT_DEFAULT, "Indicate Default Selected");
 		parser.accepts(OPT_DELETEDEPS, "Also delete dependencies");
@@ -427,8 +429,20 @@ public class GPTool {
 							}
 
 							gp.verbose("Installing applet from package " + instcap.getPackageName());
-							gp.loadCapFile(instcap);
-							gp.installAndMakeSelectable(instcap.getPackageAID(), aid, null, args.has(OPT_DEFAULT) ? (byte) 0x04 : 0x00, null, null);
+							try {
+								gp.loadCapFile(instcap);
+							} catch (GPException e) {
+								if (e.sw == 0x6985) {
+									System.err.println("Applet loading failed. Are you sure the CAP file version is compatible with your card?");
+								} else {
+									throw e;
+								}
+							}
+							byte[] params = null;
+							if (args.has(OPT_PARAMS)) {
+								params = HexUtils.stringToBin((String) args.valueOf(OPT_PARAMS));
+							}
+							gp.installAndMakeSelectable(instcap.getPackageAID(), aid, null, args.has(OPT_DEFAULT) ? (byte) 0x04 : 0x00, params, null);
 						}
 
 						// --create <aid> (--applet <aid> --package <aid> or --cap <cap>)

@@ -117,23 +117,23 @@ public class GPTool {
 		parser.accepts(OPT_DEFAULT, "Indicate Default Selected");
 		parser.accepts(OPT_DELETEDEPS, "Also delete dependencies");
 		parser.accepts(OPT_REINSTALL, "Remove card content during installation");
-		parser.accepts(CMD_MAKE_DEFAULT, "Make AID the default").withRequiredArg().withValuesConvertedBy(GPToolArgumentMatchers.aid());
+		parser.accepts(CMD_MAKE_DEFAULT, "Make AID the default").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
 
-		parser.accepts(CMD_DELETE, "Delete something").requiredIf(OPT_DELETEDEPS).withOptionalArg().withValuesConvertedBy(GPToolArgumentMatchers.aid());
+		parser.accepts(CMD_DELETE, "Delete something").requiredIf(OPT_DELETEDEPS).withOptionalArg().withValuesConvertedBy(ArgMatchers.aid());
 
-		parser.accepts(CMD_CREATE, "Create new instance of an applet").withRequiredArg().withValuesConvertedBy(GPToolArgumentMatchers.aid());
-		parser.accepts(OPT_APPLET, "Applet AID").withRequiredArg().withValuesConvertedBy(GPToolArgumentMatchers.aid());
-		parser.accepts(OPT_PACKAGE, "Package AID").withRequiredArg().withValuesConvertedBy(GPToolArgumentMatchers.aid());
-		parser.accepts(OPT_INSTANCE, "Instance AID").withRequiredArg().withValuesConvertedBy(GPToolArgumentMatchers.aid());
+		parser.accepts(CMD_CREATE, "Create new instance of an applet").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
+		parser.accepts(OPT_APPLET, "Applet AID").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
+		parser.accepts(OPT_PACKAGE, "Package AID").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
+		parser.accepts(OPT_INSTANCE, "Instance AID").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
 
 		// Key options
-		parser.accepts(OPT_MAC, "Specify MAC key").withRequiredArg().withValuesConvertedBy(GPToolArgumentMatchers.key());
-		parser.accepts(OPT_ENC, "Specify ENC key").withRequiredArg().withValuesConvertedBy(GPToolArgumentMatchers.key());
-		parser.accepts(OPT_KEK, "Specify KEK key").withRequiredArg().withValuesConvertedBy(GPToolArgumentMatchers.key());
-		parser.accepts(OPT_KEY, "Specify master key").withRequiredArg().withValuesConvertedBy(GPToolArgumentMatchers.key());
+		parser.accepts(OPT_MAC, "Specify MAC key").withRequiredArg().withValuesConvertedBy(ArgMatchers.key());
+		parser.accepts(OPT_ENC, "Specify ENC key").withRequiredArg().withValuesConvertedBy(ArgMatchers.key());
+		parser.accepts(OPT_KEK, "Specify KEK key").withRequiredArg().withValuesConvertedBy(ArgMatchers.key());
+		parser.accepts(OPT_KEY, "Specify master key").withRequiredArg().withValuesConvertedBy(ArgMatchers.key());
 		parser.accepts(OPT_KEY_ID, "Specify key ID").withRequiredArg().ofType(Integer.class);
 		parser.accepts(OPT_KEY_VERSION, "Specify key version").withRequiredArg().ofType(Integer.class);
-		parser.accepts(CMD_LOCK, "Set new key").withRequiredArg().withValuesConvertedBy(GPToolArgumentMatchers.key());
+		parser.accepts(CMD_LOCK, "Set new key").withRequiredArg().withValuesConvertedBy(ArgMatchers.key());
 		parser.accepts(CMD_UNLOCK, "Set default key");
 		parser.accepts(OPT_SCP, "Force the use of SCP0X").withRequiredArg().ofType(Integer.class);
 		parser.accepts(OPT_NEW_KEY_VERSION, "key version for the new key").withRequiredArg().ofType(Integer.class);
@@ -144,9 +144,9 @@ public class GPTool {
 		// Key diversification and AID options
 		parser.accepts(OPT_EMV, "Use EMV diversification");
 		parser.accepts(OPT_VISA2, "Use VISA2 diversification");
-		parser.accepts(OPT_MODE, "APDU mode to use (mac/enc/clr)").withRequiredArg().withValuesConvertedBy(GPToolArgumentMatchers.mode());;
+		parser.accepts(OPT_MODE, "APDU mode to use (mac/enc/clr)").withRequiredArg().withValuesConvertedBy(ArgMatchers.mode());;
 
-		parser.accepts(OPT_SDAID, "ISD AID").withRequiredArg().withValuesConvertedBy(GPToolArgumentMatchers.aid());
+		parser.accepts(OPT_SDAID, "ISD AID").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
 
 
 		// Parse arguments

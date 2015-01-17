@@ -7,7 +7,7 @@ import pro.javacard.gp.GPKeySet.GPKey.Type;
 import pro.javacard.gp.GlobalPlatform.APDUMode;
 import apdu4j.HexUtils;
 
-public class GPToolArgumentMatchers {
+public class ArgMatchers {
 
 	public static ValueConverter<AID> aid() {
 		return new AIDMatcher();

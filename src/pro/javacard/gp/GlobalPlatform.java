@@ -167,12 +167,25 @@ public class GlobalPlatform {
 	public boolean select(AID sdAID) throws GPException, CardException {
 		// Try to select ISD without giving the sdAID
 		CommandAPDU command = null;
-		if (sdAID == null )
+		if (sdAID == null ) {
 			command = new CommandAPDU(ISO7816.CLA_ISO7816, ISO7816.INS_SELECT, 0x04, 0x00, 256);
-		else
+		} else {
 			command = new CommandAPDU(ISO7816.CLA_ISO7816, ISO7816.INS_SELECT, 0x04, 0x00, sdAID.getBytes(), 256);
-
+		}
 		ResponseAPDU resp = channel.transmit(command);
+
+		// Unfused JCOP replies with 6982 to everything
+		if (sdAID == null && resp.getSW() == 0x6A82) {
+			byte [] identify_aid = HexUtils.decodeHexString("A000000167413000FF");
+			CommandAPDU identify = new CommandAPDU(ISO7816.CLA_ISO7816, ISO7816.INS_SELECT, 0x04, 0x00, identify_aid, 256);
+			ResponseAPDU identify_resp = channel.transmit(identify);
+			byte[] identify_data = identify_resp.getData();
+			if (identify_data.length > 15) {
+				if (identify_data[14] == 0x00) {
+					printStrictWarning("Unfused JCOP detected");
+				}
+			}
+		}
 
 		if (resp.getSW() == 0x6283) {
 			printStrictWarning("SELECT ISD returned 6283 - CARD_LOCKED");

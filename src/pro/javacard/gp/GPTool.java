@@ -259,7 +259,7 @@ public class GPTool {
 				do_readers = Arrays.asList(t);
 			} else {
 				do_readers = terminals.list(State.CARD_PRESENT);
-				if (do_readers.size() > 1 && !args.hasArgument(OPT_DO_ALL_READERS)) {
+				if (do_readers.size() > 1 && !args.has(OPT_DO_ALL_READERS)) {
 					System.err.println("More than one reader with a card found.");
 					System.err.println("Run with --"+OPT_DO_ALL_READERS+" to work with all found cards");
 					System.exit(1);

@@ -470,7 +470,11 @@ public class GPTool {
 
 							// shoot
 							AID instanceAID = (AID) args.valueOf(CMD_CREATE);
-							gp.installAndMakeSelectable(packageAID, appletAID, instanceAID, (byte) 0x00, null, null);
+							byte[] params = null;
+							if (args.has(OPT_PARAMS)) {
+								params = HexUtils.stringToBin((String) args.valueOf(OPT_PARAMS));
+							}
+							gp.installAndMakeSelectable(packageAID, appletAID, instanceAID, args.has(OPT_DEFAULT) ? (byte) 0x04 : 0x00, params, null);
 						}
 
 						// --list

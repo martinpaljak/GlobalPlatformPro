@@ -452,12 +452,18 @@ public class GPTool {
 							// Load from cap if present
 							if (cap != null) {
 								packageAID = cap.getPackageAID();
+								if (cap.getAppletAIDs().size() != 1) {
+									throw new IllegalArgumentException("There should be only one applet in CAP. Use --" + OPT_APPLET + " instead.");
+								}
 								appletAID = cap.getAppletAIDs().get(0);
 							}
 							// override if needed
-							packageAID = (AID) args.valueOf(OPT_PACKAGE);
-							appletAID = (AID) args.valueOf(OPT_APPLET);
-
+							if (args.has(OPT_PACKAGE)) {
+								packageAID = (AID) args.valueOf(OPT_PACKAGE);
+							}
+							if (args.has(OPT_APPLET)) {
+								appletAID = (AID) args.valueOf(OPT_APPLET);
+							}
 							// check
 							if (packageAID == null || appletAID == null)
 								throw new IllegalArgumentException("Need --" + OPT_PACKAGE + " and --" + OPT_APPLET + " or --" + OPT_CAP);

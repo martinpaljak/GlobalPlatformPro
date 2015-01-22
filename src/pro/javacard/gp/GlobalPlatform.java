@@ -174,7 +174,7 @@ public class GlobalPlatform {
 		}
 		ResponseAPDU resp = channel.transmit(command);
 
-		// Unfused JCOP replies with 6982 to everything
+		// Unfused JCOP replies with 0x6A82 to everything
 		if (sdAID == null && resp.getSW() == 0x6A82) {
 			byte [] identify_aid = HexUtils.decodeHexString("A000000167413000FF");
 			CommandAPDU identify = new CommandAPDU(ISO7816.CLA_ISO7816, ISO7816.INS_SELECT, 0x04, 0x00, identify_aid, 256);

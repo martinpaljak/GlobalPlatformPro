@@ -335,6 +335,7 @@ public class CapFile {
 		String converter_provider = caps.getValue("Java-Card-Converter-Provider");
 		String package_name = caps.getValue("Java-Card-Package-Name");
 		String package_version = caps.getValue("Java-Card-Package-Version");
+		String package_aid = caps.getValue("Java-Card-Package-AID");
 
 
 		int num_applets = 0;
@@ -353,7 +354,9 @@ public class CapFile {
 		}
 		out.println("CAP file (v" + cap_version + ") generated on " + cap_creation_time);
 		out.println("By " + converter_provider + " converter " + converter_version + " with JDK " + jdk_name);
-		out.println("Package: " + package_name + " v" + package_version);
+		String hexpkgaid = HexUtils.encodeHexString(HexUtils.stringToBin(package_aid));
+		out.println("Package: " + package_name + " v" + package_version + " with AID " + hexpkgaid);
+
 		for (int i = 1; i<=num_applets; i++) {
 			String applet_name = caps.getValue("Java-Card-Applet-" + i + "-Name");
 			String applet_aid = caps.getValue("Java-Card-Applet-" + i + "-AID");

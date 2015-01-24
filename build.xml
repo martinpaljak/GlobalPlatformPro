@@ -16,17 +16,21 @@
   </target>
   <!-- Package it into a nice little JAR -->
   <target name="dist" depends="compile" description="generate the distribution">
+    <exec command="git describe --always" output="version.txt"/>
     <java classname="proguard.ProGuard" fork="true" failonerror="true">
       <arg line="@globalplatform.pro"/>
       <classpath>
         <pathelement location="ext/proguard.jar"/>
       </classpath>
     </java>
-    <jar destfile="openkms-gp.jar" level="9" basedir="build"/>
+    <jar destfile="openkms-gp.jar" level="9" basedir="build">
+       <fileset file="version.txt"/>
+    </jar>
     <jar destfile="gp.jar" level="9">
       <zipfileset src="lib/apdu4j.jar"/>
       <zipfileset src="optimized-globalplatform.jar" excludes="org/bouncycastle/x509/"/>
       <manifest><attribute name="Main-Class" value="pro.javacard.gp.GPTool"/></manifest>
+      <fileset file="version.txt"/>
     </jar>
     <delete file="optimized-globalplatform.jar"/>
   </target>

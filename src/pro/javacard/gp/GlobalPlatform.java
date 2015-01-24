@@ -23,8 +23,11 @@
 
 package pro.javacard.gp;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
@@ -56,7 +59,6 @@ import apdu4j.ISO7816;
  * functionality for managing GP compliant smart cards.
  */
 public class GlobalPlatform {
-	public static final String sdk_version = "v0.2";
 	public static final short SHORT_0 = 0;
 	public static final int SCP_ANY = 0;
 	public static final int SCP_01_05 = 1;
@@ -127,6 +129,18 @@ public class GlobalPlatform {
 		this.channel = channel;
 	}
 
+	public static String getVersion() {
+		try {
+			InputStream versionfile = GlobalPlatform.class.getResourceAsStream("/version.txt");
+			if (versionfile == null) {
+				return "unknown-development";
+			}
+			BufferedReader vinfo = new BufferedReader( new InputStreamReader(versionfile));
+			return vinfo.readLine();
+		} catch (IOException e) {
+			return "unknown-error";
+		}
+	}
 	protected boolean beVerbose() {
 		return verboseTo != null;
 	}
@@ -737,7 +751,7 @@ public class GlobalPlatform {
 			params = new byte[] { (byte) 0xC9, 0x00 };
 		} else {
 			params = new byte[installParams.length + 2];;
-			params[0] = (byte)0xc9;
+			params[0] = (byte) 0xc9;
 			params[1] = (byte) installParams.length;
 			System.arraycopy(installParams, 0, params, 2, installParams.length);
 		}

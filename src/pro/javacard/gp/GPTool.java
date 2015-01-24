@@ -179,7 +179,7 @@ public class GPTool {
 		OptionSet args = parseArguments(argv);
 
 		if (args.has(OPT_VERSION)) {
-			System.out.println("OpenKMS GlobalPlatform version " + GlobalPlatform.sdk_version);
+			System.out.println("GlobalPlatformPro " + GlobalPlatform.getVersion());
 		}
 
 		// Parameters for opening the secure channel

@@ -30,7 +30,7 @@ ant
 
 ### Build status
   * Travis - [![Build Status](https://travis-ci.org/martinpaljak/GlobalPlatformPro.png?branch=master)](https://travis-ci.org/martinpaljak/GlobalPlatformPro)
-  * Coverity - [![Coverity status](https://scan.coverity.com/projects/1300/badge.svg?flat=1)](https://scan.coverity.com/projects/1300/)
+  * Coverity - [![Coverity status](https://scan.coverity.com/projects/4020/badge.svg?flat=1)](https://scan.coverity.com/projects/4020/)
 
 ### Usage
 

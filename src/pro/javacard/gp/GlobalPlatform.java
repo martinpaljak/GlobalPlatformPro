@@ -130,8 +130,7 @@ public class GlobalPlatform {
 	}
 
 	public static String getVersion() {
-		try {
-			InputStream versionfile = GlobalPlatform.class.getResourceAsStream("/version.txt");
+		try (InputStream versionfile = GlobalPlatform.class.getResourceAsStream("/version.txt")) {
 			if (versionfile == null) {
 				return "unknown-development";
 			}

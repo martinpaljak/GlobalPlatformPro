@@ -119,6 +119,7 @@ public class CapFile {
 			}
 		}
 		zip.close();
+		in.close();
 		byte[] header = capComponents.get("Header");
 		int i = 0;
 		// header[0] should be 1;
@@ -232,7 +233,7 @@ public class CapFile {
 	}
 
 	public List<byte[]> getLoadBlocks(boolean includeDebug, boolean separateComponents, int blockSize) {
-		List<byte[]> blocks = null;
+		List<byte[]> blocks = new ArrayList<byte[]>();
 
 		if (!separateComponents) {
 			ByteArrayOutputStream bo = new ByteArrayOutputStream();

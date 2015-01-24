@@ -1,6 +1,8 @@
 language: java
 jdk:
   - oraclejdk7
+  - oraclejdk8
+  - openjdk7
 
 script: ant dist
 
@@ -13,7 +15,7 @@ env:
 addons:
   coverity_scan:
     project:
-      name: "martinpaljak/GlobalPlatformPro"
+      name: "martinpaljak/GlobalPlatform"
       description: "GlobalPlatformPro from javacard.pro"
     notification_email: martin@martinpaljak.net
     build_command_prepend:

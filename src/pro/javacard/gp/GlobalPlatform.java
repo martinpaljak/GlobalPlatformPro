@@ -480,6 +480,8 @@ public class GlobalPlatform {
 				seq = Arrays.copyOfRange(update_response, 29, 32);
 			}
 			sessionKeys = deriveSessionKeysSCP03(staticKeys, host_challenge, card_challenge);
+		} else {
+			throw new GPException("Don't know how to handle SCP version " + scpMajorVersion);
 		}
 		verbose("Derived session keys: " + sessionKeys);
 

@@ -427,7 +427,7 @@ public class GlobalPlatform {
 				scpVersion = SCP_02_15;
 			} else if (scpMajorVersion == 3) {
 				verbose("SCP03 i=" + scp_i);
-				scpVersion = 3; // FIXME: the symbolic numbering of versions needs to be gixed.
+				scpVersion = 3; // FIXME: the symbolic numbering of versions needs to be fixed.
 			}
 		} else if (scpVersion != scpMajorVersion) {
 			verbose("Overriding SCP version: card reports " + scpMajorVersion + " but user requested " + scpVersion);

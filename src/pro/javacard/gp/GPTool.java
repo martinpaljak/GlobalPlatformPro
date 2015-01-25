@@ -49,6 +49,8 @@ public class GPTool {
 
 	private final static String OPT_DELETEDEPS = "deletedeps";
 	private final static String OPT_DEFAULT = "default";
+	private final static String OPT_TERMINATE = "terminate";
+
 	private final static String OPT_CAP = "cap";
 	private final static String OPT_APPLET = "applet";
 	private final static String OPT_PACKAGE = "package";
@@ -87,6 +89,7 @@ public class GPTool {
 		OptionParser parser = new OptionParser();
 
 		// Generic options
+		parser.acceptsAll(Arrays.asList("V", OPT_VERSION), "Show information about the program");
 		parser.acceptsAll(Arrays.asList("h", "help"), "Shows this help string").forHelp();
 		parser.acceptsAll(Arrays.asList("d", OPT_DEBUG), "Show PC/SC and APDU trace");
 		parser.acceptsAll(Arrays.asList("v", OPT_VERBOSE), "Be verbose about operations");
@@ -97,8 +100,6 @@ public class GPTool {
 		parser.acceptsAll(Arrays.asList("s", CMD_SECURE_APDU), "Send raw APDU (hex) via SCP").withRequiredArg();
 		parser.accepts(OPT_DUMP, "Dump APDU communication to <File>").withRequiredArg().ofType(File.class);
 		parser.accepts(OPT_REPLAY, "Replay APDU responses from <File>").withRequiredArg().ofType(File.class);
-
-		parser.accepts(OPT_VERSION, "Show information about the program");
 
 		// Special options
 		parser.accepts(OPT_RELAX, "Relaxed error checking");
@@ -114,7 +115,9 @@ public class GPTool {
 		parser.accepts(OPT_PARAMS, "Installation parameters").withRequiredArg();
 
 		parser.accepts(CMD_UNINSTALL, "Uninstall applet/package").withRequiredArg().ofType(File.class);
-		parser.accepts(OPT_DEFAULT, "Indicate Default Selected");
+		parser.accepts(OPT_DEFAULT, "Indicate Default Selected privilege");
+		parser.accepts(OPT_TERMINATE, "Indicate Card Lock+Terminate privilege");
+
 		parser.accepts(OPT_DELETEDEPS, "Also delete dependencies");
 		parser.accepts(OPT_REINSTALL, "Remove card content during installation");
 		parser.accepts(CMD_MAKE_DEFAULT, "Make AID the default").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
@@ -433,16 +436,12 @@ public class GPTool {
 								gp.loadCapFile(instcap);
 							} catch (GPException e) {
 								if (e.sw == 0x6985) {
-									System.err.println("Applet loading failed. Are you sure the CAP file version is compatible with your card?");
+									System.err.println("Applet loading failed. Are you sure the CAP file target is compatible with your card?");
 								} else {
 									throw e;
 								}
 							}
-							byte[] params = null;
-							if (args.has(OPT_PARAMS)) {
-								params = HexUtils.stringToBin((String) args.valueOf(OPT_PARAMS));
-							}
-							gp.installAndMakeSelectable(instcap.getPackageAID(), aid, null, args.has(OPT_DEFAULT) ? (byte) 0x04 : 0x00, params, null);
+							gp.installAndMakeSelectable(instcap.getPackageAID(), aid, null, getInstPrivs(args), getInstParams(args), null);
 						}
 
 						// --create <aid> (--applet <aid> --package <aid> or --cap <cap>)
@@ -470,11 +469,7 @@ public class GPTool {
 
 							// shoot
 							AID instanceAID = (AID) args.valueOf(CMD_CREATE);
-							byte[] params = null;
-							if (args.has(OPT_PARAMS)) {
-								params = HexUtils.stringToBin((String) args.valueOf(OPT_PARAMS));
-							}
-							gp.installAndMakeSelectable(packageAID, appletAID, instanceAID, args.has(OPT_DEFAULT) ? (byte) 0x04 : 0x00, params, null);
+							gp.installAndMakeSelectable(packageAID, appletAID, instanceAID, getInstPrivs(args), getInstParams(args), null);
 						}
 
 						// --list
@@ -582,5 +577,22 @@ public class GPTool {
 			}
 		}
 		System.exit(0);
+	}
+	private static byte getInstPrivs(OptionSet args) {
+		byte privs = 0x00;
+		if (args.has(OPT_DEFAULT)) {
+			privs |= GPData.defaultSelectedPriv;
+		}
+		if (args.has(OPT_TERMINATE)) {
+			privs |= GPData.cardLockPriv | GPData.cardTerminatePriv;
+		}
+		return privs;
+	}
+	private static byte [] getInstParams(OptionSet args) {
+		byte[] params = null;
+		if (args.has(OPT_PARAMS)) {
+			params = HexUtils.stringToBin((String) args.valueOf(OPT_PARAMS));
+		}
+		return params;
 	}
 }

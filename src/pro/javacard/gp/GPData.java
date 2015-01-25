@@ -15,7 +15,11 @@ import pro.javacard.gp.GPKeySet.Diversification;
 import pro.javacard.gp.GPKeySet.GPKey;
 import apdu4j.HexUtils;
 
-public class GPData {
+public final class GPData {
+	// See GP 2.1.1 Table 9-7: Application Privileges
+	public static final byte defaultSelectedPriv = 0x04;
+	public static final byte cardLockPriv = 0x10;
+	public static final byte cardTerminatePriv = 0x08;
 
 	public enum KeyType {
 		// ID is as used in diversification/derivation

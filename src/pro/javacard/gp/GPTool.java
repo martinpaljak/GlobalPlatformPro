@@ -489,32 +489,6 @@ public class GPTool {
 							}
 						}
 
-						// --lock
-						if (args.has(CMD_LOCK)) {
-							if (args.has(OPT_KEY) || args.has(OPT_MAC) || args.has(OPT_ENC) || args.has(OPT_KEK) && !args.has(OPT_RELAX))
-								gp.printStrictWarning("Using --" + CMD_LOCK + " but specifying other keys");
-							GPKey new_key = ((GPKey)args.valueOf(CMD_LOCK));
-							// Check that
-							int new_version = 1;
-
-							if (args.has(OPT_NEW_KEY_VERSION)) {
-								new_version = (int) args.valueOf(OPT_NEW_KEY_VERSION);
-							}
-							List<GPKeySet.GPKey> keys = new ArrayList<GPKeySet.GPKey>();
-							keys.add(new GPKeySet.GPKey(new_version, 01, new_key));
-							keys.add(new GPKeySet.GPKey(new_version, 02, new_key));
-							keys.add(new GPKeySet.GPKey(new_version, 03, new_key));
-							// Add new keys if virgin
-							if (args.has(OPT_EMV) || args.has(OPT_VISA2) || args.has(OPT_VIRGIN)) {
-								gp.putKeys(keys, false);
-							} else {
-								// normally replace
-								gp.putKeys(keys, true);
-							}
-							System.out.println("Card locked with: " + new_key.toStringKey());
-							System.out.println("Write this down, DO NOT FORGET/LOSE IT!");
-						}
-
 						// --unlock
 						if (args.has(CMD_UNLOCK)) {
 							// Write default keys
@@ -542,6 +516,32 @@ public class GPTool {
 								gp.putKeys(keys, true);
 							}
 							System.out.println("Default " + new_key.toStringKey() + " set as master key.");
+						}
+
+						// --lock
+						if (args.has(CMD_LOCK)) {
+							if (args.has(OPT_KEY) || args.has(OPT_MAC) || args.has(OPT_ENC) || args.has(OPT_KEK) && !args.has(OPT_RELAX))
+								gp.printStrictWarning("Using --" + CMD_LOCK + " but specifying other keys");
+							GPKey new_key = ((GPKey)args.valueOf(CMD_LOCK));
+							// Check that
+							int new_version = 1;
+
+							if (args.has(OPT_NEW_KEY_VERSION)) {
+								new_version = (int) args.valueOf(OPT_NEW_KEY_VERSION);
+							}
+							List<GPKeySet.GPKey> keys = new ArrayList<GPKeySet.GPKey>();
+							keys.add(new GPKeySet.GPKey(new_version, 01, new_key));
+							keys.add(new GPKeySet.GPKey(new_version, 02, new_key));
+							keys.add(new GPKeySet.GPKey(new_version, 03, new_key));
+							// Add new keys if virgin
+							if (args.has(OPT_VIRGIN)) {
+								gp.putKeys(keys, false);
+							} else {
+								// normally replace
+								gp.putKeys(keys, true);
+							}
+							System.out.println("Card locked with: " + new_key.toStringKey());
+							System.out.println("Write this down, DO NOT FORGET/LOSE IT!");
 						}
 
 						// --make-default <aid>

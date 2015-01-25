@@ -933,7 +933,7 @@ public class GlobalPlatform {
 			verbose("PUT KEY:" + k);
 		}
 
-		// Check for sainity.
+		// Check for sanity.
 		if (keys.size() > 1) {
 			for (int i = 1; i < keys.size(); i++) {
 				if (keys.get(i-1).getID() != keys.get(i).getID() -1) {

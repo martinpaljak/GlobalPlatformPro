@@ -110,6 +110,7 @@ public class GlobalPlatform {
 	private SCPWrapper wrapper = null;
 	private GPKeySet staticKeys = null;
 	private CardChannel channel = null;
+	private byte[] diversification_data = null;
 
 	private byte[] cplc = null;
 	private AIDRegistry registry = null;
@@ -170,8 +171,9 @@ public class GlobalPlatform {
 
 	public void imFeelingLucky() throws CardException, GPException {
 		select(null); // auto-detect ISD AID
-		Diversification div = GPData.suggestDiversification(getCPLC());
-		GPKeySet ks = new GPKeySet(new GPKey(GPData.defaultKey, Type.DES3), div);
+		GPKeySet ks = new GPKeySet(new GPKey(GPData.defaultKey, Type.DES3));
+		ks.suggestedDiversification = GPData.suggestDiversification(getCPLC());
+
 		openSecureChannel(ks, null, 0, EnumSet.of(APDUMode.MAC));
 	}
 
@@ -346,6 +348,10 @@ public class GlobalPlatform {
 		return cplc;
 	}
 
+	public byte [] getDiversificationData() {
+		return diversification_data;
+	}
+
 	/**
 	 * Establishes a secure channel to the security domain.
 	 *
@@ -395,7 +401,7 @@ public class GlobalPlatform {
 		}
 		// Parse the response
 		int offset = 0;
-		byte diversification_data[] = Arrays.copyOfRange(update_response, 0, 10);
+		diversification_data = Arrays.copyOfRange(update_response, 0, 10);
 		offset += diversification_data.length;
 		// Get used key version from response
 		int keyVersion = update_response[offset] & 0xFF;
@@ -460,16 +466,11 @@ public class GlobalPlatform {
 		}
 
 		// Response processed. Derive keys.
-
-		// Only diversify default key sets that require it.
-		// FIXME: keyset version does not matter here.
-		if ((staticKeys.getKeyVersion() == 0) || (staticKeys.getKeyVersion() == 255)) {
-			if (staticKeys.diversification != Diversification.NONE) {
-				staticKeys.diversify(update_response, scpMajorVersion);
-				verbose("Diversififed master keys: " + staticKeys);
-			}
+		// Diversify if required
+		if (staticKeys.suggestedDiversification != Diversification.NONE) {
+			staticKeys.diversify(diversification_data, staticKeys.suggestedDiversification, scpMajorVersion);
+			verbose("Diversififed master keys: " + staticKeys);
 		}
-
 		// Check that SCP03 would be using AES keys
 		if (scpMajorVersion == 3) {
 			for (GPKey k: staticKeys.getKeys().values()) {

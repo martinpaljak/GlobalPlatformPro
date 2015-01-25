@@ -123,6 +123,7 @@ public class GPKeySet {
 
 	}
 
+	// diversification methods
 	public enum Diversification {
 		NONE, VISA2, EMV
 	}
@@ -132,8 +133,10 @@ public class GPKeySet {
 	// That all belong to the same set version
 	private int keyVersion = 0x00;
 	// With some cards, keys need to be diversified and derived from a master key
-	public Diversification diversification = Diversification.NONE;
-	private boolean diversified = false;
+	// FIXME: does not belong here.
+	public Diversification suggestedDiversification = Diversification.NONE;
+	// Actual diversification done on the keys.
+	public Diversification diversified = Diversification.NONE;
 
 	// KeySet allows to access its keys
 	public GPKey getKey(KeyType type) {
@@ -162,27 +165,22 @@ public class GPKeySet {
 
 	// Create a key set with all keys set to the master key
 	// and using a given diversification method
-	public GPKeySet(GPKey master, Diversification div) {
+	public GPKeySet(GPKey master) {
 		// Diversification assumes 3DES keys
 		keys.put(KeyType.ENC, master);
 		keys.put(KeyType.MAC, master);
 		keys.put(KeyType.KEK, master);
-		this.diversification = div;
 	}
 
-	// A key set where all keys have the same value
-	public GPKeySet(GPKey master) {
-		this(master, Diversification.NONE);
-	}
 
 	public void setKey(KeyType type, GPKey k) {
 		keys.put(type, k);
 	}
 
-	public void diversify(byte[] initialize_update_response, int scp) {
+	public void diversify(byte[] diversification_data, Diversification mode, int scp) {
 		// Sanity check.
-		if (diversified || diversification == Diversification.NONE) {
-			throw new IllegalStateException("Already diversified or not needed!");
+		if (diversified != Diversification.NONE) {
+			throw new IllegalStateException("Already diversified!");
 		}
 
 		try {
@@ -192,10 +190,10 @@ public class GPKeySet {
 					continue;
 				byte [] kv = null;
 				// shift around and fill initialize update data as required.
-				if (diversification == Diversification.VISA2) {
-					kv = fillVisa(initialize_update_response, v);
-				} else if (diversification == Diversification.EMV) {
-					kv = fillEmv(initialize_update_response, v);
+				if (mode == Diversification.VISA2) {
+					kv = fillVisa(diversification_data, v);
+				} else if (mode == Diversification.EMV) {
+					kv = fillEmv(diversification_data, v);
 				}
 
 				// Encrypt with current master key
@@ -208,7 +206,7 @@ public class GPKeySet {
 				keys.put(v, nk);
 			}
 
-			diversified = true;
+			diversified = mode;
 		} catch (BadPaddingException e) {
 			throw new RuntimeException("Diversification failed.", e);
 		} catch (NoSuchAlgorithmException e) {

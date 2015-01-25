@@ -2,6 +2,7 @@ package pro.javacard.gp;
 
 import joptsimple.ValueConversionException;
 import joptsimple.ValueConverter;
+import pro.javacard.gp.GPKeySet.Diversification;
 import pro.javacard.gp.GPKeySet.GPKey;
 import pro.javacard.gp.GPKeySet.GPKey.Type;
 import pro.javacard.gp.GlobalPlatform.APDUMode;
@@ -91,6 +92,50 @@ public class ArgMatchers {
 				return APDUMode.valueOf(arg0.trim().toUpperCase());
 			} catch (IllegalArgumentException e) {
 				throw new ValueConversionException(arg0 + " is not an APDU mode!");
+			}
+		}
+	}
+
+	public static ValueConverter<GPKeySet> keyset() {
+		return new KeySetMatcher();
+	}
+
+	public static class KeySetMatcher implements ValueConverter<GPKeySet> {
+
+		@Override
+		public Class<GPKeySet> valueType() {
+			return GPKeySet.class;
+		}
+
+		@Override
+		public String valuePattern() {
+			return null;
+		}
+
+		@Override
+		public GPKeySet convert(String arg0) {
+			try {
+				GPKey m = null;
+				Diversification d = Diversification.NONE;
+				// Check if diversification is necessary
+				String in = arg0.trim().toUpperCase();
+				if (in.startsWith("EMV:")) {
+					m = new GPKey(HexUtils.decodeHexString(in.substring("EMV:".length())), Type.DES3);
+					d = Diversification.EMV;
+				} else if (in.startsWith("VISA2:")) {
+					m = new GPKey(HexUtils.decodeHexString(in.substring("VISA2:".length())), Type.DES3);
+					d = Diversification.VISA2;
+				} else if (in.startsWith("AES:")) {
+					m = new GPKey(HexUtils.decodeHexString(in.substring("AES:".length())), Type.AES);
+				} else {
+					m = new GPKey(HexUtils.decodeHexString(in), Type.DES3);
+				}
+				GPKeySet ks = new GPKeySet(m);
+				ks.suggestedDiversification = d;
+				System.out.println(ks);
+				return ks;
+			} catch (IllegalArgumentException e) {
+				throw new ValueConversionException(arg0 + " is not a valid keyset indicator!");
 			}
 		}
 	}

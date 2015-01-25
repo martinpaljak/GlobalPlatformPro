@@ -36,6 +36,7 @@ public class GPTool {
 
 	private final static String CMD_LIST = "list";
 	private final static String CMD_LOCK = "lock";
+
 	private final static String CMD_INSTALL = "install";
 	private final static String CMD_UNINSTALL = "uninstall";
 	private final static String CMD_DELETE = "delete";
@@ -114,7 +115,7 @@ public class GPTool {
 		parser.accepts(OPT_CAP, "Use a CAP file as source").withRequiredArg().ofType(File.class);
 		parser.accepts(CMD_LOAD, "Load a CAP file").withRequiredArg().ofType(File.class);
 
-		parser.accepts(CMD_INSTALL, "Install applet").withOptionalArg().ofType(File.class);
+		parser.accepts(CMD_INSTALL, "Install applet(s) from CAP").withOptionalArg().ofType(File.class);
 		parser.accepts(OPT_PARAMS, "Installation parameters").withRequiredArg();
 
 		parser.accepts(CMD_UNINSTALL, "Uninstall applet/package").withRequiredArg().ofType(File.class);
@@ -143,7 +144,8 @@ public class GPTool {
 		parser.accepts(OPT_KEY, "Specify master key").withRequiredArg().withValuesConvertedBy(ArgMatchers.key());
 		parser.accepts(OPT_KEY_ID, "Specify key ID").withRequiredArg().ofType(Integer.class);
 		parser.accepts(OPT_KEY_VERSION, "Specify key version").withRequiredArg().ofType(Integer.class);
-		parser.accepts(CMD_LOCK, "Set new key").withRequiredArg().withValuesConvertedBy(ArgMatchers.key());
+		parser.accepts(CMD_LOCK, "Set new key").withRequiredArg().withValuesConvertedBy(ArgMatchers.keyset());
+
 		parser.accepts(CMD_UNLOCK, "Set default key");
 		parser.accepts(OPT_SCP, "Force the use of SCP0X").withRequiredArg().ofType(Integer.class);
 		parser.accepts(OPT_NEW_KEY_VERSION, "key version for the new key").withRequiredArg().ofType(Integer.class);
@@ -221,9 +223,9 @@ public class GPTool {
 
 		// Set diversification if specified
 		if (args.has(OPT_VISA2)) {
-			ks.diversification = Diversification.VISA2;
+			ks.suggestedDiversification = Diversification.VISA2;
 		} else if (args.has(OPT_EMV)) {
-			ks.diversification = Diversification.EMV;
+			ks.suggestedDiversification = Diversification.EMV;
 		}
 
 		// Load a CAP file, if specified
@@ -536,17 +538,26 @@ public class GPTool {
 						if (args.has(CMD_LOCK)) {
 							if (args.has(OPT_KEY) || args.has(OPT_MAC) || args.has(OPT_ENC) || args.has(OPT_KEK) && !args.has(OPT_RELAX))
 								gp.printStrictWarning("Using --" + CMD_LOCK + " but specifying other keys");
-							GPKey new_key = ((GPKey)args.valueOf(CMD_LOCK));
+
+							GPKeySet new_keys = ((GPKeySet)args.valueOf(CMD_LOCK));
+							// Note down the master key. TODO: store in GPKeySet ?
+							GPKey master = new_keys.getKey(KeyType.MAC);
+							// Diversify if requested.
+							if (new_keys.suggestedDiversification != Diversification.NONE) {
+								new_keys.diversify(gp.getDiversificationData(), new_keys.suggestedDiversification, gp.getSCPVersion());
+							}
+
 							// Check that
 							int new_version = 1;
 
 							if (args.has(OPT_NEW_KEY_VERSION)) {
 								new_version = (int) args.valueOf(OPT_NEW_KEY_VERSION);
 							}
+							// Add into a list
 							List<GPKeySet.GPKey> keys = new ArrayList<GPKeySet.GPKey>();
-							keys.add(new GPKeySet.GPKey(new_version, 01, new_key));
-							keys.add(new GPKeySet.GPKey(new_version, 02, new_key));
-							keys.add(new GPKeySet.GPKey(new_version, 03, new_key));
+							keys.add(new GPKeySet.GPKey(new_version, 01, new_keys.getKey(KeyType.ENC)));
+							keys.add(new GPKeySet.GPKey(new_version, 02, new_keys.getKey(KeyType.MAC)));
+							keys.add(new GPKeySet.GPKey(new_version, 03, new_keys.getKey(KeyType.KEK)));
 							// Add new keys if virgin
 							if (args.has(OPT_VIRGIN)) {
 								gp.putKeys(keys, false);
@@ -554,7 +565,10 @@ public class GPTool {
 								// normally replace
 								gp.putKeys(keys, true);
 							}
-							System.out.println("Card locked with: " + new_key.toStringKey());
+							System.out.println("Card locked with: " + master.toStringKey());
+							if (new_keys.diversified != Diversification.NONE) {
+								System.out.println("Remember to use " + new_keys.diversified.name() + " diversification!");
+							}
 							System.out.println("Write this down, DO NOT FORGET/LOSE IT!");
 						}
 

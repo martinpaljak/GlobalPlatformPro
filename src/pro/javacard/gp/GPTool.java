@@ -543,7 +543,7 @@ public class GPTool {
 
 						// --make-default <aid>
 						if (args.has(CMD_MAKE_DEFAULT)) {
-							gp.makeDefaultSelected((AID) args.valueOf(CMD_MAKE_DEFAULT), (byte) 0x04);
+							gp.makeDefaultSelected((AID) args.valueOf(CMD_MAKE_DEFAULT));
 						}
 					}
 				} catch (GPException e) {

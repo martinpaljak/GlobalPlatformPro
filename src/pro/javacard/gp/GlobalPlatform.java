@@ -800,10 +800,11 @@ public class GlobalPlatform {
 	}
 
 
-	public void makeDefaultSelected(AID aid, byte privileges) throws CardException, GPException {
+	public void makeDefaultSelected(AID aid) throws CardException, GPException {
+		// FIXME: only works for 2.1.1 cards
 		ByteArrayOutputStream bo = new ByteArrayOutputStream();
 		// Only supported privilege.
-		privileges = 0x04;
+		byte privileges = GPData.defaultSelectedPriv;
 		try {
 			bo.write(0);
 			bo.write(0);

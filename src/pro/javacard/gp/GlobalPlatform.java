@@ -99,7 +99,7 @@ public class GlobalPlatform {
 	private static final byte INS_PUT_KEY = (byte) 0xD8;
 
 
-	// AID of the card successfully selected or null
+	// SD AID of the card successfully selected or null
 	public AID sdAID = null;
 
 	// Either 1 or 2 or 3
@@ -118,36 +118,47 @@ public class GlobalPlatform {
 
 
 	/**
-	 * Set the channel and use the default security domain AID and scpAny.
+	 * Start a GlobalPlatform session to a card
 	 *
-	 * @param channel
-	 *            channel to talk to
-	 * @throws IllegalArgumentException
-	 *             if {@code channel} is null.
+	 * Maintaining locks to the underlying hardware is the duty of the caller
+	 *
+	 * @param channel channel to talk to
+	 * @throws IllegalArgumentException if {@code channel} is null.
 	 */
 	public GlobalPlatform(CardChannel channel) {
+		if (channel == null) {
+			throw new IllegalArgumentException("A card session is required");
+		}
 		this.channel = channel;
 	}
 
+	/**
+	 * Get the version and build information of the library.
+	 * @return
+	 */
 	public static String getVersion() {
 		try (InputStream versionfile = GlobalPlatform.class.getResourceAsStream("/version.txt")) {
-			if (versionfile == null) {
-				return "unknown-development";
+			String version = "unknown-development";
+			if (versionfile != null) {
+				BufferedReader vinfo = new BufferedReader( new InputStreamReader(versionfile));
+				version = vinfo.readLine();
 			}
-			BufferedReader vinfo = new BufferedReader( new InputStreamReader(versionfile));
-			return vinfo.readLine();
+			// Append host information
+			version += "\nRunning on " + System.getProperty("os.name");
+			version += " " + System.getProperty("os.version");
+			version += " " + System.getProperty("os.arch");
+			version += ", Java " + System.getProperty("java.version");
+			version += " by " + System.getProperty("java.vendor");
+			return version;
 		} catch (IOException e) {
 			return "unknown-error";
 		}
-	}
-	protected boolean beVerbose() {
-		return verboseTo != null;
 	}
 	public void beVerboseTo(PrintStream out) {
 		this.verboseTo = new PrintStream(out, true);
 	}
 	protected void verbose(String s) {
-		if (!beVerbose())
+		if (verboseTo == null)
 			return;
 		verboseTo.println(s);
 	}
@@ -233,7 +244,7 @@ public class GlobalPlatform {
 	 * @throws CardException
 	 *             on data transmission errors
 	 */
-	public void select() throws GPException, CardException, IOException {
+	public void select() throws GPException, CardException {
 		if (!select(null)) {
 			throw new GPException("Could not select security domain!");
 		}
@@ -270,32 +281,32 @@ public class GlobalPlatform {
 		return null;
 	}
 
-	public void discoverCardProperties() throws CardException, GPException {
+	public void DumpCardProperties(PrintStream out) throws CardException, GPException {
 
 		// Key Information Template
 		List<GPKey> key_templates = getKeyInfoTemplate();
 		if (key_templates != null && key_templates.size() > 0) {
-			GPData.pretty_print_key_template(key_templates, System.out);
+			GPData.pretty_print_key_template(key_templates, out);
 		}
 
-		System.out.println("***** GET DATA:");
+		out.println("***** GET DATA:");
 
 		// Issuer Identification Number (IIN)
 		CommandAPDU command = new CommandAPDU(CLA_GP, ISO7816.INS_GET_DATA, 0x00, 0x42, 256);
 		ResponseAPDU resp = channel.transmit(command);
 		if (resp.getSW() == 0x9000) {
-			System.out.println("IIN " + HexUtils.encodeHexString(resp.getData()));
+			out.println("IIN " + HexUtils.encodeHexString(resp.getData()));
 		} else {
-			System.out.println("GET DATA(IIN) not supported");
+			out.println("GET DATA(IIN) not supported");
 		}
 
 		// Card Image Number (CIN)
 		command = new CommandAPDU(CLA_GP, ISO7816.INS_GET_DATA, 0x00, 0x45, 256);
 		resp = channel.transmit(command);
 		if (resp.getSW() == 0x9000) {
-			System.out.println("CIN " + HexUtils.encodeHexString(resp.getData()));
+			out.println("CIN " + HexUtils.encodeHexString(resp.getData()));
 		} else {
-			System.out.println("GET DATA(CIN) not supported");
+			out.println("GET DATA(CIN) not supported");
 		}
 
 		// Sequence Counter of the default Key Version Number
@@ -304,11 +315,11 @@ public class GlobalPlatform {
 		if (resp.getSW() == 0x9000) {
 			byte [] ssc = resp.getData();
 			TLVUtils.expectTag(ssc, SHORT_0, (byte) 0xC1);
-			System.out.println("SSC " + HexUtils.encodeHexString(TLVUtils.getTLVValueAsBytes(ssc, SHORT_0)));
+			out.println("SSC " + HexUtils.encodeHexString(TLVUtils.getTLVValueAsBytes(ssc, SHORT_0)));
 		} else {
-			System.out.println("GET DATA(SSC) not supported");
+			out.println("GET DATA(SSC) not supported");
 		}
-		System.out.println("*****");
+		out.println("*****");
 	}
 
 	public byte[] fetchCPLC() throws CardException, GPException {

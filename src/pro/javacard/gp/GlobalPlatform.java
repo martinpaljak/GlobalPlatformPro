@@ -96,6 +96,7 @@ public class GlobalPlatform {
 	private static final byte INS_LOAD = (byte) 0xE8;
 	private static final byte INS_DELETE = (byte) 0xE4;
 	private static final byte INS_GET_STATUS = (byte) 0xF2;
+	private static final byte INS_SET_STATUS = (byte) 0xF0;
 	private static final byte INS_PUT_KEY = (byte) 0xD8;
 
 
@@ -281,7 +282,7 @@ public class GlobalPlatform {
 		return null;
 	}
 
-	public void DumpCardProperties(PrintStream out) throws CardException, GPException {
+	public void dumpCardProperties(PrintStream out) throws CardException, GPException {
 
 		// Key Information Template
 		List<GPKey> key_templates = getKeyInfoTemplate();
@@ -821,6 +822,13 @@ public class GlobalPlatform {
 		CommandAPDU install = new CommandAPDU(CLA_GP, INS_INSTALL, 0x08, 0x00, bo.toByteArray());
 		ResponseAPDU response = transmit(install);
 		check(response, "Install for make selectable failed");
+		dirty = true;
+	}
+
+	public void lockUnlockApplet(AID app, boolean lock) throws CardException, GPException {
+		CommandAPDU cmd = new CommandAPDU(CLA_GP, INS_SET_STATUS, 0x40, lock ? 0x80 : 0x00, app.getBytes());
+		ResponseAPDU response = transmit(cmd);
+		check(response, "SET STATUS failed");
 		dirty = true;
 	}
 

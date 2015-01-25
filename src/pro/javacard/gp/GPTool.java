@@ -46,6 +46,8 @@ public class GPTool {
 	private final static String CMD_APDU = "apdu";
 	private final static String CMD_SECURE_APDU = "secure-apdu";
 	private final static String OPT_SCP = "scp";
+	private final static String OPT_LOCK_APPLET = "lock-applet";
+	private final static String OPT_UNLOCK_APPLET = "unlock-applet";
 
 	private final static String OPT_DELETEDEPS = "deletedeps";
 	private final static String OPT_DEFAULT = "default";
@@ -119,6 +121,8 @@ public class GPTool {
 		parser.accepts(OPT_DEFAULT, "Indicate Default Selected privilege");
 		parser.accepts(OPT_TERMINATE, "Indicate Card Lock+Terminate privilege");
 		parser.accepts(OPT_SDOMAIN, "Indicate Security Domain privilege");
+		parser.accepts(OPT_LOCK_APPLET, "Lock specified applet").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
+		parser.accepts(OPT_UNLOCK_APPLET, "Lock specified applet").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
 
 
 		parser.accepts(OPT_DELETEDEPS, "Also delete dependencies");
@@ -473,6 +477,16 @@ public class GPTool {
 							// shoot
 							AID instanceAID = (AID) args.valueOf(CMD_CREATE);
 							gp.installAndMakeSelectable(packageAID, appletAID, instanceAID, getInstPrivs(args), getInstParams(args), null);
+						}
+
+						// --lock-applet <aid>
+						if (args.has(OPT_LOCK_APPLET)) {
+							gp.lockUnlockApplet((AID) args.valueOf(OPT_LOCK_APPLET), true);
+						}
+
+						// --unlock-applet <AID>
+						if (args.has(OPT_UNLOCK_APPLET)) {
+							gp.lockUnlockApplet((AID) args.valueOf(OPT_UNLOCK_APPLET), false);
 						}
 
 						// --list

@@ -20,6 +20,8 @@ public final class GPData {
 	public static final byte defaultSelectedPriv = 0x04;
 	public static final byte cardLockPriv = 0x10;
 	public static final byte cardTerminatePriv = 0x08;
+	public static final byte securityDomainPriv = (byte) 0x80;
+
 
 	public enum KeyType {
 		// ID is as used in diversification/derivation

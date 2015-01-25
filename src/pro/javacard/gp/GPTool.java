@@ -50,6 +50,7 @@ public class GPTool {
 	private final static String OPT_DELETEDEPS = "deletedeps";
 	private final static String OPT_DEFAULT = "default";
 	private final static String OPT_TERMINATE = "terminate";
+	private final static String OPT_SDOMAIN = "sdomain";
 
 	private final static String OPT_CAP = "cap";
 	private final static String OPT_APPLET = "applet";
@@ -117,6 +118,8 @@ public class GPTool {
 		parser.accepts(CMD_UNINSTALL, "Uninstall applet/package").withRequiredArg().ofType(File.class);
 		parser.accepts(OPT_DEFAULT, "Indicate Default Selected privilege");
 		parser.accepts(OPT_TERMINATE, "Indicate Card Lock+Terminate privilege");
+		parser.accepts(OPT_SDOMAIN, "Indicate Security Domain privilege");
+
 
 		parser.accepts(OPT_DELETEDEPS, "Also delete dependencies");
 		parser.accepts(OPT_REINSTALL, "Remove card content during installation");
@@ -585,6 +588,9 @@ public class GPTool {
 		}
 		if (args.has(OPT_TERMINATE)) {
 			privs |= GPData.cardLockPriv | GPData.cardTerminatePriv;
+		}
+		if (args.has(OPT_SDOMAIN)) {
+			privs |= GPData.securityDomainPriv;
 		}
 		return privs;
 	}

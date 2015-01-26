@@ -13,9 +13,13 @@ import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 
 import pro.javacard.gp.GPKeySet.Diversification;
 import pro.javacard.gp.GPKeySet.GPKey;
+import pro.javacard.gp.GPKeySet.GPKey.Type;
 import apdu4j.HexUtils;
 
 public final class GPData {
+	public static final byte[] defaultKeyBytes = { 0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F };
+	public static final GPKey defaultKey = new GPKey(defaultKeyBytes, Type.DES3);
+
 	// See GP 2.1.1 Table 9-7: Application Privileges
 	public static final byte defaultSelectedPriv = 0x04;
 	public static final byte cardLockPriv = 0x10;
@@ -256,7 +260,6 @@ public final class GPData {
 		pretty_print_key_template(gp.getKeyInfoTemplate(), System.out);
 	}
 
-	public static final byte[] defaultKey = { 0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F };
 
 	public static final class CPLC {
 

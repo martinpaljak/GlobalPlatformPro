@@ -10,10 +10,10 @@ import org.junit.Test;
 import pro.javacard.gp.GPData;
 import pro.javacard.gp.GPException;
 import pro.javacard.gp.GPKeySet;
-import pro.javacard.gp.GlobalPlatform;
 import pro.javacard.gp.GPKeySet.Diversification;
 import pro.javacard.gp.GPKeySet.GPKey;
 import pro.javacard.gp.GPKeySet.GPKey.Type;
+import pro.javacard.gp.GlobalPlatform;
 
 public class TestKeyChange extends TestRealCard {
 
@@ -21,14 +21,13 @@ public class TestKeyChange extends TestRealCard {
 
 	@Test
 	public void testAddNewWithDefault() throws CardException, GPException {
-		gp.openSecureChannel(new GPKeySet(new GPKey(GPData.defaultKey, GPKey.Type.DES3)), null, GlobalPlatform.SCP_ANY, gp.defaultMode);
+		gp.openSecureChannel(new GPKeySet(GPData.defaultKey), null, GlobalPlatform.SCP_ANY, GlobalPlatform.defaultMode);
 
 		List<GPKeySet.GPKey> keys = new ArrayList<GPKeySet.GPKey>();
-		GPKey nk = new GPKey(GPData.defaultKey, Type.DES3);
 		// Version 1, id 1
-		keys.add(new GPKey(01, 01, nk));
-		keys.add(new GPKey(01, 02, nk));
-		keys.add(new GPKey(01, 03, nk));
+		keys.add(new GPKey(01, 01, GPData.defaultKey));
+		keys.add(new GPKey(01, 02, GPData.defaultKey));
+		keys.add(new GPKey(01, 03, GPData.defaultKey));
 
 		GPData.print_card_info(gp);
 		gp.putKeys(keys, false);
@@ -37,14 +36,13 @@ public class TestKeyChange extends TestRealCard {
 
 	@Test
 	public void testReplaceNewWithDefault() throws CardException, GPException {
-		gp.openSecureChannel(new GPKeySet(new GPKey(TestKeyChange.newKey, GPKey.Type.DES3)), null, GlobalPlatform.SCP_ANY, gp.defaultMode);
+		gp.openSecureChannel(new GPKeySet(new GPKey(TestKeyChange.newKey, GPKey.Type.DES3)), null, GlobalPlatform.SCP_ANY, GlobalPlatform.defaultMode);
 
 		List<GPKeySet.GPKey> keys = new ArrayList<GPKeySet.GPKey>();
-		GPKey nk = new GPKey(GPData.defaultKey, Type.DES3);
 
-		keys.add(new GPKeySet.GPKey(01, 01, nk));
-		keys.add(new GPKeySet.GPKey(01, 02, nk));
-		keys.add(new GPKeySet.GPKey(01, 03, nk));
+		keys.add(new GPKeySet.GPKey(01, 01, GPData.defaultKey));
+		keys.add(new GPKeySet.GPKey(01, 02, GPData.defaultKey));
+		keys.add(new GPKeySet.GPKey(01, 03, GPData.defaultKey));
 
 		GPData.print_card_info(gp);
 		gp.putKeys(keys, true);
@@ -53,7 +51,9 @@ public class TestKeyChange extends TestRealCard {
 
 	@Test
 	public void testReplaceDefaultWithNew() throws CardException, GPException {
-		gp.openSecureChannel(new GPKeySet(new GPKey(GPData.defaultKey, GPKey.Type.DES3), Diversification.EMV), null, GlobalPlatform.SCP_ANY, gp.defaultMode);
+		GPKeySet ks = new GPKeySet(GPData.defaultKey);
+		ks.suggestedDiversification = Diversification.EMV;
+		gp.openSecureChannel(ks, null, GlobalPlatform.SCP_ANY, GlobalPlatform.defaultMode);
 		List<GPKeySet.GPKey> keys = new ArrayList<GPKeySet.GPKey>();
 		GPKey nk = new GPKey(TestKeyChange.newKey, Type.DES3);
 

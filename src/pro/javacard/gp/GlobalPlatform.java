@@ -86,7 +86,8 @@ public class GlobalPlatform {
 			return v;
 		}
 	};
-	public EnumSet<APDUMode> defaultMode = EnumSet.of(APDUMode.MAC);
+
+	public static EnumSet<APDUMode> defaultMode = EnumSet.of(APDUMode.MAC);
 
 	// Implementation details
 	private static final byte CLA_GP = (byte) 0x80;
@@ -171,7 +172,7 @@ public class GlobalPlatform {
 
 	public void imFeelingLucky() throws CardException, GPException {
 		select(null); // auto-detect ISD AID
-		GPKeySet ks = new GPKeySet(new GPKey(GPData.defaultKey, Type.DES3));
+		GPKeySet ks = new GPKeySet(GPData.defaultKey);
 		ks.suggestedDiversification = GPData.suggestDiversification(getCPLC());
 
 		openSecureChannel(ks, null, 0, EnumSet.of(APDUMode.MAC));
@@ -691,6 +692,7 @@ public class GlobalPlatform {
 		}
 		byte[] hash = useHash ? cap.getLoadFileDataHash(includeDebug) : new byte[0];
 		int len = cap.getCodeLength(includeDebug);
+		// FIXME: parameters are optional for load
 		byte[] loadParams = loadParam ? new byte[] { (byte) 0xEF, 0x04, (byte) 0xC6, 0x02, (byte) ((len & 0xFF00) >> 8),
 				(byte) (len & 0xFF) } : new byte[0];
 
@@ -760,15 +762,15 @@ public class GlobalPlatform {
 		if (getRegistry().allAppletAIDs().contains(instanceAID)) {
 			printStrictWarning("Applet with instance AID " + instanceAID + " is already present on card");
 		}
-		byte [] params;
 		if (installParams == null) {
-			params = new byte[] { (byte) 0xC9, 0x00 };
-		} else {
-			params = new byte[installParams.length + 2];;
-			params[0] = (byte) 0xc9;
-			params[1] = (byte) installParams.length;
-			System.arraycopy(installParams, 0, params, 2, installParams.length);
+			installParams = new byte[0];
 		}
+		byte [] params;
+		params = new byte[installParams.length + 2];;
+		params[0] = (byte) 0xc9;
+		params[1] = (byte) installParams.length;
+		System.arraycopy(installParams, 0, params, 2, installParams.length);
+
 		if (installToken == null) {
 			installToken = new byte[0];
 		}

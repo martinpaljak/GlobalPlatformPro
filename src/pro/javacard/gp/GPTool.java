@@ -30,7 +30,7 @@ import apdu4j.LoggingCardTerminal;
 import apdu4j.TerminalManager;
 
 
-public class GPTool {
+public final class GPTool {
 
 	private final static String CMD_INFO = "info";
 
@@ -200,7 +200,7 @@ public class GPTool {
 		if (args.has(OPT_KEY)) {
 			ks = new GPKeySet((GPKeySet.GPKey)args.valueOf(OPT_KEY));
 		} else {
-			ks = new GPKeySet(new GPKey(GPData.defaultKey, Type.DES3));
+			ks = new GPKeySet(GPData.defaultKey);
 		}
 		// override if needed
 		if (args.has(OPT_MAC)) {
@@ -340,7 +340,7 @@ public class GPTool {
 					}
 
 					// check for possible diversification for virgin cards
-					if (Arrays.equals(ks.getKey(KeyType.MAC).getValue(), GPData.defaultKey) && args.has(OPT_VIRGIN) && !args.has(OPT_RELAX)) {
+					if (Arrays.equals(ks.getKey(KeyType.MAC).getValue(), GPData.defaultKeyBytes) && args.has(OPT_VIRGIN) && !args.has(OPT_RELAX)) {
 						if (GPData.suggestDiversification(gp.getCPLC()) != Diversification.NONE && ks.getKeyVersion() == 0x00) {
 							System.err.println("A virgin card that has not been used with GlobalPlatformPro before");
 							System.err.println("probably requires EMV diversification but is not asked for.");
@@ -516,7 +516,7 @@ public class GPTool {
 								throw new GPException("Template has bad length!");
 							}
 							// FIXME: new key must adhere to currently used SCP version.
-							GPKey new_key = new GPKey(GPData.defaultKey, gp.getSCPVersion() == 3 ? Type.AES : Type.DES3);
+							GPKey new_key = new GPKey(GPData.defaultKeyBytes, gp.getSCPVersion() == 3 ? Type.AES : Type.DES3);
 
 							// FIXME: this looks ugly
 							keys.add(new GPKeySet.GPKey(01, current.get(0).getID(), new_key));

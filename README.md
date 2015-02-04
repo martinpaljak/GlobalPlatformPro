@@ -80,6 +80,14 @@ Command line samples assume default test keys of ```40..4F```. If you need custo
 
         gp -uninstall applet.cap
 
+ * Create new instance of applet `D2760001240102000000000000000000` from package `D27600012401` with AID `D2760001240102000000000272950000`:
+
+        gp -package D27600012401 -applet D2760001240102000000000000000000 -create D2760001240102000000000272950000
+
+ * Same as previous, but takes the package/applet AID-s from CAP file and makes the new instance default selected:
+
+        gp -cap OpenPGPApplet.cap -create D2760001240102000000000272950000 -default
+
 #### Lock / unlock usage
 
  * Set ```010B0371D78377B801F2D62AFC671D95``` key to a card with default ```40..4F``` keys:

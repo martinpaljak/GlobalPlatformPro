@@ -60,23 +60,30 @@ Command line samples assume default test keys of ```40..4F```. If you need custo
 
         gp -list # or gp -l
 
- * Delete current default applet:
+   How to interpret the output:
+    * All AID-s of on-card objects are listed, starting with Issuer Security Domain (`ISD`)
+    * Object type, state and privileges or other flags are listed below the `AID` line
+    * Applications have type `App` and have a state (like `SELECTABLE`) and privileges
+    * Executable Modules (type `ExM`, representing Java packages) are listed together with applets in them (which can be initiated with `--create`)
+    * Security Domains have type `SeD`
 
-        gp -delete -default
+ * Delete current default applet's package and all instances:
+
+        gp -delete -default -deletedeps
 
  * Delete module ```D27600012401``` and all applets from it:
 
         gp -delete D27600012401 -deletedeps
 
- * Install applet.cap as default applet (with AID information from the CAP):
+ * Install `applet.cap` as default applet (with AID information from the CAP):
 
         gp -install applet.cap -default
 
- * Install applet.cap (with AID information from the CAP):
+ * Install `applet.cap` (with AID information from the CAP):
 
         gp -install applet.cap
 
- * Unistall applet.cap (with AID information from the CAP):
+ * Unistall `applet.cap` (with AID information from the CAP):
 
         gp -uninstall applet.cap
 

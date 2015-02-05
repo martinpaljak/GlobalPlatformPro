@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
 
 import javax.smartcardio.Card;
@@ -24,6 +25,7 @@ import pro.javacard.gp.GPData.KeyType;
 import pro.javacard.gp.GPKeySet.Diversification;
 import pro.javacard.gp.GPKeySet.GPKey;
 import pro.javacard.gp.GPKeySet.GPKey.Type;
+import pro.javacard.gp.GlobalPlatform.APDUMode;
 import apdu4j.APDUReplayProvider;
 import apdu4j.HexUtils;
 import apdu4j.LoggingCardTerminal;
@@ -354,10 +356,11 @@ public final class GPTool {
 							|| args.has(CMD_CREATE) || args.has(CMD_LOCK) || args.has(CMD_UNLOCK)
 							|| args.has(CMD_MAKE_DEFAULT) || args.has(CMD_UNINSTALL) || args.has(CMD_SECURE_APDU)) {
 
+						EnumSet<APDUMode> mode = GlobalPlatform.defaultMode.clone();
 						// Override default mode if needed.
 						if (args.has(OPT_MODE)) {
-							gp.defaultMode.clear();
-							gp.defaultMode.add((GlobalPlatform.APDUMode) args.valueOf(OPT_MODE));
+							mode.clear();
+							mode.add((GlobalPlatform.APDUMode) args.valueOf(OPT_MODE));
 						}
 
 						// Override SCP version
@@ -367,7 +370,7 @@ public final class GPTool {
 						}
 
 						// Possibly brick the card now, if keys don't match.
-						gp.openSecureChannel(ks, null, scp_version, gp.defaultMode);
+						gp.openSecureChannel(ks, null, scp_version, mode);
 
 						// --secure-apdu or -s
 						if (args.has(CMD_SECURE_APDU)) {

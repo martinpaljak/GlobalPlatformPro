@@ -40,6 +40,8 @@ ant
 
 Command line samples assume default test keys of ```40..4F```. If you need custom keys, specify them with any or all of the following options: ```-keyid``` ```-keyver``` and ```-enc``` ```-mac``` ```-kek``` or ```-key``` (for a single master key). You need to know the details or ask your card provider. Some cards require key diversification with ```-emv``` or ```-visa2``` (you should be notified if that's the case).
 
+#### Generic information
+
  * Show some basic information about a card (failsafe):
 
         java -jar gp.jar -info

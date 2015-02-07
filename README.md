@@ -62,8 +62,8 @@ Command line samples assume default test keys of ```40..4F```. If you need custo
 
    How to interpret the output:
     * All AID-s of on-card objects are listed, starting with Issuer Security Domain (`ISD`)
-    * Object type, state and privileges or other flags are listed below the `AID` line
-    * Applications have type `App` and have a state (like `SELECTABLE`) and privileges
+    * Object's type, lifecycle state and privileges are listed below the `AID` line
+    * Applications have type `App` and a state (like `SELECTABLE`) and privileges (like `Default selected`)
     * Executable Modules (type `ExM`, representing Java packages) are listed together with applets in them (which can be initiated with `--create`)
     * Security Domains have type `SeD`
 

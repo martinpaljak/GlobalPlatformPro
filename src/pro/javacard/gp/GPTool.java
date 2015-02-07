@@ -60,7 +60,6 @@ public final class GPTool {
 	private final static String OPT_CAP = "cap";
 	private final static String OPT_APPLET = "applet";
 	private final static String OPT_PACKAGE = "package";
-	private final static String OPT_INSTANCE = "instance";
 	private final static String OPT_DO_ALL_READERS = "all";
 	private final static String OPT_NOFIX = "nofix";
 	private final static String OPT_PARAMS = "params";
@@ -137,7 +136,6 @@ public final class GPTool {
 		parser.accepts(CMD_CREATE, "Create new instance of an applet").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
 		parser.accepts(OPT_APPLET, "Applet AID").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
 		parser.accepts(OPT_PACKAGE, "Package AID").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
-		parser.accepts(OPT_INSTANCE, "Instance AID").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
 
 		// Key options
 		parser.accepts(OPT_MAC, "Specify MAC key").withRequiredArg().withValuesConvertedBy(ArgMatchers.key());

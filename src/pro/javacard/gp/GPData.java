@@ -54,19 +54,19 @@ public final class GPData {
 		if (0x81 == type)
 			return "Reserved (Triple DES)";
 		if (0x82 == type)
-			return "￼Triple DES in CBC mode";
+			return "Triple DES in CBC mode";
 		if (0x83 == type)
-			return "￼DES in ECB mode";
+			return "DES in ECB mode";
 		if (0x84 == type)
-			return "￼DES in CBC mode";
+			return "DES in CBC mode";
 		if (0x85 == type)
-			return "￼Pre-Shared Key for Transport Layer Security";
+			return "Pre-Shared Key for Transport Layer Security";
 		if (0x88 == type)
-			return "￼AES (16, 24, or 32 long keys)";
+			return "AES (16, 24, or 32 long keys)";
 		if (0x90 == type)
-			return "￼HMAC-SHA1 – length of HMAC is implicitly known";
+			return "HMAC-SHA1 - length of HMAC is implicitly known";
 		if (0x91 == type)
-			return "MAC-SHA1-160 – length of HMAC is 160 bits";
+			return "MAC-SHA1-160 - length of HMAC is 160 bits";
 		if (type == 0x86 || type == 0x87 || ((0x89 <= type) && (type <= 0x8F)) || ((0x92 <= type) && (type <= 0x9F)))
 			return "RFU (asymmetric algorithms)";
 		// asymmetric

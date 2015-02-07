@@ -71,7 +71,7 @@ Command line samples assume default test keys of ```40..4F```. If you need custo
 
         gp -delete -default -deletedeps
 
- * Delete module ```D27600012401``` and all applets from it:
+ * Delete package ```D27600012401``` and all applets from it (`-deletedeps` can only be used with packages):
 
         gp -delete D27600012401 -deletedeps
 

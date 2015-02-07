@@ -15,7 +15,7 @@ Load and manage applets on compatible JavaCards from command line or from your J
 
 ### Get it now!
 * Download latest pre-built .JAR or .EXE from [release area](https://github.com/martinpaljak/GlobalPlatformPro/releases)
-* Or fetch from GitHub and build it yourself, it is really easy:
+* Or build it yourself (see [CONTRIBUTING](./CONTRIBUTING.md) for tips), it is really easy:
 
 ```shell
 git clone https://github.com/martinpaljak/GlobalPlatformPro

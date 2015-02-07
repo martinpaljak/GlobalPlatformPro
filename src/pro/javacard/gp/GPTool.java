@@ -352,7 +352,7 @@ public final class GPTool {
 					}
 
 					// Authenticate, only if needed
-					if (args.has(CMD_LIST) || args.has(CMD_INSTALL) || args.has(CMD_DELETE)
+					if (args.has(CMD_LIST) || args.has(CMD_LOAD) || args.has(CMD_INSTALL) || args.has(CMD_DELETE)
 							|| args.has(CMD_CREATE) || args.has(CMD_LOCK) || args.has(CMD_UNLOCK)
 							|| args.has(CMD_MAKE_DEFAULT) || args.has(CMD_UNINSTALL) || args.has(CMD_SECURE_APDU)) {
 
@@ -417,16 +417,27 @@ public final class GPTool {
 							}
 						}
 
-						// --install <applet.cap>
-						if (args.has(CMD_INSTALL)) {
-							AID def = gp.getRegistry().getDefaultSelectedPackageAID();
-							if (def != null && args.has(OPT_DEFAULT)) {
-								if (args.has(OPT_REINSTALL)) {
-									gp.verbose("Removing current default applet/package");
-									// Remove all instances of default selected app package
-									gp.deleteAID(def, true);
+						// --load <applet.cap>
+						if (args.has(CMD_LOAD)) {
+							File capfile = (File) args.valueOf(CMD_LOAD);
+							CapFile loadcap = new CapFile(new FileInputStream(capfile));
+
+							if (args.has(OPT_VERBOSE)) {
+								loadcap.dump(System.out);
+							}
+							try {
+								gp.loadCapFile(loadcap);
+							} catch (GPException e) {
+								if (e.sw == 0x6985) {
+									System.err.println("Applet loading failed. Are you sure the CAP file target is compatible with your card?");
+								} else {
+									throw e;
 								}
 							}
+						}
+
+						// --install <applet.cap>
+						if (args.has(CMD_INSTALL)) {
 
 							File capfile = (File) args.valueOf(CMD_INSTALL);
 							CapFile instcap = new CapFile(new FileInputStream(capfile));
@@ -434,16 +445,12 @@ public final class GPTool {
 							if (args.has(OPT_VERBOSE)) {
 								instcap.dump(System.out);
 							}
-							// Take the applet AID from CAP but allow to override
-							AID aid = instcap.getAppletAIDs().get(0);
-							if (args.has(OPT_APPLET))
-								aid = (AID) args.valueOf(OPT_APPLET);
 
-							if (gp.getRegistry().allAIDs().contains(aid)) {
-								System.err.println("WARNING: Applet " + aid + " already present on card");
+							if (args.has(OPT_REINSTALL)) {
+								gp.verbose("Removing existing package");
+								gp.deleteAID(instcap.getPackageAID(), true);
 							}
 
-							gp.verbose("Installing applet from package " + instcap.getPackageName());
 							try {
 								gp.loadCapFile(instcap);
 							} catch (GPException e) {
@@ -453,7 +460,25 @@ public final class GPTool {
 									throw e;
 								}
 							}
-							gp.installAndMakeSelectable(instcap.getPackageAID(), aid, null, getInstPrivs(args), getInstParams(args), null);
+							gp.verbose("CAP loaded");
+
+							// Only install if cap contains a single applet
+							if (instcap.getAppletAIDs().size() > 1) {
+								System.out.println("CAP contains more than one applet, create instances manually with --" + CMD_CREATE);
+							} else {
+								// Take the applet AID from CAP but allow to override
+								AID appaid = instcap.getAppletAIDs().get(0);
+								if (args.has(OPT_APPLET)) {
+									appaid = (AID) args.valueOf(OPT_APPLET);
+								}
+								if (args.has(CMD_CREATE)) {
+									appaid = (AID) args.valueOf(CMD_CREATE);
+								}
+								if (gp.getRegistry().allAIDs().contains(appaid)) {
+									System.err.println("WARNING: Applet " + appaid + " already present on card");
+								}
+								gp.installAndMakeSelectable(instcap.getPackageAID(), appaid, null, getInstPrivs(args), getInstParams(args), null);
+							}
 						}
 
 						// --create <aid> (--applet <aid> --package <aid> or --cap <cap>)

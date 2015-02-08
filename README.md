@@ -97,6 +97,12 @@ Command line samples assume default test keys of ```40..4F```. If you need custo
 
         gp -cap OpenPGPApplet.cap -create D2760001240102000000000272950000 -default
 
+##### Installation options
+ * `-default` - makes the applet default selected
+ * `-terminate` - gives card lock and card terminate privileges to the applet
+ * `-sdomain` - specifies security domain privilege
+ * `-params <hex>` - installation parameters for applet
+
 #### Lock / unlock usage
 
  * Set ```010B0371D78377B801F2D62AFC671D95``` key to a card with default ```40..4F``` keys:

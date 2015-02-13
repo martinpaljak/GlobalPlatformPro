@@ -250,7 +250,7 @@ public class CapFile {
 
 	private byte[] getRawCode(boolean includeDebug) {
 		byte[] result = new byte[getCodeLength(includeDebug)];
-		short offset = 0;
+		int offset = 0;
 		for (String name : componentNames) {
 			if (!includeDebug && (name.equals("Debug") || name.equals("Descriptor"))) {
 				continue;

@@ -227,7 +227,9 @@ public class GlobalPlatform {
 			int aid_length = TLVUtils.getTagLength(fci, aid_offset);
 
 			AID detectedAID = new AID(fci, aid_offset + 2, aid_length);
-			verbose("Auto-detected ISD AID: " + detectedAID);
+			if (sdAID == null) {
+				verbose("Auto-detected ISD AID: " + detectedAID);
+			}
 			if (sdAID != null && !detectedAID.equals(sdAID)) {
 				printStrictWarning("SD AID in FCI does not match the requested AID!");
 			}

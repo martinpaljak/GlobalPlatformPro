@@ -132,7 +132,7 @@ public class CapFile {
 		byte[] applet = capComponents.get("Applet");
 		if (applet != null) {
 			int offset = 4;
-			for (int j = 0; j < applet[3]; j++) {
+			for (int j = 0; j < (applet[3] & 0xFF); j++) {
 				int len = applet[offset++];
 				appletAIDs.add(new AID(applet, offset, len));
 				// Skip install_method_offset

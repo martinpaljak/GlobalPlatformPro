@@ -384,7 +384,7 @@ public class GlobalPlatform {
 		// P1 key version (SCP1)
 		// P2 either key ID (SCP01) or 0 (SCP2)
 		// TODO: use it here for KeyID?
-		CommandAPDU initUpdate = new CommandAPDU(CLA_GP, INS_INITIALIZE_UPDATE, staticKeys.getKeyVersion(), staticKeys.getKeyID(), host_challenge);
+		CommandAPDU initUpdate = new CommandAPDU(CLA_GP, INS_INITIALIZE_UPDATE, staticKeys.getKeyVersion(), staticKeys.getKeyID(), host_challenge, 256);
 
 		ResponseAPDU response = channel.transmit(initUpdate);
 		int sw = response.getSW();
@@ -1001,7 +1001,7 @@ public class GlobalPlatform {
 
 
 	private byte[] getConcatenatedStatus(int p1, byte[] data) throws CardException, GPException {
-		CommandAPDU getStatus = new CommandAPDU(CLA_GP, INS_GET_STATUS, p1, 0x00, data);
+		CommandAPDU getStatus = new CommandAPDU(CLA_GP, INS_GET_STATUS, p1, 0x00, data, 256);
 		ResponseAPDU response = transmit(getStatus);
 		int sw = response.getSW();
 		if ((sw != ISO7816.SW_NO_ERROR) && (sw != 0x6310)) {
@@ -1012,7 +1012,7 @@ public class GlobalPlatform {
 			bo.write(response.getData());
 
 			while (response.getSW() == 0x6310) {
-				getStatus = new CommandAPDU(CLA_GP, INS_GET_STATUS, p1, 0x01, data);
+				getStatus = new CommandAPDU(CLA_GP, INS_GET_STATUS, p1, 0x01, data, 256);
 				response = transmit(getStatus);
 
 				bo.write(response.getData());

@@ -648,10 +648,19 @@ public final class GPTool {
 		}
 		return privs;
 	}
+
 	private static byte [] getInstParams(OptionSet args) {
 		byte[] params = null;
 		if (args.has(OPT_PARAMS)) {
 			params = HexUtils.stringToBin((String) args.valueOf(OPT_PARAMS));
+			// Simple use: only application paramters without tag, prepend 0xC9
+			if (params[0] != 0xC9) {
+				byte [] newparams = new byte[params.length + 2];;
+				newparams[0] = (byte) 0xC9;
+				newparams[1] = (byte) params.length;
+				System.arraycopy(newparams, 0, params, 2, params.length);
+				params = newparams;
+			}
 		}
 		return params;
 	}

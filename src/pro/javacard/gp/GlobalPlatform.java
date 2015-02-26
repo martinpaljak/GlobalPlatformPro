@@ -765,14 +765,8 @@ public class GlobalPlatform {
 			printStrictWarning("Applet with instance AID " + instanceAID + " is already present on card");
 		}
 		if (installParams == null) {
-			installParams = new byte[0];
+			installParams = new byte[] { (byte) 0xC9, 0x00 };
 		}
-		byte [] params;
-		params = new byte[installParams.length + 2];;
-		params[0] = (byte) 0xc9;
-		params[1] = (byte) installParams.length;
-		System.arraycopy(installParams, 0, params, 2, installParams.length);
-
 		if (installToken == null) {
 			installToken = new byte[0];
 		}
@@ -790,8 +784,8 @@ public class GlobalPlatform {
 			bo.write(1);
 			bo.write(privileges);
 
-			bo.write(params.length);
-			bo.write(params);
+			bo.write(installParams.length);
+			bo.write(installParams);
 
 			bo.write(installToken.length);
 			bo.write(installToken);

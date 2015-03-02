@@ -1,5 +1,7 @@
 # GlobalPlatformPro from [javacard.pro](http://javacard.pro)
 
+[![Join the chat at https://gitter.im/martinpaljak/GlobalPlatformPro](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/martinpaljak/GlobalPlatformPro?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 Load and manage applets on compatible JavaCards from command line or from your Java project with a [Do What I Mean](http://en.wikipedia.org/wiki/DWIM) approach.
 
 > Provides an **easy to use** and **high level** interface that most of the time **JustWorks<sup>(TM)</sup>**, is **flexible** and **[100% open source](#license)**!

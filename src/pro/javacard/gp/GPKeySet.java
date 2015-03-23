@@ -72,7 +72,8 @@ public class GPKeySet {
 			this.id = id;
 			this.length = length;
 			// FIXME: these values should be encapsulated somewhere
-			if (type == 0x80) {
+			// FIXME: 0x81 is actually reserved according to GP
+			if (type == 0x80 || type == 0x81) {
 				this.type = Type.DES3;
 			} else if (type == 0x88) {
 				this.type = Type.AES;

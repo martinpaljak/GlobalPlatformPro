@@ -32,6 +32,7 @@ ant
  * Travis - [![Build Status](https://travis-ci.org/martinpaljak/GlobalPlatformPro.png?branch=master)](https://travis-ci.org/martinpaljak/GlobalPlatformPro)
  * Coverity - [![Coverity status](https://scan.coverity.com/projects/4020/badge.svg?flat=1)](https://scan.coverity.com/projects/4020/)
  * [![Join the chat at https://gitter.im/martinpaljak/GlobalPlatformPro](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/martinpaljak/GlobalPlatformPro?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 ### Usage
 
 *Beware: [until v0.5 is released](https://github.com/martinpaljak/GlobalPlatformPro/milestones), both command line and Java API are subject to change without notice. Check back often.*

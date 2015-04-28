@@ -446,17 +446,24 @@ public final class GPTool {
 
 							if (args.has(OPT_REINSTALL)) {
 								gp.verbose("Removing existing package");
-								gp.deleteAID(instcap.getPackageAID(), true);
+								try {
+									gp.deleteAID(instcap.getPackageAID(), true);
+								} catch (GPException e) {
+									if (e.sw == 0x6A88) {
+										System.err.println("Applet with default AID-s not present on card. Ignoring.");
+									} else {
+										throw e;
+									}
+								}
 							}
 
 							try {
 								gp.loadCapFile(instcap);
 							} catch (GPException e) {
-								if (e.sw == 0x6985) {
-									System.err.println("Applet loading failed. Are you sure the CAP file target is compatible with your card?");
-								} else {
-									throw e;
+								if (e.sw == 0x6985 || e.sw == 0x6A80) {
+									System.err.println("Applet loading failed. Are you sure the CAP file (JC version, packages) is compatible with your card?");
 								}
+								throw e;
 							}
 							gp.verbose("CAP loaded");
 

@@ -4,10 +4,13 @@
   <!-- Build the software -->
   <path id="build.classpath">
     <pathelement location="lib/jopt-simple-4.8.jar"/>
-    <pathelement location="lib/apdu4j.jar"/>
+    <pathelement location="ext/apdu4j/apdu4j.jar"/>
     <pathelement location="lib/bcprov-jdk15on-151.jar"/>
   </path>
-  <target name="compile" description="compile the source">
+  <target name="deps" description="build dependencies">
+    <ant dir="ext/apdu4j"/>
+  </target>
+  <target name="compile" description="compile the source" depends="deps">
     <mkdir dir="build"/>
     <javac srcdir="src" destdir="build" includeantruntime="false" excludes="**/tests/**" target="1.7" source="1.7" debug="true" debuglevel="lines,vars,source">
       <compilerarg value="-Xlint"/>
@@ -27,7 +30,7 @@
        <fileset file="version.txt"/>
     </jar>
     <jar destfile="gp.jar" level="9">
-      <zipfileset src="lib/apdu4j.jar"/>
+      <zipfileset src="ext/apdu4j/apdu4j.jar"/>
       <zipfileset src="optimized-globalplatform.jar" excludes="org/bouncycastle/x509/"/>
       <manifest><attribute name="Main-Class" value="pro.javacard.gp.GPTool"/></manifest>
       <fileset file="version.txt"/>

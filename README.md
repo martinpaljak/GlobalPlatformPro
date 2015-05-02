@@ -18,7 +18,7 @@ Load and manage applets on compatible JavaCards from command line or from your J
 * Or build it yourself (see [CONTRIBUTING](./CONTRIBUTING.md) for tips), it is really easy:
 
 ```shell
-git clone https://github.com/martinpaljak/GlobalPlatformPro
+git clone --recursive https://github.com/martinpaljak/GlobalPlatformPro
 cd GlobalPlatformPro
 ant
 ```

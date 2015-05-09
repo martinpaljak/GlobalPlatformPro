@@ -128,7 +128,7 @@ public final class GPTool {
 
 
 		parser.accepts(OPT_DELETEDEPS, "Also delete dependencies");
-		parser.accepts(OPT_REINSTALL, "Remove card content during installation");
+		parser.accepts(OPT_REINSTALL, "Reinstall CAP").withOptionalArg().ofType(File.class);
 		parser.accepts(CMD_MAKE_DEFAULT, "Make AID the default").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
 
 		parser.accepts(CMD_DELETE, "Delete something").requiredIf(OPT_DELETEDEPS).withOptionalArg().withValuesConvertedBy(ArgMatchers.aid());
@@ -350,7 +350,7 @@ public final class GPTool {
 					}
 
 					// Authenticate, only if needed
-					if (args.has(CMD_LIST) || args.has(CMD_LOAD) || args.has(CMD_INSTALL) || args.has(CMD_DELETE)
+					if (args.has(CMD_LIST) || args.has(CMD_LOAD) || args.has(CMD_INSTALL) || args.hasArgument(OPT_REINSTALL) || args.has(CMD_DELETE)
 							|| args.has(CMD_CREATE) || args.has(CMD_LOCK) || args.has(CMD_UNLOCK)
 							|| args.has(CMD_MAKE_DEFAULT) || args.has(CMD_UNINSTALL) || args.has(CMD_SECURE_APDU)) {
 
@@ -434,10 +434,20 @@ public final class GPTool {
 							}
 						}
 
-						// --install <applet.cap>
-						if (args.has(CMD_INSTALL)) {
 
-							File capfile = (File) args.valueOf(CMD_INSTALL);
+						// --install <applet.cap>
+						if (args.has(CMD_INSTALL) || args.hasArgument(OPT_REINSTALL)) {
+							final File capfile;
+
+							// Sanity check
+							if (args.hasArgument(OPT_REINSTALL) && args.has(CMD_INSTALL)) {
+								throw new IllegalArgumentException("Can't specify an argument for --reinstall if --install is present");
+							} else if (args.hasArgument(OPT_REINSTALL)) {
+								capfile = (File) args.valueOf(OPT_REINSTALL);
+							} else {
+								capfile = (File) args.valueOf(CMD_INSTALL);
+							}
+
 							CapFile instcap = new CapFile(new FileInputStream(capfile));
 
 							if (args.has(OPT_VERBOSE)) {

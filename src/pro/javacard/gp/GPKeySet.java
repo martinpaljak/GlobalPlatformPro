@@ -173,6 +173,11 @@ public class GPKeySet {
 		keys.put(KeyType.KEK, master);
 	}
 
+	public GPKeySet(GPKey enc, GPKey mac, GPKey kek) {
+		keys.put(KeyType.ENC, enc);
+		keys.put(KeyType.MAC, mac);
+		keys.put(KeyType.KEK, kek);
+	}
 
 	public void setKey(KeyType type, GPKey k) {
 		keys.put(type, k);

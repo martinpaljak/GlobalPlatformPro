@@ -1,7 +1,7 @@
 # Contributing to GlobalPlatformPro
  * Use the software!
  * Send card information
- * Send debug logs
+ * Send debug logs (with ```--debug``` and ```--verbose```)
  * All patches must be with MIT license.
 
 ## Building the software

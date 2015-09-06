@@ -3,9 +3,11 @@ NOTICE: a JavaCard shall be listed here as "supported" if and only if:
 * Comes with default keys or otherwise known keys and OP_READY state
 * Has been verified as working for at least a "load-install-lock-uninstall-unlock" cycle
 
-TIP: When ordering cards online, always make sure that you ask for cards with default keys
+TIP: When ordering cards online, always make sure that you ask for cards with default keys!
 
-## Supported cards (with a confirmed shop link)
+ **Make sure you know the JavaCard requirements BEFORE ordering.**
+
+## Supported cards (with a confirmed shop link, in no particular order)
 * [SmartCafe Expert 3.2 72K JavaCard 2.2.1/GlobalPlatform 2.1.1 12€](http://www.smartcardfocus.com/shop/ilp/id~521/SmartCafe_Expert_3_2_72K/p/index.shtml)
  * Virgin cars require unlocking with "-emv"
   * and other products with same name but different EEPROM + connectivity:

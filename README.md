@@ -203,6 +203,10 @@ The ancestor of this code is GPJ (Global Platform for SmartCardIO) which is (sti
  * gpcomm - https://code.google.com/p/gpcomm/
    * written in Java
    * incomplete and abandoned
+ * globalplatform.net - https://github.com/sepulo/globalplatform.net
+   * written in c#
+   * unclear license (missing)
+   * only supports SCP01 and SCP02
  * JCOP tools, RADIII, JCardManager4, JLoad, PyApduTool etc
    * not publicly available cross-platform open source projects and thus not suitable for this comparision
 

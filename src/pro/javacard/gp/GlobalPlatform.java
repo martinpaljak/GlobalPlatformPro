@@ -47,12 +47,12 @@ import javax.smartcardio.CardException;
 import javax.smartcardio.CommandAPDU;
 import javax.smartcardio.ResponseAPDU;
 
+import apdu4j.HexUtils;
+import apdu4j.ISO7816;
 import pro.javacard.gp.GPData.KeyType;
 import pro.javacard.gp.GPKeySet.Diversification;
 import pro.javacard.gp.GPKeySet.GPKey;
 import pro.javacard.gp.GPKeySet.GPKey.Type;
-import apdu4j.HexUtils;
-import apdu4j.ISO7816;
 
 /**
  * The main Global Platform class. Provides most of the Global Platform
@@ -99,6 +99,7 @@ public class GlobalPlatform {
 	private static final byte INS_GET_STATUS = (byte) 0xF2;
 	private static final byte INS_SET_STATUS = (byte) 0xF0;
 	private static final byte INS_PUT_KEY = (byte) 0xD8;
+	private static final byte INS_STORE_DATA = (byte) 0xE2;
 
 
 	// SD AID of the card successfully selected or null
@@ -799,6 +800,45 @@ public class GlobalPlatform {
 		dirty = true;
 	}
 
+	/**
+	 * Sends STORE DATA commands to the application identified
+	 *
+	 * @param aid - AID of the target application (or Security Domain)
+	 *
+	 * @throws GPException
+	 * @throws CardException
+	 *
+	 * @see GP 2.1.1 9.5.2
+	 *
+	 */
+	public void storeData(AID aid, byte []data) throws CardException, GPException {
+		// send the INSTALL for personalization command
+		ByteArrayOutputStream bo = new ByteArrayOutputStream();
+		try {
+			// GP 2.1.1 9.5.2.3.5
+			bo.write(0);
+			bo.write(0);
+			bo.write(aid.getLength());
+			bo.write(aid.getBytes());
+			bo.write(0);
+			bo.write(0);
+			bo.write(0);
+		}
+		catch (IOException ioe) {
+			throw new RuntimeException(ioe);
+		}
+		CommandAPDU install = new CommandAPDU(CLA_GP, INS_INSTALL, 0x20, 0x00, bo.toByteArray());
+		ResponseAPDU response = transmit(install);
+		check(response, "Install for personalization failed");
+
+		// Now pump the data
+		List<byte[]> blocks = GPUtils.splitArray(data, wrapper.getBlockSize());
+		for (int i = 0; i < blocks.size(); i++) {
+			CommandAPDU load = new CommandAPDU(CLA_GP, INS_STORE_DATA, (i == (blocks.size() - 1)) ? 0x80 : 0x00, (byte) i, blocks.get(i));
+			response = transmit(load);
+			check(response, "STORE DATA failed");
+		}
+	}
 
 	public void makeDefaultSelected(AID aid) throws CardException, GPException {
 		// FIXME: only works for 2.1.1 cards

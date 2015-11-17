@@ -22,6 +22,8 @@
 
 package pro.javacard.gp;
 
+import java.util.ArrayList;
+import java.util.List;
 
 public class GPUtils {
 
@@ -45,6 +47,28 @@ public class GPUtils {
 		System.arraycopy(a, 0, s, 0, a.length);
 		System.arraycopy(b, 0, s, a.length, b.length);
 		return s;
+	}
+
+	public static List<byte[]> splitArray(byte[] array, int blockSize) {
+		List<byte[]> result = new ArrayList<byte[]>();
+
+		int len = array.length;
+		int offset = 0;
+		int left = len - offset;
+		while (left > 0) {
+			int currentLen = 0;
+			if (left >= blockSize) {
+				currentLen = blockSize;
+			} else {
+				currentLen = left;
+			}
+			byte[] block = new byte[currentLen];
+			System.arraycopy(array, offset, block, 0, currentLen);
+			result.add(block);
+			left -= currentLen;
+			offset += currentLen;
+		}
+		return result;
 	}
 
 }

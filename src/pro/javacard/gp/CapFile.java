@@ -48,7 +48,7 @@ import apdu4j.HexUtils;
 public class CapFile {
 
 	public static final String[] componentNames = { "Header", "Directory", "Import", "Applet", "Class", "Method", "StaticField", "Export",
-		"ConstantPool", "RefLocation", "Descriptor", "Debug" };
+			"ConstantPool", "RefLocation", "Descriptor", "Debug" };
 
 	private final HashMap<String, byte[]> capComponents = new HashMap<String, byte[]>();
 	private String packageName = null;
@@ -221,7 +221,7 @@ public class CapFile {
 			} catch (IOException ioe) {
 				throw new RuntimeException(ioe);
 			}
-			blocks = splitArray(bo.toByteArray(), blockSize);
+			blocks = GPUtils.splitArray(bo.toByteArray(), blockSize);
 		} else {
 			for (String name : componentNames) {
 				if (!includeDebug && (name.equals("Debug") || name.equals("Descriptor"))) {
@@ -242,7 +242,7 @@ public class CapFile {
 					}
 					currentComponent = bo.toByteArray();
 				}
-				blocks = splitArray(currentComponent, blockSize);
+				blocks = GPUtils.splitArray(currentComponent, blockSize);
 			}
 		}
 		return blocks;
@@ -271,28 +271,6 @@ public class CapFile {
 		} catch (NoSuchAlgorithmException e) {
 			throw new RuntimeException("Not possible", e);
 		}
-	}
-
-	private List<byte[]> splitArray(byte[] array, int blockSize) {
-		List<byte[]> result = new ArrayList<byte[]>();
-
-		int len = array.length;
-		int offset = 0;
-		int left = len - offset;
-		while (left > 0) {
-			int currentLen = 0;
-			if (left >= blockSize) {
-				currentLen = blockSize;
-			} else {
-				currentLen = left;
-			}
-			byte[] block = new byte[currentLen];
-			System.arraycopy(array, offset, block, 0, currentLen);
-			result.add(block);
-			left -= currentLen;
-			offset += currentLen;
-		}
-		return result;
 	}
 
 	public void dump(PrintStream out) {

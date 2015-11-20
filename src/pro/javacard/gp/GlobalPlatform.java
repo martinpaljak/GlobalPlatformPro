@@ -100,7 +100,7 @@ public class GlobalPlatform {
 	private static final byte INS_SET_STATUS = (byte) 0xF0;
 	private static final byte INS_PUT_KEY = (byte) 0xD8;
 	private static final byte INS_STORE_DATA = (byte) 0xE2;
-
+	private static final byte INS_GET_DATA = (byte) 0xCA;
 
 	// SD AID of the card successfully selected or null
 	public AID sdAID = null;

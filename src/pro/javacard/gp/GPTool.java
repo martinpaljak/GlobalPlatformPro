@@ -18,6 +18,10 @@ import javax.smartcardio.CardTerminals.State;
 import javax.smartcardio.CommandAPDU;
 import javax.smartcardio.TerminalFactory;
 
+import apdu4j.APDUReplayProvider;
+import apdu4j.HexUtils;
+import apdu4j.LoggingCardTerminal;
+import apdu4j.TerminalManager;
 import joptsimple.OptionException;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
@@ -26,10 +30,6 @@ import pro.javacard.gp.GPKeySet.Diversification;
 import pro.javacard.gp.GPKeySet.GPKey;
 import pro.javacard.gp.GPKeySet.GPKey.Type;
 import pro.javacard.gp.GlobalPlatform.APDUMode;
-import apdu4j.APDUReplayProvider;
-import apdu4j.HexUtils;
-import apdu4j.LoggingCardTerminal;
-import apdu4j.TerminalManager;
 
 
 public final class GPTool {
@@ -350,9 +350,7 @@ public final class GPTool {
 					}
 
 					// Authenticate, only if needed
-					if (args.has(CMD_LIST) || args.has(CMD_LOAD) || args.has(CMD_INSTALL) || args.hasArgument(OPT_REINSTALL) || args.has(CMD_DELETE)
-							|| args.has(CMD_CREATE) || args.has(CMD_LOCK) || args.has(CMD_UNLOCK)
-							|| args.has(CMD_MAKE_DEFAULT) || args.has(CMD_UNINSTALL) || args.has(CMD_SECURE_APDU)) {
+					if (needsAuthentication(args)) {
 
 						EnumSet<APDUMode> mode = GlobalPlatform.defaultMode.clone();
 						// Override default mode if needed.
@@ -680,5 +678,17 @@ public final class GPTool {
 			}
 		}
 		return params;
+	}
+
+	private static boolean needsAuthentication(OptionSet args) {
+		if (args.has(CMD_LIST) || args.has(CMD_LOAD) || args.has(CMD_INSTALL))
+			return true;
+		if (args.hasArgument(OPT_REINSTALL) || args.has(CMD_DELETE) || args.has(CMD_CREATE))
+			return true;
+		if (args.has(CMD_LOCK) || args.has(CMD_UNLOCK) || args.has(CMD_MAKE_DEFAULT))
+			return true;
+		if (args.has(CMD_UNINSTALL) || args.has(CMD_SECURE_APDU))
+			return true;
+		return false;
 	}
 }

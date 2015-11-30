@@ -473,7 +473,7 @@ public class GlobalPlatform {
 		// Diversify if required
 		if (staticKeys.suggestedDiversification != Diversification.NONE) {
 			staticKeys.diversify(diversification_data, staticKeys.suggestedDiversification, scpMajorVersion);
-			verbose("Diversififed master keys: " + staticKeys);
+			verbose("Diversififed master keys (KDD: " + HexUtils.encodeHexString(diversification_data) + "): " + staticKeys);
 		}
 		// Check that SCP03 would be using AES keys
 		if (scpMajorVersion == 3) {

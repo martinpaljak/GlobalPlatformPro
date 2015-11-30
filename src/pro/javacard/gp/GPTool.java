@@ -34,20 +34,20 @@ import pro.javacard.gp.GlobalPlatform.APDUMode;
 
 public final class GPTool {
 
-	private final static String CMD_INFO = "info";
+	private final static String OPT_INFO = "info";
 
-	private final static String CMD_LIST = "list";
-	private final static String CMD_LOCK = "lock";
+	private final static String OPT_LIST = "list";
+	private final static String OPT_LOCK = "lock";
 
-	private final static String CMD_INSTALL = "install";
-	private final static String CMD_UNINSTALL = "uninstall";
-	private final static String CMD_DELETE = "delete";
-	private final static String CMD_CREATE = "create";
-	private final static String CMD_LOAD = "load";
-	private final static String CMD_UNLOCK = "unlock";
-	private final static String CMD_MAKE_DEFAULT = "make-default";
-	private final static String CMD_APDU = "apdu";
-	private final static String CMD_SECURE_APDU = "secure-apdu";
+	private final static String OPT_INSTALL = "install";
+	private final static String OPT_UNINSTALL = "uninstall";
+	private final static String OPT_DELETE = "delete";
+	private final static String OPT_CREATE = "create";
+	private final static String OPT_LOAD = "load";
+	private final static String OPT_UNLOCK = "unlock";
+	private final static String OPT_MAKE_DEFAULT = "make-default";
+	private final static String OPT_APDU = "apdu";
+	private final static String OPT_SECURE_APDU = "secure-apdu";
 	private final static String OPT_SCP = "scp";
 	private final static String OPT_LOCK_APPLET = "lock-applet";
 	private final static String OPT_UNLOCK_APPLET = "unlock-applet";
@@ -99,10 +99,10 @@ public final class GPTool {
 		parser.acceptsAll(Arrays.asList("d", OPT_DEBUG), "Show PC/SC and APDU trace");
 		parser.acceptsAll(Arrays.asList("v", OPT_VERBOSE), "Be verbose about operations");
 		parser.acceptsAll(Arrays.asList("r", OPT_READER), "Use specific reader").withRequiredArg();
-		parser.acceptsAll(Arrays.asList("l", CMD_LIST), "List the contents of the card");
-		parser.acceptsAll(Arrays.asList("i", CMD_INFO), "Show information");
-		parser.acceptsAll(Arrays.asList("a", CMD_APDU), "Send raw APDU (hex)").withRequiredArg();
-		parser.acceptsAll(Arrays.asList("s", CMD_SECURE_APDU), "Send raw APDU (hex) via SCP").withRequiredArg();
+		parser.acceptsAll(Arrays.asList("l", OPT_LIST), "List the contents of the card");
+		parser.acceptsAll(Arrays.asList("i", OPT_INFO), "Show information");
+		parser.acceptsAll(Arrays.asList("a", OPT_APDU), "Send raw APDU (hex)").withRequiredArg();
+		parser.acceptsAll(Arrays.asList("s", OPT_SECURE_APDU), "Send raw APDU (hex) via SCP").withRequiredArg();
 		parser.accepts(OPT_DUMP, "Dump APDU communication to <File>").withRequiredArg().ofType(File.class);
 		parser.accepts(OPT_REPLAY, "Replay APDU responses from <File>").withRequiredArg().ofType(File.class);
 
@@ -114,12 +114,12 @@ public final class GPTool {
 
 		// Applet operation options
 		parser.accepts(OPT_CAP, "Use a CAP file as source").withRequiredArg().ofType(File.class);
-		parser.accepts(CMD_LOAD, "Load a CAP file").withRequiredArg().ofType(File.class);
+		parser.accepts(OPT_LOAD, "Load a CAP file").withRequiredArg().ofType(File.class);
 
-		parser.accepts(CMD_INSTALL, "Install applet(s) from CAP").withOptionalArg().ofType(File.class);
+		parser.accepts(OPT_INSTALL, "Install applet(s) from CAP").withOptionalArg().ofType(File.class);
 		parser.accepts(OPT_PARAMS, "Installation parameters").withRequiredArg();
 
-		parser.accepts(CMD_UNINSTALL, "Uninstall applet/package").withRequiredArg().ofType(File.class);
+		parser.accepts(OPT_UNINSTALL, "Uninstall applet/package").withRequiredArg().ofType(File.class);
 		parser.accepts(OPT_DEFAULT, "Indicate Default Selected privilege");
 		parser.accepts(OPT_TERMINATE, "Indicate Card Lock+Terminate privilege");
 		parser.accepts(OPT_SDOMAIN, "Indicate Security Domain privilege");
@@ -129,11 +129,11 @@ public final class GPTool {
 
 		parser.accepts(OPT_DELETEDEPS, "Also delete dependencies");
 		parser.accepts(OPT_REINSTALL, "Reinstall CAP").withOptionalArg().ofType(File.class);
-		parser.accepts(CMD_MAKE_DEFAULT, "Make AID the default").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
+		parser.accepts(OPT_MAKE_DEFAULT, "Make AID the default").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
 
-		parser.accepts(CMD_DELETE, "Delete something").requiredIf(OPT_DELETEDEPS).withOptionalArg().withValuesConvertedBy(ArgMatchers.aid());
+		parser.accepts(OPT_DELETE, "Delete something").requiredIf(OPT_DELETEDEPS).withOptionalArg().withValuesConvertedBy(ArgMatchers.aid());
 
-		parser.accepts(CMD_CREATE, "Create new instance of an applet").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
+		parser.accepts(OPT_CREATE, "Create new instance of an applet").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
 		parser.accepts(OPT_APPLET, "Applet AID").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
 		parser.accepts(OPT_PACKAGE, "Package AID").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
 
@@ -144,9 +144,9 @@ public final class GPTool {
 		parser.accepts(OPT_KEY, "Specify master key").withRequiredArg().withValuesConvertedBy(ArgMatchers.key());
 		parser.accepts(OPT_KEY_ID, "Specify key ID").withRequiredArg().ofType(Integer.class);
 		parser.accepts(OPT_KEY_VERSION, "Specify key version").withRequiredArg().ofType(Integer.class);
-		parser.accepts(CMD_LOCK, "Set new key").withRequiredArg().withValuesConvertedBy(ArgMatchers.keyset());
+		parser.accepts(OPT_LOCK, "Set new key").withRequiredArg().withValuesConvertedBy(ArgMatchers.keyset());
 
-		parser.accepts(CMD_UNLOCK, "Set default key");
+		parser.accepts(OPT_UNLOCK, "Set default key");
 		parser.accepts(OPT_SCP, "Force the use of SCP0X").withRequiredArg().ofType(Integer.class);
 		parser.accepts(OPT_NEW_KEY_VERSION, "key version for the new key").withRequiredArg().ofType(Integer.class);
 
@@ -314,7 +314,7 @@ public final class GPTool {
 					// Disable strict mode if requested
 					gp.setStrict(!args.has(OPT_RELAX));
 
-					if (args.has(CMD_INFO) || args.has(OPT_VERBOSE)) {
+					if (args.has(OPT_INFO) || args.has(OPT_VERBOSE)) {
 						System.out.println("Reader: " + reader.getName());
 						System.out.println("ATR: " + HexUtils.encodeHexString(card.getATR().getBytes()));
 						System.out.println("More information about your card:");
@@ -323,8 +323,8 @@ public final class GPTool {
 					}
 
 					// Send all raw APDU-s to the default-selected application of the card
-					if (args.has(CMD_APDU)) {
-						for (Object s: args.valuesOf(CMD_APDU)) {
+					if (args.has(OPT_APDU)) {
+						for (Object s: args.valuesOf(OPT_APDU)) {
 							CommandAPDU c = new CommandAPDU(HexUtils.stringToBin((String)s));
 							card.getBasicChannel().transmit(c);
 						}
@@ -334,7 +334,7 @@ public final class GPTool {
 					gp.select((AID) args.valueOf(OPT_SDAID));
 
 					// Fetch some possibly interesting data
-					if (args.has(CMD_INFO)) {
+					if (args.has(OPT_INFO)) {
 						System.out.println("***** Card info:");
 						GPData.print_card_info(gp);
 					}
@@ -369,20 +369,20 @@ public final class GPTool {
 						gp.openSecureChannel(ks, null, scp_version, mode);
 
 						// --secure-apdu or -s
-						if (args.has(CMD_SECURE_APDU)) {
-							for (Object s: args.valuesOf(CMD_SECURE_APDU)) {
+						if (args.has(OPT_SECURE_APDU)) {
+							for (Object s: args.valuesOf(OPT_SECURE_APDU)) {
 								CommandAPDU c = new CommandAPDU(HexUtils.stringToBin((String)s));
 								gp.transmit(c);
 							}
 						}
 
 						// --delete <aid> or --delete --default
-						if (args.has(CMD_DELETE)) {
+						if (args.has(OPT_DELETE)) {
 							if (args.has(OPT_DEFAULT)) {
 								gp.uninstallDefaultSelected(args.has(OPT_DELETEDEPS));
 							}
 							@SuppressWarnings("unchecked")
-							List<AID> aids = (List<AID>) args.valuesOf(CMD_DELETE);
+							List<AID> aids = (List<AID>) args.valuesOf(OPT_DELETE);
 							for (AID aid: aids) {
 								try {
 									gp.deleteAID(aid, args.has(OPT_DELETEDEPS));
@@ -401,8 +401,8 @@ public final class GPTool {
 						}
 
 						// --uninstall <cap>
-						if (args.has(CMD_UNINSTALL)) {
-							File capfile = (File) args.valueOf(CMD_UNINSTALL);
+						if (args.has(OPT_UNINSTALL)) {
+							File capfile = (File) args.valueOf(OPT_UNINSTALL);
 							CapFile instcap = new CapFile(new FileInputStream(capfile));
 							AID aid = instcap.getPackageAID();
 							if (!gp.getRegistry().allAIDs().contains(aid)) {
@@ -414,8 +414,8 @@ public final class GPTool {
 						}
 
 						// --load <applet.cap>
-						if (args.has(CMD_LOAD)) {
-							File capfile = (File) args.valueOf(CMD_LOAD);
+						if (args.has(OPT_LOAD)) {
+							File capfile = (File) args.valueOf(OPT_LOAD);
 							CapFile loadcap = new CapFile(new FileInputStream(capfile));
 
 							if (args.has(OPT_VERBOSE)) {
@@ -434,16 +434,16 @@ public final class GPTool {
 
 
 						// --install <applet.cap>
-						if (args.has(CMD_INSTALL) || args.hasArgument(OPT_REINSTALL)) {
+						if (args.has(OPT_INSTALL) || args.hasArgument(OPT_REINSTALL)) {
 							final File capfile;
 
 							// Sanity check
-							if (args.hasArgument(OPT_REINSTALL) && args.has(CMD_INSTALL)) {
+							if (args.hasArgument(OPT_REINSTALL) && args.has(OPT_INSTALL)) {
 								throw new IllegalArgumentException("Can't specify an argument for --reinstall if --install is present");
 							} else if (args.hasArgument(OPT_REINSTALL)) {
 								capfile = (File) args.valueOf(OPT_REINSTALL);
 							} else {
-								capfile = (File) args.valueOf(CMD_INSTALL);
+								capfile = (File) args.valueOf(OPT_INSTALL);
 							}
 
 							CapFile instcap = new CapFile(new FileInputStream(capfile));
@@ -477,15 +477,15 @@ public final class GPTool {
 
 							// Only install if cap contains a single applet
 							if (instcap.getAppletAIDs().size() > 1) {
-								System.out.println("CAP contains more than one applet, create instances manually with --" + CMD_CREATE);
+								System.out.println("CAP contains more than one applet, create instances manually with --" + OPT_CREATE);
 							} else {
 								// Take the applet AID from CAP but allow to override
 								AID appaid = instcap.getAppletAIDs().get(0);
 								if (args.has(OPT_APPLET)) {
 									appaid = (AID) args.valueOf(OPT_APPLET);
 								}
-								if (args.has(CMD_CREATE)) {
-									appaid = (AID) args.valueOf(CMD_CREATE);
+								if (args.has(OPT_CREATE)) {
+									appaid = (AID) args.valueOf(OPT_CREATE);
 								}
 								if (gp.getRegistry().allAIDs().contains(appaid)) {
 									System.err.println("WARNING: Applet " + appaid + " already present on card");
@@ -495,7 +495,7 @@ public final class GPTool {
 						}
 
 						// --create <aid> (--applet <aid> --package <aid> or --cap <cap>)
-						if (args.has(CMD_CREATE)) {
+						if (args.has(OPT_CREATE)) {
 							AID packageAID = null;
 							AID appletAID = null;
 							// Load from cap if present
@@ -518,7 +518,7 @@ public final class GPTool {
 								throw new IllegalArgumentException("Need --" + OPT_PACKAGE + " and --" + OPT_APPLET + " or --" + OPT_CAP);
 
 							// shoot
-							AID instanceAID = (AID) args.valueOf(CMD_CREATE);
+							AID instanceAID = (AID) args.valueOf(OPT_CREATE);
 							gp.installAndMakeSelectable(packageAID, appletAID, instanceAID, getInstPrivs(args), getInstParams(args), null);
 						}
 
@@ -533,7 +533,7 @@ public final class GPTool {
 						}
 
 						// --list
-						if (args.has(CMD_LIST)) {
+						if (args.has(OPT_LIST)) {
 							for (AIDRegistryEntry e : gp.getRegistry()) {
 								AID aid = e.getAID();
 								System.out.println("AID: " + HexUtils.encodeHexString(aid.getBytes()) + " (" + GPUtils.byteArrayToReadableString(aid.getBytes()) + ")");
@@ -547,7 +547,7 @@ public final class GPTool {
 						}
 
 						// --unlock
-						if (args.has(CMD_UNLOCK)) {
+						if (args.has(OPT_UNLOCK)) {
 							// Write default keys
 							List<GPKeySet.GPKey> keys = new ArrayList<GPKeySet.GPKey>();
 
@@ -576,11 +576,11 @@ public final class GPTool {
 						}
 
 						// --lock
-						if (args.has(CMD_LOCK)) {
+						if (args.has(OPT_LOCK)) {
 							if (args.has(OPT_KEY) || args.has(OPT_MAC) || args.has(OPT_ENC) || args.has(OPT_KEK) && !args.has(OPT_RELAX))
-								gp.printStrictWarning("Using --" + CMD_LOCK + " but specifying other keys");
+								gp.printStrictWarning("Using --" + OPT_LOCK + " but specifying other keys");
 
-							GPKeySet new_keys = ((GPKeySet)args.valueOf(CMD_LOCK));
+							GPKeySet new_keys = ((GPKeySet)args.valueOf(OPT_LOCK));
 							// Note down the master key. TODO: store in GPKeySet ?
 							GPKey master = new_keys.getKey(KeyType.MAC);
 							// Diversify if requested.
@@ -614,8 +614,8 @@ public final class GPTool {
 						}
 
 						// --make-default <aid>
-						if (args.has(CMD_MAKE_DEFAULT)) {
-							gp.makeDefaultSelected((AID) args.valueOf(CMD_MAKE_DEFAULT));
+						if (args.has(OPT_MAKE_DEFAULT)) {
+							gp.makeDefaultSelected((AID) args.valueOf(OPT_MAKE_DEFAULT));
 						}
 					}
 				} catch (GPException e) {
@@ -681,13 +681,13 @@ public final class GPTool {
 	}
 
 	private static boolean needsAuthentication(OptionSet args) {
-		if (args.has(CMD_LIST) || args.has(CMD_LOAD) || args.has(CMD_INSTALL))
+		if (args.has(OPT_LIST) || args.has(OPT_LOAD) || args.has(OPT_INSTALL))
 			return true;
-		if (args.hasArgument(OPT_REINSTALL) || args.has(CMD_DELETE) || args.has(CMD_CREATE))
+		if (args.hasArgument(OPT_REINSTALL) || args.has(OPT_DELETE) || args.has(OPT_CREATE))
 			return true;
-		if (args.has(CMD_LOCK) || args.has(CMD_UNLOCK) || args.has(CMD_MAKE_DEFAULT))
+		if (args.has(OPT_LOCK) || args.has(OPT_UNLOCK) || args.has(OPT_MAKE_DEFAULT))
 			return true;
-		if (args.has(CMD_UNINSTALL) || args.has(CMD_SECURE_APDU))
+		if (args.has(OPT_UNINSTALL) || args.has(OPT_SECURE_APDU))
 			return true;
 		return false;
 	}

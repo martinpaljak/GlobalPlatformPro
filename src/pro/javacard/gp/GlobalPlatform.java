@@ -728,6 +728,8 @@ public class GlobalPlatform {
 			response = transmit(load);
 			check(response, "LOAD failed");
 		}
+		// Mark the registry as dirty
+		dirty = true;
 	}
 
 	/**

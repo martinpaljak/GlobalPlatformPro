@@ -76,6 +76,7 @@ public final class GPTool {
 	private final static String OPT_REINSTALL = "reinstall";
 	private final static String OPT_VIRGIN = "virgin";
 	private final static String OPT_MODE = "mode";
+	private final static String OPT_BS = "bs";
 
 	private final static String OPT_MAC = "mac";
 	private final static String OPT_ENC = "enc";
@@ -157,6 +158,7 @@ public final class GPTool {
 		parser.accepts(OPT_EMV, "Use EMV diversification");
 		parser.accepts(OPT_VISA2, "Use VISA2 diversification");
 		parser.accepts(OPT_MODE, "APDU mode to use (mac/enc/clr)").withRequiredArg().withValuesConvertedBy(ArgMatchers.mode());;
+		parser.accepts(OPT_BS, "maximum APDU length the reader can work with").withRequiredArg().ofType(Integer.class);
 
 		parser.accepts(OPT_SDAID, "ISD AID").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
 
@@ -314,6 +316,12 @@ public final class GPTool {
 					// Disable strict mode if requested
 					gp.setStrict(!args.has(OPT_RELAX));
 
+					// Override block size for stupidly broken readers.
+					// See https://github.com/martinpaljak/GlobalPlatformPro/issues/32
+					// The name of the option comes from a common abbreviation as well as dd utility
+					if (args.has(OPT_BS)) {
+						gp.setBlockSize((int)args.valueOf(OPT_BS));
+					}
 					if (args.has(OPT_INFO) || args.has(OPT_VERBOSE)) {
 						System.out.println("Reader: " + reader.getName());
 						System.out.println("ATR: " + HexUtils.encodeHexString(card.getATR().getBytes()));

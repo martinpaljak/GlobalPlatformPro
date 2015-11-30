@@ -108,7 +108,7 @@ public class GlobalPlatform {
 	// Either 1 or 2 or 3
 	private int scpMajorVersion = 0;
 
-	public static final int defaultLoadSize = 255; // TODO: Check CardData
+	private int blockSize = 255; // TODO: Check CardData as well.
 	private SCPWrapper wrapper = null;
 	private GPKeySet staticKeys = null;
 	private CardChannel channel = null;
@@ -169,6 +169,10 @@ public class GlobalPlatform {
 
 	public void setStrict(boolean strict) {
 		this.strict = strict;
+	}
+
+	public void setBlockSize(int size) {
+		this.blockSize = size;
 	}
 
 	public void imFeelingLucky() throws CardException, GPException {
@@ -522,10 +526,10 @@ public class GlobalPlatform {
 		byte[] host_cryptogram = null;
 		if (scpMajorVersion == 1 || scpMajorVersion == 2) {
 			host_cryptogram = GPCrypto.mac_3des_nulliv(sessionKeys.getKey(KeyType.ENC), GPUtils.concatenate(card_challenge, host_challenge));
-			wrapper = new SCP0102Wrapper(sessionKeys, scpVersion, EnumSet.of(APDUMode.MAC), null, null);
+			wrapper = new SCP0102Wrapper(sessionKeys, scpVersion, EnumSet.of(APDUMode.MAC), null, null, blockSize);
 		} else {
 			host_cryptogram = GPCrypto.scp03_kdf(sessionKeys.getKey(KeyType.MAC), (byte) 0x01, cntx, 64);
-			wrapper = new SCP03Wrapper(sessionKeys, scpVersion, EnumSet.of(APDUMode.MAC), null, null);
+			wrapper = new SCP03Wrapper(sessionKeys, scpVersion, EnumSet.of(APDUMode.MAC), null, null, blockSize);
 		}
 
 		verbose("Calculated host cryptogram: " + HexUtils.encodeHexString(host_cryptogram));
@@ -1150,7 +1154,8 @@ public class GlobalPlatform {
 
 
 
-		private SCP0102Wrapper(GPKeySet sessionKeys, int scp, EnumSet<APDUMode> securityLevel, byte[] icv, byte[] ricv) {
+		private SCP0102Wrapper(GPKeySet sessionKeys, int scp, EnumSet<APDUMode> securityLevel, byte[] icv, byte[] ricv, int bs) {
+			this.blockSize = bs;
 			this.sessionKeys = sessionKeys;
 			this.icv = icv;
 			this.ricv = ricv;
@@ -1359,8 +1364,9 @@ public class GlobalPlatform {
 		byte [] chaining_value = new byte[16];
 		byte [] encryption_counter = new byte[16];
 
-		private SCP03Wrapper(GPKeySet sessionKeys, int scp, EnumSet<APDUMode> securityLevel, byte[] icv, byte[] ricv) {
+		private SCP03Wrapper(GPKeySet sessionKeys, int scp, EnumSet<APDUMode> securityLevel, byte[] icv, byte[] ricv, int bs) {
 			this.sessionKeys = sessionKeys;
+			this.blockSize = bs;
 			// initialize chaining value.
 			System.arraycopy(GPCrypto.null_bytes_16, 0, chaining_value, 0, GPCrypto.null_bytes_16.length);
 			// initialize encryption counter.
@@ -1456,6 +1462,7 @@ public class GlobalPlatform {
 	}
 
 	public static abstract class SCPWrapper {
+		protected int blockSize = 0;
 		protected GPKeySet sessionKeys = null;
 		protected boolean mac = false;
 		protected boolean enc = false;
@@ -1468,7 +1475,7 @@ public class GlobalPlatform {
 		}
 
 		protected int getBlockSize() {
-			int res = GlobalPlatform.defaultLoadSize; // 255
+			int res = this.blockSize;
 			if (mac)
 				res = res - 8;
 			if (enc)

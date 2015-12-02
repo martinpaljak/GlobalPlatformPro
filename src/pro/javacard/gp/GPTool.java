@@ -158,7 +158,7 @@ public final class GPTool {
 		parser.accepts(OPT_EMV, "Use EMV diversification");
 		parser.accepts(OPT_VISA2, "Use VISA2 diversification");
 		parser.accepts(OPT_MODE, "APDU mode to use (mac/enc/clr)").withRequiredArg().withValuesConvertedBy(ArgMatchers.mode());;
-		parser.accepts(OPT_BS, "maximum APDU length the reader can work with").withRequiredArg().ofType(Integer.class);
+		parser.accepts(OPT_BS, "maximum APDU payload size").withRequiredArg().ofType(Integer.class);
 
 		parser.accepts(OPT_SDAID, "ISD AID").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
 

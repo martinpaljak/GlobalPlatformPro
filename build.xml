@@ -49,6 +49,7 @@
   </target>
   <!-- Clean the source tree -->
   <target name="clean" description="clean up">
+    <ant dir="ext/apdu4j" target="clean"/>
     <delete dir="build"/>
     <delete dir="javadoc"/>
     <delete file="gp.jar"/>

@@ -29,9 +29,9 @@
     <jar destfile="openkms-gp.jar" level="9" basedir="build">
        <fileset file="version.txt"/>
     </jar>
-    <jar destfile="gp.jar" level="9">
-      <zipfileset src="ext/apdu4j/apdu4j.jar"/>
-      <zipfileset src="optimized-globalplatform.jar" excludes="org/bouncycastle/x509/"/>
+    <jar destfile="gp.jar" level="9" excludes="META-INF/maven/" duplicate="preserve">
+      <zipfileset src="ext/apdu4j/apdu4j.jar" excludes="META-INF/maven/"/>
+      <zipfileset src="optimized-globalplatform.jar" excludes="org/bouncycastle/x509/ META-INF/maven/"/>
       <manifest><attribute name="Main-Class" value="pro.javacard.gp.GPTool"/></manifest>
       <fileset file="version.txt"/>
     </jar>

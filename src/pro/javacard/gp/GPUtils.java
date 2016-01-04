@@ -42,11 +42,18 @@ public class GPUtils {
 	public static String swToString(int sw) {
 		return String.format("%04X", sw);
 	}
-	public static byte[] concatenate(byte[] a, byte[] b) {
-		byte[] s = new byte[a.length + b.length];
-		System.arraycopy(a, 0, s, 0, a.length);
-		System.arraycopy(b, 0, s, a.length, b.length);
-		return s;
+
+	static byte[] concatenate(byte[]... args) {
+		int length = 0, pos = 0;
+		for (byte[] arg : args) {
+			length += arg.length;
+		}
+		byte[] result = new byte[length];
+		for (byte[] arg : args) {
+			System.arraycopy(arg, 0, result, pos, arg.length);
+			pos += arg.length;
+		}
+		return result;
 	}
 
 	public static List<byte[]> splitArray(byte[] array, int blockSize) {

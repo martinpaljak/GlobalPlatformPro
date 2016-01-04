@@ -1,14 +1,18 @@
 package pro.javacard.gp;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import apdu4j.HexUtils;
 import joptsimple.ValueConversionException;
 import joptsimple.ValueConverter;
 import pro.javacard.gp.GPKeySet.Diversification;
 import pro.javacard.gp.GPKeySet.GPKey;
 import pro.javacard.gp.GPKeySet.GPKey.Type;
 import pro.javacard.gp.GlobalPlatform.APDUMode;
-import apdu4j.HexUtils;
 
 public class ArgMatchers {
+	private static Logger logger = LoggerFactory.getLogger(ArgMatchers.class);
 
 	public static ValueConverter<AID> aid() {
 		return new AIDMatcher();
@@ -132,7 +136,7 @@ public class ArgMatchers {
 				}
 				GPKeySet ks = new GPKeySet(m);
 				ks.suggestedDiversification = d;
-				System.out.println(ks);
+				logger.debug(ks.toString());
 				return ks;
 			} catch (IllegalArgumentException e) {
 				throw new ValueConversionException(arg0 + " is not a valid keyset indicator!");

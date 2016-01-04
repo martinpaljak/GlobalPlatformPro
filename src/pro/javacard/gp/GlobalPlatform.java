@@ -3,7 +3,7 @@
  *
  * Copyright (C) 2009 Wojciech Mostowski, woj@cs.ru.nl
  * Copyright (C) 2009 Francois Kooman, F.Kooman@student.science.ru.nl
- * Copyright (C) 2014 Martin Paljak, martin@martinpaljak.net
+ * Copyright (C) 2014-2016 Martin Paljak, martin@martinpaljak.net
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -47,6 +47,9 @@ import javax.smartcardio.CardException;
 import javax.smartcardio.CommandAPDU;
 import javax.smartcardio.ResponseAPDU;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import apdu4j.HexUtils;
 import apdu4j.ISO7816;
 import pro.javacard.gp.GPData.KeyType;
@@ -59,6 +62,10 @@ import pro.javacard.gp.GPKeySet.GPKey.Type;
  * functionality for managing GP compliant smart cards.
  */
 public class GlobalPlatform {
+	// Not static because of the overall statefulness of the class
+	// Also allows to have the "-v" in the gp tool
+	private static Logger logger = LoggerFactory.getLogger(GlobalPlatform.class);
+
 	public static final short SHORT_0 = 0;
 	public static final int SCP_ANY = 0;
 	public static final int SCP_01_05 = 1;
@@ -117,7 +124,7 @@ public class GlobalPlatform {
 	private byte[] cplc = null;
 	private AIDRegistry registry = null;
 	private boolean dirty = true; // True if registry is dirty.
-	private PrintStream verboseTo = null;
+
 	protected boolean strict = true;
 
 
@@ -158,14 +165,6 @@ public class GlobalPlatform {
 			return "unknown-error";
 		}
 	}
-	public void beVerboseTo(PrintStream out) {
-		this.verboseTo = new PrintStream(out, true);
-	}
-	protected void verbose(String s) {
-		if (verboseTo == null)
-			return;
-		verboseTo.println(s);
-	}
 
 	public void setStrict(boolean strict) {
 		this.strict = strict;
@@ -183,12 +182,12 @@ public class GlobalPlatform {
 		openSecureChannel(ks, null, 0, EnumSet.of(APDUMode.MAC));
 	}
 
-	protected void printStrictWarning(String message) throws GPException {
+	protected void giveStrictWarning(String message) throws GPException {
 		message = "STRICT WARNING: "+ message;
 		if (strict) {
 			throw new GPException(message);
 		} else {
-			System.err.println(message);
+			logger.warn(message);
 		}
 	}
 	// XXX: remove
@@ -215,13 +214,13 @@ public class GlobalPlatform {
 			byte[] identify_data = identify_resp.getData();
 			if (identify_data.length > 15) {
 				if (identify_data[14] == 0x00) {
-					printStrictWarning("Unfused JCOP detected");
+					giveStrictWarning("Unfused JCOP detected");
 				}
 			}
 		}
 
 		if (resp.getSW() == 0x6283) {
-			printStrictWarning("SELECT ISD returned 6283 - CARD_LOCKED");
+			giveStrictWarning("SELECT ISD returned 6283 - CARD_LOCKED");
 		}
 		if (resp.getSW() == 0x9000 || resp.getSW() == 0x6283) {
 			// The security domain AID is in FCI.
@@ -233,10 +232,10 @@ public class GlobalPlatform {
 
 			AID detectedAID = new AID(fci, aid_offset + 2, aid_length);
 			if (sdAID == null) {
-				verbose("Auto-detected ISD AID: " + detectedAID);
+				logger.debug("Auto-detected ISD AID: " + detectedAID);
 			}
 			if (sdAID != null && !detectedAID.equals(sdAID)) {
-				printStrictWarning("SD AID in FCI does not match the requested AID!");
+				giveStrictWarning("SD AID in FCI does not match the requested AID!");
 			}
 			this.sdAID = sdAID == null ? detectedAID : sdAID;
 			return true;
@@ -274,7 +273,7 @@ public class GlobalPlatform {
 		if (resp.getSW() == ISO7816.SW_NO_ERROR) {
 			return GPData.get_key_template_list(resp.getData(), SHORT_0);
 		} else {
-			verbose("GET DATA(Key Information Template) not supported");
+			logger.debug("GET DATA(Key Information Template) not supported");
 		}
 		return GPData.get_key_template_list(null, SHORT_0);
 	}
@@ -284,7 +283,7 @@ public class GlobalPlatform {
 		CommandAPDU command = new CommandAPDU(getGPCLA(), ISO7816.INS_GET_DATA, 0x00, 0x66, 256);
 		ResponseAPDU resp = always_transmit(command);
 		if (resp.getSW() == 0x6A86) {
-			verbose("GET DATA(CardData) not supported, Open Platform 2.0.1 card? " + GPUtils.swToString(resp.getSW()));
+			logger.debug("GET DATA(CardData) not supported, Open Platform 2.0.1 card? " + GPUtils.swToString(resp.getSW()));
 			return null;
 		} else if (resp.getSW() == 0x9000) {
 			return resp.getData();
@@ -345,7 +344,7 @@ public class GlobalPlatform {
 		if (resp.getSW() == ISO7816.SW_NO_ERROR) {
 			return resp.getData();
 		} else {
-			verbose("GET DATA(CPLC) returned SW: " + GPUtils.swToString(resp.getSW()));
+			logger.debug("GET DATA(CPLC) returned SW: " + GPUtils.swToString(resp.getSW()));
 		}
 		return null;
 	}
@@ -433,8 +432,8 @@ public class GlobalPlatform {
 		byte card_cryptogram[] = Arrays.copyOfRange(update_response, offset, offset + 8);
 		offset += card_cryptogram.length;
 
-		verbose("Host challenge: " + HexUtils.encodeHexString(host_challenge));
-		verbose("Card challenge: " + HexUtils.encodeHexString(card_challenge));
+		logger.debug("Host challenge: " + HexUtils.encodeHexString(host_challenge));
+		logger.debug("Card challenge: " + HexUtils.encodeHexString(card_challenge));
 
 		// Verify response
 		// If using explicit key version, it must match.
@@ -442,8 +441,8 @@ public class GlobalPlatform {
 			throw new GPException("Key version mismatch: " + staticKeys.getKeyVersion() + " != " + keyVersion);
 		}
 
-		verbose("Card reports SCP0" + scpMajorVersion + " with version " + keyVersion + " keys");
-		verbose("Master keys: " + staticKeys);
+		logger.debug("Card reports SCP0" + scpMajorVersion + " with version " + keyVersion + " keys");
+		logger.debug("Master keys: " + staticKeys);
 
 		// Set default SCP version based on major version, if not explicitly known.
 		if (scpVersion == SCP_ANY) {
@@ -452,24 +451,24 @@ public class GlobalPlatform {
 			} else if (scpMajorVersion == 2) {
 				scpVersion = SCP_02_15;
 			} else if (scpMajorVersion == 3) {
-				verbose("SCP03 i=" + scp_i);
+				logger.debug("SCP03 i=" + scp_i);
 				scpVersion = 3; // FIXME: the symbolic numbering of versions needs to be fixed.
 			}
 		} else if (scpVersion != scpMajorVersion) {
-			verbose("Overriding SCP version: card reports " + scpMajorVersion + " but user requested " + scpVersion);
+			logger.debug("Overriding SCP version: card reports " + scpMajorVersion + " but user requested " + scpVersion);
 			scpMajorVersion = scpVersion;
 			if (scpVersion == 1) {
 				scpVersion = SCP_01_05;
 			} else if (scpVersion == 2) {
 				scpVersion = SCP_02_15;
 			} else {
-				System.out.println("error: " + scpVersion);
+				logger.debug("error: " + scpVersion);
 			}
 		}
 
 		// Remove RMAC if SCP01 TODO: this should be generic sanitizer somewhere
 		if (scpMajorVersion == 1 && securityLevel.contains(APDUMode.RMAC)) {
-			verbose("SCP01 does not support RMAC, removing.");
+			logger.debug("SCP01 does not support RMAC, removing.");
 			securityLevel.remove(APDUMode.RMAC);
 		}
 
@@ -477,13 +476,13 @@ public class GlobalPlatform {
 		// Diversify if required
 		if (staticKeys.suggestedDiversification != Diversification.NONE) {
 			staticKeys.diversify(diversification_data, staticKeys.suggestedDiversification, scpMajorVersion);
-			verbose("Diversififed master keys (KDD: " + HexUtils.encodeHexString(diversification_data) + "): " + staticKeys);
+			logger.debug("Diversififed master keys (KDD: " + HexUtils.encodeHexString(diversification_data) + "): " + staticKeys);
 		}
 		// Check that SCP03 would be using AES keys
 		if (scpMajorVersion == 3) {
 			for (GPKey k: staticKeys.getKeys().values()) {
 				if (k.getType() != Type.AES) {
-					printStrictWarning("Usign SCP03 but key set has 3DES keys?");
+					giveStrictWarning("Usign SCP03 but key set has 3DES keys?");
 				}
 			}
 		}
@@ -494,7 +493,7 @@ public class GlobalPlatform {
 			sessionKeys = deriveSessionKeysSCP01(staticKeys, host_challenge, card_challenge);
 		} else if (scpMajorVersion == 2) {
 			seq = Arrays.copyOfRange(update_response, 12, 14);
-			verbose("Sequnce counter: " + HexUtils.encodeHexString(seq));
+			logger.debug("Sequnce counter: " + HexUtils.encodeHexString(seq));
 			sessionKeys = deriveSessionKeysSCP02(staticKeys, seq, false);
 		} else if (scpMajorVersion == 3) {
 			if (update_response.length == 32) {
@@ -504,7 +503,7 @@ public class GlobalPlatform {
 		} else {
 			throw new GPException("Don't know how to handle SCP version " + scpMajorVersion);
 		}
-		verbose("Derived session keys: " + sessionKeys);
+		logger.debug("Derived session keys: " + sessionKeys);
 
 		// Verify card cryptogram
 		byte[] my_card_cryptogram = null;
@@ -517,9 +516,9 @@ public class GlobalPlatform {
 
 		// This is the main check for possible successful authentication.
 		if (!Arrays.equals(card_cryptogram, my_card_cryptogram)) {
-			printStrictWarning("Card cryptogram invalid!\nCard: " + HexUtils.encodeHexString(card_cryptogram) + "\nHost: "+ HexUtils.encodeHexString(my_card_cryptogram) + "\n!!! DO NOT RE-TRY THE SAME COMMAND/KEYS OR YOU MAY BRICK YOUR CARD !!!");
+			giveStrictWarning("Card cryptogram invalid!\nCard: " + HexUtils.encodeHexString(card_cryptogram) + "\nHost: "+ HexUtils.encodeHexString(my_card_cryptogram) + "\n!!! DO NOT RE-TRY THE SAME COMMAND/KEYS OR YOU MAY BRICK YOUR CARD !!!");
 		} else {
-			verbose("Verified card cryptogram: " + HexUtils.encodeHexString(my_card_cryptogram));
+			logger.debug("Verified card cryptogram: " + HexUtils.encodeHexString(my_card_cryptogram));
 		}
 
 		// Calculate host cryptogram and initialize SCP wrapper
@@ -532,7 +531,7 @@ public class GlobalPlatform {
 			wrapper = new SCP03Wrapper(sessionKeys, scpVersion, EnumSet.of(APDUMode.MAC), null, null, blockSize);
 		}
 
-		verbose("Calculated host cryptogram: " + HexUtils.encodeHexString(host_cryptogram));
+		logger.debug("Calculated host cryptogram: " + HexUtils.encodeHexString(host_cryptogram));
 		int P1 = APDUMode.getSetValue(securityLevel);
 		CommandAPDU externalAuthenticate = new CommandAPDU(CLA_MAC, ISO7816.INS_EXTERNAL_AUTHENTICATE_82, P1, 0, host_cryptogram);
 		response = transmit(externalAuthenticate);
@@ -695,7 +694,7 @@ public class GlobalPlatform {
 			throws GPException, CardException {
 
 		if (getRegistry().allAIDs().contains(cap.getPackageAID())) {
-			printStrictWarning("Package with AID " + cap.getPackageAID() + " is already present on card");
+			giveStrictWarning("Package with AID " + cap.getPackageAID() + " is already present on card");
 		}
 		byte[] hash = useHash ? cap.getLoadFileDataHash(includeDebug) : new byte[0];
 		int len = cap.getCodeLength(includeDebug);
@@ -769,7 +768,7 @@ public class GlobalPlatform {
 			instanceAID = appletAID;
 		}
 		if (getRegistry().allAppletAIDs().contains(instanceAID)) {
-			printStrictWarning("Applet with instance AID " + instanceAID + " is already present on card");
+			giveStrictWarning("Applet with instance AID " + instanceAID + " is already present on card");
 		}
 		if (installParams == null) {
 			installParams = new byte[] { (byte) 0xC9, 0x00 };
@@ -882,7 +881,7 @@ public class GlobalPlatform {
 		if (def != null) {
 			deleteAID(def, deps); // Can not work, need to locate the executable module
 		} else {
-			verbose("No default selected applet!");
+			logger.debug("No default selected applet!");
 		}
 	}
 
@@ -972,9 +971,9 @@ public class GlobalPlatform {
 		}
 
 		// Debug
-		verbose("Replace: " + replace);
+		logger.debug("Replace: " + replace);
 		for (GPKey k: keys) {
-			verbose("PUT KEY:" + k);
+			logger.debug("PUT KEY:" + k);
 		}
 
 		// Check for sanity.
@@ -989,7 +988,7 @@ public class GlobalPlatform {
 		// Check if factory keys
 		List<GPKey> tmpl = getKeyInfoTemplate();
 		if ((tmpl.get(0).getVersion() < 1 || tmpl.get(0).getVersion() > 0x7F) && replace) {
-			printStrictWarning("Trying to replace factory keys, when you need to add new ones? Is this a virgin card? (use --virgin)");
+			giveStrictWarning("Trying to replace factory keys, when you need to add new ones? Is this a virgin card? (use --virgin)");
 		}
 
 		// Check if key types and lengths are the same when replacing

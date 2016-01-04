@@ -1,15 +1,17 @@
 <?xml version="1.0"?>
 <project name="GlobalPlatform" default="dist" basedir=".">
   <description>ANT build file for GlobalPlatformPro (javacard.pro)</description>
+  <!-- Build dependencies -->
+  <target name="deps" description="build dependencies">
+    <ant dir="ext/apdu4j"/>
+  </target>
   <!-- Build the software -->
   <path id="build.classpath">
     <pathelement location="lib/jopt-simple-4.8.jar"/>
     <pathelement location="ext/apdu4j/apdu4j.jar"/>
     <pathelement location="lib/bcprov-jdk15on-151.jar"/>
+    <pathelement location="lib/slf4j-api-1.7.13.jar"/>
   </path>
-  <target name="deps" description="build dependencies">
-    <ant dir="ext/apdu4j"/>
-  </target>
   <target name="compile" description="compile the source" depends="deps">
     <mkdir dir="build"/>
     <javac srcdir="src" destdir="build" includeantruntime="false" excludes="**/tests/**" target="1.7" source="1.7" debug="true" debuglevel="lines,vars,source">
@@ -29,9 +31,10 @@
     <jar destfile="openkms-gp.jar" level="9" basedir="build">
        <fileset file="version.txt"/>
     </jar>
-    <jar destfile="gp.jar" level="9" excludes="META-INF/maven/">
-      <zipfileset src="ext/apdu4j/apdu4j.jar" excludes="META-INF/maven/"/>
-      <zipfileset src="optimized-globalplatform.jar" excludes="org/bouncycastle/x509/ META-INF/maven/"/>
+    <jar destfile="gp.jar" level="9">
+      <zipfileset src="ext/apdu4j/apdu4j.jar" />
+      <zipfileset src="optimized-globalplatform.jar" excludes="org/bouncycastle/x509/"/>
+      <zipfileset src="lib/slf4j-simple-1.7.13.jar" excludes="META-INF/maven/"/>
       <manifest><attribute name="Main-Class" value="pro.javacard.gp.GPTool"/></manifest>
       <fileset file="version.txt"/>
     </jar>

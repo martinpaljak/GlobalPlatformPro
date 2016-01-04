@@ -33,7 +33,6 @@ import pro.javacard.gp.GlobalPlatform.APDUMode;
 
 
 public final class GPTool {
-
 	private final static String OPT_INFO = "info";
 
 	private final static String OPT_LIST = "list";
@@ -192,6 +191,16 @@ public final class GPTool {
 
 		OptionSet args = parseArguments(argv);
 
+		if (args.has(OPT_VERBOSE)) {
+			// Set up slf4j simple in a way that pleases us
+			System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "debug");
+			System.setProperty("org.slf4j.simpleLogger.showThreadName", "false");
+			System.setProperty("org.slf4j.simpleLogger.showShortLogName", "true");
+			System.setProperty("org.slf4j.simpleLogger.levelInBrackets", "true");
+		} else {
+			System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "warn");
+		}
+
 		if (args.has(OPT_VERSION)) {
 			System.out.println("GlobalPlatformPro " + GlobalPlatform.getVersion());
 		}
@@ -310,8 +319,7 @@ public final class GPTool {
 
 					// GlobalPlatform specific
 					GlobalPlatform gp = new GlobalPlatform(card.getBasicChannel());
-					if (args.has(OPT_VERBOSE))
-						gp.beVerboseTo(System.out);
+
 
 					// Disable strict mode if requested
 					gp.setStrict(!args.has(OPT_RELAX));
@@ -461,7 +469,7 @@ public final class GPTool {
 							}
 
 							if (args.has(OPT_REINSTALL)) {
-								gp.verbose("Removing existing package");
+								System.err.println("Removing existing package");
 								try {
 									gp.deleteAID(instcap.getPackageAID(), true);
 								} catch (GPException e) {
@@ -481,7 +489,7 @@ public final class GPTool {
 								}
 								throw e;
 							}
-							gp.verbose("CAP loaded");
+							System.err.println("CAP loaded");
 
 							// Only install if cap contains a single applet
 							if (instcap.getAppletAIDs().size() > 1) {
@@ -562,7 +570,7 @@ public final class GPTool {
 							// Fetch the current key information to get the used ID-s.
 							List<GPKey> current = gp.getKeyInfoTemplate();
 							if (current.size() != 3) {
-								throw new GPException("Template has bad length!");
+								throw new GPException("Template has bad length!"); // XXX: move to GlobalPlatform
 							}
 							// FIXME: new key must adhere to currently used SCP version.
 							GPKey new_key = new GPKey(GPData.defaultKeyBytes, gp.getSCPVersion() == 3 ? Type.AES : Type.DES3);
@@ -586,7 +594,7 @@ public final class GPTool {
 						// --lock
 						if (args.has(OPT_LOCK)) {
 							if (args.has(OPT_KEY) || args.has(OPT_MAC) || args.has(OPT_ENC) || args.has(OPT_KEK) && !args.has(OPT_RELAX))
-								gp.printStrictWarning("Using --" + OPT_LOCK + " but specifying other keys");
+								gp.giveStrictWarning("Using --" + OPT_LOCK + " but specifying other keys");
 
 							GPKeySet new_keys = ((GPKeySet)args.valueOf(OPT_LOCK));
 							// Note down the master key. TODO: store in GPKeySet ?

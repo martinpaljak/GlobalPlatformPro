@@ -6,9 +6,9 @@ import javax.smartcardio.CardTerminal;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-import pro.javacard.gp.GlobalPlatform;
 import apdu4j.LoggingCardTerminal;
 import apdu4j.TerminalManager;
+import pro.javacard.gp.GlobalPlatform;
 
 public abstract class TestRealCard {
 
@@ -21,7 +21,6 @@ public abstract class TestRealCard {
 		terminal = LoggingCardTerminal.getInstance(terminal);
 		card = terminal.connect("*");
 		gp = new GlobalPlatform(card.getBasicChannel());
-		gp.beVerboseTo(System.out);
 		gp.select(null);
 	}
 

@@ -12,9 +12,9 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
 
+import apdu4j.HexUtils;
 import pro.javacard.gp.GPData.KeyType;
 import pro.javacard.gp.GPKeySet.GPKey.Type;
-import apdu4j.HexUtils;
 
 /**
  * GPKeySet encapsulates keys used for GP SCP operation.
@@ -253,8 +253,7 @@ public class GPKeySet {
 
 	@Override
 	public String toString() {
-		String s = "\nVersion " + getKeyVersion();
-		s += "\nENC: " + getKey(KeyType.ENC);
+		String s = "\nENC: " + getKey(KeyType.ENC);
 		s += "\nMAC: " + getKey(KeyType.MAC);
 		s += "\nKEK: " + getKey(KeyType.KEK);
 		return s;

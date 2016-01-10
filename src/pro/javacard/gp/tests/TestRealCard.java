@@ -26,7 +26,7 @@ public abstract class TestRealCard {
 
 	@AfterClass
 	public static void tearDownAfterClass() throws Exception {
-		TerminalManager.disconnect(card, true);
+		card.disconnect(true);
 	}
 
 }

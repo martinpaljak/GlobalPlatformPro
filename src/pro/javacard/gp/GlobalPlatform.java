@@ -143,6 +143,9 @@ public class GlobalPlatform {
 		this.channel = channel;
 	}
 
+	public CardChannel getChannel() {
+		return channel;
+	}
 	/**
 	 * Get the version and build information of the library.
 	 * @return
@@ -151,7 +154,7 @@ public class GlobalPlatform {
 		try (InputStream versionfile = GlobalPlatform.class.getResourceAsStream("/version.txt")) {
 			String version = "unknown-development";
 			if (versionfile != null) {
-				BufferedReader vinfo = new BufferedReader( new InputStreamReader(versionfile));
+				BufferedReader vinfo = new BufferedReader(new InputStreamReader(versionfile));
 				version = vinfo.readLine();
 			}
 			// Append host information

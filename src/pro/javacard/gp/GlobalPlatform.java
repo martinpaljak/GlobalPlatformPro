@@ -333,11 +333,11 @@ public class GlobalPlatform {
 	}
 
 	public byte[] fetchCPLC() throws CardException, GPException {
-		CommandAPDU command = new CommandAPDU(getGPCLA(), ISO7816.INS_GET_DATA, 0x9F, 0x7F, 256);
+		CommandAPDU command = new CommandAPDU(getGPCLA(), INS_GET_DATA, 0x9F, 0x7F, 256);
 		ResponseAPDU resp = always_transmit(command);
 		// If GP CLA fails, try with ISO
 		if (resp.getSW() == ISO7816.SW_CLA_NOT_SUPPORTED) {
-			command = new CommandAPDU(ISO7816.CLA_ISO7816, ISO7816.INS_GET_DATA, 0x9F, 0x7F, 256);
+			command = new CommandAPDU(ISO7816.CLA_ISO7816, INS_GET_DATA, 0x9F, 0x7F, 256);
 			resp = always_transmit(command);
 		}
 

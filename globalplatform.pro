@@ -1,6 +1,6 @@
 -injars build
--injars lib/bcprov-jdk15on-151.jar(!META-INF/**)
--injars lib/jopt-simple-4.8.jar(!META-INF/**)
+-injars lib/bcprov-jdk15on-154.jar(!META-INF/**)
+-injars lib/jopt-simple-4.9.jar(!META-INF/**)
 -injars lib/slf4j-api-1.7.13.jar(!META-INF/**)
 -dontwarn org.slf4j.**
 # these are library because we package everything back in

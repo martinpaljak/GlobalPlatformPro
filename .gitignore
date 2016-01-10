@@ -1,6 +1,7 @@
 /bin/
 /build/
 *~
+/lib/*.jar
 /gp.jar
 /openkms-gp.jar
 /javadoc/

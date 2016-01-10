@@ -43,7 +43,7 @@ public class GPUtils {
 		return String.format("%04X", sw);
 	}
 
-	static byte[] concatenate(byte[]... args) {
+	public static byte[] concatenate(byte[]... args) {
 		int length = 0, pos = 0;
 		for (byte[] arg : args) {
 			length += arg.length;

@@ -1,9 +1,11 @@
-# GlobalPlatformPro from [javacard.pro](http://javacard.pro)
+# GlobalPlatformPro &nbsp; [![Build Status](https://travis-ci.org/martinpaljak/GlobalPlatformPro.svg?branch=master)](https://travis-ci.org/martinpaljak/GlobalPlatformPro) [![Coverity status](https://scan.coverity.com/projects/4020/badge.svg?flat=1)](https://scan.coverity.com/projects/4020/)
+*&nbsp;&nbsp;from [javacard.pro](http://javacard.pro)*
 
 Load and manage applets on compatible JavaCards from command line or from your Java project with a [Do What I Mean](http://en.wikipedia.org/wiki/DWIM) approach ([testimonials](./docs/Testimonials.md)).
 
 > Provides an **easy to use** and **high level** interface that most of the time **JustWorks<sup>(TM)</sup>**, is **flexible** and **[100% open source](#license)**!
 
+Building JavaCard applets is equally pleasing with [ant-javacard](https://github.com/martinpaljak/ant-javacard)
 #### Jump to ...
 * [Download](#get-it-now)
 * [Usage](#usage)
@@ -27,11 +29,6 @@ ant
  * SCP03 support in [latest version](https://github.com/martinpaljak/GlobalPlatformPro/releases/tag/v0.3.0)
  * Tentative [milestones](https://github.com/martinpaljak/GlobalPlatformPro/milestones)
  * [JavaCard Buyer's Guide of 2015](https://github.com/martinpaljak/GlobalPlatformPro/tree/master/docs/JavaCardBuyersGuide)
-
-### Build status
- * Travis - [![Build Status](https://travis-ci.org/martinpaljak/GlobalPlatformPro.png?branch=master)](https://travis-ci.org/martinpaljak/GlobalPlatformPro)
- * Coverity - [![Coverity status](https://scan.coverity.com/projects/4020/badge.svg?flat=1)](https://scan.coverity.com/projects/4020/)
- * [![Join the chat at https://gitter.im/martinpaljak/GlobalPlatformPro](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/martinpaljak/GlobalPlatformPro?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 ### Usage
 

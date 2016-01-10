@@ -652,7 +652,7 @@ public final class GPTool {
 				} finally {
 					if (card != null) {
 						card.endExclusive();
-						TerminalManager.disconnect(card, true);
+						card.disconnect(true);
 					}
 				}
 			}

@@ -23,6 +23,8 @@
 
 package pro.javacard.gp;
 
+import javax.smartcardio.ResponseAPDU;
+
 /**
  * Root exception class for all global platform protocol errors.
  */
@@ -52,5 +54,15 @@ public class GPException extends Exception {
 	public GPException(String message) {
 		super(message);
 		this.sw = 0x0000;
+	}
+
+	public static ResponseAPDU check(ResponseAPDU response, String message) throws GPException {
+		if (response.getSW() != 0x9000) {
+			throw new GPException(response.getSW(), message);
+		}
+		return response;
+	}
+	public static ResponseAPDU check(ResponseAPDU response) throws GPException {
+		return check(response, "GlobalPlatform failed");
 	}
 }

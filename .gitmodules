@@ -1,4 +1,0 @@
-[submodule "ext/apdu4j"]
-	path = ext/apdu4j
-	url = ../apdu4j
-	branch = master

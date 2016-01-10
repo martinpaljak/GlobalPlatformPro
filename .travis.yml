@@ -1,20 +1,15 @@
-sudo: false
+sudo: required
 language: java
-
 jdk:
 - oraclejdk8
 - oraclejdk7
 - openjdk7
-
 before_install:
-  - git submodule update --init --recursive
-
+- git submodule update --init --recursive
 script: ant dist
-
 env:
   global:
     secure: Df5FIHnieDJj8AAwgeAh779Rs+aoJ8e9WQN0ero4OfcJ2Y1G7InBZQIGesfVR1M7EX4Hf0fvmUam9zthdwi4culk+gJeOAMM/wpCqvEUyWDTd78Cr08L7PjNW8RCq5NCYhgvO1j+IzJOA3IR6h8DSS4QGZtJqPYk65ZQ1uRyAGc=
-
 addons:
   coverity_scan:
     project:
@@ -24,3 +19,24 @@ addons:
     build_command_prepend: 
     build_command: ant compile
     branch_pattern: coverity
+
+# Deploy releases to Github.
+# Build Windows utility
+# See https://github.com/travis-ci/travis-ci/issues/3701
+before_deploy:
+  - sudo apt-get update
+  - sudo apt-get install libc6:i386
+  - mkdir -p ext/launch4j
+  - curl http://kent.dl.sourceforge.net/project/launch4j/launch4j-3/3.8/launch4j-3.8-linux.tgz | tar xz -C ext
+  - ant windist
+deploy:
+  provider: releases
+  file:
+    - gp.jar
+    - openkms-gp.jar
+    - gp.exe
+  api-key:
+    secure: JD2xCdTGa6Vif2Qs7z77tWWMM8KdlgRVKFkzOprCXiDJRr36Vu2lVkOFW4AvvNudKQNZn8xOhYcebd2YBITdmFczt1vyPItoSjZ+sAQO3hIJ0r2+E+XVX8mj5Nw6NF6Jobd87VFMPJ7cE07gaDE5FzpdIWB7hMpyEPYV++azCG8=
+  skip_cleanup: true
+  on:
+    tags: true

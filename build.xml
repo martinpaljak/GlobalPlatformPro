@@ -46,7 +46,7 @@
   </target>
   <!-- Package it into a nice little JAR -->
   <target name="dist" depends="compile" description="generate the distribution">
-    <exec command="git describe --always" output="version.txt"/>
+    <exec command="git describe --always --tags" output="version.txt"/>
     <java classname="proguard.ProGuard" fork="true" failonerror="true">
       <arg line="@globalplatform.pro"/>
       <classpath>

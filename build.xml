@@ -37,7 +37,8 @@
     <pathelement location="lib/bcprov-jdk15on-154.jar"/>
     <pathelement location="lib/slf4j-api-1.7.13.jar"/>
   </path>
-  <target name="compile" description="compile the source" depends="fetch">
+  <target name="make" depends="fetch,compile"/>
+  <target name="compile" description="compile the source">
     <mkdir dir="build"/>
     <javac srcdir="src" destdir="build" includeantruntime="false" excludes="**/tests/**" debug="true" debuglevel="lines,vars,source">
       <compilerarg value="-Xlint"/>
@@ -45,7 +46,7 @@
     </javac>
   </target>
   <!-- Package it into a nice little JAR -->
-  <target name="dist" depends="compile" description="generate the distribution">
+  <target name="dist" depends="make" description="generate the distribution">
     <exec command="git describe --always --tags" output="version.txt"/>
     <java classname="proguard.ProGuard" fork="true" failonerror="true">
       <arg line="@globalplatform.pro"/>

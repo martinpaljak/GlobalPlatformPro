@@ -2,8 +2,6 @@ sudo: required
 language: java
 jdk:
 - oraclejdk8
-before_install:
-- git submodule update --init --recursive
 script: ant dist
 env:
   global:
@@ -14,7 +12,7 @@ addons:
       name: martinpaljak/GlobalPlatformPro
       description: GlobalPlatformPro from javacard.pro
     notification_email: martin@martinpaljak.net
-    build_command_prepend: 
+    build_command_prepend: ant fetch
     build_command: ant compile
     branch_pattern: coverity
 

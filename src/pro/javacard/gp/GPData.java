@@ -11,10 +11,10 @@ import javax.smartcardio.CardException;
 
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 
+import apdu4j.HexUtils;
 import pro.javacard.gp.GPKeySet.Diversification;
 import pro.javacard.gp.GPKeySet.GPKey;
 import pro.javacard.gp.GPKeySet.GPKey.Type;
-import apdu4j.HexUtils;
 
 public final class GPData {
 	public static final byte[] defaultKeyBytes = { 0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F };
@@ -112,6 +112,7 @@ public final class GPData {
 	}
 
 	// GP 2.1.1 9.3.3.1
+	// GP 2.2.1 11.1.8
 	public static List<GPKeySet.GPKey> get_key_template_list(byte[] data, short offset) throws GPException {
 
 		// Return empty list if no data from card.

@@ -1,8 +1,5 @@
 package pro.javacard.gp;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import apdu4j.HexUtils;
 import joptsimple.ValueConversionException;
 import joptsimple.ValueConverter;
@@ -12,7 +9,6 @@ import pro.javacard.gp.GPKeySet.GPKey.Type;
 import pro.javacard.gp.GlobalPlatform.APDUMode;
 
 public class ArgMatchers {
-	private static Logger logger = LoggerFactory.getLogger(ArgMatchers.class);
 
 	public static ValueConverter<AID> aid() {
 		return new AIDMatcher();
@@ -100,15 +96,15 @@ public class ArgMatchers {
 		}
 	}
 
-	public static ValueConverter<GPKeySet> keyset() {
+	public static ValueConverter<PlaintextKeys> keyset() {
 		return new KeySetMatcher();
 	}
 
-	public static class KeySetMatcher implements ValueConverter<GPKeySet> {
+	public static class KeySetMatcher implements ValueConverter<PlaintextKeys> {
 
 		@Override
-		public Class<GPKeySet> valueType() {
-			return GPKeySet.class;
+		public Class<PlaintextKeys> valueType() {
+			return PlaintextKeys.class;
 		}
 
 		@Override
@@ -117,29 +113,26 @@ public class ArgMatchers {
 		}
 
 		@Override
-		public GPKeySet convert(String arg0) {
+		public PlaintextKeys convert(String arg0) {
 			try {
 				GPKey m = null;
 				Diversification d = Diversification.NONE;
 				// Check if diversification is necessary
-				String in = arg0.trim().toUpperCase();
-				if (in.startsWith("EMV:")) {
-					m = new GPKey(HexUtils.decodeHexString(in.substring("EMV:".length())), Type.DES3);
+				String in = arg0.trim().toLowerCase();
+				if (in.startsWith("emv:")) {
+					m = new GPKey(HexUtils.decodeHexString(in.substring("emv:".length())), Type.DES3);
 					d = Diversification.EMV;
-				} else if (in.startsWith("VISA2:")) {
-					m = new GPKey(HexUtils.decodeHexString(in.substring("VISA2:".length())), Type.DES3);
+				} else if (in.startsWith("visa2:")) {
+					m = new GPKey(HexUtils.decodeHexString(in.substring("visa2:".length())), Type.DES3);
 					d = Diversification.VISA2;
-				} else if (in.startsWith("AES:")) {
-					m = new GPKey(HexUtils.decodeHexString(in.substring("AES:".length())), Type.AES);
+				} else if (in.startsWith("aes:")) {
+					m = new GPKey(HexUtils.decodeHexString(in.substring("aes:".length())), Type.AES);
 				} else {
 					m = new GPKey(HexUtils.decodeHexString(in), Type.DES3);
 				}
-				GPKeySet ks = new GPKeySet(m);
-				ks.suggestedDiversification = d;
-				logger.debug(ks.toString());
-				return ks;
+				return PlaintextKeys.fromMasterKey(m, d);
 			} catch (IllegalArgumentException e) {
-				throw new ValueConversionException(arg0 + " is not a valid keyset indicator!");
+				throw new ValueConversionException(arg0 + " is not a valid master key indicator!");
 			}
 		}
 	}

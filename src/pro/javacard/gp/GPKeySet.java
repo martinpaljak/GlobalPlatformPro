@@ -1,20 +1,13 @@
 package pro.javacard.gp;
 
-import java.security.InvalidKeyException;
 import java.security.Key;
-import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
 
 import apdu4j.HexUtils;
 import pro.javacard.gp.GPData.KeyType;
-import pro.javacard.gp.GPKeySet.GPKey.Type;
 
 /**
  * GPKeySet encapsulates keys used for GP SCP operation.
@@ -32,13 +25,12 @@ public class GPKeySet {
 	public static final class GPKey {
 		// FIXME: set enum value to what is in GPData
 		public enum Type {
-			UNKNOWN, DES, DES3, AES
+			ANY, DES, DES3, AES
 		}
 		private int version = 0;
 		private int id = 0;
 		private int length = -1;
-		private Type type = null;
-
+		private final Type type;
 		private byte [] value = null;
 
 		public int getID() {
@@ -133,11 +125,6 @@ public class GPKeySet {
 	private HashMap<KeyType, GPKey> keys = new HashMap<KeyType, GPKey>();
 	// That all belong to the same set version
 	private int keyVersion = 0x00;
-	// With some cards, keys need to be diversified and derived from a master key
-	// FIXME: does not belong here.
-	public Diversification suggestedDiversification = Diversification.NONE;
-	// Actual diversification done on the keys.
-	public Diversification diversified = Diversification.NONE;
 
 	// KeySet allows to access its keys
 	public GPKey getKey(KeyType type) {
@@ -165,9 +152,7 @@ public class GPKeySet {
 	}
 
 	// Create a key set with all keys set to the master key
-	// and using a given diversification method
 	public GPKeySet(GPKey master) {
-		// Diversification assumes 3DES keys
 		keys.put(KeyType.ENC, master);
 		keys.put(KeyType.MAC, master);
 		keys.put(KeyType.KEK, master);
@@ -183,73 +168,6 @@ public class GPKeySet {
 		keys.put(type, k);
 	}
 
-	public void diversify(byte[] diversification_data, Diversification mode, int scp) {
-		// Sanity check.
-		if (diversified != Diversification.NONE) {
-			throw new IllegalStateException("Already diversified!");
-		}
-
-		try {
-			Cipher cipher = Cipher.getInstance("DESede/ECB/NoPadding");
-			for (KeyType v : KeyType.values()) {
-				if (v == KeyType.RMAC)
-					continue;
-				byte [] kv = null;
-				// shift around and fill initialize update data as required.
-				if (mode == Diversification.VISA2) {
-					kv = fillVisa(diversification_data, v);
-				} else if (mode == Diversification.EMV) {
-					kv = fillEmv(diversification_data, v);
-				}
-
-				// Encrypt with current master key
-				cipher.init(Cipher.ENCRYPT_MODE, getKey(v).getKey(Type.DES3));
-
-				byte [] keybytes = cipher.doFinal(kv);
-				// Replace the key, possibly changing type. G&D SCE 6.0 uses EMV 3DES and resulting keys
-				// must be interpreted as AES-128
-				GPKey nk = new GPKey(keybytes, scp == 3 ? Type.AES : Type.DES3);
-				keys.put(v, nk);
-			}
-
-			diversified = mode;
-		} catch (BadPaddingException e) {
-			throw new RuntimeException("Diversification failed.", e);
-		} catch (NoSuchAlgorithmException e) {
-			throw new RuntimeException("Diversification failed.", e);
-		} catch (NoSuchPaddingException e) {
-			throw new RuntimeException("Diversification failed.", e);
-		} catch (InvalidKeyException e) {
-			throw new RuntimeException("Diversification failed.", e);
-		} catch (IllegalBlockSizeException e) {
-			throw new RuntimeException("Diversification failed.", e);
-		}
-	}
-
-	public static byte[] fillVisa(byte[] init_update_response, KeyType key) {
-		byte[] data = new byte[16];
-		System.arraycopy(init_update_response, 0, data, 0, 2);
-		System.arraycopy(init_update_response, 4, data, 2, 4);
-		data[6] = (byte) 0xF0;
-		data[7] = key.getValue();
-		System.arraycopy(init_update_response, 0, data, 8, 2);
-		System.arraycopy(init_update_response, 4, data, 10, 4);
-		data[14] = (byte) 0x0F;
-		data[15] = key.getValue();
-		return data;
-	}
-
-	public static byte[] fillEmv(byte[] init_update_response, KeyType key) {
-		byte[] data = new byte[16];
-		// 6 rightmost bytes of init update response (which is 10 bytes)
-		System.arraycopy(init_update_response, 4, data, 0, 6);
-		data[6] = (byte) 0xF0;
-		data[7] = key.getValue();
-		System.arraycopy(init_update_response, 4, data, 8, 6);
-		data[14] = (byte) 0x0F;
-		data[15] = key.getValue();
-		return data;
-	}
 
 	@Override
 	public String toString() {

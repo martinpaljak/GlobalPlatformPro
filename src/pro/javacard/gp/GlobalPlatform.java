@@ -53,7 +53,6 @@ import org.slf4j.LoggerFactory;
 import apdu4j.HexUtils;
 import apdu4j.ISO7816;
 import pro.javacard.gp.GPData.KeyType;
-import pro.javacard.gp.GPKeySet.Diversification;
 import pro.javacard.gp.GPKeySet.GPKey;
 import pro.javacard.gp.GPKeySet.GPKey.Type;
 
@@ -116,8 +115,8 @@ public class GlobalPlatform {
 	private int scpMajorVersion = 0;
 
 	private int blockSize = 255; // TODO: Check CardData as well.
+	private GPKeySet sessionKeys;
 	private SCPWrapper wrapper = null;
-	private GPKeySet staticKeys = null;
 	private CardChannel channel = null;
 	private byte[] diversification_data = null;
 
@@ -179,10 +178,8 @@ public class GlobalPlatform {
 
 	public void imFeelingLucky() throws CardException, GPException {
 		select(null); // auto-detect ISD AID
-		GPKeySet ks = new GPKeySet(GPData.defaultKey);
-		ks.suggestedDiversification = GPData.suggestDiversification(getCPLC());
-
-		openSecureChannel(ks, null, 0, EnumSet.of(APDUMode.MAC));
+		SessionKeyProvider keys = PlaintextKeys.fromMasterKey(GPData.defaultKey, GPData.suggestDiversification(getCPLC()));
+		openSecureChannel(keys, null, 0, EnumSet.of(APDUMode.MAC));
 	}
 
 	protected void giveStrictWarning(String message) throws GPException {
@@ -366,15 +363,12 @@ public class GlobalPlatform {
 	 * Establishes a secure channel to the security domain.
 	 *
 	 */
-	public void openSecureChannel(GPKeySet staticKeys, byte[] host_challenge, int scpVersion, EnumSet<APDUMode> securityLevel)
+	public void openSecureChannel(SessionKeyProvider keys, byte[] host_challenge, int scpVersion, EnumSet<APDUMode> securityLevel)
 			throws CardException, GPException {
 
 		if (sdAID == null) {
 			throw new IllegalStateException("No selected ISD!");
 		}
-
-		this.staticKeys = staticKeys;
-		GPKeySet sessionKeys = null;
 
 		// ENC requires MAC
 		if (securityLevel.contains(APDUMode.ENC)) {
@@ -391,7 +385,7 @@ public class GlobalPlatform {
 		// P1 key version (SCP1)
 		// P2 either key ID (SCP01) or 0 (SCP2)
 		// TODO: use it here for KeyID?
-		CommandAPDU initUpdate = new CommandAPDU(CLA_GP, INS_INITIALIZE_UPDATE, staticKeys.getKeyVersion(), staticKeys.getKeyID(), host_challenge, 256);
+		CommandAPDU initUpdate = new CommandAPDU(CLA_GP, INS_INITIALIZE_UPDATE, keys.getKeysetVersion(), keys.getKeysetID(), host_challenge, 256);
 
 		ResponseAPDU response = channel.transmit(initUpdate);
 		int sw = response.getSW();
@@ -402,7 +396,7 @@ public class GlobalPlatform {
 		}
 
 		// Detect all other errors
-		check(response, "INITIALIZE UPDATE failed");
+		GPException.check(response, "INITIALIZE UPDATE failed");
 		byte[] update_response = response.getData();
 
 		// Verify response length (SCP01/SCP02 + SCP03 + SCP03 w/ pseudorandom)
@@ -440,12 +434,11 @@ public class GlobalPlatform {
 
 		// Verify response
 		// If using explicit key version, it must match.
-		if ((staticKeys.getKeyVersion() > 0) && (keyVersion != staticKeys.getKeyVersion())) {
-			throw new GPException("Key version mismatch: " + staticKeys.getKeyVersion() + " != " + keyVersion);
+		if ((keys.getKeysetVersion() > 0) && (keyVersion != keys.getKeysetVersion())) {
+			throw new GPException("Key version mismatch: " + keys.getKeysetVersion() + " != " + keyVersion);
 		}
 
 		logger.debug("Card reports SCP0" + scpMajorVersion + " with version " + keyVersion + " keys");
-		logger.debug("Master keys: " + staticKeys);
 
 		// Set default SCP version based on major version, if not explicitly known.
 		if (scpVersion == SCP_ANY) {
@@ -475,38 +468,21 @@ public class GlobalPlatform {
 			securityLevel.remove(APDUMode.RMAC);
 		}
 
-		// Response processed. Derive keys.
-		// Diversify if required
-		if (staticKeys.suggestedDiversification != Diversification.NONE) {
-			staticKeys.diversify(diversification_data, staticKeys.suggestedDiversification, scpMajorVersion);
-			logger.debug("Diversififed master keys (KDD: " + HexUtils.encodeHexString(diversification_data) + "): " + staticKeys);
-		}
-		// Check that SCP03 would be using AES keys
-		if (scpMajorVersion == 3) {
-			for (GPKey k: staticKeys.getKeys().values()) {
-				if (k.getType() != Type.AES) {
-					giveStrictWarning("Usign SCP03 but key set has 3DES keys?");
-				}
-			}
-		}
-
 		// Derive session keys
 		byte [] seq = null;
 		if (scpMajorVersion == 1) {
-			sessionKeys = deriveSessionKeysSCP01(staticKeys, host_challenge, card_challenge);
+			sessionKeys = keys.getSessionKeys(scpMajorVersion, diversification_data, host_challenge, card_challenge);
 		} else if (scpMajorVersion == 2) {
 			seq = Arrays.copyOfRange(update_response, 12, 14);
-			logger.debug("Sequnce counter: " + HexUtils.encodeHexString(seq));
-			sessionKeys = deriveSessionKeysSCP02(staticKeys, seq, false);
+			sessionKeys = keys.getSessionKeys(2, diversification_data, seq);
 		} else if (scpMajorVersion == 3) {
 			if (update_response.length == 32) {
 				seq = Arrays.copyOfRange(update_response, 29, 32);
 			}
-			sessionKeys = deriveSessionKeysSCP03(staticKeys, host_challenge, card_challenge);
+			sessionKeys = keys.getSessionKeys(3, diversification_data, host_challenge, card_challenge);
 		} else {
 			throw new GPException("Don't know how to handle SCP version " + scpMajorVersion);
 		}
-		logger.debug("Derived session keys: " + sessionKeys);
 
 		// Verify card cryptogram
 		byte[] my_card_cryptogram = null;
@@ -538,7 +514,7 @@ public class GlobalPlatform {
 		int P1 = APDUMode.getSetValue(securityLevel);
 		CommandAPDU externalAuthenticate = new CommandAPDU(CLA_MAC, ISO7816.INS_EXTERNAL_AUTHENTICATE_82, P1, 0, host_cryptogram);
 		response = transmit(externalAuthenticate);
-		check(response, "External authenticate failed");
+		GPException.check(response, "External authenticate failed");
 		wrapper.setSecurityLevel(securityLevel);
 
 		// FIXME: ugly stuff, ugly...
@@ -549,119 +525,6 @@ public class GlobalPlatform {
 			}
 		}
 	}
-
-	private GPKeySet deriveSessionKeysSCP01(GPKeySet staticKeys, byte[] host_challenge, byte[] card_challenge) {
-		GPKeySet sessionKeys = new GPKeySet();
-
-		byte[] derivationData = new byte[16];
-		System.arraycopy(card_challenge, 4, derivationData, 0, 4);
-		System.arraycopy(host_challenge, 0, derivationData, 4, 4);
-		System.arraycopy(card_challenge, 0, derivationData, 8, 4);
-		System.arraycopy(host_challenge, 4, derivationData, 12, 4);
-
-		try {
-			Cipher cipher = Cipher.getInstance("DESede/ECB/NoPadding");
-			for (KeyType v: KeyType.values()) {
-				if (v == KeyType.RMAC) // skip RMAC key
-					continue;
-				cipher.init(Cipher.ENCRYPT_MODE, staticKeys.getKeyFor(v));
-				GPKey nk = new GPKey(cipher.doFinal(derivationData), Type.DES3);
-				sessionKeys.setKey(v, nk);
-			}
-			// KEK is the same
-			sessionKeys.setKey(KeyType.KEK, staticKeys.getKey(KeyType.KEK));
-			return sessionKeys;
-		} catch (BadPaddingException e) {
-			throw new RuntimeException("Session keys calculation failed.", e);
-		} catch (NoSuchAlgorithmException e) {
-			throw new RuntimeException("Session keys calculation failed.", e);
-		} catch (NoSuchPaddingException e) {
-			throw new RuntimeException("Session keys calculation failed.", e);
-		} catch (InvalidKeyException e) {
-			throw new RuntimeException("Session keys calculation failed.", e);
-		} catch (IllegalBlockSizeException e) {
-			throw new RuntimeException("Session keys calculation failed.", e);
-		}
-	}
-
-	private GPKeySet deriveSessionKeysSCP02(GPKeySet staticKeys, byte[] sequence, boolean implicitChannel) {
-		GPKeySet sessionKeys = new GPKeySet();
-
-		try {
-			Cipher cipher = Cipher.getInstance("DESede/CBC/NoPadding");
-
-			byte[] derivationData = new byte[16];
-			System.arraycopy(sequence, 0, derivationData, 2, 2);
-
-			byte[] constantMAC = new byte[] { (byte) 0x01, (byte) 0x01 };
-			System.arraycopy(constantMAC, 0, derivationData, 0, 2);
-			cipher.init(Cipher.ENCRYPT_MODE, staticKeys.getKeyFor(KeyType.MAC), GPCrypto.iv_null_des);
-			GPKey nk = new GPKey(cipher.doFinal(derivationData), Type.DES3);
-			sessionKeys.setKey(KeyType.MAC, nk);
-
-			// TODO: is this correct? - increment by one for all other than C-MAC
-			if (implicitChannel) {
-				TLVUtils.buffer_increment(derivationData, (short)2, (short)2);
-			}
-
-			byte[] constantRMAC = new byte[] { (byte) 0x01, (byte) 0x02 };
-			System.arraycopy(constantRMAC, 0, derivationData, 0, 2);
-			cipher.init(Cipher.ENCRYPT_MODE, staticKeys.getKeyFor(KeyType.MAC), GPCrypto.iv_null_des);
-			nk = new GPKey(cipher.doFinal(derivationData), Type.DES3);
-			sessionKeys.setKey(KeyType.RMAC, nk);
-
-
-			byte[] constantENC = new byte[] { (byte) 0x01, (byte) 0x82 };
-			System.arraycopy(constantENC, 0, derivationData, 0, 2);
-			cipher.init(Cipher.ENCRYPT_MODE, staticKeys.getKeyFor(KeyType.ENC), GPCrypto.iv_null_des);
-			nk = new GPKey(cipher.doFinal(derivationData), Type.DES3);
-			sessionKeys.setKey(KeyType.ENC, nk);
-
-			byte[] constantDEK = new byte[] { (byte) 0x01, (byte) 0x81 };
-			System.arraycopy(constantDEK, 0, derivationData, 0, 2);
-			cipher.init(Cipher.ENCRYPT_MODE, staticKeys.getKeyFor(KeyType.KEK), GPCrypto.iv_null_des);
-			nk = new GPKey(cipher.doFinal(derivationData), Type.DES3);
-			sessionKeys.setKey(KeyType.KEK, nk);
-			return sessionKeys;
-
-		} catch (BadPaddingException e) {
-			throw new RuntimeException("Session keys calculation failed.", e);
-		} catch (NoSuchAlgorithmException e) {
-			throw new RuntimeException("Session keys calculation failed.", e);
-		} catch (NoSuchPaddingException e) {
-			throw new RuntimeException("Session keys calculation failed.", e);
-		} catch (InvalidKeyException e) {
-			throw new RuntimeException("Session keys calculation failed.", e);
-		} catch (IllegalBlockSizeException e) {
-			throw new RuntimeException("Session keys calculation failed.", e);
-		} catch (InvalidAlgorithmParameterException e) {
-			throw new RuntimeException("Session keys calculation failed.", e);
-		}
-	}
-
-	private GPKeySet deriveSessionKeysSCP03(GPKeySet staticKeys, byte[] host_challenge, byte[] card_challenge) {
-		GPKeySet sessionKeys = new GPKeySet();
-		final byte mac_constant = 0x06;
-		final byte enc_constant = 0x04;
-		final byte rmac_constant = 0x07;
-
-		byte []context = GPUtils.concatenate(host_challenge, card_challenge);
-
-		// MAC
-		byte []kdf = GPCrypto.scp03_kdf(staticKeys.getKey(KeyType.MAC), mac_constant, context, 128);
-		sessionKeys.setKey(KeyType.MAC, new GPKey(kdf, Type.AES));
-		// ENC
-		kdf = GPCrypto.scp03_kdf(staticKeys.getKey(KeyType.ENC), enc_constant, context, 128);
-		sessionKeys.setKey(KeyType.ENC, new GPKey(kdf, Type.AES));
-		// RMAC
-		kdf = GPCrypto.scp03_kdf(staticKeys.getKey(KeyType.MAC), rmac_constant, context, 128);
-		sessionKeys.setKey(KeyType.RMAC, new GPKey(kdf, Type.AES));
-
-		// KEK remains the same
-		sessionKeys.setKey(KeyType.KEK, staticKeys.getKey(KeyType.KEK));
-		return sessionKeys;
-	}
-
 
 	public ResponseAPDU transmit(CommandAPDU command) throws CardException, GPException {
 		CommandAPDU wc = wrapper.wrap(command);
@@ -726,13 +589,13 @@ public class GlobalPlatform {
 
 		CommandAPDU installForLoad = new CommandAPDU(CLA_GP, INS_INSTALL, 0x02, 0x00, bo.toByteArray());
 		ResponseAPDU response = transmit(installForLoad);
-		check(response, "Install for Load failed");
+		GPException.check(response, "Install for Load failed");
 
 		List<byte[]> blocks = cap.getLoadBlocks(includeDebug, separateComponents, wrapper.getBlockSize());
 		for (int i = 0; i < blocks.size(); i++) {
 			CommandAPDU load = new CommandAPDU(CLA_GP, INS_LOAD, (i == (blocks.size() - 1)) ? 0x80 : 0x00, (byte) i, blocks.get(i));
 			response = transmit(load);
-			check(response, "LOAD failed");
+			GPException.check(response, "LOAD failed");
 		}
 		// Mark the registry as dirty
 		dirty = true;
@@ -804,7 +667,7 @@ public class GlobalPlatform {
 
 		CommandAPDU install = new CommandAPDU(CLA_GP, INS_INSTALL, 0x0C, 0x00, bo.toByteArray());
 		ResponseAPDU response = transmit(install);
-		check(response, "Install for Install and make selectable failed");
+		GPException.check(response, "Install for Install and make selectable failed");
 		dirty = true;
 	}
 
@@ -837,14 +700,14 @@ public class GlobalPlatform {
 		}
 		CommandAPDU install = new CommandAPDU(CLA_GP, INS_INSTALL, 0x20, 0x00, bo.toByteArray());
 		ResponseAPDU response = transmit(install);
-		check(response, "Install for personalization failed");
+		GPException.check(response, "Install for personalization failed");
 
 		// Now pump the data
 		List<byte[]> blocks = GPUtils.splitArray(data, wrapper.getBlockSize());
 		for (int i = 0; i < blocks.size(); i++) {
 			CommandAPDU load = new CommandAPDU(CLA_GP, INS_STORE_DATA, (i == (blocks.size() - 1)) ? 0x80 : 0x00, (byte) i, blocks.get(i));
 			response = transmit(load);
-			check(response, "STORE DATA failed");
+			GPException.check(response, "STORE DATA failed");
 		}
 	}
 
@@ -868,14 +731,14 @@ public class GlobalPlatform {
 
 		CommandAPDU install = new CommandAPDU(CLA_GP, INS_INSTALL, 0x08, 0x00, bo.toByteArray());
 		ResponseAPDU response = transmit(install);
-		check(response, "Install for make selectable failed");
+		GPException.check(response, "Install for make selectable failed");
 		dirty = true;
 	}
 
 	public void lockUnlockApplet(AID app, boolean lock) throws CardException, GPException {
 		CommandAPDU cmd = new CommandAPDU(CLA_GP, INS_SET_STATUS, 0x40, lock ? 0x80 : 0x00, app.getBytes());
 		ResponseAPDU response = transmit(cmd);
-		check(response, "SET STATUS failed");
+		GPException.check(response, "SET STATUS failed");
 		dirty = true;
 	}
 
@@ -912,7 +775,7 @@ public class GlobalPlatform {
 		}
 		CommandAPDU delete = new CommandAPDU(CLA_GP, INS_DELETE, 0x00, deleteDeps ? 0x80 : 0x00, bo.toByteArray());
 		ResponseAPDU response = transmit(delete);
-		check(response, "Deletion failed");
+		GPException.check(response, "Deletion failed");
 		dirty = true;
 	}
 
@@ -996,7 +859,8 @@ public class GlobalPlatform {
 
 		// Check if key types and lengths are the same when replacing
 		if (replace && (keys.get(0).getType() != tmpl.get(0).getType() || keys.get(0).getLength() != tmpl.get(0).getLength())) {
-			throw new IllegalArgumentException("Can not replace keys of different type or size.");
+			// FIXME: SCE60 template has 3DES keys but uses AES.
+			giveStrictWarning("Can not replace keys of different type or size: " + tmpl.get(0).getType() + "->" + keys.get(0).getType());
 		}
 
 		// Check for matching version numbers if replacing and vice versa
@@ -1023,14 +887,7 @@ public class GlobalPlatform {
 			bo.write(keys.get(0).getVersion());
 			// Key data
 			for (GPKey k: keys) {
-				if (scpMajorVersion == 1) {
-					bo.write(encodeKey(k, staticKeys.getKey(KeyType.KEK), true));
-				} else if (scpMajorVersion == 2) {
-					bo.write(encodeKey(k, wrapper.sessionKeys.getKey(KeyType.KEK), true));
-				} else if (scpMajorVersion == 3) {
-					bo.write(encodeKey(k, wrapper.sessionKeys.getKey(KeyType.KEK), true));
-				} else
-					throw new IllegalStateException("Unknown SCP version: " + scpMajorVersion);
+				bo.write(encodeKey(k, sessionKeys.getKey(KeyType.KEK), true));
 			}
 		} catch (IOException e) {
 			throw new RuntimeException(e);
@@ -1038,7 +895,7 @@ public class GlobalPlatform {
 
 		CommandAPDU command = new CommandAPDU(CLA_GP, INS_PUT_KEY, P1, P2, bo.toByteArray());
 		ResponseAPDU response = transmit(command);
-		check(response,"PUT KEY failed");
+		GPException.check(response,"PUT KEY failed");
 	}
 
 
@@ -1133,14 +990,6 @@ public class GlobalPlatform {
 		return registry;
 	}
 
-
-	private static void check(ResponseAPDU r, String msg) throws GPException {
-		int sw = r.getSW();
-		if (sw != ISO7816.SW_NO_ERROR) {
-			throw new GPException(sw, msg);
-		}
-	}
-
 	public static class SCP0102Wrapper extends SCPWrapper {
 
 		private byte[] icv = null;
@@ -1205,7 +1054,7 @@ public class GlobalPlatform {
 			return (byte) ((b | mask) & 0xFF);
 		}
 
-		public CommandAPDU wrap(CommandAPDU command) throws CardException {
+		public CommandAPDU wrap(CommandAPDU command) throws GPException {
 
 			try {
 				if (rmac) {
@@ -1318,18 +1167,10 @@ public class GlobalPlatform {
 				return wrapped;
 			} catch (IOException e) {
 				throw new RuntimeException("APDU wrapping failed", e);
-			} catch (NoSuchAlgorithmException e) {
-				throw new RuntimeException("APDU wrapping failed", e);
-			} catch (NoSuchPaddingException e) {
-				throw new RuntimeException("APDU wrapping failed", e);
-			} catch (InvalidKeyException e) {
-				throw new RuntimeException("APDU wrapping failed", e);
-			} catch (InvalidAlgorithmParameterException e) {
-				throw new RuntimeException("APDU wrapping failed", e);
-			} catch (IllegalBlockSizeException e) {
-				throw new RuntimeException("APDU wrapping failed", e);
-			} catch (BadPaddingException e) {
-				throw new RuntimeException("APDU wrapping failed", e);
+			} catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
+				throw new IllegalStateException("APDU wrapping failed", e);
+			} catch (InvalidKeyException | InvalidAlgorithmParameterException |IllegalBlockSizeException | BadPaddingException e) {
+				throw new GPException("APDU wrapping failed", e);
 			}
 		}
 
@@ -1377,7 +1218,7 @@ public class GlobalPlatform {
 			setSecurityLevel(securityLevel);
 		}
 		@Override
-		protected CommandAPDU wrap(CommandAPDU command) throws CardException {
+		protected CommandAPDU wrap(CommandAPDU command) throws GPException {
 			byte [] cmd_mac = null;
 
 			try {
@@ -1434,26 +1275,12 @@ public class GlobalPlatform {
 					na.write(cmd_mac);
 				byte [] new_apdu = na.toByteArray();
 				return new CommandAPDU(new_apdu);
-			} catch (IOException e) {
+			}  catch (IOException e) {
 				throw new RuntimeException("APDU wrapping failed", e);
-			}
-			catch (NoSuchAlgorithmException e) {
-				throw new RuntimeException("APDU wrapping failed", e);
-			}
-			catch (NoSuchPaddingException e) {
-				throw new RuntimeException("APDU wrapping failed", e);
-			}
-			catch (InvalidKeyException e) {
-				throw new RuntimeException("APDU wrapping failed", e);
-			}
-			catch (IllegalBlockSizeException e) {
-				throw new RuntimeException("APDU wrapping failed", e);
-			}
-			catch (BadPaddingException e) {
-				throw new RuntimeException("APDU wrapping failed", e);
-			}
-			catch (InvalidAlgorithmParameterException e) {
-				throw new RuntimeException("APDU wrapping failed", e);
+			} catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
+				throw new IllegalStateException("APDU wrapping failed", e);
+			} catch (InvalidKeyException | InvalidAlgorithmParameterException |IllegalBlockSizeException | BadPaddingException e) {
+				throw new GPException("APDU wrapping failed", e);
 			}
 		}
 
@@ -1484,7 +1311,7 @@ public class GlobalPlatform {
 				res = res - 8;
 			return res;
 		}
-		protected abstract CommandAPDU wrap(CommandAPDU command) throws CardException;
+		protected abstract CommandAPDU wrap(CommandAPDU command) throws GPException;
 		protected abstract ResponseAPDU unwrap(ResponseAPDU response) throws GPException;
 	}
 }

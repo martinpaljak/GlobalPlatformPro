@@ -56,6 +56,11 @@ public class GPException extends Exception {
 		this.sw = 0x0000;
 	}
 
+	public GPException(String message, Throwable e) {
+		super(message, e);
+		this.sw = 0x0000;
+	}
+
 	public static ResponseAPDU check(ResponseAPDU response, String message) throws GPException {
 		if (response.getSW() != 0x9000) {
 			throw new GPException(response.getSW(), message);

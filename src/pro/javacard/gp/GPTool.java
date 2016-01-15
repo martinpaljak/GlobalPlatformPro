@@ -206,38 +206,46 @@ public final class GPTool {
 		}
 
 		// Parameters for opening the secure channel
-		// Assume a single master key
-		GPKeySet ks = null;
-		if (args.has(OPT_KEY)) {
-			ks = new GPKeySet((GPKeySet.GPKey)args.valueOf(OPT_KEY));
-		} else {
-			ks = new GPKeySet(GPData.defaultKey);
-		}
-		// override if needed
-		if (args.has(OPT_MAC)) {
-			ks.setKey(KeyType.MAC, (GPKeySet.GPKey)args.valueOf(OPT_MAC));
-		}
-		if (args.has(OPT_ENC)) {
-			ks.setKey(KeyType.ENC, (GPKeySet.GPKey)args.valueOf(OPT_ENC));
-		}
-		if (args.has(OPT_KEK)) {
-			ks.setKey(KeyType.KEK, (GPKeySet.GPKey)args.valueOf(OPT_KEK));
+		// Keying options: either a single master or three separate keys
+		if (args.has(OPT_KEY) && (args.has(OPT_MAC) || args.has(OPT_ENC) || args.has(OPT_KEK))) {
+			System.err.println("If you specify " + OPT_KEY + " do not use other keying options!");
+			System.exit(1);
 		}
 
-		// Key ID and Version
-		if (args.has(OPT_KEY_ID)) {
-			ks.setKeyID((int) args.valueOf(OPT_KEY_ID));
-		}
-		if (args.has(OPT_KEY_VERSION)) {
-			ks.setKeyVersion((int) args.valueOf(OPT_KEY_VERSION));
-		}
-
-		// Set diversification if specified
+		// Normally assume a single master key
+		SessionKeyProvider keys;
+		// Use diversification if specified
+		Diversification div = Diversification.NONE;
 		if (args.has(OPT_VISA2)) {
-			ks.suggestedDiversification = Diversification.VISA2;
+			div = Diversification.VISA2;
 		} else if (args.has(OPT_EMV)) {
-			ks.suggestedDiversification = Diversification.EMV;
+			div = Diversification.EMV;
 		}
+
+		if (args.has(OPT_KEY)) {
+			// Specified master key
+			keys = PlaintextKeys.fromMasterKey((GPKeySet.GPKey)args.valueOf(OPT_KEY), div);
+		} else if (args.has(OPT_MAC) && args.has(OPT_ENC) && args.has(OPT_KEK)) {
+			// All components specified separately
+			GPKeySet ks = new GPKeySet();
+			ks.setKey(KeyType.MAC, (GPKeySet.GPKey)args.valueOf(OPT_MAC));
+			ks.setKey(KeyType.ENC, (GPKeySet.GPKey)args.valueOf(OPT_ENC));
+			ks.setKey(KeyType.KEK, (GPKeySet.GPKey)args.valueOf(OPT_KEK));
+			keys = PlaintextKeys.fromKeySet(ks);
+		} else {
+			// Use default test key with optional diverisifaction.
+			keys = PlaintextKeys.fromMasterKey(GPData.defaultKey, div);
+		}
+
+		// FIXME: somehow expose this.
+		//		// Key ID and Version
+		//		if (args.has(OPT_KEY_ID)) {
+		//			ks.setKeyID((int) args.valueOf(OPT_KEY_ID));
+		//		}
+		//		if (args.has(OPT_KEY_VERSION)) {
+		//			ks.setKeyVersion((int) args.valueOf(OPT_KEY_VERSION));
+		//		}
+
 
 		// Load a CAP file, if specified
 		CapFile cap = null;
@@ -355,16 +363,6 @@ public final class GPTool {
 						GPData.print_card_info(gp);
 					}
 
-					// check for possible diversification for virgin cards
-					if (Arrays.equals(ks.getKey(KeyType.MAC).getValue(), GPData.defaultKeyBytes) && args.has(OPT_VIRGIN) && !args.has(OPT_RELAX)) {
-						if (GPData.suggestDiversification(gp.getCPLC()) != Diversification.NONE && ks.getKeyVersion() == 0x00) {
-							System.err.println("A virgin card that has not been used with GlobalPlatformPro before");
-							System.err.println("probably requires EMV diversification but is not asked for.");
-							System.err.println("Use -emv for EMV diversification. Or don't run with -virgin or use -relax.");
-							System.exit(1);
-						}
-					}
-
 					// Authenticate, only if needed
 					if (needsAuthentication(args)) {
 
@@ -382,7 +380,7 @@ public final class GPTool {
 						}
 
 						// Possibly brick the card now, if keys don't match.
-						gp.openSecureChannel(ks, null, scp_version, mode);
+						gp.openSecureChannel(keys, null, scp_version, mode);
 
 						// --secure-apdu or -s
 						if (args.has(OPT_SECURE_APDU)) {
@@ -565,7 +563,7 @@ public final class GPTool {
 						// --unlock
 						if (args.has(OPT_UNLOCK)) {
 							// Write default keys
-							List<GPKeySet.GPKey> keys = new ArrayList<GPKeySet.GPKey>();
+							List<GPKeySet.GPKey> newkeys = new ArrayList<GPKeySet.GPKey>();
 
 							// Fetch the current key information to get the used ID-s.
 							List<GPKey> current = gp.getKeyInfoTemplate();
@@ -576,32 +574,33 @@ public final class GPTool {
 							GPKey new_key = new GPKey(GPData.defaultKeyBytes, gp.getSCPVersion() == 3 ? Type.AES : Type.DES3);
 
 							// FIXME: this looks ugly
-							keys.add(new GPKeySet.GPKey(01, current.get(0).getID(), new_key));
-							keys.add(new GPKeySet.GPKey(01, current.get(1).getID(), new_key));
-							keys.add(new GPKeySet.GPKey(01, current.get(2).getID(), new_key));
+							newkeys.add(new GPKeySet.GPKey(01, current.get(0).getID(), new_key));
+							newkeys.add(new GPKeySet.GPKey(01, current.get(1).getID(), new_key));
+							newkeys.add(new GPKeySet.GPKey(01, current.get(2).getID(), new_key));
 
 							// "add keys" if default factory keys or otherwise virgin card
 							// because version FF can not be addressed
 							if (args.has(OPT_VIRGIN)) {
-								gp.putKeys(keys, false);
+								gp.putKeys(newkeys, false);
 							} else {
 								// normally replace existing keys
-								gp.putKeys(keys, true);
+								gp.putKeys(newkeys, true);
 							}
 							System.out.println("Default " + new_key.toStringKey() + " set as master key.");
 						}
 
 						// --lock
 						if (args.has(OPT_LOCK)) {
-							if (args.has(OPT_KEY) || args.has(OPT_MAC) || args.has(OPT_ENC) || args.has(OPT_KEK) && !args.has(OPT_RELAX))
+							if (args.has(OPT_MAC) || args.has(OPT_ENC) || args.has(OPT_KEK) && !args.has(OPT_RELAX))
 								gp.giveStrictWarning("Using --" + OPT_LOCK + " but specifying other keys");
 
-							GPKeySet new_keys = ((GPKeySet)args.valueOf(OPT_LOCK));
-							// Note down the master key. TODO: store in GPKeySet ?
-							GPKey master = new_keys.getKey(KeyType.MAC);
+							// XXX: this is ugly, we re-use ArgParser only to get diverification method
+							PlaintextKeys newkey = (PlaintextKeys) args.valueOf(OPT_LOCK);
+
+							GPKeySet newkeys = new GPKeySet(newkey.master);
 							// Diversify if requested.
-							if (new_keys.suggestedDiversification != Diversification.NONE) {
-								new_keys.diversify(gp.getDiversificationData(), new_keys.suggestedDiversification, gp.getSCPVersion());
+							if (newkey.diversifier != Diversification.NONE) {
+								newkeys = PlaintextKeys.diversify(newkeys, gp.getDiversificationData(), newkey.diversifier, gp.getSCPVersion());
 							}
 
 							// Check that
@@ -611,20 +610,20 @@ public final class GPTool {
 								new_version = (int) args.valueOf(OPT_NEW_KEY_VERSION);
 							}
 							// Add into a list
-							List<GPKeySet.GPKey> keys = new ArrayList<GPKeySet.GPKey>();
-							keys.add(new GPKeySet.GPKey(new_version, 01, new_keys.getKey(KeyType.ENC)));
-							keys.add(new GPKeySet.GPKey(new_version, 02, new_keys.getKey(KeyType.MAC)));
-							keys.add(new GPKeySet.GPKey(new_version, 03, new_keys.getKey(KeyType.KEK)));
+							List<GPKeySet.GPKey> updatekeys = new ArrayList<GPKeySet.GPKey>();
+							updatekeys.add(new GPKeySet.GPKey(new_version, 01, newkeys.getKey(KeyType.ENC)));
+							updatekeys.add(new GPKeySet.GPKey(new_version, 02, newkeys.getKey(KeyType.MAC)));
+							updatekeys.add(new GPKeySet.GPKey(new_version, 03, newkeys.getKey(KeyType.KEK)));
 							// Add new keys if virgin
 							if (args.has(OPT_VIRGIN)) {
-								gp.putKeys(keys, false);
+								gp.putKeys(updatekeys, false);
 							} else {
 								// normally replace
-								gp.putKeys(keys, true);
+								gp.putKeys(updatekeys, true);
 							}
-							System.out.println("Card locked with: " + master.toStringKey());
-							if (new_keys.diversified != Diversification.NONE) {
-								System.out.println("Remember to use " + new_keys.diversified.name() + " diversification!");
+							System.out.println("Card locked with: " + newkey.master.toStringKey());
+							if (newkey.diversifier!= Diversification.NONE) {
+								System.out.println("Remember to use " + newkey.diversifier.name() + " diversification!");
 							}
 							System.out.println("Write this down, DO NOT FORGET/LOSE IT!");
 						}
@@ -656,7 +655,7 @@ public final class GPTool {
 					}
 				}
 			}
-		} catch (Exception e) {
+		} catch (CardException e) {
 			// Sensible wrapper for the different PC/SC exceptions
 			if (TerminalManager.getExceptionMessage(e) != null) {
 				System.out.println("PC/SC failure: " + TerminalManager.getExceptionMessage(e));

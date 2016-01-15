@@ -14,6 +14,7 @@ import pro.javacard.gp.GPKeySet.Diversification;
 import pro.javacard.gp.GPKeySet.GPKey;
 import pro.javacard.gp.GPKeySet.GPKey.Type;
 import pro.javacard.gp.GlobalPlatform;
+import pro.javacard.gp.PlaintextKeys;
 
 public class TestKeyChange extends TestRealCard {
 
@@ -21,7 +22,7 @@ public class TestKeyChange extends TestRealCard {
 
 	@Test
 	public void testAddNewWithDefault() throws CardException, GPException {
-		gp.openSecureChannel(new GPKeySet(GPData.defaultKey), null, GlobalPlatform.SCP_ANY, GlobalPlatform.defaultMode);
+		gp.openSecureChannel(PlaintextKeys.fromMasterKey(GPData.defaultKey), null, GlobalPlatform.SCP_ANY, GlobalPlatform.defaultMode);
 
 		List<GPKeySet.GPKey> keys = new ArrayList<GPKeySet.GPKey>();
 		// Version 1, id 1
@@ -36,7 +37,7 @@ public class TestKeyChange extends TestRealCard {
 
 	@Test
 	public void testReplaceNewWithDefault() throws CardException, GPException {
-		gp.openSecureChannel(new GPKeySet(new GPKey(TestKeyChange.newKey, GPKey.Type.DES3)), null, GlobalPlatform.SCP_ANY, GlobalPlatform.defaultMode);
+		gp.openSecureChannel(PlaintextKeys.fromMasterKey(new GPKey(newKey, GPKey.Type.DES3)), null, GlobalPlatform.SCP_ANY, GlobalPlatform.defaultMode);
 
 		List<GPKeySet.GPKey> keys = new ArrayList<GPKeySet.GPKey>();
 
@@ -51,9 +52,7 @@ public class TestKeyChange extends TestRealCard {
 
 	@Test
 	public void testReplaceDefaultWithNew() throws CardException, GPException {
-		GPKeySet ks = new GPKeySet(GPData.defaultKey);
-		ks.suggestedDiversification = Diversification.EMV;
-		gp.openSecureChannel(ks, null, GlobalPlatform.SCP_ANY, GlobalPlatform.defaultMode);
+		gp.openSecureChannel(PlaintextKeys.fromMasterKey(GPData.defaultKey, Diversification.EMV), null, GlobalPlatform.SCP_ANY, GlobalPlatform.defaultMode);
 		List<GPKeySet.GPKey> keys = new ArrayList<GPKeySet.GPKey>();
 		GPKey nk = new GPKey(TestKeyChange.newKey, Type.DES3);
 

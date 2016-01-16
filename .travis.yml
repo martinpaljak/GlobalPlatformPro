@@ -1,5 +1,4 @@
-sudo: required
-dist: trusty
+sudo: false
 language: java
 jdk:
 - oraclejdk8
@@ -8,6 +7,9 @@ env:
   global:
     secure: Df5FIHnieDJj8AAwgeAh779Rs+aoJ8e9WQN0ero4OfcJ2Y1G7InBZQIGesfVR1M7EX4Hf0fvmUam9zthdwi4culk+gJeOAMM/wpCqvEUyWDTd78Cr08L7PjNW8RCq5NCYhgvO1j+IzJOA3IR6h8DSS4QGZtJqPYk65ZQ1uRyAGc=
 addons:
+  apt:
+    packages:
+      - libc6:i386
   coverity_scan:
     project:
       name: martinpaljak/GlobalPlatformPro
@@ -18,11 +20,7 @@ addons:
     branch_pattern: coverity
 
 # Deploy releases to Github.
-# Build Windows utility
-# See https://github.com/travis-ci/travis-ci/issues/3701
 before_deploy:
-  - sudo apt-get update
-  - sudo apt-get install libc6:i386
   - mkdir -p ext/launch4j
   - curl http://kent.dl.sourceforge.net/project/launch4j/launch4j-3/3.8/launch4j-3.8-linux.tgz | tar xz -C ext
   - ant windist

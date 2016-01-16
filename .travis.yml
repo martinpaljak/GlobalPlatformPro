@@ -16,7 +16,7 @@ env:
 
 notifications:
   irc:
-    on_success: always
+    on_success: change
     on_failure: always
     channels:
       - "irc.freenode.org#javacard"

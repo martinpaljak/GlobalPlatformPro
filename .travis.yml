@@ -8,10 +8,18 @@ before_script:
   - wget http://iweb.dl.sourceforge.net/project/launch4j/launch4j-3/3.8/launch4j-3.8-linux.tgz
   - echo "e0cb0240c91b3ed6ca7bb85743fd09d6d7651cc3671a5fc17f67e57b8f7a80c6  launch4j-3.8-linux.tgz" | sha256sum -c
   - tar -C ext -xzf launch4j-3.8-linux.tgz
+  - ant fetch
 script: ant windist
 env:
   global:
     secure: Df5FIHnieDJj8AAwgeAh779Rs+aoJ8e9WQN0ero4OfcJ2Y1G7InBZQIGesfVR1M7EX4Hf0fvmUam9zthdwi4culk+gJeOAMM/wpCqvEUyWDTd78Cr08L7PjNW8RCq5NCYhgvO1j+IzJOA3IR6h8DSS4QGZtJqPYk65ZQ1uRyAGc=
+
+notifications:
+  irc:
+    on_success: change
+    on_failure: always
+    channels:
+      - "irc.freenode.org#javacard"
 addons:
   apt:
     packages:
@@ -24,6 +32,8 @@ addons:
     build_command_prepend: ant fetch
     build_command: ant compile
     branch_pattern: coverity
+
+
 
 # Deploy releases to Github.
 deploy:

@@ -336,5 +336,6 @@ public class CapFile {
 				out.println("Applet: AID " + applet);
 			}
 		}
+		out.println("Total code size: " + getCodeLength(false) + " bytes (" + getCodeLength(true) + " with debug)");
 	}
 }

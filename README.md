@@ -207,6 +207,8 @@ The ancestor of this code is GPJ (Global Platform for SmartCardIO) which is (sti
  * asterix - https://github.com/suma12/asterix (LGPL 2.1)
    * written in Python
    * SCP02, SCP03
+ * LuaGP - https://github.com/bondhan/LuaGP
+   * written in Lua  
  * JCOP tools, RADIII, JCardManager4, JLoad, PyApduTool etc
    * not publicly available cross-platform open source projects and thus not suitable for this comparision
 

@@ -20,24 +20,6 @@
  */
 package pro.javacard.gp;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.List;
-
-import javax.smartcardio.Card;
-import javax.smartcardio.CardException;
-import javax.smartcardio.CardTerminal;
-import javax.smartcardio.CardTerminals;
-import javax.smartcardio.CardTerminals.State;
-import javax.smartcardio.CommandAPDU;
-import javax.smartcardio.TerminalFactory;
-
 import apdu4j.APDUReplayProvider;
 import apdu4j.HexUtils;
 import apdu4j.LoggingCardTerminal;
@@ -51,12 +33,21 @@ import pro.javacard.gp.GPKeySet.GPKey;
 import pro.javacard.gp.GPKeySet.GPKey.Type;
 import pro.javacard.gp.GlobalPlatform.APDUMode;
 
+import javax.smartcardio.*;
+import javax.smartcardio.CardTerminals.State;
+import java.io.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.List;
+
 
 public final class GPTool {
 	private final static String OPT_INFO = "info";
 
 	private final static String OPT_LIST = "list";
 	private final static String OPT_LOCK = "lock";
+	private final static String CMD_READERS = "terminals";
 
 	private final static String OPT_INSTALL = "install";
 	private final static String OPT_UNINSTALL = "uninstall";

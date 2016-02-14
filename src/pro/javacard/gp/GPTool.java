@@ -87,7 +87,7 @@ public final class GPTool {
 	private final static String OPT_VIRGIN = "virgin";
 	private final static String OPT_MODE = "mode";
 	private final static String OPT_BS = "bs";
-	private final static String OPT_SIMONAFACTORY = "simona";
+	private final static String OPT_REMOTEFACTORY = "remote";
 	
 	private final static String OPT_MAC = "mac";
 	private final static String OPT_ENC = "enc";
@@ -122,7 +122,7 @@ public final class GPTool {
 		parser.accepts(OPT_DO_ALL_READERS, "Work with multiple readers");
 		parser.accepts(OPT_NOFIX, "Do not try to fix PCSC/Java/OS issues");
 		parser.accepts(OPT_CONTINUE, "Skip errors that cause exceptions");
-		parser.accepts(OPT_SIMONAFACTORY, "Use Simona PC/SC - an optional argument specifies IP address range, e.g., 192.168.1.0/24").withOptionalArg().ofType(String.class);
+		parser.accepts(OPT_REMOTEFACTORY, "Use remote PC/SC - an optional argument specifies IP address range and protocol, e.g., tcp://192.168.1.0/24").withOptionalArg().ofType(String.class);
 		parser.accepts(OPT_DUMP, "Dump APDU communication to <File>").withRequiredArg().ofType(File.class);
 		parser.accepts(OPT_REPLAY, "Replay APDU responses from <File>").withRequiredArg().ofType(File.class);
 		
@@ -275,9 +275,9 @@ public final class GPTool {
 		// Now actually talk to possible terminals
 		try {
 			TerminalFactory tf;
-			if (args.has(OPT_SIMONAFACTORY)) {
-				tf = TerminalManager.getSimonaTerminalFactory((String)args.valueOf(OPT_SIMONAFACTORY));
-				System.out.println("Simona PC/SC used");
+			if (args.has(OPT_REMOTEFACTORY)) {
+				tf = TerminalManager.getRemoteTerminalFactory((String)args.valueOf(OPT_REMOTEFACTORY));
+				System.out.println("Remote/socket PC/SC used");
 			} else {
 				tf = TerminalManager.getTerminalFactory(args.has(OPT_NOFIX) ? false : true);
 				
@@ -337,7 +337,7 @@ public final class GPTool {
 						card = reader.connect("*");
 						card.beginExclusive();
 					} catch (CardException e) {
-						if (args.has(OPT_CONTINUE) || (args.has(OPT_SIMONAFACTORY))) {
+						if (args.has(OPT_CONTINUE) || (args.has(OPT_REMOTEFACTORY))) {
 							e.printStackTrace();
 							continue;
 						} else {
@@ -357,8 +357,8 @@ public final class GPTool {
 					// The name of the option comes from a common abbreviation as well as dd utility
 					if (args.has(OPT_BS)) {
 						gp.setBlockSize((int)args.valueOf(OPT_BS));
-					} else if (args.has(OPT_SIMONAFACTORY)){
-						gp.setBlockSize((int)240);
+					} else if (args.has(OPT_REMOTEFACTORY)){
+						gp.setBlockSize(240);
 					}
 					if (args.has(OPT_INFO) || args.has(OPT_VERBOSE)) {
 						System.out.println("Reader: " + reader.getName());

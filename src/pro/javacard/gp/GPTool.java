@@ -88,6 +88,7 @@ public final class GPTool {
 	private final static String OPT_MODE = "mode";
 	private final static String OPT_BS = "bs";
 	private final static String OPT_REMOTEFACTORY = "remote";
+	private final static String OPT_FACTORYCLASS = "factory";
 	
 	private final static String OPT_MAC = "mac";
 	private final static String OPT_ENC = "enc";
@@ -122,7 +123,8 @@ public final class GPTool {
 		parser.accepts(OPT_DO_ALL_READERS, "Work with multiple readers");
 		parser.accepts(OPT_NOFIX, "Do not try to fix PCSC/Java/OS issues");
 		parser.accepts(OPT_CONTINUE, "Skip errors that cause exceptions");
-		parser.accepts(OPT_REMOTEFACTORY, "Use remote PC/SC - an optional argument specifies IP address range and protocol, e.g., tcp://192.168.1.0/24").withOptionalArg().ofType(String.class);
+		parser.accepts(OPT_REMOTEFACTORY, "Use remote PC/SC - an optional argument specifies IP address range and protocol, e.g., tcp://192.168.1.0/24; it should be used with the \"-factory\" option").withOptionalArg().ofType(String.class);
+		parser.accepts(OPT_FACTORYCLASS, "Use a terminal factory from provided jar file, the format is <file path>:<full class name>").withRequiredArg().ofType(String.class);
 		parser.accepts(OPT_DUMP, "Dump APDU communication to <File>").withRequiredArg().ofType(File.class);
 		parser.accepts(OPT_REPLAY, "Replay APDU responses from <File>").withRequiredArg().ofType(File.class);
 		
@@ -275,9 +277,24 @@ public final class GPTool {
 		// Now actually talk to possible terminals
 		try {
 			TerminalFactory tf;
+			if (args.has(OPT_FACTORYCLASS)) {
+
+			}
 			if (args.has(OPT_REMOTEFACTORY)) {
-				tf = TerminalManager.getRemoteTerminalFactory((String)args.valueOf(OPT_REMOTEFACTORY));
-				System.out.println("Remote/socket PC/SC used");
+				if (args.has(OPT_FACTORYCLASS)) {
+					String[] splitFactory = ((String) args.valueOf(OPT_FACTORYCLASS)).split(":");
+					if (splitFactory.length == 2) {
+						tf = TerminalManager.getRemoteTerminalFactory(splitFactory[0], splitFactory[1],
+								(String) args.valueOf(OPT_REMOTEFACTORY));
+						System.out.println("Remote/socket PC/SC used");
+					} else {
+						System.out.println("The format for -factory is <jar file path>:<class>");
+						return;
+					}
+				} else {
+					System.err.println("No factory class provided for remote smart card provider.");
+					return;
+				}
 			} else {
 				tf = TerminalManager.getTerminalFactory(args.has(OPT_NOFIX) ? false : true);
 				

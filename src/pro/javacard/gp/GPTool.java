@@ -277,9 +277,6 @@ public final class GPTool {
 		// Now actually talk to possible terminals
 		try {
 			TerminalFactory tf;
-			if (args.has(OPT_FACTORYCLASS)) {
-
-			}
 			if (args.has(OPT_REMOTEFACTORY)) {
 				if (args.has(OPT_FACTORYCLASS)) {
 					String[] splitFactory = ((String) args.valueOf(OPT_FACTORYCLASS)).split(":");

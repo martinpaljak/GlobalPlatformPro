@@ -281,9 +281,9 @@ public final class GPTool {
 				if (args.has(OPT_FACTORYCLASS)) {
 					String[] splitFactory = ((String) args.valueOf(OPT_FACTORYCLASS)).split(":");
 					if (splitFactory.length == 2) {
+						System.out.println("Remote/socket PC/SC loading " + splitFactory[0] + "@" + splitFactory[1] + " ...");
 						tf = TerminalManager.getRemoteTerminalFactory(splitFactory[0], splitFactory[1],
 								(String) args.valueOf(OPT_REMOTEFACTORY));
-						System.out.println("Remote/socket PC/SC used");
 					} else {
 						System.out.println("The format for -factory is <jar file path>:<class>");
 						return;
@@ -293,6 +293,7 @@ public final class GPTool {
 					return;
 				}
 			} else {
+				System.out.println("Local PC/SC loading ...");
 				tf = TerminalManager.getTerminalFactory(args.has(OPT_NOFIX) ? false : true);
 				
 				// Replay responses from a file

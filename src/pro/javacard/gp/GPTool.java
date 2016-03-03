@@ -222,7 +222,14 @@ public final class GPTool {
 		}
 
 		if (args.has(OPT_VERSION)) {
-			System.out.println("GlobalPlatformPro " + GlobalPlatform.getVersion());
+			String version = GlobalPlatform.getVersion();
+			// Append host information
+			version += "\nRunning on " + System.getProperty("os.name");
+			version += " " + System.getProperty("os.version");
+			version += " " + System.getProperty("os.arch");
+			version += ", Java " + System.getProperty("java.version");
+			version += " by " + System.getProperty("java.vendor");
+			System.out.println("GlobalPlatformPro " + version);
 		}
 
 		// Parameters for opening the secure channel

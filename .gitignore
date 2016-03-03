@@ -4,8 +4,6 @@
 /lib/*.jar
 /gp.jar
 /openkms-gp.jar
-/javadoc/
+/javadoc
 /gp.exe
-/cov-int
 /ext/launch4j
-/version.txt

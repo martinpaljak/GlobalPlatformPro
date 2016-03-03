@@ -150,18 +150,13 @@ public class GlobalPlatform {
 	 * @return
 	 */
 	public static String getVersion() {
-		try (InputStream versionfile = GlobalPlatform.class.getResourceAsStream("/version.txt")) {
+		try (InputStream versionfile = GlobalPlatform.class.getResourceAsStream("version.txt")) {
 			String version = "unknown-development";
 			if (versionfile != null) {
-				BufferedReader vinfo = new BufferedReader(new InputStreamReader(versionfile));
-				version = vinfo.readLine();
+				try (BufferedReader vinfo = new BufferedReader(new InputStreamReader(versionfile)) ) {
+					version = vinfo.readLine();
+				}
 			}
-			// Append host information
-			version += "\nRunning on " + System.getProperty("os.name");
-			version += " " + System.getProperty("os.version");
-			version += " " + System.getProperty("os.arch");
-			version += ", Java " + System.getProperty("java.version");
-			version += " by " + System.getProperty("java.vendor");
 			return version;
 		} catch (IOException e) {
 			return "unknown-error";

@@ -53,16 +53,16 @@ public class AIDRegistryEntry {
 		 */
 		public String toShortString() {
 			switch (this) {
-			case IssuerSecurityDomain:
-				return "ISD";
-			case Application:
-				return "App";
-			case SecurityDomain:
-				return "SeD";
-			case ExecutableLoadFiles:
-				return "Exe";
-			case ExecutableLoadFilesAndModules:
-				return "ExM";
+				case IssuerSecurityDomain:
+					return "ISD";
+				case Application:
+					return "App";
+				case SecurityDomain:
+					return "SeD";
+				case ExecutableLoadFiles:
+					return "Exe";
+				case ExecutableLoadFilesAndModules:
+					return "ExM";
 			}
 			return "???";
 		}
@@ -188,51 +188,55 @@ public class AIDRegistryEntry {
 
 	public String getLifeCycleString() {
 		switch (kind) {
-		case IssuerSecurityDomain:
-			switch (lifeCycleState) {
-			case 0x1:
-				return "OP_READY";
-			case 0x7:
-				return "INITIALIZED";
-			case 0xF:
-				return "SECURED";
-			case 0x7F:
-				return "CARD_LOCKED";
-			case 0xFF:
-				return "TERMINATED";
+			case IssuerSecurityDomain:
+				switch (lifeCycleState) {
+					case 0x1:
+						return "OP_READY";
+					case 0x7:
+						return "INITIALIZED";
+					case 0xF:
+						return "SECURED";
+					case 0x7F:
+						return "CARD_LOCKED";
+					case 0xFF:
+						return "TERMINATED";
+					default:
+						return "ERROR";
+				}
+			case Application:
+				if (lifeCycleState == 0x3) {
+					return "INSTALLED";
+				} else if (lifeCycleState <= 0x7F) {
+					if ((lifeCycleState & 0x74) != 0x00) {
+						return "SELECTABLE (0x" + Integer.toHexString(lifeCycleState) +")";
+					} else {
+						return "SELECTABLE";
+					}
+				} else if (lifeCycleState > 0x83) {
+					return "LOCKED";
+				} else {
+					return "ERROR";
+				}
+			case ExecutableLoadFilesAndModules:
+				if (lifeCycleState == 0x1) {
+					return "LOADED";
+				} else if (lifeCycleState == 0x00) {
+					// OP201
+					return "LOGICALLY_DELETED";
+				} else {
+					return "ERROR";
+				}
+			case ExecutableLoadFiles:
+				if (lifeCycleState == 0x1) {
+					return "LOADED";
+				} else if (lifeCycleState == 0x00) {
+					// OP201
+					return "LOGICALLY_DELETED";
+				} else {
+					return "ERROR";
+				}
 			default:
 				return "ERROR";
-			}
-		case Application:
-			if (lifeCycleState == 0x3) {
-				return "INSTALLED";
-			} else if (lifeCycleState <= 0x7F) {
-				return "SELECTABLE";
-			} else if (lifeCycleState > 0x83) {
-				return "LOCKED";
-			} else {
-				return "ERROR";
-			}
-		case ExecutableLoadFilesAndModules:
-			if (lifeCycleState == 0x1) {
-				return "LOADED";
-			} else if (lifeCycleState == 0x00) {
-				// OP201
-				return "LOGICALLY_DELETED";
-			} else {
-				return "ERROR";
-			}
-		case ExecutableLoadFiles:
-			if (lifeCycleState == 0x1) {
-				return "LOADED";
-			} else if (lifeCycleState == 0x00) {
-				// OP201
-				return "LOGICALLY_DELETED";
-			} else {
-				return "ERROR";
-			}
-		default:
-			return "ERROR";
 		}
 	}
 

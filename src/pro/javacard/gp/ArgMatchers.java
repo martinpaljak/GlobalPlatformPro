@@ -136,4 +136,30 @@ public class ArgMatchers {
 			}
 		}
 	}
+
+	public static ValueConverter<byte []> hex() {
+		return new HexStringMatcher();
+	}
+
+	public static class HexStringMatcher implements ValueConverter<byte []> {
+
+		@Override
+		public Class<byte []> valueType() {
+			return byte[].class;
+		}
+
+		@Override
+		public String valuePattern() {
+			return null;
+		}
+
+		@Override
+		public byte[] convert(String arg0) {
+			try {
+				return HexUtils.stringToBin(arg0);
+			} catch (IllegalArgumentException e) {
+				throw new ValueConversionException(arg0 + " is not a valid hex string!");
+			}
+		}
+	}
 }

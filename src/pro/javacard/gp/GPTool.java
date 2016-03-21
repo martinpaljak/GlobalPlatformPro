@@ -140,7 +140,7 @@ public final class GPTool {
 		parser.accepts(OPT_LOAD, "Load a CAP file").withRequiredArg().ofType(File.class);
 
 		parser.accepts(OPT_INSTALL, "Install applet(s) from CAP").withOptionalArg().ofType(File.class);
-		parser.accepts(OPT_PARAMS, "Installation parameters").withRequiredArg();
+		parser.accepts(OPT_PARAMS, "Installation parameters").withRequiredArg().withValuesConvertedBy(ArgMatchers.hex());
 
 		parser.accepts(OPT_UNINSTALL, "Uninstall applet/package").withRequiredArg().ofType(File.class);
 		parser.accepts(OPT_DEFAULT, "Indicate Default Selected privilege");
@@ -721,7 +721,7 @@ public final class GPTool {
 	private static byte [] getInstParams(OptionSet args) {
 		byte[] params = null;
 		if (args.has(OPT_PARAMS)) {
-			params = HexUtils.stringToBin((String) args.valueOf(OPT_PARAMS));
+			params = (byte []) args.valueOf(OPT_PARAMS);
 			// Simple use: only application paramters without tag, prepend 0xC9
 			if (params[0] != (byte) 0xC9) {
 				byte [] newparams = new byte[params.length + 2];

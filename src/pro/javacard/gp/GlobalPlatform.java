@@ -110,7 +110,8 @@ public class GlobalPlatform {
 
 	// SD AID of the card successfully selected or null
 	public AID sdAID = null;
-
+	public static enum GPSpec {OP201, GP211, GP22};
+	private GPSpec spec = GPSpec.GP211; // Default to GP211 mode
 	// Either 1 or 2 or 3
 	private int scpMajorVersion = 0;
 
@@ -737,6 +738,13 @@ public class GlobalPlatform {
 		dirty = true;
 	}
 
+	public void lockUnlockCard(boolean lock) throws CardException, GPException {
+		CommandAPDU cmd = new CommandAPDU(CLA_GP, INS_SET_STATUS, 0x80, lock ? 0x7F : 0x0F);
+		ResponseAPDU response = transmit(cmd);
+		GPException.check(response, "SET STATUS failed");
+		dirty = true;
+	}
+
 	public void uninstallDefaultSelected(boolean deps) throws CardException, GPException {
 		AID def = getRegistry().getDefaultSelectedAID();
 		if (def != null) {
@@ -895,6 +903,7 @@ public class GlobalPlatform {
 
 
 	private byte[] getConcatenatedStatus(int p1, byte[] data) throws CardException, GPException {
+		// TODO: Support for GP2.2
 		CommandAPDU getStatus = new CommandAPDU(CLA_GP, INS_GET_STATUS, p1, 0x00, data, 256);
 		ResponseAPDU response = transmit(getStatus);
 		int sw = response.getSW();

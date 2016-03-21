@@ -70,6 +70,9 @@ public final class GPTool {
 	private final static String OPT_SCP = "scp";
 	private final static String OPT_LOCK_APPLET = "lock-applet";
 	private final static String OPT_UNLOCK_APPLET = "unlock-applet";
+	private final static String OPT_LOCK_CARD = "lock-card";
+	private final static String OPT_UNLOCK_CARD = "unlock-card";
+
 
 	private final static String OPT_DELETEDEPS = "deletedeps";
 	private final static String OPT_DEFAULT = "default";
@@ -144,8 +147,9 @@ public final class GPTool {
 		parser.accepts(OPT_TERMINATE, "Indicate Card Lock+Terminate privilege");
 		parser.accepts(OPT_SDOMAIN, "Indicate Security Domain privilege");
 		parser.accepts(OPT_LOCK_APPLET, "Lock specified applet").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
-		parser.accepts(OPT_UNLOCK_APPLET, "Lock specified applet").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
-
+		parser.accepts(OPT_UNLOCK_APPLET, "Unlock specified applet").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
+		parser.accepts(OPT_LOCK_CARD, "Lock card");
+		parser.accepts(OPT_UNLOCK_CARD, "Unlock card");
 
 		parser.accepts(OPT_DELETEDEPS, "Also delete dependencies");
 		parser.accepts(OPT_REINSTALL, "Reinstall CAP").withOptionalArg().ofType(File.class);
@@ -563,6 +567,14 @@ public final class GPTool {
 							gp.installAndMakeSelectable(packageAID, appletAID, instanceAID, getInstPrivs(args), getInstParams(args), null);
 						}
 
+						// --lock-card
+						if (args.has(OPT_LOCK_CARD)) {
+							gp.lockUnlockCard(true);
+						}
+						// --unlock-card
+						if (args.has(OPT_UNLOCK_CARD)) {
+							gp.lockUnlockCard(false);
+						}
 						// --lock-applet <aid>
 						if (args.has(OPT_LOCK_APPLET)) {
 							gp.lockUnlockApplet((AID) args.valueOf(OPT_LOCK_APPLET), true);
@@ -730,6 +742,8 @@ public final class GPTool {
 		if (args.has(OPT_LOCK) || args.has(OPT_UNLOCK) || args.has(OPT_MAKE_DEFAULT))
 			return true;
 		if (args.has(OPT_UNINSTALL) || args.has(OPT_SECURE_APDU))
+			return true;
+		if (args.has(OPT_LOCK_CARD) || args.has(OPT_UNLOCK_CARD) || args.has(OPT_LOCK_APPLET) || args.has(OPT_UNLOCK_APPLET))
 			return true;
 		return false;
 	}

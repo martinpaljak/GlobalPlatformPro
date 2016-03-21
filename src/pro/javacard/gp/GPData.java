@@ -26,6 +26,8 @@ public final class GPData {
 	public static final byte cardTerminatePriv = 0x08;
 	public static final byte securityDomainPriv = (byte) 0x80;
 
+	// TODO GP 2.2.1 11.1.2
+
 
 	public enum KeyType {
 		// ID is as used in diversification/derivation

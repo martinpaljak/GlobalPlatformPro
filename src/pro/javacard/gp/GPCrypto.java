@@ -40,7 +40,7 @@ public class GPCrypto {
 	public static final IvParameterSpec iv_null_des = new IvParameterSpec(null_bytes_8);
 	public static final IvParameterSpec iv_null_aes = new IvParameterSpec(null_bytes_16);
 
-	private static byte[] pad80(byte[] text, int offset, int length, int blocksize) {
+	public static byte[] pad80(byte[] text, int offset, int length, int blocksize) {
 		if (length == -1) {
 			length = text.length - offset;
 		}

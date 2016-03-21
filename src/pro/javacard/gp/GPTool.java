@@ -97,7 +97,7 @@ public final class GPTool {
 	private final static String OPT_VERBOSE = "verbose";
 	private final static String OPT_REINSTALL = "reinstall";
 	private final static String OPT_VIRGIN = "virgin";
-	private final static String OPT_MODE = "mode";
+	private final static String OPT_SC_MODE = "mode";
 	private final static String OPT_BS = "bs";
 
 	private final static String OPT_MAC = "mac";
@@ -166,25 +166,25 @@ public final class GPTool {
 		parser.accepts(OPT_ENC, "Specify ENC key").withRequiredArg().withValuesConvertedBy(ArgMatchers.key());
 		parser.accepts(OPT_KEK, "Specify KEK key").withRequiredArg().withValuesConvertedBy(ArgMatchers.key());
 		parser.accepts(OPT_KEY, "Specify master key").withRequiredArg().withValuesConvertedBy(ArgMatchers.key());
+
+		parser.accepts(OPT_EMV, "Use EMV diversification");
+		parser.accepts(OPT_VISA2, "Use VISA2 diversification");
+
 		parser.accepts(OPT_KEY_ID, "Specify key ID").withRequiredArg().ofType(Integer.class);
 		parser.accepts(OPT_KEY_VERSION, "Specify key version").withRequiredArg().ofType(Integer.class);
-		parser.accepts(OPT_LOCK, "Set new key").withRequiredArg().withValuesConvertedBy(ArgMatchers.keyset());
 
+		parser.accepts(OPT_LOCK, "Set new key").withRequiredArg().withValuesConvertedBy(ArgMatchers.keyset());
 		parser.accepts(OPT_UNLOCK, "Set default key");
 		parser.accepts(OPT_SCP, "Force the use of SCP0X").withRequiredArg().ofType(Integer.class);
 		parser.accepts(OPT_NEW_KEY_VERSION, "key version for the new key").withRequiredArg().ofType(Integer.class);
 
 		parser.accepts(OPT_VIRGIN, "Card has virgin keys");
 
-
-		// Key diversification and AID options
-		parser.accepts(OPT_EMV, "Use EMV diversification");
-		parser.accepts(OPT_VISA2, "Use VISA2 diversification");
-		parser.accepts(OPT_MODE, "APDU mode to use (mac/enc/clr)").withRequiredArg().withValuesConvertedBy(ArgMatchers.mode());;
+		// General GP options
+		parser.accepts(OPT_SC_MODE, "Secure channel to use (mac/enc/clr)").withRequiredArg().withValuesConvertedBy(ArgMatchers.mode());;
 		parser.accepts(OPT_BS, "maximum APDU payload size").withRequiredArg().ofType(Integer.class);
 
 		parser.accepts(OPT_SDAID, "ISD AID").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
-
 
 		// Parse arguments
 		try {
@@ -399,9 +399,9 @@ public final class GPTool {
 
 						EnumSet<APDUMode> mode = GlobalPlatform.defaultMode.clone();
 						// Override default mode if needed.
-						if (args.has(OPT_MODE)) {
+						if (args.has(OPT_SC_MODE)) {
 							mode.clear();
-							mode.add((GlobalPlatform.APDUMode) args.valueOf(OPT_MODE));
+							mode.add((GlobalPlatform.APDUMode) args.valueOf(OPT_SC_MODE));
 						}
 
 						// Override SCP version

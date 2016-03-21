@@ -58,10 +58,10 @@ public class ArgMatchers {
 				String s = arg0.toLowerCase();
 				if (s.startsWith("aes:")) {
 					return new GPKey(HexUtils.decodeHexString(s.substring("aes:".length())), Type.AES);
-				} else if (s.startsWith("des:")) {
-					return new GPKey(HexUtils.decodeHexString(s.substring("des:".length())), Type.DES3);
+				} else if (s.startsWith("3des:")) {
+					return new GPKey(HexUtils.decodeHexString(s.substring("3des:".length())), Type.DES3);
 				} else {
-					// FIXME: not rally nice to fall back to 3DES, but works for 90% of usecases.
+					// XXX: not rally nice to fall back to 3DES, but works for 90% of usecases.
 					return new GPKey(HexUtils.decodeHexString(arg0), Type.DES3);
 				}
 			} catch (IllegalArgumentException e) {

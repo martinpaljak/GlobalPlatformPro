@@ -1,6 +1,7 @@
 package pro.javacard.gp;
 
 import java.security.Key;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -70,7 +71,7 @@ public class GPKeySet {
 			} else if (type == 0x88) {
 				this.type = Type.AES;
 			} else {
-				throw new RuntimeException(getClass().getName() + " currently only support DES and AES keys");
+				throw new IllegalArgumentException(getClass().getName() + " currently only supports 3DES and AES keys");
 			}
 		}
 
@@ -79,8 +80,7 @@ public class GPKeySet {
 		public GPKey(byte [] v, Type type) {
 			if (v.length != 16 && v.length != 24  && v.length != 32)
 				throw new IllegalArgumentException("A valid key should be 16/24/32 bytes long");
-			this.value = new byte[v.length];
-			System.arraycopy(v, 0, value, 0, v.length);
+			this.value = Arrays.copyOf(v, v.length);
 			this.length = v.length;
 			this.type = type;
 
@@ -88,7 +88,6 @@ public class GPKeySet {
 			id = 0x00;
 			version = 0x00;
 		}
-
 
 		public Key getKey(Type type) {
 			if (type == Type.DES) {
@@ -98,7 +97,7 @@ public class GPKeySet {
 			} else if (type == Type.AES) {
 				return new SecretKeySpec(value, "AES");
 			} else {
-				throw new RuntimeException("Don't know how to handle " + type + " yet");
+				throw new IllegalArgumentException("Don't know how to handle " + type + " yet");
 			}
 		}
 

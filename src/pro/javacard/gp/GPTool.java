@@ -72,6 +72,7 @@ public final class GPTool {
 	private final static String OPT_UNLOCK_APPLET = "unlock-applet";
 	private final static String OPT_LOCK_CARD = "lock-card";
 	private final static String OPT_UNLOCK_CARD = "unlock-card";
+	private final static String OPT_STORE_DATA = "store-data";
 
 
 	private final static String OPT_DELETEDEPS = "deletedeps";
@@ -150,6 +151,8 @@ public final class GPTool {
 		parser.accepts(OPT_UNLOCK_APPLET, "Unlock specified applet").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
 		parser.accepts(OPT_LOCK_CARD, "Lock card");
 		parser.accepts(OPT_UNLOCK_CARD, "Unlock card");
+
+		parser.accepts(OPT_STORE_DATA, "STORE DATA to applet").withRequiredArg().withValuesConvertedBy(ArgMatchers.hex());
 
 		parser.accepts(OPT_DELETEDEPS, "Also delete dependencies");
 		parser.accepts(OPT_REINSTALL, "Reinstall CAP").withOptionalArg().ofType(File.class);
@@ -567,6 +570,14 @@ public final class GPTool {
 							gp.installAndMakeSelectable(packageAID, appletAID, instanceAID, getInstPrivs(args), getInstParams(args), null);
 						}
 
+						// --store-data <XX>
+						if (args.has(OPT_STORE_DATA)) {
+							if (args.has(OPT_APPLET)) {
+								gp.storeData((AID)args.valueOf(OPT_APPLET), (byte[]) args.valueOf(OPT_STORE_DATA));
+							} else {
+								System.err.println("Must specify target application with -" + OPT_APPLET);
+							}
+						}
 						// --lock-card
 						if (args.has(OPT_LOCK_CARD)) {
 							gp.lockUnlockCard(true);
@@ -744,6 +755,8 @@ public final class GPTool {
 		if (args.has(OPT_UNINSTALL) || args.has(OPT_SECURE_APDU))
 			return true;
 		if (args.has(OPT_LOCK_CARD) || args.has(OPT_UNLOCK_CARD) || args.has(OPT_LOCK_APPLET) || args.has(OPT_UNLOCK_APPLET))
+			return true;
+		if (args.has(OPT_STORE_DATA))
 			return true;
 		return false;
 	}

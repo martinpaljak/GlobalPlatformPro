@@ -87,7 +87,6 @@ public final class GPTool {
 	private final static String OPT_NOFIX = "nofix";
 	private final static String OPT_PARAMS = "params";
 
-	private final static String OPT_CONTINUE = "skip-error";
 	private final static String OPT_RELAX = "relax";
 	private final static String OPT_READER = "reader";
 	private final static String OPT_VERSION = "version";
@@ -287,7 +286,7 @@ public final class GPTool {
 			File capfile = (File) args.valueOf(OPT_CAP);
 			cap = new CapFile(new FileInputStream(capfile));
 			if (args.has(OPT_VERBOSE)) {
-				System.out.println("**** CAP info:");
+				System.out.println("**** CAP info of " + capfile.getName());
 				cap.dump(System.out);
 			}
 		}
@@ -312,10 +311,12 @@ public final class GPTool {
 				}
 			}
 
-			// Select terminals to work on
+			// Select terminal(s) to work on
 			List<CardTerminal> do_readers;
-			if (args.has(OPT_READER)) {
-				String reader = (String) args.valueOf(OPT_READER);
+			if (args.has(OPT_READER) || System.getenv("GP_READER") != null) {
+				String reader = System.getenv("GP_READER");
+				if (args.has(OPT_READER))
+					reader = (String) args.valueOf(OPT_READER);
 				CardTerminal t = terminals.getTerminal(reader);
 				if (t == null) {
 					System.err.println("Reader \"" + reader + "\" not found.");
@@ -349,19 +350,16 @@ public final class GPTool {
 					// Establish connection
 					try {
 						card = reader.connect("*");
+						// Use use apdu4j which by default uses jnasmartcardio
+						// which uses real SCardBeginTransaction
 						card.beginExclusive();
 					} catch (CardException e) {
-						if (args.has(OPT_CONTINUE)) {
-							e.printStackTrace();
-							continue;
-						} else {
-							throw e;
-						}
+						System.err.println("Could not connect to " + reader.getName() + ": " + TerminalManager.getExceptionMessage(e));
+						continue;
 					}
 
 					// GlobalPlatform specific
 					GlobalPlatform gp = new GlobalPlatform(card.getBasicChannel());
-
 
 					// Disable strict mode if requested
 					gp.setStrict(!args.has(OPT_RELAX));
@@ -692,16 +690,12 @@ public final class GPTool {
 					e.printStackTrace();
 				} catch (CardException e) {
 					// Card exceptions skip to the next reader, if available and allowed
-					if (args.has(OPT_CONTINUE)) {
-						continue;
-					} else {
-						e.printStackTrace();
-						throw e; // No catch.
-					}
+					continue;
 				} finally {
 					if (card != null) {
 						card.endExclusive();
 						card.disconnect(true);
+						card = null;
 					}
 				}
 			}

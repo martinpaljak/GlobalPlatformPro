@@ -44,7 +44,7 @@ public class AID {
 	}
 
 	public AID(String str) {
-		this(HexUtils.decodeHexString(str));
+		this(HexUtils.hex2bin(str));
 	}
 
 	/**
@@ -79,7 +79,7 @@ public class AID {
 	}
 
 	public String toString() {
-		return HexUtils.encodeHexString(aidBytes);
+		return HexUtils.bin2hex(aidBytes);
 	}
 
 	public int hashCode() {

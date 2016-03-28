@@ -57,12 +57,12 @@ public class ArgMatchers {
 			try {
 				String s = arg0.toLowerCase();
 				if (s.startsWith("aes:")) {
-					return new GPKey(HexUtils.decodeHexString(s.substring("aes:".length())), Type.AES);
+					return new GPKey(HexUtils.hex2bin(s.substring("aes:".length())), Type.AES);
 				} else if (s.startsWith("3des:")) {
-					return new GPKey(HexUtils.decodeHexString(s.substring("3des:".length())), Type.DES3);
+					return new GPKey(HexUtils.hex2bin(s.substring("3des:".length())), Type.DES3);
 				} else {
 					// XXX: not rally nice to fall back to 3DES, but works for 90% of usecases.
-					return new GPKey(HexUtils.decodeHexString(arg0), Type.DES3);
+					return new GPKey(HexUtils.hex2bin(arg0), Type.DES3);
 				}
 			} catch (IllegalArgumentException e) {
 				throw new ValueConversionException(arg0 + " is not a valid key!");
@@ -120,15 +120,15 @@ public class ArgMatchers {
 				// Check if diversification is necessary
 				String in = arg0.trim().toLowerCase();
 				if (in.startsWith("emv:")) {
-					m = new GPKey(HexUtils.decodeHexString(in.substring("emv:".length())), Type.DES3);
+					m = new GPKey(HexUtils.hex2bin(in.substring("emv:".length())), Type.DES3);
 					d = Diversification.EMV;
 				} else if (in.startsWith("visa2:")) {
-					m = new GPKey(HexUtils.decodeHexString(in.substring("visa2:".length())), Type.DES3);
+					m = new GPKey(HexUtils.hex2bin(in.substring("visa2:".length())), Type.DES3);
 					d = Diversification.VISA2;
 				} else if (in.startsWith("aes:")) {
-					m = new GPKey(HexUtils.decodeHexString(in.substring("aes:".length())), Type.AES);
+					m = new GPKey(HexUtils.hex2bin(in.substring("aes:".length())), Type.AES);
 				} else {
-					m = new GPKey(HexUtils.decodeHexString(in), Type.DES3);
+					m = new GPKey(HexUtils.hex2bin(in), Type.DES3);
 				}
 				return PlaintextKeys.fromMasterKey(m, d);
 			} catch (IllegalArgumentException e) {

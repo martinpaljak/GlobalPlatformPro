@@ -106,11 +106,11 @@ public class GPKeySet {
 		}
 
 		public String toString() {
-			return "Ver:" + version  + " ID:" + id + " Type:" + type + " Len:" + length + " Value:" + HexUtils.encodeHexString(value);
+			return "Ver:" + version  + " ID:" + id + " Type:" + type + " Len:" + length + " Value:" + HexUtils.bin2hex(value);
 		}
 
 		public String toStringKey() {
-			return type + ":" + HexUtils.encodeHexString(value);
+			return type + ":" + HexUtils.bin2hex(value);
 		}
 
 	}

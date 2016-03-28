@@ -320,7 +320,7 @@ public final class GPData {
 		public String toString() {
 			String s = "Card CPLC:";
 			for (Field f: Field.values()) {
-				s += "\n" + f.name() + ": " + HexUtils.encodeHexString(values.get(f));
+				s += "\n" + f.name() + ": " + HexUtils.bin2hex(values.get(f));
 			}
 			return s;
 		}

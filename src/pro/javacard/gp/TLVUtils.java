@@ -54,7 +54,7 @@ public final class TLVUtils {
 
 	static String getTLVValueAsHex(byte[] data, short offset) {
 		short len = getTagLength(data, offset);
-		return HexUtils.encodeHexString(Arrays.copyOfRange(data, offset + 2, offset + 2 + len));
+		return HexUtils.bin2hex(Arrays.copyOfRange(data, offset + 2, offset + 2 + len));
 	}
 
 	static byte[] getTLVValueAsBytes(byte[] data, short offset) {

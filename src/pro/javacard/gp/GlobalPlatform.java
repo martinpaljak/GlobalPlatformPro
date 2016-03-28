@@ -204,7 +204,7 @@ public class GlobalPlatform {
 
 		// Unfused JCOP replies with 0x6A82 to everything
 		if (sdAID == null && resp.getSW() == 0x6A82) {
-			byte [] identify_aid = HexUtils.decodeHexString("A000000167413000FF");
+			byte [] identify_aid = HexUtils.hex2bin("A000000167413000FF");
 			CommandAPDU identify = new CommandAPDU(ISO7816.CLA_ISO7816, ISO7816.INS_SELECT, 0x04, 0x00, identify_aid, 256);
 			ResponseAPDU identify_resp = channel.transmit(identify);
 			byte[] identify_data = identify_resp.getData();
@@ -301,7 +301,7 @@ public class GlobalPlatform {
 		CommandAPDU command = new CommandAPDU(CLA_GP, ISO7816.INS_GET_DATA, 0x00, 0x42, 256);
 		ResponseAPDU resp = channel.transmit(command);
 		if (resp.getSW() == 0x9000) {
-			out.println("IIN " + HexUtils.encodeHexString(resp.getData()));
+			out.println("IIN " + HexUtils.bin2hex(resp.getData()));
 		} else {
 			out.println("GET DATA(IIN) not supported");
 		}
@@ -310,7 +310,7 @@ public class GlobalPlatform {
 		command = new CommandAPDU(CLA_GP, ISO7816.INS_GET_DATA, 0x00, 0x45, 256);
 		resp = channel.transmit(command);
 		if (resp.getSW() == 0x9000) {
-			out.println("CIN " + HexUtils.encodeHexString(resp.getData()));
+			out.println("CIN " + HexUtils.bin2hex(resp.getData()));
 		} else {
 			out.println("GET DATA(CIN) not supported");
 		}
@@ -321,7 +321,7 @@ public class GlobalPlatform {
 		if (resp.getSW() == 0x9000) {
 			byte [] ssc = resp.getData();
 			TLVUtils.expectTag(ssc, SHORT_0, (byte) 0xC1);
-			out.println("SSC " + HexUtils.encodeHexString(TLVUtils.getTLVValueAsBytes(ssc, SHORT_0)));
+			out.println("SSC " + HexUtils.bin2hex(TLVUtils.getTLVValueAsBytes(ssc, SHORT_0)));
 		} else {
 			out.println("GET DATA(SSC) not supported");
 		}
@@ -425,8 +425,8 @@ public class GlobalPlatform {
 		byte card_cryptogram[] = Arrays.copyOfRange(update_response, offset, offset + 8);
 		offset += card_cryptogram.length;
 
-		logger.debug("Host challenge: " + HexUtils.encodeHexString(host_challenge));
-		logger.debug("Card challenge: " + HexUtils.encodeHexString(card_challenge));
+		logger.debug("Host challenge: " + HexUtils.bin2hex(host_challenge));
+		logger.debug("Card challenge: " + HexUtils.bin2hex(card_challenge));
 
 		// Verify response
 		// If using explicit key version, it must match.
@@ -491,9 +491,9 @@ public class GlobalPlatform {
 
 		// This is the main check for possible successful authentication.
 		if (!Arrays.equals(card_cryptogram, my_card_cryptogram)) {
-			giveStrictWarning("Card cryptogram invalid!\nCard: " + HexUtils.encodeHexString(card_cryptogram) + "\nHost: "+ HexUtils.encodeHexString(my_card_cryptogram) + "\n!!! DO NOT RE-TRY THE SAME COMMAND/KEYS OR YOU MAY BRICK YOUR CARD !!!");
+			giveStrictWarning("Card cryptogram invalid!\nCard: " + HexUtils.bin2hex(card_cryptogram) + "\nHost: "+ HexUtils.bin2hex(my_card_cryptogram) + "\n!!! DO NOT RE-TRY THE SAME COMMAND/KEYS OR YOU MAY BRICK YOUR CARD !!!");
 		} else {
-			logger.debug("Verified card cryptogram: " + HexUtils.encodeHexString(my_card_cryptogram));
+			logger.debug("Verified card cryptogram: " + HexUtils.bin2hex(my_card_cryptogram));
 		}
 
 		// Calculate host cryptogram and initialize SCP wrapper
@@ -506,7 +506,7 @@ public class GlobalPlatform {
 			wrapper = new SCP03Wrapper(sessionKeys, scpVersion, EnumSet.of(APDUMode.MAC), null, null, blockSize);
 		}
 
-		logger.debug("Calculated host cryptogram: " + HexUtils.encodeHexString(host_cryptogram));
+		logger.debug("Calculated host cryptogram: " + HexUtils.bin2hex(host_cryptogram));
 		int P1 = APDUMode.getSetValue(securityLevel);
 		CommandAPDU externalAuthenticate = new CommandAPDU(CLA_MAC, ISO7816.INS_EXTERNAL_AUTHENTICATE_82, P1, 0, host_cryptogram);
 		response = transmit(externalAuthenticate);

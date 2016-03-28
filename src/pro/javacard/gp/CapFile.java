@@ -312,19 +312,19 @@ public class CapFile {
 			}
 			out.println("CAP file (v" + cap_version + ") generated on " + cap_creation_time);
 			out.println("By " + converter_provider + " converter " + converter_version + " with JDK " + jdk_name);
-			String hexpkgaid = HexUtils.encodeHexString(HexUtils.stringToBin(package_aid));
+			String hexpkgaid = HexUtils.bin2hex(HexUtils.stringToBin(package_aid));
 			out.println("Package: " + package_name + " v" + package_version + " with AID " + hexpkgaid);
 
 			for (int i = 1; i<=num_applets; i++) {
 				String applet_name = caps.getValue("Java-Card-Applet-" + i + "-Name");
 				String applet_aid = caps.getValue("Java-Card-Applet-" + i + "-AID");
-				String hexaid = HexUtils.encodeHexString(HexUtils.stringToBin(applet_aid));
+				String hexaid = HexUtils.bin2hex(HexUtils.stringToBin(applet_aid));
 				out.println("Applet: " + applet_name + " with AID " + hexaid);
 			}
 			for (int i = 1; i<=num_imports; i++) {
 				String import_aid = caps.getValue("Java-Card-Imported-Package-" + i + "-AID");
 				String import_version = caps.getValue("Java-Card-Imported-Package-" + i + "-Version");
-				String hexaid = HexUtils.encodeHexString(HexUtils.stringToBin(import_aid));
+				String hexaid = HexUtils.bin2hex(HexUtils.stringToBin(import_aid));
 				out.println("Import: " + hexaid + " v" + import_version);
 
 			}

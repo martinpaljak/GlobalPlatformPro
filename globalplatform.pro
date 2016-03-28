@@ -5,7 +5,7 @@
 -dontwarn org.slf4j.**
 # these are library because we package everything back in
 -libraryjars lib/slf4j-simple-1.7.13.jar
--libraryjars lib/apdu4j.jar
+-libraryjars lib/apdu4j-pcsc.jar
 -libraryjars  <java.home>/lib/rt.jar
 -libraryjars  <java.home>/lib/jce.jar
 -outjars optimized-globalplatform.jar

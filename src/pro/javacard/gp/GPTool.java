@@ -73,7 +73,7 @@ public final class GPTool {
 	private final static String OPT_LOCK_CARD = "lock-card";
 	private final static String OPT_UNLOCK_CARD = "unlock-card";
 	private final static String OPT_STORE_DATA = "store-data";
-
+	private final static String OPT_PARAMS = "params";
 
 	private final static String OPT_DELETEDEPS = "deletedeps";
 	private final static String OPT_DEFAULT = "default";
@@ -84,8 +84,7 @@ public final class GPTool {
 	private final static String OPT_APPLET = "applet";
 	private final static String OPT_PACKAGE = "package";
 	private final static String OPT_DO_ALL_READERS = "all";
-	private final static String OPT_NOFIX = "nofix";
-	private final static String OPT_PARAMS = "params";
+	private final static String OPT_TERMINALS = "terminals";
 
 	private final static String OPT_RELAX = "relax";
 	private final static String OPT_READER = "reader";
@@ -132,7 +131,7 @@ public final class GPTool {
 		// Special options
 		parser.accepts(OPT_RELAX, "Relaxed error checking");
 		parser.accepts(OPT_DO_ALL_READERS, "Work with multiple readers");
-		parser.accepts(OPT_NOFIX, "Do not try to fix PCSC/Java/OS issues");
+		parser.accepts(OPT_TERMINALS, "Use PC/SC provider from <jar:class>").withRequiredArg();
 
 
 		// Applet operation options
@@ -293,12 +292,15 @@ public final class GPTool {
 
 		// Now actually talk to possible terminals
 		try {
-			TerminalFactory tf = TerminalManager.getTerminalFactory(args.has(OPT_NOFIX) ? false : true);
+			final TerminalFactory tf;
 
-			// Replay responses from a file
 			if (args.has(OPT_REPLAY)) {
+				// Replay responses from a file
+				// FIXME: use the generic provider interface and drop command line options
 				File f = (File) args.valueOf(OPT_REPLAY);
 				tf = TerminalFactory.getInstance("PC/SC", new FileInputStream(f), new APDUReplayProvider());
+			} else {
+				tf = TerminalManager.getTerminalFactory((String)args.valueOf(OPT_TERMINALS));
 			}
 
 			CardTerminals terminals = tf.terminals();
@@ -372,9 +374,9 @@ public final class GPTool {
 					}
 					if (args.has(OPT_INFO) || args.has(OPT_VERBOSE)) {
 						System.out.println("Reader: " + reader.getName());
-						System.out.println("ATR: " + HexUtils.encodeHexString(card.getATR().getBytes()));
+						System.out.println("ATR: " + HexUtils.bin2hex(card.getATR().getBytes()));
 						System.out.println("More information about your card:");
-						System.out.println("    http://smartcard-atr.appspot.com/parse?ATR="+HexUtils.encodeHexString(card.getATR().getBytes()));
+						System.out.println("    http://smartcard-atr.appspot.com/parse?ATR="+HexUtils.bin2hex(card.getATR().getBytes()));
 						System.out.println();
 					}
 
@@ -598,11 +600,11 @@ public final class GPTool {
 						if (args.has(OPT_LIST)) {
 							for (AIDRegistryEntry e : gp.getRegistry()) {
 								AID aid = e.getAID();
-								System.out.println("AID: " + HexUtils.encodeHexString(aid.getBytes()) + " (" + GPUtils.byteArrayToReadableString(aid.getBytes()) + ")");
+								System.out.println("AID: " + HexUtils.bin2hex(aid.getBytes()) + " (" + GPUtils.byteArrayToReadableString(aid.getBytes()) + ")");
 								System.out.println("     " + e.getKind().toShortString() + " " + e.getLifeCycleString() + ": " + e.getPrivilegesString());
 
 								for (AID a : e.getExecutableAIDs()) {
-									System.out.println("     " + HexUtils.encodeHexString(a.getBytes()) + " (" + GPUtils.byteArrayToReadableString(a.getBytes()) + ")");
+									System.out.println("     " + HexUtils.bin2hex(a.getBytes()) + " (" + GPUtils.byteArrayToReadableString(a.getBytes()) + ")");
 								}
 								System.out.println();
 							}

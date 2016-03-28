@@ -20,15 +20,15 @@ Building JavaCard applets is equally pleasing with [ant-javacard](https://github
 * Or build it yourself (see [CONTRIBUTING](./CONTRIBUTING.md) for tips), it is really easy:
 
 ```shell
-git clone --recursive https://github.com/martinpaljak/GlobalPlatformPro
+git clone https://github.com/martinpaljak/GlobalPlatformPro
 cd GlobalPlatformPro
 ant
 ```
 
 ## NEWS
- * SCP03 support in [latest version](https://github.com/martinpaljak/GlobalPlatformPro/releases/tag/v0.3.0)
+ * SCP03 support in [latest version](https://github.com/martinpaljak/GlobalPlatformPro/releases)
  * Tentative [milestones](https://github.com/martinpaljak/GlobalPlatformPro/milestones)
- * [JavaCard Buyer's Guide of 2015](https://github.com/martinpaljak/GlobalPlatformPro/tree/master/docs/JavaCardBuyersGuide)
+ * [JavaCard Buyer's Guide of 2016](https://github.com/martinpaljak/GlobalPlatformPro/tree/master/docs/JavaCardBuyersGuide)
 
 ### Usage
 

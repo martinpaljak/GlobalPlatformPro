@@ -148,7 +148,7 @@ Command line samples assume default test keys of ```40..4F```. If you need custo
    * ```GPException```-s when protocol layer fails
 
 ### Supported cards
- * **NEW!** [JavaCard Buyer's Guide of 2015](https://github.com/martinpaljak/GlobalPlatformPro/tree/master/docs/JavaCardBuyersGuide)
+ * **NEW!** [JavaCard Buyer's Guide of 2016](https://github.com/martinpaljak/GlobalPlatformPro/tree/master/docs/JavaCardBuyersGuide)
  * See [TestedCards](https://github.com/martinpaljak/GlobalPlatformPro/tree/master/docs/TestedCards)
  * Generally speaking any modern JavaCard that speaks GlobalPlatform 2.1.1+
  * Available cards from all major vendors have been tested for basic compatibility: [Athena](http://www.athena-scs.com/), [Gemalto](http://www.gemalto.com/), [Giesecke & Devrient](http://www.gi-de.com/), [Infineon](http://www.infineon.com/), [NXP (JCOP)](http://www.nxp.com/), [Oberthur](http://www.oberthur.com/)
@@ -219,16 +219,16 @@ The ancestor of this code is GPJ (Global Platform for SmartCardIO) which is (sti
    * ~~Windows .exe for ease of use~~
    * ~~-lock and -unlock commands for changing secure channel keys~~
  * T+2 (v0.3.0)
-   * SCP03 v1.1.1 and GP2.2.1
+   * ~~SCP03 v1.1.1 and GP2.2.1~~
  * T+X (wishlist)
-   * Support for storing card management keys in PKCS#11 tokens (HSM)
+   * ~~Support for storing card management keys in PKCS#11 tokens (HSM)~~
    * GPShell-style scripts (instead of Java)
    * Simple GUI for basic operations/browsing
 
 ## Design principles
  * focus on real life and practical daily use cases
  * KISS, YAGNI, DWIM, no-NIH
- * APDU-chat over javax.smartcardio to (most probably real) tokens 
+ * APDU-chat over anything that extends `CardChannel` to (most probably real) tokens
  * thin and self-contained, re-usable, easy to integrate
  * easily readable, auditable and secure codebase (less is more)
 

@@ -798,9 +798,7 @@ public class GlobalPlatform {
 				if (withCheck) {
 					// key check value, 3 bytes with new key over 8 null bytes
 					baos.write(3);
-					cipher.init(Cipher.ENCRYPT_MODE, key.getKey());
-					byte check[] = cipher.doFinal(GPCrypto.null_bytes_8);
-					baos.write(check, 0, 3);
+					baos.write(GPCrypto.kcv_3des(key));
 				} else {
 					baos.write(0);
 				}

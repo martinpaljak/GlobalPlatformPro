@@ -99,10 +99,9 @@ public final class GPTool {
 	private final static String OPT_SC_MODE = "mode";
 	private final static String OPT_BS = "bs";
 
-	private final static String OPT_MAC = "mac";
-	private final static String OPT_ENC = "enc";
-	private final static String OPT_KEK = "kek";
 	private final static String OPT_KEY = "key";
+	private final static String OPT_KCV = "kcv";
+
 	private final static String OPT_KEY_VERSION = "keyver";
 	private final static String OPT_KEY_ID = "keyid";
 	private final static String OPT_NEW_KEY_VERSION = "new-keyver";
@@ -163,10 +162,8 @@ public final class GPTool {
 		parser.accepts(OPT_PACKAGE, "Package AID").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
 
 		// Key options
-		parser.accepts(OPT_MAC, "Specify MAC key").withRequiredArg().withValuesConvertedBy(ArgMatchers.key());
-		parser.accepts(OPT_ENC, "Specify ENC key").withRequiredArg().withValuesConvertedBy(ArgMatchers.key());
-		parser.accepts(OPT_KEK, "Specify KEK key").withRequiredArg().withValuesConvertedBy(ArgMatchers.key());
-		parser.accepts(OPT_KEY, "Specify master key").withRequiredArg().withValuesConvertedBy(ArgMatchers.key());
+		parser.accepts(OPT_KEY, "Specify card (master) key").withRequiredArg().withValuesConvertedBy(ArgMatchers.key());
+		parser.accepts(OPT_KCV, "Specify key check value").withRequiredArg().withValuesConvertedBy(ArgMatchers.hex());
 
 		parser.accepts(OPT_EMV, "Use EMV diversification");
 		parser.accepts(OPT_VISA2, "Use VISA2 diversification");
@@ -237,16 +234,10 @@ public final class GPTool {
 			System.out.println("GlobalPlatformPro " + version);
 		}
 
-		// Parameters for opening the secure channel
-		// Keying options: either a single master or three separate keys
-		if (args.has(OPT_KEY) && (args.has(OPT_MAC) || args.has(OPT_ENC) || args.has(OPT_KEK))) {
-			System.err.println("If you specify " + OPT_KEY + " do not use other keying options!");
-			System.exit(1);
-		}
-
 		// Normally assume a single master key
 		SessionKeyProvider keys;
-		// Use diversification if specified
+
+		// Use diversification *for the specified -key* if specified
 		Diversification div = Diversification.NONE;
 		if (args.has(OPT_VISA2)) {
 			div = Diversification.VISA2;
@@ -256,16 +247,28 @@ public final class GPTool {
 
 		if (args.has(OPT_KEY)) {
 			// Specified master key
-			keys = PlaintextKeys.fromMasterKey((GPKeySet.GPKey)args.valueOf(OPT_KEY), div);
-		} else if (args.has(OPT_MAC) && args.has(OPT_ENC) && args.has(OPT_KEK)) {
-			// All components specified separately
-			GPKeySet ks = new GPKeySet();
-			ks.setKey(KeyType.MAC, (GPKeySet.GPKey)args.valueOf(OPT_MAC));
-			ks.setKey(KeyType.ENC, (GPKeySet.GPKey)args.valueOf(OPT_ENC));
-			ks.setKey(KeyType.KEK, (GPKeySet.GPKey)args.valueOf(OPT_KEK));
-			keys = PlaintextKeys.fromKeySet(ks);
+			GPKey k = (GPKeySet.GPKey)args.valueOf(OPT_KEY);
+			if (args.has(OPT_KCV)) {
+				final byte [] expected;
+				byte [] given = (byte[])args.valueOf(OPT_KCV);
+				if (k.getType() == Type.DES3) {
+					expected = GPCrypto.kcv_3des(k);
+				} else if (k.getType() == Type.AES) {
+					expected = GPCrypto.scp03_key_check_value(k);
+				} else {
+					System.err.println("Don't know how to compute KCV for " + k.getType());
+					System.exit(1);
+					return;
+				}
+				// Check KCV
+				if (!Arrays.equals(given, expected)) {
+					System.err.println("KCV does not match, expected " + HexUtils.bin2hex(expected) + " but given " + HexUtils.bin2hex(given));
+					System.exit(1);
+				}
+			}
+			keys = PlaintextKeys.fromMasterKey(k, div);
 		} else {
-			// Use default test key with optional diverisifaction.
+			// Use default test key with optional diversification.
 			keys = PlaintextKeys.fromMasterKey(GPData.defaultKey, div);
 		}
 
@@ -641,13 +644,12 @@ public final class GPTool {
 
 						// --lock
 						if (args.has(OPT_LOCK)) {
-							if (args.has(OPT_MAC) || args.has(OPT_ENC) || args.has(OPT_KEK) && !args.has(OPT_RELAX))
-								gp.giveStrictWarning("Using --" + OPT_LOCK + " but specifying other keys");
 
-							// XXX: this is ugly, we re-use ArgParser only to get diverification method
+							// XXX: this is ugly, we re-use ArgParser only to get diversification method
 							PlaintextKeys newkey = (PlaintextKeys) args.valueOf(OPT_LOCK);
 
 							GPKeySet newkeys = new GPKeySet(newkey.master);
+
 							// Diversify if requested.
 							if (newkey.diversifier != Diversification.NONE) {
 								newkeys = PlaintextKeys.diversify(newkeys, gp.getDiversificationData(), newkey.diversifier, gp.getSCPVersion());

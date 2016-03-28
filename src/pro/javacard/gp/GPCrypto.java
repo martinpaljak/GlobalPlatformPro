@@ -234,4 +234,15 @@ public class GPCrypto {
 			throw new RuntimeException("Could not calculate key check value: ", e);
 		}
 	}
+
+	public static byte[] kcv_3des(GPKey key) {
+		try {
+			Cipher cipher = Cipher.getInstance("DESede/ECB/NoPadding");
+			cipher.init(Cipher.ENCRYPT_MODE, key.getKey());
+			byte check[] = cipher.doFinal(GPCrypto.null_bytes_8);
+			return Arrays.copyOf(check, 3);
+		} catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
+			throw new RuntimeException("Could not calculate KCV", e);
+		}
+	}
 }

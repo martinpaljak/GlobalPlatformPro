@@ -36,7 +36,7 @@ ant
 
 #### Warning about correct keying
 
-Command line samples assume default test keys of ```40..4F```. If you need custom keys, specify them with any or all of the following options: ```-keyid``` ```-keyver``` and ```-enc``` ```-mac``` ```-kek``` or ```-key``` (for a single master key). You need to know the details or ask your card provider. Some cards require key diversification with ```-emv``` or ```-visa2``` (you should be notified if that's the case).
+Command line samples assume default test keys of ```40..4F```. If you need a custom key, specify it with `-key`. You need to know the details or ask your card provider. Some cards require key diversification with ```-emv``` or ```-visa2``` (you should be notified if that's the case). A Key Check Value can be given with `-kcv` option.
 
 #### Generic information
 

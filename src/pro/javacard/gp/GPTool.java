@@ -74,6 +74,8 @@ public final class GPTool {
 	private final static String OPT_UNLOCK_CARD = "unlock-card";
 	private final static String OPT_STORE_DATA = "store-data";
 	private final static String OPT_PARAMS = "params";
+	private final static String OPT_SECURED = "secured";
+	private final static String OPT_INITIALIZED = "initialized";
 
 	private final static String OPT_DELETEDEPS = "deletedeps";
 	private final static String OPT_DEFAULT = "default";
@@ -148,7 +150,8 @@ public final class GPTool {
 		parser.accepts(OPT_UNLOCK_APPLET, "Unlock specified applet").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
 		parser.accepts(OPT_LOCK_CARD, "Lock card");
 		parser.accepts(OPT_UNLOCK_CARD, "Unlock card");
-
+		parser.accepts(OPT_SECURED, "Transition SD to SECURED state").withOptionalArg().withValuesConvertedBy(ArgMatchers.aid());
+		parser.accepts(OPT_INITIALIZED, "Transition SD to INITIALIZED state").withOptionalArg().withValuesConvertedBy(ArgMatchers.aid());
 		parser.accepts(OPT_STORE_DATA, "STORE DATA to applet").withRequiredArg().withValuesConvertedBy(ArgMatchers.hex());
 
 		parser.accepts(OPT_DELETEDEPS, "Also delete dependencies");
@@ -583,12 +586,21 @@ public final class GPTool {
 						}
 						// --lock-card
 						if (args.has(OPT_LOCK_CARD)) {
-							gp.lockUnlockCard(true);
+							gp.setCardStatus(GPData.lockedStatus);
 						}
 						// --unlock-card
 						if (args.has(OPT_UNLOCK_CARD)) {
-							gp.lockUnlockCard(false);
+							gp.setCardStatus(GPData.securedStatus);
 						}
+						// --initialized
+						if (args.has(OPT_INITIALIZED)) {
+							gp.setCardStatus(GPData.initializedStatus);
+						}
+						// --secured
+						if (args.has(OPT_SECURED)) {
+							gp.setCardStatus(GPData.securedStatus);
+						}
+
 						// --lock-applet <aid>
 						if (args.has(OPT_LOCK_APPLET)) {
 							gp.lockUnlockApplet((AID) args.valueOf(OPT_LOCK_APPLET), true);
@@ -754,7 +766,7 @@ public final class GPTool {
 			return true;
 		if (args.has(OPT_LOCK_CARD) || args.has(OPT_UNLOCK_CARD) || args.has(OPT_LOCK_APPLET) || args.has(OPT_UNLOCK_APPLET))
 			return true;
-		if (args.has(OPT_STORE_DATA))
+		if (args.has(OPT_STORE_DATA) || args.has(OPT_INITIALIZED) || args.has(OPT_SECURED))
 			return true;
 		return false;
 	}

@@ -708,7 +708,7 @@ public class GlobalPlatform {
 	}
 
 	public void makeDefaultSelected(AID aid) throws CardException, GPException {
-		// FIXME: only works for 2.1.1 cards
+		// FIXME: only works for some 2.1.1 cards ?
 		ByteArrayOutputStream bo = new ByteArrayOutputStream();
 		// Only supported privilege.
 		byte privileges = GPData.defaultSelectedPriv;
@@ -738,8 +738,8 @@ public class GlobalPlatform {
 		dirty = true;
 	}
 
-	public void lockUnlockCard(boolean lock) throws CardException, GPException {
-		CommandAPDU cmd = new CommandAPDU(CLA_GP, INS_SET_STATUS, 0x80, lock ? 0x7F : 0x0F);
+	public void setCardStatus(byte status) throws CardException, GPException {
+		CommandAPDU cmd = new CommandAPDU(CLA_GP, INS_SET_STATUS, 0x80, status);
 		ResponseAPDU response = transmit(cmd);
 		GPException.check(response, "SET STATUS failed");
 		dirty = true;

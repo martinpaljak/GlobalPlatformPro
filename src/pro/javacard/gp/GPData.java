@@ -20,6 +20,13 @@ public final class GPData {
 	public static final byte[] defaultKeyBytes = { 0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F };
 	public static final GPKey defaultKey = new GPKey(defaultKeyBytes, Type.DES3);
 
+	// SD states
+	public static final byte readyStatus = 0x1;
+	public static final byte initializedStatus = 0x7;
+	public static final byte securedStatus = 0xF;
+	public static final byte lockedStatus = 0x7F;
+	public static final byte terminatedStatus = (byte) 0xFF;
+
 	// See GP 2.1.1 Table 9-7: Application Privileges
 	public static final byte defaultSelectedPriv = 0x04;
 	public static final byte cardLockPriv = 0x10;

@@ -216,8 +216,9 @@ public class GlobalPlatform {
 		}
 
 		if (resp.getSW() == 0x6283) {
-			giveStrictWarning("SELECT ISD returned 6283 - CARD_LOCKED");
+			logger.warn("SELECT ISD returned 6283 - CARD_LOCKED");
 		}
+
 		if (resp.getSW() == 0x9000 || resp.getSW() == 0x6283) {
 			// The security domain AID is in FCI.
 			byte[] fci = resp.getData();

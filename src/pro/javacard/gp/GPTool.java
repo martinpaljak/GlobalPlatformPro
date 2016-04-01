@@ -45,6 +45,7 @@ import apdu4j.TerminalManager;
 import joptsimple.OptionException;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
+import pro.javacard.gp.AIDRegistryEntry.Kind;
 import pro.javacard.gp.GPData.KeyType;
 import pro.javacard.gp.GPKeySet.Diversification;
 import pro.javacard.gp.GPKeySet.GPKey;
@@ -636,8 +637,11 @@ public final class GPTool {
 							for (AIDRegistryEntry e : gp.getRegistry()) {
 								AID aid = e.getAID();
 								System.out.println("AID: " + HexUtils.bin2hex(aid.getBytes()) + " (" + GPUtils.byteArrayToReadableString(aid.getBytes()) + ")");
-								System.out.println("     " + e.getKind().toShortString() + " " + e.getLifeCycleString() + ": " + e.getPrivilegesString());
-
+								if (e.getKind() == Kind.ExecutableLoadFilesAndModules) {
+									System.out.println("     " + e.getKind().toShortString() + " " + e.getLifeCycleString());
+								} else {
+									System.out.println("     " + e.getKind().toShortString() + " " + e.getLifeCycleString() + ": " + e.getPrivilegesString());
+								}
 								for (AID a : e.getExecutableAIDs()) {
 									System.out.println("     " + HexUtils.bin2hex(a.getBytes()) + " (" + GPUtils.byteArrayToReadableString(a.getBytes()) + ")");
 								}

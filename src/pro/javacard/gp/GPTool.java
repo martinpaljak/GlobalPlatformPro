@@ -432,8 +432,12 @@ public final class GPTool {
 						if (args.has(OPT_DELETE)) {
 							AIDRegistry reg = gp.getRegistry();
 
-							if (args.has(OPT_DEFAULT)) {
-								gp.deleteAID(reg.getDefaultSelectedPackageAID(), true);
+							if (args.has(OPT_DEFAULT) && reg.getDefaultSelectedAID() != null) {
+								if (reg.getDefaultSelectedPackageAID() != null) {
+									gp.deleteAID(reg.getDefaultSelectedPackageAID(), true);
+								} else {
+									System.err.println("Could not identify default selected application!");
+								}
 							}
 							@SuppressWarnings("unchecked")
 							List<AID> aids = (List<AID>) args.valuesOf(OPT_DELETE);

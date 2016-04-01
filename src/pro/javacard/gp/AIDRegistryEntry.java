@@ -201,7 +201,7 @@ public class AIDRegistryEntry {
 					case 0xFF:
 						return "TERMINATED";
 					default:
-						return "ERROR";
+						return "ERROR (0x" + Integer.toHexString(lifeCycleState) +")";
 				}
 			case Application:
 				if (lifeCycleState == 0x3) {
@@ -215,25 +215,40 @@ public class AIDRegistryEntry {
 				} else if (lifeCycleState > 0x83) {
 					return "LOCKED";
 				} else {
-					return "ERROR";
+					return "ERROR (0x" + Integer.toHexString(lifeCycleState) +")";
 				}
 			case ExecutableLoadFilesAndModules:
+				// GP 2.2.1 Table 11-3
 				if (lifeCycleState == 0x1) {
 					return "LOADED";
 				} else if (lifeCycleState == 0x00) {
 					// OP201
 					return "LOGICALLY_DELETED";
 				} else {
-					return "ERROR";
+					return "ERROR (0x" + Integer.toHexString(lifeCycleState) +")";
 				}
 			case ExecutableLoadFiles:
+				// TODO: merge with previous
 				if (lifeCycleState == 0x1) {
 					return "LOADED";
 				} else if (lifeCycleState == 0x00) {
 					// OP201
 					return "LOGICALLY_DELETED";
 				} else {
-					return "ERROR";
+					return "ERROR (0x" + Integer.toHexString(lifeCycleState) +")";
+				}
+			case SecurityDomain:
+				// GP 2.2.1 Table 11-5
+				if (lifeCycleState == 0x3) {
+					return "INSTALLED";
+				} else if (lifeCycleState == 0x7) {
+					return "SELECTABLE";
+				} else if (lifeCycleState == 0xF) {
+					return "PERSONALIZED";
+				} else if ((lifeCycleState & 0x83) == 0x83) {
+					return "LOCKED";
+				} else {
+					return "ERROR (0x" + Integer.toHexString(lifeCycleState) +")";
 				}
 			default:
 				return "ERROR";

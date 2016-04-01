@@ -316,12 +316,11 @@ public class GlobalPlatform {
 			out.println("GET DATA(CIN) not supported");
 		}
 
-		// Sequence Counter of the default Key Version Number
+		// Sequence Counter of the default Key Version Number (tag 0xC1)
 		command = new CommandAPDU(CLA_GP, ISO7816.INS_GET_DATA, 0x00, 0xC1, 256);
 		resp = channel.transmit(command);
 		if (resp.getSW() == 0x9000) {
 			byte [] ssc = resp.getData();
-			TLVUtils.expectTag(ssc, SHORT_0, (byte) 0xC1);
 			out.println("SSC " + HexUtils.bin2hex(TLVUtils.getTLVValueAsBytes(ssc, SHORT_0)));
 		} else {
 			out.println("GET DATA(SSC) not supported");

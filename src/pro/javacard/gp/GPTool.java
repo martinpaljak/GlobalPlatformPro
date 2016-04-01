@@ -77,7 +77,6 @@ public final class GPTool {
 	private final static String OPT_SECURED = "secured";
 	private final static String OPT_INITIALIZED = "initialized";
 
-	private final static String OPT_DELETEDEPS = "deletedeps";
 	private final static String OPT_DEFAULT = "default";
 	private final static String OPT_TERMINATE = "terminate";
 	private final static String OPT_SDOMAIN = "sdomain";
@@ -154,11 +153,10 @@ public final class GPTool {
 		parser.accepts(OPT_INITIALIZED, "Transition SD to INITIALIZED state").withOptionalArg().withValuesConvertedBy(ArgMatchers.aid());
 		parser.accepts(OPT_STORE_DATA, "STORE DATA to applet").withRequiredArg().withValuesConvertedBy(ArgMatchers.hex());
 
-		parser.accepts(OPT_DELETEDEPS, "Also delete dependencies");
 		parser.accepts(OPT_REINSTALL, "Reinstall CAP").withOptionalArg().ofType(File.class);
 		parser.accepts(OPT_MAKE_DEFAULT, "Make AID the default").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
 
-		parser.accepts(OPT_DELETE, "Delete something").requiredIf(OPT_DELETEDEPS).withOptionalArg().withValuesConvertedBy(ArgMatchers.aid());
+		parser.accepts(OPT_DELETE, "Delete applet/package").withOptionalArg().withValuesConvertedBy(ArgMatchers.aid());
 
 		parser.accepts(OPT_CREATE, "Create new instance of an applet").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
 		parser.accepts(OPT_APPLET, "Applet AID").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
@@ -432,22 +430,23 @@ public final class GPTool {
 
 						// --delete <aid> or --delete --default
 						if (args.has(OPT_DELETE)) {
+							AIDRegistry reg = gp.getRegistry();
+
 							if (args.has(OPT_DEFAULT)) {
-								gp.uninstallDefaultSelected(args.has(OPT_DELETEDEPS));
+								gp.deleteAID(reg.getDefaultSelectedPackageAID(), true);
 							}
 							@SuppressWarnings("unchecked")
 							List<AID> aids = (List<AID>) args.valuesOf(OPT_DELETE);
+
 							for (AID aid: aids) {
 								try {
-									gp.deleteAID(aid, args.has(OPT_DELETEDEPS));
+									// If the AID represents a package, use deletedeps by default.
+									gp.deleteAID(aid, reg.allPackageAIDs().contains(aid));
 								} catch (GPException e) {
 									if (!gp.getRegistry().allAIDs().contains(aid)) {
-										System.out.println("Could not delete AID (not present on card): " + aid);
+										System.err.println("Could not delete AID (not present on card): " + aid);
 									} else {
-										System.out.println("Could not delete AID: " + aid);
-										if (e.sw == 0x6985) {
-											System.out.println("TIP: Maybe try with --" + OPT_DELETEDEPS);
-										}
+										System.err.println("Could not delete AID: " + aid);
 										throw e;
 									}
 								}

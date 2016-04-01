@@ -746,17 +746,6 @@ public class GlobalPlatform {
 		dirty = true;
 	}
 
-	public void uninstallDefaultSelected(boolean deps) throws CardException, GPException {
-		AID def = getRegistry().getDefaultSelectedAID();
-		if (def != null) {
-			deleteAID(def, deps); // Can not work, need to locate the executable module
-		} else {
-			logger.debug("No default selected applet!");
-		}
-	}
-
-
-
 	/**
 	 * Delete file {@code aid} on the card. Delete dependencies as well if
 	 * {@code deleteDeps} is true.

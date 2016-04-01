@@ -69,11 +69,11 @@ Command line samples assume default test keys of ```40..4F```. If you need a cus
 
  * Delete current default applet's package and all instances:
 
-        gp -delete -default -deletedeps
+        gp -delete -default
 
- * Delete package ```D27600012401``` and all applets from it (`-deletedeps` can only be used with packages):
+ * Delete package ```D27600012401``` and all applets from it:
 
-        gp -delete D27600012401 -deletedeps
+        gp -delete D27600012401
 
  * Install `applet.cap` as default applet (with AID information from the CAP):
 
@@ -86,6 +86,10 @@ Command line samples assume default test keys of ```40..4F```. If you need a cus
  * Unistall `applet.cap` (with AID information from the CAP):
 
         gp -uninstall applet.cap
+
+ * Reistall `applet.cap` (with AID information from the CAP):
+
+        gp -reinstall applet.cap
 
  * Create new instance of applet `D2760001240102000000000000000000` from package `D27600012401` with AID `D2760001240102000000000272950000`:
 

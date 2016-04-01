@@ -207,7 +207,7 @@ public class AIDRegistryEntry {
 				if (lifeCycleState == 0x3) {
 					return "INSTALLED";
 				} else if (lifeCycleState <= 0x7F) {
-					if ((lifeCycleState & 0x74) != 0x00) {
+					if ((lifeCycleState & 0x78) != 0x00) {
 						return "SELECTABLE (0x" + Integer.toHexString(lifeCycleState) +")";
 					} else {
 						return "SELECTABLE";

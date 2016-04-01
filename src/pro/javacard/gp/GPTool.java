@@ -79,7 +79,7 @@ public final class GPTool {
 
 	private final static String OPT_DEFAULT = "default";
 	private final static String OPT_TERMINATE = "terminate";
-	private final static String OPT_SDOMAIN = "sdomain";
+	private final static String OPT_DOMAIN = "domain";
 
 	private final static String OPT_CAP = "cap";
 	private final static String OPT_APPLET = "applet";
@@ -144,7 +144,7 @@ public final class GPTool {
 		parser.accepts(OPT_UNINSTALL, "Uninstall applet/package").withRequiredArg().ofType(File.class);
 		parser.accepts(OPT_DEFAULT, "Indicate Default Selected privilege");
 		parser.accepts(OPT_TERMINATE, "Indicate Card Lock+Terminate privilege");
-		parser.accepts(OPT_SDOMAIN, "Indicate Security Domain privilege");
+		parser.accepts(OPT_DOMAIN, "Create supplementary security domain").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
 		parser.accepts(OPT_LOCK_APPLET, "Lock specified applet").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
 		parser.accepts(OPT_UNLOCK_APPLET, "Unlock specified applet").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
 		parser.accepts(OPT_LOCK_CARD, "Lock card");
@@ -579,6 +579,23 @@ public final class GPTool {
 							gp.installAndMakeSelectable(packageAID, appletAID, instanceAID, getInstPrivs(args), getInstParams(args), null);
 						}
 
+						// --domain <AID>
+						if (args.has(OPT_DOMAIN)) {
+							if (!args.has(OPT_PACKAGE) || !args.has(OPT_APPLET)) {
+								fail("Need --" + OPT_PACKAGE + " and --" + OPT_APPLET + " with --" + OPT_DOMAIN);
+							}
+							// AID-s
+							AID packageAID = (AID) args.valueOf(OPT_PACKAGE);
+							AID appletAID = (AID) args.valueOf(OPT_APPLET);
+							AID instanceAID = (AID) args.valueOf(OPT_DOMAIN);
+
+							// Extra privileges
+							byte priv = getInstPrivs(args);
+							priv |= GPData.securityDomainPriv;
+							// shoot
+							gp.installAndMakeSelectable(packageAID, appletAID, instanceAID, priv, null, null);
+						}
+
 						// --store-data <XX>
 						if (args.has(OPT_STORE_DATA)) {
 							if (args.has(OPT_APPLET)) {
@@ -736,9 +753,6 @@ public final class GPTool {
 		if (args.has(OPT_TERMINATE)) {
 			privs |= GPData.cardLockPriv | GPData.cardTerminatePriv;
 		}
-		if (args.has(OPT_SDOMAIN)) {
-			privs |= GPData.securityDomainPriv;
-		}
 		return privs;
 	}
 
@@ -765,12 +779,17 @@ public final class GPTool {
 			return true;
 		if (args.has(OPT_LOCK) || args.has(OPT_UNLOCK) || args.has(OPT_MAKE_DEFAULT))
 			return true;
-		if (args.has(OPT_UNINSTALL) || args.has(OPT_SECURE_APDU))
+		if (args.has(OPT_UNINSTALL) || args.has(OPT_SECURE_APDU) || args.has(OPT_DOMAIN))
 			return true;
 		if (args.has(OPT_LOCK_CARD) || args.has(OPT_UNLOCK_CARD) || args.has(OPT_LOCK_APPLET) || args.has(OPT_UNLOCK_APPLET))
 			return true;
 		if (args.has(OPT_STORE_DATA) || args.has(OPT_INITIALIZED) || args.has(OPT_SECURED))
 			return true;
 		return false;
+	}
+
+	private static void fail(String msg) {
+		System.err.println(msg);
+		System.exit(1);
 	}
 }

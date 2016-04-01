@@ -841,25 +841,28 @@ public class GlobalPlatform {
 			}
 		}
 
-		// Check if factory keys
+		// Check consistency, if template is available.
 		List<GPKey> tmpl = getKeyInfoTemplate();
-		if ((tmpl.get(0).getVersion() < 1 || tmpl.get(0).getVersion() > 0x7F) && replace) {
-			giveStrictWarning("Trying to replace factory keys, when you need to add new ones? Is this a virgin card? (use --virgin)");
-		}
 
-		// Check if key types and lengths are the same when replacing
-		if (replace && (keys.get(0).getType() != tmpl.get(0).getType() || keys.get(0).getLength() != tmpl.get(0).getLength())) {
-			// FIXME: SCE60 template has 3DES keys but uses AES.
-			giveStrictWarning("Can not replace keys of different type or size: " + tmpl.get(0).getType() + "->" + keys.get(0).getType());
-		}
+		if (tmpl.size() > 0) {
+			if ((tmpl.get(0).getVersion() < 1 || tmpl.get(0).getVersion() > 0x7F) && replace) {
+				giveStrictWarning("Trying to replace factory keys, when you need to add new ones? Is this a virgin card? (use --virgin)");
+			}
 
-		// Check for matching version numbers if replacing and vice versa
-		if (!replace && (keys.get(0).getVersion() == tmpl.get(0).getVersion())) {
-			throw new IllegalArgumentException("Not adding keys and version matches existing?");
-		}
+			// Check if key types and lengths are the same when replacing
+			if (replace && (keys.get(0).getType() != tmpl.get(0).getType() || keys.get(0).getLength() != tmpl.get(0).getLength())) {
+				// FIXME: SCE60 template has 3DES keys but uses AES.
+				giveStrictWarning("Can not replace keys of different type or size: " + tmpl.get(0).getType() + "->" + keys.get(0).getType());
+			}
 
-		if (replace && (keys.get(0).getVersion() != tmpl.get(0).getVersion())) {
-			throw new IllegalArgumentException("Replacing keys and versions don't match existing?");
+			// Check for matching version numbers if replacing and vice versa
+			if (!replace && (keys.get(0).getVersion() == tmpl.get(0).getVersion())) {
+				throw new IllegalArgumentException("Not adding keys and version matches existing?");
+			}
+
+			if (replace && (keys.get(0).getVersion() != tmpl.get(0).getVersion())) {
+				throw new IllegalArgumentException("Replacing keys and versions don't match existing?");
+			}
 		}
 
 		// Construct APDU

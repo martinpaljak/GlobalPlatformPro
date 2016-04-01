@@ -126,7 +126,7 @@ public final class GPData {
 
 		// Return empty list if no data from card.
 		// FIXME: not really a clean solution
-		if (data == null)
+		if (data == null || data.length == 0)
 			return new ArrayList<GPKey>();
 		// Expect template 0x0E
 		offset = TLVUtils.skip_tag_or_throw(data, offset, (byte) 0xe0);

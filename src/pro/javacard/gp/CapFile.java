@@ -265,9 +265,9 @@ public class CapFile {
 		return result;
 	}
 
-	public byte[] getLoadFileDataHash(boolean includeDebug) {
+	public byte[] getLoadFileDataHash(String hash, boolean includeDebug) {
 		try {
-			return MessageDigest.getInstance("SHA1").digest(getRawCode(includeDebug));
+			return MessageDigest.getInstance(hash).digest(getRawCode(includeDebug));
 		} catch (NoSuchAlgorithmException e) {
 			throw new RuntimeException("Not possible", e);
 		}
@@ -337,5 +337,6 @@ public class CapFile {
 			}
 		}
 		out.println("Total code size: " + getCodeLength(false) + " bytes (" + getCodeLength(true) + " with debug)");
+		out.println("SHA256 (code): " + HexUtils.bin2hex(getLoadFileDataHash("SHA-256", false)));
 	}
 }

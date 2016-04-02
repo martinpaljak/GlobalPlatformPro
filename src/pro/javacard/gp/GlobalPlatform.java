@@ -558,7 +558,7 @@ public class GlobalPlatform {
 		if (getRegistry().allAIDs().contains(cap.getPackageAID())) {
 			giveStrictWarning("Package with AID " + cap.getPackageAID() + " is already present on card");
 		}
-		byte[] hash = useHash ? cap.getLoadFileDataHash(includeDebug) : new byte[0];
+		byte[] hash = useHash ? cap.getLoadFileDataHash("SHA1", includeDebug) : new byte[0];
 		int len = cap.getCodeLength(includeDebug);
 		// FIXME: parameters are optional for load
 		byte[] loadParams = loadParam ? new byte[] { (byte) 0xEF, 0x04, (byte) 0xC6, 0x02, (byte) ((len & 0xFF00) >> 8),

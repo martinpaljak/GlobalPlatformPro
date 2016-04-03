@@ -315,10 +315,7 @@ public final class GPData {
 		private HashMap<Field, byte[]> values = null;
 
 		public CPLC(byte [] data) {
-			if (data == null) {
-				return;
-			}
-			if (data.length < 3 || data[2] != 0x2A)
+			if (data == null || data.length < 3 || data[2] != 0x2A)
 				throw new IllegalArgumentException("CPLC must be 0x2A bytes long");
 			//offset = TLVUtils.skipTag(data, offset, (short)0x9F7F);
 			short offset = 3;

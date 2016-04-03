@@ -289,7 +289,7 @@ public final class GPTool {
 		if (args.has(OPT_CAP)) {
 			File capfile = (File) args.valueOf(OPT_CAP);
 			cap = new CapFile(new FileInputStream(capfile));
-			if (args.has(OPT_VERBOSE)) {
+			if (args.has(OPT_VERBOSE) || args.has(OPT_INFO)) { // TODO: remove -v
 				System.out.println("**** CAP info of " + capfile.getName());
 				cap.dump(System.out);
 			}

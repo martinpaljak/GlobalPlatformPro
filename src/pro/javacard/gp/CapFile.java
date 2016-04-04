@@ -100,6 +100,7 @@ public class CapFile {
 			byte[] contents = entries.get(fullName);
 			capComponents.put(name, contents);
 		}
+		// FIXME: Not existing and not used ZIP elements
 		List<List<byte[]>> tables = new ArrayList<List<byte[]>>();
 		tables.add(dapBlocks);
 		tables.add(loadTokens);
@@ -190,6 +191,7 @@ public class CapFile {
 	private byte[] createHeader(boolean includeDebug) {
 		int len = getCodeLength(includeDebug);
 		ByteArrayOutputStream bo = new ByteArrayOutputStream();
+		// TODO: DAP blocks.
 		bo.write((byte) 0xC4);
 		// FIXME: usual length encoding.
 		if (len < 0x80) {
@@ -216,6 +218,8 @@ public class CapFile {
 		if (!separateComponents) {
 			ByteArrayOutputStream bo = new ByteArrayOutputStream();
 			try {
+				// TODO: DAP blocks.
+				// See GP 2.1.1 Table 9-40
 				bo.write(createHeader(includeDebug));
 				bo.write(getRawCode(includeDebug));
 			} catch (IOException ioe) {

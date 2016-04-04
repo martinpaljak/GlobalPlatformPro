@@ -125,13 +125,22 @@ public class GPKeySet {
 		}
 
 		public String toString() {
-			return "Ver:" + version  + " ID:" + id + " Type:" + type + " Len:" + length + " Value:" + HexUtils.bin2hex(value);
+			return "Ver:" + version  + " ID:" + id + " Type:" + type + " Len:" + length + " Value:" + HexUtils.bin2hex(value) + " KCV: " + HexUtils.bin2hex(getKCV());
 		}
 
 		public String toStringKey() {
 			return type + ":" + HexUtils.bin2hex(value);
 		}
 
+		public byte[] getKCV() {
+			if (type == Type.DES3) {
+				return GPCrypto.kcv_3des(this);
+			} else if (type == Type.AES) {
+				return GPCrypto.scp03_key_check_value(this);
+			} else {
+				return new byte[0];
+			}
+		}
 	}
 
 	// diversification methods

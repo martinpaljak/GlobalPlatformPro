@@ -1,5 +1,7 @@
 -injars build
 -injars lib/bcprov-jdk15on-154.jar(!META-INF/**)
+-injars lib/guava-19.0.jar(!META-INF/**)
+-dontwarn com.google.**
 -injars lib/jopt-simple-4.9.jar(!META-INF/**)
 -injars lib/slf4j-api-1.7.13.jar(!META-INF/**)
 -dontwarn org.slf4j.**

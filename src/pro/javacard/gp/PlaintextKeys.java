@@ -213,7 +213,7 @@ public class PlaintextKeys implements SessionKeyProvider {
 
 			// TODO: is this correct? - increment by one for all other than C-MAC
 			if (implicitChannel) {
-				TLVUtils.buffer_increment(derivationData, (short)2, (short)2);
+				TLVUtils.buffer_increment(derivationData, 2, 2);
 			}
 
 			byte[] constantRMAC = new byte[] { (byte) 0x01, (byte) 0x02 };

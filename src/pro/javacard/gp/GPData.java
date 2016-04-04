@@ -28,12 +28,19 @@ import java.util.List;
 
 import javax.smartcardio.CardException;
 
+import org.bouncycastle.asn1.ASN1Encodable;
+import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
+import org.bouncycastle.asn1.ASN1Sequence;
+import org.bouncycastle.asn1.BERTags;
+import org.bouncycastle.asn1.DERApplicationSpecific;
+
+import com.google.common.collect.Lists;
 
 import apdu4j.HexUtils;
-import pro.javacard.gp.GPKeySet.Diversification;
 import pro.javacard.gp.GPKeySet.GPKey;
 import pro.javacard.gp.GPKeySet.GPKey.Type;
+import pro.javacard.gp.GlobalPlatform.GPSpec;
 
 public final class GPData {
 	public static final byte[] defaultKeyBytes = { 0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F };
@@ -141,7 +148,7 @@ public final class GPData {
 
 	// GP 2.1.1 9.3.3.1
 	// GP 2.2.1 11.1.8
-	public static List<GPKeySet.GPKey> get_key_template_list(byte[] data, short offset) throws GPException {
+	public static List<GPKeySet.GPKey> get_key_template_list(byte[] data, int offset) throws GPException {
 
 		// Return empty list if no data from card.
 		// FIXME: not really a clean solution
@@ -178,6 +185,46 @@ public final class GPData {
 		return list;
 	}
 
+	public static GPSpec get_version_from_card_data(byte[] data) throws GPException {
+		try (ASN1InputStream ais = new ASN1InputStream(data)) {
+			if (ais.available() > 0) {
+				// Read card recognition data
+				DERApplicationSpecific card_data = (DERApplicationSpecific) ais.readObject();
+				ASN1Sequence seq = (ASN1Sequence) card_data.getObject(BERTags.SEQUENCE);
+				for (ASN1Encodable p: Lists.newArrayList(seq.iterator())) {
+					if (p instanceof ASN1ObjectIdentifier) {
+						ASN1ObjectIdentifier oid = (ASN1ObjectIdentifier) p;
+						// Must be fixed
+						if (!oid.toString().equalsIgnoreCase("1.2.840.114283.1")) {
+							throw new GPDataException("Invalid CardRecognitionData: " + oid.toString());
+						}
+					} else if (p instanceof DERApplicationSpecific) {
+						DERApplicationSpecific tag = (DERApplicationSpecific) p;
+						int n = tag.getApplicationTag();
+						if (n == 0) {
+							// Version
+							String oid = ASN1ObjectIdentifier.getInstance(tag.getObject()).toString();
+
+							if (oid.equalsIgnoreCase("1.2.840.114283.2.2.1.1")) {
+								return GPSpec.GP211;
+							} else if (oid.equalsIgnoreCase("1.2.840.114283.2.2.2")) {
+								return GPSpec.GP22;
+							} else {
+								throw new GPDataException("Invalid GP version OID: " + oid);
+							}
+						}
+					} else {
+						throw new GPDataException("Invalid type in card data", p.toASN1Primitive().getEncoded());
+					}
+				}
+			}
+		} catch (IOException | ClassCastException e) {
+			throw new GPDataException("Invalid data: " + e.getMessage());
+		}
+		// Default to GP211
+		return GPSpec.GP211;
+	}
+
 
 	// GP 2.1.1: F.2 Table F-1
 	public static void pretty_print_card_data(byte[] data, PrintStream out) {
@@ -186,8 +233,7 @@ public final class GPData {
 			return;
 		}
 		try {
-			short offset = 0;
-			offset = TLVUtils.skipTagAndLength(data, offset, (byte) 0x66);
+			int offset = 0;
 			offset = TLVUtils.skipTagAndLength(data, offset, (byte) 0x73);
 			while (offset < data.length) {
 				int tag = TLVUtils.getTLVTag(data, offset);
@@ -215,7 +261,7 @@ public final class GPData {
 		}
 	}
 
-	private static String gp_version_from_tlv(byte[] data, short offset) {
+	static String gp_version_from_tlv(byte[] data, int offset) {
 		try {
 			String oid;
 			oid = ASN1ObjectIdentifier.fromByteArray(TLVUtils.getTLVValueAsBytes(data, offset)).toString();
@@ -229,7 +275,7 @@ public final class GPData {
 		}
 	}
 
-	private static String gp_scp_version_from_tlv(byte[] data, short offset) {
+	static String gp_scp_version_from_tlv(byte[] data, int offset) {
 		try {
 			String oid;
 			oid = ASN1ObjectIdentifier.fromByteArray(TLVUtils.getTLVValueAsBytes(data, offset)).toString();
@@ -245,27 +291,13 @@ public final class GPData {
 	}
 
 	public static void get_global_platform_version(byte[] data) {
-		short offset = 0;
+		int offset = 0;
 		offset = TLVUtils.skipTagAndLength(data, offset, (byte) 0x66);
 		offset = TLVUtils.skipTagAndLength(data, offset, (byte) 0x73);
 		offset = TLVUtils.findTag(data, offset, (byte) 0x60);
 	}
 
-
-	public static Diversification suggestDiversification(byte[] cplc) {
-		if (cplc != null) {
-			// G&D
-			if (cplc[7] == 0x16 && cplc[8] == 0x71)
-				return Diversification.EMV;
-			// TODO: Gemalto
-		}
-		return Diversification.NONE;
-	}
-
-
 	public static void pretty_print_cplc(byte [] data, PrintStream out) {
-
-
 		if (data == null) {
 			out.println("NO CPLC");
 			return;
@@ -347,5 +379,9 @@ public final class GPData {
 			}
 			return s;
 		}
+	}
+
+	public static void main(String[] args) throws Exception {
+		get_version_from_card_data(HexUtils.hex2bin("734A06072A864886FC6B01600C060A2A864886FC6B02020101630906072A864886FC6B03640B06092A864886FC6B040215650B06092B8510864864020103660C060A2B060104012A026E0102"));
 	}
 }

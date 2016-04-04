@@ -35,6 +35,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.Enumeration;
 import java.util.List;
 
 import javax.crypto.BadPaddingException;
@@ -47,12 +48,21 @@ import javax.smartcardio.CardException;
 import javax.smartcardio.CommandAPDU;
 import javax.smartcardio.ResponseAPDU;
 
+import org.bouncycastle.asn1.ASN1InputStream;
+import org.bouncycastle.asn1.ASN1OctetString;
+import org.bouncycastle.asn1.ASN1Primitive;
+import org.bouncycastle.asn1.ASN1Sequence;
+import org.bouncycastle.asn1.BERTags;
+import org.bouncycastle.asn1.DERApplicationSpecific;
+import org.bouncycastle.asn1.DEROctetString;
+import org.bouncycastle.asn1.DERTaggedObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import apdu4j.HexUtils;
 import apdu4j.ISO7816;
 import pro.javacard.gp.GPData.KeyType;
+import pro.javacard.gp.GPKeySet.Diversification;
 import pro.javacard.gp.GPKeySet.GPKey;
 import pro.javacard.gp.GPKeySet.GPKey.Type;
 
@@ -77,6 +87,7 @@ public class GlobalPlatform {
 	public static final int SCP_02_15 = 8;
 	public static final int SCP_02_1A = 9;
 	public static final int SCP_02_1B = 10;
+
 	public enum APDUMode {
 		// bit values as expected by EXTERNAL AUTHENTICATE
 		CLR(0x00), MAC(0x01), ENC(0x02), RMAC(0x10);
@@ -112,6 +123,7 @@ public class GlobalPlatform {
 	public AID sdAID = null;
 	public static enum GPSpec {OP201, GP211, GP22};
 	private GPSpec spec = GPSpec.GP211; // Default to GP211 mode
+
 	// Either 1 or 2 or 3
 	private int scpMajorVersion = 0;
 
@@ -172,9 +184,10 @@ public class GlobalPlatform {
 		this.blockSize = size;
 	}
 
+	@Deprecated
 	public void imFeelingLucky() throws CardException, GPException {
 		select(null); // auto-detect ISD AID
-		SessionKeyProvider keys = PlaintextKeys.fromMasterKey(GPData.defaultKey, GPData.suggestDiversification(getCPLC()));
+		SessionKeyProvider keys = PlaintextKeys.fromMasterKey(GPData.defaultKey, Diversification.NONE);
 		openSecureChannel(keys, null, 0, EnumSet.of(APDUMode.MAC));
 	}
 
@@ -186,15 +199,10 @@ public class GlobalPlatform {
 			logger.warn(message);
 		}
 	}
-	// XXX: remove
-	private int getGPCLA() {
-		if (wrapper != null && wrapper.mac)
-			return CLA_MAC;
-		return CLA_GP;
-	}
+
 	public boolean select(AID sdAID) throws GPException, CardException {
 		// Try to select ISD without giving the sdAID
-		CommandAPDU command = null;
+		final CommandAPDU command;
 		if (sdAID == null ) {
 			command = new CommandAPDU(ISO7816.CLA_ISO7816, ISO7816.INS_SELECT, 0x04, 0x00, 256);
 		} else {
@@ -204,17 +212,19 @@ public class GlobalPlatform {
 
 		// Unfused JCOP replies with 0x6A82 to everything
 		if (sdAID == null && resp.getSW() == 0x6A82) {
+			// If it has the identification AID, it probably is an unfused JCOP
 			byte [] identify_aid = HexUtils.hex2bin("A000000167413000FF");
 			CommandAPDU identify = new CommandAPDU(ISO7816.CLA_ISO7816, ISO7816.INS_SELECT, 0x04, 0x00, identify_aid, 256);
 			ResponseAPDU identify_resp = channel.transmit(identify);
 			byte[] identify_data = identify_resp.getData();
+			// Check the fuse state
 			if (identify_data.length > 15) {
 				if (identify_data[14] == 0x00) {
 					giveStrictWarning("Unfused JCOP detected");
 				}
 			}
 		}
-
+		// If the ISD is locked, log it.
 		if (resp.getSW() == 0x6283) {
 			logger.warn("SELECT ISD returned 6283 - CARD_LOCKED");
 		}
@@ -222,24 +232,90 @@ public class GlobalPlatform {
 		if (resp.getSW() == 0x9000 || resp.getSW() == 0x6283) {
 			// The security domain AID is in FCI.
 			byte[] fci = resp.getData();
-
-			// Skip template information and find tag 0x84
-			short aid_offset = TLVUtils.findTag(fci, TLVUtils.skipTagAndLength(fci, (short) 0, (byte) 0x6F), (byte) 0x84);
-			int aid_length = TLVUtils.getTagLength(fci, aid_offset);
-
-			AID detectedAID = new AID(fci, aid_offset + 2, aid_length);
-			if (sdAID == null) {
-				logger.debug("Auto-detected ISD AID: " + detectedAID);
-			}
-			if (sdAID != null && !detectedAID.equals(sdAID)) {
-				giveStrictWarning("SD AID in FCI does not match the requested AID!");
-			}
-			this.sdAID = sdAID == null ? detectedAID : sdAID;
+			parse_select_response(fci);
 			return true;
-			// TODO: parse the maximum command size as well and use with defaultLoadSize
 		}
 		return false;
 	}
+
+
+	private void parse_select_response(byte [] fci) throws GPException {
+		try (ASN1InputStream ais = new ASN1InputStream(fci)) {
+			if (ais.available() > 0) {
+				// Read FCI
+				DERApplicationSpecific fcidata = (DERApplicationSpecific) ais.readObject();
+				// FIXME System.out.println(ASN1Dump.dumpAsString(fcidata, true));
+				if (fcidata.getApplicationTag() == 15) {
+					ASN1Sequence s = ASN1Sequence.getInstance(fcidata.getObject(BERTags.SEQUENCE));
+					for (@SuppressWarnings("unchecked")
+					Enumeration<ASN1Primitive> e = s.getObjects(); e.hasMoreElements();) {
+						DERTaggedObject t = (DERTaggedObject) e.nextElement();
+						if (t.getTagNo() == 4) {
+							// ISD AID
+							ASN1OctetString isdaid = DEROctetString.getInstance(t.getObject());
+							AID detectedAID = new AID(isdaid.getOctets());
+							if (sdAID == null) {
+								logger.debug("Auto-detected ISD AID: " + detectedAID);
+							}
+							if (sdAID != null && !detectedAID.equals(sdAID)) {
+								giveStrictWarning("SD AID in FCI does not match the requested AID!");
+							}
+							this.sdAID = sdAID == null ? detectedAID : sdAID;
+						} else if (t.getTagNo() == 5) {
+							// Proprietary, usually a sequence
+							if (t.getObject() instanceof ASN1Sequence) {
+								ASN1Sequence prop = ASN1Sequence.getInstance(t.getObject());
+								for (@SuppressWarnings("unchecked")
+								Enumeration<ASN1Primitive> props = prop.getObjects(); props.hasMoreElements();) {
+									ASN1Primitive proptag = props.nextElement();
+									if (proptag instanceof DERApplicationSpecific) {
+										DERApplicationSpecific isddata = (DERApplicationSpecific) proptag;
+										if (isddata.getApplicationTag() == 19) {
+											spec = GPData.get_version_from_card_data(isddata.getEncoded());
+											logger.debug("Auto-detected GP version: " + spec);
+										}
+									} else if (proptag instanceof DERTaggedObject) {
+										DERTaggedObject tag = (DERTaggedObject)proptag;
+										if (tag.getTagNo() == 101) {
+											// Blocksize
+											ASN1OctetString blocksize = DEROctetString.getInstance(tag.getObject());
+											this.blockSize = blocksize.getOctets()[0] & 0xFF;
+											logger.debug("Auto-detected block size: " + blockSize);
+										} else {
+											logger.warn("Unknown/unhandled tag in FCI proprietary data: " + HexUtils.bin2hex(tag.getEncoded()));
+										}
+									} else {
+										throw new GPException("Unknown data from card: " + HexUtils.bin2hex(proptag.getEncoded()));
+									}
+								}
+							} else {
+								// Except Feitian cards which have a plain nested tag
+								if (t.getObject() instanceof DERTaggedObject) {
+									DERTaggedObject tag = (DERTaggedObject)t.getObject();
+									if (tag.getTagNo() == 101) {
+										// Blocksize
+										ASN1OctetString blocksize = DEROctetString.getInstance(tag.getObject());
+										this.blockSize = blocksize.getOctets()[0] & 0xFF;
+										logger.debug("Auto-detected block size: " + blockSize);
+									} else {
+										logger.warn("Unknown/unhandled tag in FCI proprietary data: " + HexUtils.bin2hex(tag.getEncoded()));
+									}
+								}
+							}
+						} else {
+							logger.warn("Unknown/unhandled tag in FCI: " + HexUtils.bin2hex(t.getEncoded()));
+						}
+					}
+				} else {
+					throw new GPException("Unknown data from card: " + HexUtils.bin2hex(fci));
+				}
+			}
+		} catch (IOException | ClassCastException e) {
+			throw new GPException("Invalid data: " + e.getMessage(), e);
+		}
+
+	}
+
 
 	/**
 	 * Establish a connection to the security domain specified in the
@@ -251,6 +327,7 @@ public class GlobalPlatform {
 	 * @throws CardException
 	 *             on data transmission errors
 	 */
+	@Deprecated
 	public void select() throws GPException, CardException {
 		if (!select(null)) {
 			throw new GPException("Could not select security domain!");
@@ -260,13 +337,9 @@ public class GlobalPlatform {
 
 	public List<GPKeySet.GPKey> getKeyInfoTemplate() throws CardException, GPException {
 		// Key Information Template
-		CommandAPDU command = new CommandAPDU(getGPCLA(), ISO7816.INS_GET_DATA, 0x00, 0xE0, 256);
-		ResponseAPDU resp = always_transmit(command);
+		CommandAPDU command = new CommandAPDU(CLA_GP, ISO7816.INS_GET_DATA, 0x00, 0xE0, 256);
+		ResponseAPDU resp = channel.transmit(command);
 
-		if (resp.getSW() == ISO7816.SW_CLA_NOT_SUPPORTED) {
-			command = new CommandAPDU(ISO7816.CLA_ISO7816, ISO7816.INS_GET_DATA, 0x00, 0xE0, 256);
-			resp = always_transmit(command);
-		}
 		if (resp.getSW() == ISO7816.SW_NO_ERROR) {
 			return GPData.get_key_template_list(resp.getData(), SHORT_0);
 		} else {
@@ -277,8 +350,8 @@ public class GlobalPlatform {
 
 	public byte[] fetchCardData() throws CardException, GPException {
 		// Card data
-		CommandAPDU command = new CommandAPDU(getGPCLA(), ISO7816.INS_GET_DATA, 0x00, 0x66, 256);
-		ResponseAPDU resp = always_transmit(command);
+		CommandAPDU command = new CommandAPDU(ISO7816.CLA_ISO7816, ISO7816.INS_GET_DATA, 0x00, 0x66, 256);
+		ResponseAPDU resp = channel.transmit(command);
 		if (resp.getSW() == 0x6A86) {
 			logger.debug("GET DATA(CardData) not supported, Open Platform 2.0.1 card? " + GPUtils.swToString(resp.getSW()));
 			return null;
@@ -329,13 +402,8 @@ public class GlobalPlatform {
 	}
 
 	public byte[] fetchCPLC() throws CardException, GPException {
-		CommandAPDU command = new CommandAPDU(getGPCLA(), INS_GET_DATA, 0x9F, 0x7F, 256);
-		ResponseAPDU resp = always_transmit(command);
-		// If GP CLA fails, try with ISO
-		if (resp.getSW() == ISO7816.SW_CLA_NOT_SUPPORTED) {
-			command = new CommandAPDU(ISO7816.CLA_ISO7816, INS_GET_DATA, 0x9F, 0x7F, 256);
-			resp = always_transmit(command);
-		}
+		CommandAPDU command = new CommandAPDU(CLA_GP, INS_GET_DATA, 0x9F, 0x7F, 256);
+		ResponseAPDU resp = channel.transmit(command);
 
 		if (resp.getSW() == ISO7816.SW_NO_ERROR) {
 			return resp.getData();
@@ -527,14 +595,6 @@ public class GlobalPlatform {
 		ResponseAPDU wr = channel.transmit(wc);
 		return wrapper.unwrap(wr);
 	}
-
-	private ResponseAPDU always_transmit(CommandAPDU command) throws CardException, GPException {
-		if (wrapper == null)
-			return channel.transmit(command);
-		else
-			return transmit(command);
-	}
-
 
 	public AIDRegistry getRegistry() throws GPException, CardException{
 		if (dirty) {
@@ -894,7 +954,8 @@ public class GlobalPlatform {
 
 	private byte[] getConcatenatedStatus(int p1, byte[] data) throws CardException, GPException {
 		// TODO: Support for GP2.2
-		CommandAPDU getStatus = new CommandAPDU(CLA_GP, INS_GET_STATUS, p1, 0x00, data, 256);
+		int p2 = 0x0;
+		CommandAPDU getStatus = new CommandAPDU(CLA_GP, INS_GET_STATUS, p1, p2, data, 256);
 		ResponseAPDU response = transmit(getStatus);
 		int sw = response.getSW();
 		if ((sw != ISO7816.SW_NO_ERROR) && (sw != 0x6310)) {
@@ -905,7 +966,7 @@ public class GlobalPlatform {
 			bo.write(response.getData());
 
 			while (response.getSW() == 0x6310) {
-				getStatus = new CommandAPDU(CLA_GP, INS_GET_STATUS, p1, 0x01, data, 256);
+				getStatus = new CommandAPDU(CLA_GP, INS_GET_STATUS, p1, p2 | 0x01, data, 256);
 				response = transmit(getStatus);
 
 				bo.write(response.getData());
@@ -920,7 +981,6 @@ public class GlobalPlatform {
 		}
 		return bo.toByteArray();
 	}
-
 
 	/**
 	 * Get card status. Perform all possible variants of the get status command

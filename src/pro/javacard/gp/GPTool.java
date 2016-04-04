@@ -637,7 +637,7 @@ public final class GPTool {
 							for (AIDRegistryEntry e : gp.getRegistry()) {
 								AID aid = e.getAID();
 								System.out.println("AID: " + HexUtils.bin2hex(aid.getBytes()) + " (" + GPUtils.byteArrayToReadableString(aid.getBytes()) + ")");
-								if (e.getKind() == Kind.ExecutableLoadFilesAndModules) {
+								if (e.getKind() == Kind.ExecutableLoadFilesAndModules || e.getKind() == Kind.ExecutableLoadFiles) {
 									System.out.println("     " + e.getKind().toShortString() + " " + e.getLifeCycleString());
 								} else {
 									System.out.println("     " + e.getKind().toShortString() + " " + e.getLifeCycleString() + ": " + e.getPrivilegesString());

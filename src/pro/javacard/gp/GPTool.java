@@ -45,12 +45,13 @@ import apdu4j.TerminalManager;
 import joptsimple.OptionException;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
-import pro.javacard.gp.AIDRegistryEntry.Kind;
 import pro.javacard.gp.GPData.KeyType;
 import pro.javacard.gp.GPKeySet.Diversification;
 import pro.javacard.gp.GPKeySet.GPKey;
 import pro.javacard.gp.GPKeySet.GPKey.Type;
+import pro.javacard.gp.GPRegistryEntry.Kind;
 import pro.javacard.gp.GlobalPlatform.APDUMode;
+import pro.javacard.gp.GlobalPlatform.GPSpec;
 
 
 public final class GPTool {
@@ -107,6 +108,7 @@ public final class GPTool {
 	private final static String OPT_KEY_VERSION = "keyver";
 	private final static String OPT_KEY_ID = "keyid";
 	private final static String OPT_NEW_KEY_VERSION = "new-keyver";
+	private final static String OPT_OP201 = "op201";
 
 	private final static String OPT_EMV = "emv";
 	private final static String OPT_VISA2 = "visa2";
@@ -183,6 +185,7 @@ public final class GPTool {
 		// General GP options
 		parser.accepts(OPT_SC_MODE, "Secure channel to use (mac/enc/clr)").withRequiredArg().withValuesConvertedBy(ArgMatchers.mode());;
 		parser.accepts(OPT_BS, "maximum APDU payload size").withRequiredArg().ofType(Integer.class);
+		parser.accepts(OPT_OP201, "Enable OpenPlatform 2.0.1 mode");
 
 		parser.accepts(OPT_SDAID, "ISD AID").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
 
@@ -368,6 +371,9 @@ public final class GPTool {
 					// GlobalPlatform specific
 					GlobalPlatform gp = new GlobalPlatform(card.getBasicChannel());
 
+					if (args.has(OPT_OP201)) {
+						gp.setSpec(GPSpec.OP201);
+					}
 					// Disable strict mode if requested
 					gp.setStrict(!args.has(OPT_RELAX));
 
@@ -431,7 +437,7 @@ public final class GPTool {
 
 						// --delete <aid> or --delete --default
 						if (args.has(OPT_DELETE)) {
-							AIDRegistry reg = gp.getRegistry();
+							GPRegistry reg = gp.getRegistry();
 
 							if (args.has(OPT_DEFAULT) && reg.getDefaultSelectedAID() != null) {
 								if (reg.getDefaultSelectedPackageAID() != null) {
@@ -634,16 +640,42 @@ public final class GPTool {
 
 						// --list
 						if (args.has(OPT_LIST)) {
-							for (AIDRegistryEntry e : gp.getRegistry()) {
+							String tab = "     ";
+							GPRegistry reg = gp.getRegistry();
+							System.out.println("# Mode: " + gp.spec); // TODO: expose ?
+							for (GPRegistryEntry e : reg) {
 								AID aid = e.getAID();
-								System.out.println("AID: " + HexUtils.bin2hex(aid.getBytes()) + " (" + GPUtils.byteArrayToReadableString(aid.getBytes()) + ")");
-								if (e.getKind() == Kind.ExecutableLoadFilesAndModules || e.getKind() == Kind.ExecutableLoadFiles) {
-									System.out.println("     " + e.getKind().toShortString() + " " + e.getLifeCycleString());
+								System.out.print(e.getType().toShortString() + ": " + HexUtils.bin2hex(aid.getBytes()) + " (" + e.getLifeCycleString() + ")");
+								if (e.getType() != Kind.IssuerSecurityDomain && args.has(OPT_VERBOSE)) {
+									System.out.println(" (" + GPUtils.byteArrayToReadableString(aid.getBytes()) + ")");
 								} else {
-									System.out.println("     " + e.getKind().toShortString() + " " + e.getLifeCycleString() + ": " + e.getPrivilegesString());
+									System.out.println();
 								}
-								for (AID a : e.getExecutableAIDs()) {
-									System.out.println("     " + HexUtils.bin2hex(a.getBytes()) + " (" + GPUtils.byteArrayToReadableString(a.getBytes()) + ")");
+
+								if (e.getDomain() != null) {
+									System.out.println(tab + "Parent:  " + e.getDomain());
+								}
+								if (e.getType() == Kind.ExecutableLoadFile) {
+									GPRegistryEntryPkg pkg = (GPRegistryEntryPkg) e;
+									if (pkg.getVersion() != null) {
+										System.out.println(tab + "Version: " + pkg.getVersionString());
+									}
+									for (AID a : pkg.getModules()) {
+										System.out.print(tab + "Applet:  " +  HexUtils.bin2hex(a.getBytes()));
+										if (args.has(OPT_VERBOSE)) {
+											System.out.println(" (" + GPUtils.byteArrayToReadableString(a.getBytes()) + ")");
+										} else {
+											System.out.println();
+										}
+									}
+								} else {
+									GPRegistryEntryApp app = (GPRegistryEntryApp) e;
+									if (app.getLoadFile() != null) {
+										System.out.println(tab + "From:    " + app.getLoadFile());
+									}
+									if (!app.getPrivileges().isEmpty()) {
+										System.out.println(tab + "Privs:   " + app.getPrivileges());
+									}
 								}
 								System.out.println();
 							}

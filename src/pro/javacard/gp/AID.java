@@ -64,7 +64,7 @@ public class AID {
 	 */
 	public AID(byte[] bytes, int offset, int length) throws IllegalArgumentException {
 		if ((length < 5) || (length > 16)) {
-			throw new IllegalArgumentException("AID's are between 5 and 16 bytes");
+			throw new IllegalArgumentException("AID's are between 5 and 16 bytes, not " + Integer.toHexString(length));
 		}
 		aidBytes = new byte[length];
 		System.arraycopy(bytes, offset, aidBytes, 0, length);

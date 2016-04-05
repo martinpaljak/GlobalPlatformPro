@@ -47,6 +47,7 @@ import javax.smartcardio.CardException;
 import javax.smartcardio.CommandAPDU;
 import javax.smartcardio.ResponseAPDU;
 
+import org.bouncycastle.asn1.ASN1ApplicationSpecific;
 import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1OctetString;
@@ -68,6 +69,8 @@ import pro.javacard.gp.GPData.KeyType;
 import pro.javacard.gp.GPKeySet.Diversification;
 import pro.javacard.gp.GPKeySet.GPKey;
 import pro.javacard.gp.GPKeySet.GPKey.Type;
+import pro.javacard.gp.GPRegistryEntry.Kind;
+import pro.javacard.gp.GPRegistryEntry.Privileges;
 
 /**
  * The main Global Platform class. Provides most of the Global Platform
@@ -125,7 +128,7 @@ public class GlobalPlatform {
 	// SD AID of the card successfully selected or null
 	public AID sdAID = null;
 	public static enum GPSpec {OP201, GP211, GP22};
-	private GPSpec spec = GPSpec.GP211; // Default to GP211 mode
+	GPSpec spec = GPSpec.GP211;
 
 	// Either 1 or 2 or 3
 	private int scpMajorVersion = 0;
@@ -137,7 +140,7 @@ public class GlobalPlatform {
 	private byte[] diversification_data = null;
 
 	private byte[] cplc = null;
-	private AIDRegistry registry = null;
+	private GPRegistry registry = null;
 	private boolean dirty = true; // True if registry is dirty.
 
 	protected boolean strict = true;
@@ -185,6 +188,10 @@ public class GlobalPlatform {
 
 	public void setBlockSize(int size) {
 		this.blockSize = size;
+	}
+
+	public void setSpec(GPSpec spec) {
+		this.spec = spec;
 	}
 
 	@Deprecated
@@ -597,7 +604,7 @@ public class GlobalPlatform {
 		return wrapper.unwrap(wr);
 	}
 
-	public AIDRegistry getRegistry() throws GPException, CardException{
+	public GPRegistry getRegistry() throws GPException, CardException{
 		if (dirty) {
 			registry = getStatus();
 			dirty = false;
@@ -954,28 +961,43 @@ public class GlobalPlatform {
 
 
 	private byte[] getConcatenatedStatus(int p1, byte[] data) throws CardException, GPException {
-		// TODO: Support for GP2.2
 		int p2 = 0x0;
-		CommandAPDU getStatus = new CommandAPDU(CLA_GP, INS_GET_STATUS, p1, p2, data, 256);
-		ResponseAPDU response = transmit(getStatus);
+
+		if (spec != GPSpec.OP201) {
+			p2 = 0x2;
+		}
+		CommandAPDU cmd = new CommandAPDU(CLA_GP, INS_GET_STATUS, p1, p2, data, 256);
+		ResponseAPDU response = transmit(cmd);
+
+		// Workaround for legacy cards, like SCE 6.0
+		if (response.getSW() == 0x6A86 && spec != GPSpec.OP201) {
+			p2 = 0x00;
+			spec = GPSpec.OP201; // This will trigger the legacy response parser
+			cmd = new CommandAPDU(CLA_GP, INS_GET_STATUS, p1, p2, data, 256);
+			response = transmit(cmd);
+		}
+
 		int sw = response.getSW();
 		if ((sw != ISO7816.SW_NO_ERROR) && (sw != 0x6310)) {
-			return response.getData(); // Should be empty
+			if (sw == 0x6A88) { // Referenced data not found
+				return response.getData(); // Should be empty array
+			}
+			throw new GPException(sw, "GET STATUS failed for " + HexUtils.bin2hex(cmd.getBytes()));
 		}
+
 		ByteArrayOutputStream bo = new ByteArrayOutputStream();
 		try {
 			bo.write(response.getData());
 
 			while (response.getSW() == 0x6310) {
-				getStatus = new CommandAPDU(CLA_GP, INS_GET_STATUS, p1, p2 | 0x01, data, 256);
-				response = transmit(getStatus);
-
-				bo.write(response.getData());
+				cmd = new CommandAPDU(CLA_GP, INS_GET_STATUS, p1, p2 | 0x01, data, 256);
+				response = transmit(cmd);
 
 				sw = response.getSW();
 				if ((sw != ISO7816.SW_NO_ERROR) && (sw != 0x6310)) {
-					throw new CardException("Get Status failed, SW: " + GPUtils.swToString(sw));
+					throw new GPException(sw, "GET STATUS failed for " + HexUtils.bin2hex(cmd.getBytes()));
 				}
+				bo.write(response.getData());
 			}
 		} catch (IOException e) {
 			throw new RuntimeException(e);
@@ -983,64 +1005,142 @@ public class GlobalPlatform {
 		return bo.toByteArray();
 	}
 
-	/**
-	 * Get card status. Perform all possible variants of the get status command
-	 * and return all entries reported by the card in an AIDRegistry.
-	 *
-	 * @return registry with all entries on the card
-	 * @throws CardException
-	 *             in case of communication errors
-	 * @throws GPException
-	 */
-	private AIDRegistry getStatus() throws CardException, GPException {
-		AIDRegistry registry = new AIDRegistry();
-		int[] p1s = { 0x80, 0x40 };
-		for (int p1 : p1s) {
-			// parse data no sub-AID
-			int index = 0;
-			byte[] data = getConcatenatedStatus(p1, new byte[] { 0x4F, 0x00 });
-			while (index < data.length) {
-				int len = data[index++];
-				AID aid = new AID(data, index, len);
-				index += len;
-				int life_cycle = data[index++];
-				int privileges = data[index++];
+	private void populate_legacy(GPRegistry registry, byte[] data, Kind type) throws GPDataException {
+		int offset = 0;
+		try {
+			while (offset < data.length) {
+				int len = data[offset++];
+				AID aid = new AID(data, offset, len);
+				offset += len;
+				int lifecycle = (data[offset++] & 0xFF);
+				byte privileges = data[offset++];
 
-				AIDRegistryEntry.Kind kind = AIDRegistryEntry.Kind.IssuerSecurityDomain;
-				if (p1 == 0x40) {
-					if ((privileges & 0x80) == 0) {
-						kind = AIDRegistryEntry.Kind.Application;
-					} else {
-						kind = AIDRegistryEntry.Kind.SecurityDomain;
+				if (type == Kind.IssuerSecurityDomain || type == Kind.Application) {
+					GPRegistryEntryApp app = new GPRegistryEntryApp();
+					app.setType(type);
+					app.setAID(aid);
+					app.setPrivileges(Privileges.fromByte(privileges));
+					app.setLifeCycle(lifecycle);
+					registry.add(app);
+				} else if (type == Kind.ExecutableLoadFile) {
+					if (privileges != 0x00) {
+						throw new GPDataException("Privileges of Load File is not 0x00");
 					}
+					GPRegistryEntryPkg pkg = new GPRegistryEntryPkg();
+					pkg.setAID(aid);
+					pkg.setLifeCycle(lifecycle);
+					pkg.setType(type);
+					// Modules
+					if (spec != GPSpec.OP201) {
+						int num = data[offset++];
+						for (int i = 0; i < num; i++) {
+							len = data[offset++] & 0xFF;
+							aid = new AID(data, offset, len);
+							offset += len;
+							pkg.addModule(aid);
+						}
+					}
+					registry.add(pkg);
 				}
-
-				AIDRegistryEntry entry = new AIDRegistryEntry(aid, life_cycle, privileges, kind);
-				registry.add(entry);
 			}
 		}
-		// Order is important here, so that ExM info would get to the set later
-		p1s = new int[] { 0x20, 0x10 };
-		for (int p1 : p1s) {
-			int index = 0;
-			byte[] data = getConcatenatedStatus(p1, new byte[] { 0x4F, 0x00 });
-			while (index < data.length) {
-				int len = data[index++];
-				AID aid = new AID(data, index, len);
-				index += len;
-				AIDRegistryEntry entry = new AIDRegistryEntry(aid, data[index++], data[index++],
-						p1 == 0x10 ? AIDRegistryEntry.Kind.ExecutableLoadFilesAndModules : AIDRegistryEntry.Kind.ExecutableLoadFiles);
-				if (p1 == 0x10) {
-					int num = data[index++];
-					for (int i = 0; i < num; i++) {
-						len = data[index++];
-						aid = new AID(data, index, len);
-						index += len;
-						entry.addExecutableAID(aid);
+		catch (ArrayIndexOutOfBoundsException e) {
+			throw new GPDataException("Invalid response to GET STATUS", e);
+		}
+	}
+
+	private void populate_tags(GPRegistry registry, byte[] data, Kind type) throws GPDataException {
+		try (ASN1InputStream ais = new ASN1InputStream(data)) {
+			while (ais.available() > 0) {
+				DERApplicationSpecific registry_data = (DERApplicationSpecific) ais.readObject();
+				// System.out.println(ASN1Dump.dumpAsString(registry_data, true));
+				if (registry_data.getApplicationTag() == 3) {
+					// XXX: a bit ugly and wasting code, we populate both objects but add only one
+					GPRegistryEntryApp app = new GPRegistryEntryApp();
+					GPRegistryEntryPkg pkg = new GPRegistryEntryPkg();
+					ASN1Sequence seq = (ASN1Sequence) registry_data.getObject(BERTags.SEQUENCE);
+					for (ASN1Encodable p: Lists.newArrayList(seq.iterator())) {
+						if (p instanceof DERApplicationSpecific) {
+							ASN1ApplicationSpecific entry = DERApplicationSpecific.getInstance(p);
+							if (entry.getApplicationTag() == 15) {
+								AID aid = new AID(entry.getContents());
+								app.setAID(aid);
+								pkg.setAID(aid);
+							} else if (entry.getApplicationTag() == 5) {
+								// privileges
+								Privileges privs = Privileges.fromBytes(entry.getContents());
+								app.setPrivileges(privs);
+							} else if (entry.getApplicationTag() == 4) {
+								AID a = new AID(entry.getContents());
+								app.setLoadFile(a);
+							} else if (entry.getApplicationTag() == 12) {
+								AID a = new AID(entry.getContents());
+								app.setDomain(a);
+								pkg.setDomain(a);
+							} else if (entry.getApplicationTag() == 14) {
+								pkg.setVersion(entry.getContents());
+							} else {
+								throw new GPDataException("Invalid tag", entry.getEncoded());
+							}
+						} else if (p instanceof DERTaggedObject) {
+							ASN1TaggedObject tag = DERTaggedObject.getInstance(p);
+							if (tag.getTagNo() == 112) { // lifecycle
+								ASN1OctetString lc = DEROctetString.getInstance(tag, false);
+								app.setLifeCycle(lc.getOctets()[0] & 0xFF);
+								pkg.setLifeCycle(lc.getOctets()[0] & 0xFF);
+							} else if (tag.getTagNo() == 4) { // Executable module AID
+								ASN1OctetString lc = DEROctetString.getInstance(tag, false);
+								AID a = new AID(lc.getOctets());
+								pkg.addModule(a);
+							} else {
+								logger.warn("Unknown data: " + HexUtils.bin2hex(tag.getEncoded()));
+							}
+						}
 					}
+					// Construct entry
+					if (type == Kind.ExecutableLoadFile) {
+						pkg.setType(type);
+						registry.add(pkg);
+					} else {
+						app.setType(type);
+						registry.add(app);
+					}
+				} else {
+					throw new GPDataException("Invalid tag", registry_data.getEncoded());
 				}
-				registry.add(entry);
 			}
+		} catch (IOException e) {
+			throw new GPDataException("Invalid data", e);
+		}
+	}
+
+	private void parse_status_response(GPRegistry reg, byte[] data, Kind type) throws GPDataException {
+		if (spec == GPSpec.OP201) {
+			populate_legacy(reg, data, type);
+		} else {
+			populate_tags(reg, data, type);
+		}
+	}
+
+	private GPRegistry getStatus() throws CardException, GPException {
+		GPRegistry registry = new GPRegistry();
+
+		// Issuer security domain
+		byte[] data = getConcatenatedStatus(0x80, new byte[] { 0x4F, 0x00 });
+		parse_status_response(registry, data, Kind.IssuerSecurityDomain);
+
+		// Apps and security domains
+		data = getConcatenatedStatus(0x40, new byte[] { 0x4F, 0x00 });
+		parse_status_response(registry, data, Kind.Application);
+
+		// Load files
+		data = getConcatenatedStatus(0x20, new byte[] { 0x4F, 0x00 });
+		parse_status_response(registry, data, Kind.ExecutableLoadFile);
+
+		if (spec != GPSpec.OP201) {
+			// Load files with modules
+			data = getConcatenatedStatus(0x10, new byte[] { 0x4F, 0x00 });
+			parse_status_response(registry, data, Kind.ExecutableLoadFile);
 		}
 		return registry;
 	}

@@ -27,23 +27,39 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 
+import pro.javacard.gp.GPRegistryEntry.Kind;
+import pro.javacard.gp.GPRegistryEntry.Privilege;
+
 /**
- * Convenience class managing a vector of {@link AIDRegistryEntry
+ * Convenience class managing a vector of {@link GPRegistryEntry
  * AIDRegistryEntries} with search functionality.
  *
- * Implements {@code Iterable<AIDRegistryEntry} to permit foreach loops such as
- * {@code for(AIDRegistryEntry e : registry) ...}.
+ * Implements {@code Iterable<GPRegistryEntry} to permit foreach loops such as
+ * {@code for(GPRegistryEntry e : registry) ...}.
  */
-public class AIDRegistry implements Iterable<AIDRegistryEntry> {
+public class GPRegistry implements Iterable<GPRegistryEntry> {
 
-	LinkedHashMap<AID, AIDRegistryEntry> entries = new LinkedHashMap<AID, AIDRegistryEntry>();
+	LinkedHashMap<AID, GPRegistryEntry> entries = new LinkedHashMap<AID, GPRegistryEntry>();
 
 	/**
 	 * Add one entry to this registry.
 	 *
 	 * @param entry
 	 */
-	public void add(AIDRegistryEntry entry) {
+	public void add(GPRegistryEntry entry) {
+		// "fix" the kind at a single location.
+		if (entry instanceof GPRegistryEntryApp) {
+			GPRegistryEntryApp app = (GPRegistryEntryApp) entry;
+			if (app.getPrivileges().has(Privilege.SecurityDomain) && entry.getType() == Kind.Application) {
+				entry.setType(Kind.SecurityDomain);
+			}
+		}
+		// XXX Legacy, combined with logic in GlobalPlatform.getStatus()
+		GPRegistryEntry existing = entries.get(entry.getAID());
+		if (existing != null && existing.getType() != entry.getType()) {
+			// OP201 cards list the ISD AID as load file.
+			return;
+		}
 		entries.put(entry.getAID(), entry);
 	}
 
@@ -52,7 +68,7 @@ public class AIDRegistry implements Iterable<AIDRegistryEntry> {
 	 *
 	 * @return iterator
 	 */
-	public Iterator<AIDRegistryEntry> iterator() {
+	public Iterator<GPRegistryEntry> iterator() {
 		return entries.values().iterator();
 	}
 
@@ -62,11 +78,11 @@ public class AIDRegistry implements Iterable<AIDRegistryEntry> {
 	 *
 	 * @return a list of all packages
 	 */
-	public List<AIDRegistryEntry> allPackages() {
-		List<AIDRegistryEntry> res = new ArrayList<AIDRegistryEntry>();
-		for (AIDRegistryEntry e : entries.values()) {
+	public List<GPRegistryEntryPkg> allPackages() {
+		List<GPRegistryEntryPkg> res = new ArrayList<GPRegistryEntryPkg>();
+		for (GPRegistryEntry e : entries.values()) {
 			if (e.isPackage()) {
-				res.add(e);
+				res.add((GPRegistryEntryPkg)e);
 			}
 		}
 		return res;
@@ -74,7 +90,7 @@ public class AIDRegistry implements Iterable<AIDRegistryEntry> {
 
 	public List<AID> allPackageAIDs() {
 		List<AID> res = new ArrayList<AID>();
-		for (AIDRegistryEntry e : entries.values()) {
+		for (GPRegistryEntry e : entries.values()) {
 			if (e.isPackage()) {
 				res.add(e.getAID());
 			}
@@ -83,7 +99,7 @@ public class AIDRegistry implements Iterable<AIDRegistryEntry> {
 	}
 	public List<AID> allAppletAIDs() {
 		List<AID> res = new ArrayList<AID>();
-		for (AIDRegistryEntry e : entries.values()) {
+		for (GPRegistryEntry e : entries.values()) {
 			if (e.isApplet()) {
 				res.add(e.getAID());
 			}
@@ -92,7 +108,7 @@ public class AIDRegistry implements Iterable<AIDRegistryEntry> {
 	}
 	public List<AID> allAIDs() {
 		List<AID> res = new ArrayList<AID>();
-		for (AIDRegistryEntry e : entries.values()) {
+		for (GPRegistryEntry e : entries.values()) {
 			res.add(e.getAID());
 		}
 		return res;
@@ -102,19 +118,19 @@ public class AIDRegistry implements Iterable<AIDRegistryEntry> {
 	 *
 	 * @return a list of all applets
 	 */
-	public List<AIDRegistryEntry> allApplets() {
-		List<AIDRegistryEntry> res = new ArrayList<AIDRegistryEntry>();
-		for (AIDRegistryEntry e : entries.values()) {
+	public List<GPRegistryEntryApp> allApplets() {
+		List<GPRegistryEntryApp> res = new ArrayList<GPRegistryEntryApp>();
+		for (GPRegistryEntry e : entries.values()) {
 			if (e.isApplet()) {
-				res.add(e);
+				res.add((GPRegistryEntryApp)e);
 			}
 		}
 		return res;
 	}
 
 	public AID getDefaultSelectedAID() {
-		for (AIDRegistryEntry e : allApplets()) {
-			if ((e.getPrivileges() & 0x04) != 0) {
+		for (GPRegistryEntryApp e : allApplets()) {
+			if (e.getPrivileges().has(Privilege.CardReset)) {
 				return e.getAID();
 			}
 		}
@@ -124,12 +140,12 @@ public class AIDRegistry implements Iterable<AIDRegistryEntry> {
 	public AID getDefaultSelectedPackageAID() {
 		AID defaultAID = getDefaultSelectedAID();
 		if (defaultAID != null) {
-			for (AIDRegistryEntry e : allPackages()) {
-				if (e.getExecutableAIDs().contains(defaultAID))
+			for (GPRegistryEntryPkg e : allPackages()) {
+				if (e.getModules().contains(defaultAID))
 					return e.getAID();
 			}
 			// Did not get a hit. Loop packages and look for prefixes
-			for (AIDRegistryEntry e : allPackages()) {
+			for (GPRegistryEntryPkg e : allPackages()) {
 				if (defaultAID.toString().startsWith(e.getAID().toString()))
 					return e.getAID();
 			}

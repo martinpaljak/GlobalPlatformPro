@@ -104,6 +104,9 @@ public final class GPTool {
 
 	private final static String OPT_KEY = "key";
 	private final static String OPT_KCV = "kcv";
+	private final static String OPT_KEY_MAC = "key-mac";
+	private final static String OPT_KEY_ENC = "key-enc";
+	private final static String OPT_KEY_KEK = "key-kek";
 
 	private final static String OPT_KEY_VERSION = "keyver";
 	private final static String OPT_KEY_ID = "keyid";
@@ -168,6 +171,10 @@ public final class GPTool {
 		// Key options
 		parser.accepts(OPT_KEY, "Specify card (master) key").withRequiredArg().withValuesConvertedBy(ArgMatchers.key());
 		parser.accepts(OPT_KCV, "Specify key check value").withRequiredArg().withValuesConvertedBy(ArgMatchers.hex());
+
+		parser.accepts(OPT_KEY_MAC, "Specify MAC key").withRequiredArg().withValuesConvertedBy(ArgMatchers.key());
+		parser.accepts(OPT_KEY_ENC, "Specify ENC key").withRequiredArg().withValuesConvertedBy(ArgMatchers.key());
+		parser.accepts(OPT_KEY_KEK, "Specify KEK key").withRequiredArg().withValuesConvertedBy(ArgMatchers.key());
 
 		parser.accepts(OPT_EMV, "Use EMV diversification");
 		parser.accepts(OPT_VISA2, "Use VISA2 diversification");
@@ -240,7 +247,7 @@ public final class GPTool {
 		}
 
 		// Normally assume a single master key
-		SessionKeyProvider keys;
+		final SessionKeyProvider keys;
 
 		// Use diversification *for the specified -key* if specified
 		Diversification div = Diversification.NONE;
@@ -272,10 +279,25 @@ public final class GPTool {
 				}
 			}
 			keys = PlaintextKeys.fromMasterKey(k, div);
+		} else if (args.has(OPT_KEY_MAC) || args.has(OPT_KEY_ENC) || args.has(OPT_KEY_KEK)) {
+			System.out.println("ATTENTION: Overriding default keys ...");
+			// Override some keys
+			GPKeySet ks = new GPKeySet(GPData.defaultKey);
+			if (args.has(OPT_KEY_MAC)) {
+				ks.setKey(KeyType.MAC, (GPKey) args.valueOf(OPT_KEY_MAC));
+			}
+			if (args.has(OPT_KEY_ENC)) {
+				ks.setKey(KeyType.ENC, (GPKey) args.valueOf(OPT_KEY_ENC));
+			}
+			if (args.has(OPT_KEY_KEK)) {
+				ks.setKey(KeyType.KEK, (GPKey) args.valueOf(OPT_KEY_KEK));
+			}
+			keys = PlaintextKeys.fromKeySet(ks);
 		} else {
 			// Use default test key with optional diversification.
 			keys = PlaintextKeys.fromMasterKey(GPData.defaultKey, div);
 		}
+
 
 		// FIXME: somehow expose this.
 		//		// Key ID and Version

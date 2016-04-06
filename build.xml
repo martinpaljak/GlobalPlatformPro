@@ -51,7 +51,7 @@
   </target>
   <!-- Package it into a nice little JAR -->
   <target name="dist" depends="make" description="generate the distribution">
-    <exec command="git describe --always --tags" output="build/pro/javacard/gp/version.txt"/>
+    <exec command="git describe --always --tags --long" output="build/pro/javacard/gp/version.txt"/>
     <java classname="proguard.ProGuard" fork="true" failonerror="true">
       <arg line="@globalplatform.pro"/>
       <classpath>

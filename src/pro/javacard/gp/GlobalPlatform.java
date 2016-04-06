@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.math.BigInteger;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -133,7 +134,7 @@ public class GlobalPlatform {
 	// Either 1 or 2 or 3
 	private int scpMajorVersion = 0;
 
-	private int blockSize = 255; // TODO: Check CardData as well.
+	private int blockSize = 255;
 	private GPKeySet sessionKeys;
 	private SCPWrapper wrapper = null;
 	private CardChannel channel = null;
@@ -287,8 +288,13 @@ public class GlobalPlatform {
 										if (tag.getTagNo() == 101) {
 											// Blocksize
 											ASN1OctetString blocksize = DEROctetString.getInstance(tag.getObject());
-											this.blockSize = blocksize.getOctets()[0] & 0xFF;
-											logger.debug("Auto-detected block size: " + blockSize);
+											int bs = new BigInteger(1, blocksize.getOctets()).intValue();
+											if (bs > 255) {
+												logger.debug("Ignoring auto-detected block size " + bs);
+											} else {
+												this.blockSize = bs;
+												logger.debug("Auto-detected block size: " + blockSize);
+											}
 										} else {
 											logger.warn("Unknown/unhandled tag in FCI proprietary data: " + HexUtils.bin2hex(tag.getEncoded()));
 										}

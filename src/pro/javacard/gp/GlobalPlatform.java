@@ -983,7 +983,8 @@ public class GlobalPlatform {
 		CommandAPDU cmd = new CommandAPDU(CLA_GP, INS_GET_STATUS, p1, p2, data, 256);
 		ResponseAPDU response = transmit(cmd);
 
-		// Workaround for legacy cards, like SCE 6.0
+		// Workaround for legacy cards, like SCE 6.0 FIXME: this does not work properly
+		// Find a different way to adjust the response parser without touching the overall spec mode
 		if (response.getSW() == 0x6A86 && spec != GPSpec.OP201) {
 			p2 = 0x00;
 			spec = GPSpec.OP201; // This will trigger the legacy response parser
@@ -995,6 +996,9 @@ public class GlobalPlatform {
 		if ((sw != ISO7816.SW_NO_ERROR) && (sw != 0x6310)) {
 			if (sw == 0x6A88) { // Referenced data not found
 				return response.getData(); // Should be empty array
+			}
+			if (sw == 0x6A86) { // if ISD is requested from SSD XXX
+				return response.getData();
 			}
 			throw new GPException(sw, "GET STATUS failed for " + HexUtils.bin2hex(cmd.getBytes()));
 		}

@@ -261,6 +261,8 @@ In regard to GlobalPlatform, the goal is to make simple operations like installi
 * Generic enquiries: martin@martinpaljak.net
 * For technical support:
   * re-run your failing command with ```-d -v -i``` switches and send the output, information about your card and applet/CAP
+  * **Only plaintext** logs. **NO** screenshots, pictures, word documents. **NO** generic questions about java/linux/windows/globalplatform.
+  * If unsure, first read about [asking questions](http://www.catb.org/esr/faqs/smart-questions.html)
 * [File an issue on Github](https://github.com/martinpaljak/GlobalPlatformPro/issues/new). Better yet - a pull request!
 * Want to **donate**? E-mail or paypal to martin@martinpaljak.net
 

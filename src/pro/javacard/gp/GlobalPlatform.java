@@ -372,7 +372,7 @@ public class GlobalPlatform {
 
 	public byte[] fetchCardData() throws CardException, GPException {
 		// Card data
-		CommandAPDU command = new CommandAPDU(ISO7816.CLA_ISO7816, ISO7816.INS_GET_DATA, 0x00, 0x66, 256);
+		CommandAPDU command = new CommandAPDU(CLA_GP, ISO7816.INS_GET_DATA, 0x00, 0x66, 256);
 		ResponseAPDU resp = always_transmit(command);
 		if (resp.getSW() == 0x6A86) {
 			logger.debug("GET DATA(CardData) not supported, Open Platform 2.0.1 card? " + GPUtils.swToString(resp.getSW()));
@@ -944,6 +944,11 @@ public class GlobalPlatform {
 
 			if (replace && (keys.get(0).getVersion() != tmpl.get(0).getVersion())) {
 				throw new IllegalArgumentException("Replacing keys and versions don't match existing?");
+			}
+		} else {
+			if (replace) {
+				logger.debug("No key template on card but trying to replace. Implying add");
+				replace = false;
 			}
 		}
 

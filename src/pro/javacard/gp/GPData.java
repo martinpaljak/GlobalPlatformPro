@@ -28,6 +28,7 @@ import java.util.List;
 
 import javax.smartcardio.CardException;
 
+import org.bouncycastle.asn1.ASN1ApplicationSpecific;
 import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
@@ -148,41 +149,35 @@ public final class GPData {
 
 	// GP 2.1.1 9.3.3.1
 	// GP 2.2.1 11.1.8
-	public static List<GPKeySet.GPKey> get_key_template_list(byte[] data, int offset) throws GPException {
+	public static List<GPKeySet.GPKey> get_key_template_list(byte[] data) throws GPException {
+		List<GPKey> r = new ArrayList<>();
 
-		// Return empty list if no data from card.
-		// FIXME: not really a clean solution
-		if (data == null || data.length == 0)
-			return new ArrayList<GPKey>();
-		// Expect template 0x0E
-		offset = TLVUtils.skip_tag_or_throw(data, offset, (byte) 0xe0);
-		offset = TLVUtils.skipLength(data, offset);
+		try (ASN1InputStream ais = new ASN1InputStream(data)) {
+			while (ais.available() > 0) {
+				ASN1ApplicationSpecific keys = (DERApplicationSpecific)ais.readObject();
+				// System.out.println(ASN1Dump.dumpAsString(keys, true));
 
-		ArrayList<GPKeySet.GPKey> list = new ArrayList<GPKey>();
-		while (offset < data.length) {
-			// Objects with tag 0xC0
-			offset = TLVUtils.skipTag(data, offset, (byte) 0xC0);
-			int component_len = offset + TLVUtils.get_length(data, offset);
-			offset = TLVUtils.skipLength(data, offset);
-
-			int id = TLVUtils.get_byte_value(data, offset);
-			offset++;
-			int version = TLVUtils.get_byte_value(data, offset);
-			offset++;
-			while (offset < component_len) {
-				// Check for extended format here.
-				int type = TLVUtils.get_byte_value(data, offset);
-				offset++;
-				if (type == 0xFF) {
-					throw new GPException("Extended format key template not yet supported!");
+				ASN1Sequence seq = (ASN1Sequence) keys.getObject(BERTags.SEQUENCE);
+				for (ASN1Encodable p: Lists.newArrayList(seq.iterator())) {
+					ASN1ApplicationSpecific key = (DERApplicationSpecific) p.toASN1Primitive();
+					byte [] tmpl = key.getContents();
+					if (tmpl.length < 4) {
+						throw new GPDataException("Key info template shorter than 4 bytes", tmpl);
+					}
+					int id = tmpl[0] & 0xFF;
+					int version = tmpl[1] & 0xFF;
+					int type = tmpl[2] & 0xFF;
+					int length = tmpl[3] & 0xFF;
+					if (type == 0xFF) {
+						throw new GPDataException("Extended key template not yet supported", tmpl);
+					}
+					r.add(new GPKey(version, id, length, type));
 				}
-				int length = TLVUtils.get_byte_value(data, offset);
-				offset++;
-				list.add(new GPKey(version, id, length, type));
-				break; // FIXME:
 			}
+		} catch (IOException | ClassCastException e) {
+			throw new GPDataException("Could not parse key template: " + e.getMessage(), e);
 		}
-		return list;
+		return r;
 	}
 
 	public static GPSpec get_version_from_card_data(byte[] data) throws GPException {

@@ -200,7 +200,7 @@ public final class GPTool {
 		try {
 			args = parser.parse(argv);
 			// Try to fetch all values so that format is checked before usage
-			for (String s: parser.recognizedOptions().keySet()) {args.valuesOf(s);}
+			// for (String s: parser.recognizedOptions().keySet()) {args.valuesOf(s);} // FIXME: scres up logging hack
 		} catch (OptionException e) {
 			if (e.getCause() != null) {
 				System.err.println(e.getMessage() + ": " + e.getCause().getMessage());
@@ -734,7 +734,6 @@ public final class GPTool {
 
 						// --lock
 						if (args.has(OPT_LOCK)) {
-
 							// XXX: this is ugly, we re-use ArgParser only to get diversification method
 							PlaintextKeys newkey = (PlaintextKeys) args.valueOf(OPT_LOCK);
 
@@ -745,7 +744,7 @@ public final class GPTool {
 								newkeys = PlaintextKeys.diversify(newkeys, gp.getDiversificationData(), newkey.diversifier, gp.getSCPVersion());
 							}
 
-							// Check that
+							// FIXME: Check that
 							int new_version = 1;
 
 							if (args.has(OPT_NEW_KEY_VERSION)) {

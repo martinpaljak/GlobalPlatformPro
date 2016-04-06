@@ -348,24 +348,32 @@ public class GlobalPlatform {
 		}
 	}
 
+	private ResponseAPDU always_transmit(CommandAPDU cmd) throws CardException, GPException {
+		if (wrapper != null) {
+			return transmit(cmd);
+		} else {
+			return channel.transmit(cmd);
+		}
+	}
 
 	public List<GPKeySet.GPKey> getKeyInfoTemplate() throws CardException, GPException {
+		// FIXME: this assumes selected ISD. We always request the version with tags (GP CLA)
 		// Key Information Template
 		CommandAPDU command = new CommandAPDU(CLA_GP, ISO7816.INS_GET_DATA, 0x00, 0xE0, 256);
-		ResponseAPDU resp = channel.transmit(command);
+		ResponseAPDU resp = always_transmit(command);
 
 		if (resp.getSW() == ISO7816.SW_NO_ERROR) {
-			return GPData.get_key_template_list(resp.getData(), SHORT_0);
+			return GPData.get_key_template_list(resp.getData());
 		} else {
-			logger.debug("GET DATA(Key Information Template) not supported");
+			logger.warn("GET DATA(Key Information Template) not supported");
 		}
-		return GPData.get_key_template_list(null, SHORT_0);
+		return GPData.get_key_template_list(null);
 	}
 
 	public byte[] fetchCardData() throws CardException, GPException {
 		// Card data
 		CommandAPDU command = new CommandAPDU(ISO7816.CLA_ISO7816, ISO7816.INS_GET_DATA, 0x00, 0x66, 256);
-		ResponseAPDU resp = channel.transmit(command);
+		ResponseAPDU resp = always_transmit(command);
 		if (resp.getSW() == 0x6A86) {
 			logger.debug("GET DATA(CardData) not supported, Open Platform 2.0.1 card? " + GPUtils.swToString(resp.getSW()));
 			return null;
@@ -859,9 +867,9 @@ public class GlobalPlatform {
 				cipher.init(Cipher.ENCRYPT_MODE, kek.getKey());
 				baos.write(cipher.doFinal(key.getValue(), 0, 16));
 				if (withCheck) {
-					// key check value, 3 bytes with new key over 8 null bytes
-					baos.write(3);
-					baos.write(GPCrypto.kcv_3des(key));
+					byte[] kcv = GPCrypto.kcv_3des(key);
+					baos.write(kcv.length);
+					baos.write(kcv);
 				} else {
 					baos.write(0);
 				}
@@ -941,13 +949,13 @@ public class GlobalPlatform {
 
 		// Construct APDU
 		int P1 = 0x00; // New key in single command unless replace
-		if (replace)
+		if (replace) {
 			P1 = keys.get(0).getVersion();
-
+		}
 		int P2 = keys.get(0).getID();
-		if (keys.size() > 1)
+		if (keys.size() > 1) {
 			P2 |= 0x80;
-
+		}
 		ByteArrayOutputStream bo = new ByteArrayOutputStream();
 		try {
 			// New key version

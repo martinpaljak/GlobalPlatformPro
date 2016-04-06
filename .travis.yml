@@ -27,7 +27,6 @@ addons:
   coverity_scan:
     project:
       name: martinpaljak/GlobalPlatformPro
-      description: GlobalPlatformPro from javacard.pro
     notification_email: martin@martinpaljak.net
     build_command_prepend: ant fetch
     build_command: ant compile

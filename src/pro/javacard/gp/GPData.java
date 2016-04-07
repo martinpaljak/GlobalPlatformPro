@@ -204,6 +204,8 @@ public final class GPData {
 								return GPSpec.GP211;
 							} else if (oid.equalsIgnoreCase("1.2.840.114283.2.2.2")) {
 								return GPSpec.GP22;
+							} else if (oid.equals("1.2.840.114283.2.2.2.1")) {
+								return GPSpec.GP22; // TODO: no need to diffrentiate currently
 							} else {
 								throw new GPDataException("Invalid GP version OID: " + oid);
 							}

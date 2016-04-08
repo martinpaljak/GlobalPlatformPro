@@ -36,7 +36,7 @@ ant
 
 #### Warning about correct keying
 
-Command line samples assume default test keys of ```40..4F```. If you need a custom key, specify it with `-key`. You need to know the details or ask your card provider. Some cards require key diversification with ```-emv``` or ```-visa2``` (you should be notified if that's the case). A Key Check Value can be given with `-kcv` option.
+Command line samples assume default test keys of `40..4F`. If you need a custom key, specify it with `-key` (you can give separate keyset components with `-key-mac`, `-key-enc` and `-key-kek`. You need to know the details or ask your card provider. Some cards require key diversification with `-emv` or `-visa2` (ask your vendor if unsure). A Key Check Value can be given with `-kcv` option.
 
 #### Generic information
 
@@ -44,17 +44,18 @@ Command line samples assume default test keys of ```40..4F```. If you need a cus
 
         java -jar gp.jar -info
         
-   * On Windows just replace ```java -jar gp.jar``` with ```gp.exe``` like this:
+   * On Windows just replace `java -jar gp.jar` with `gp.exe` like this:
 
             gp.exe -info
 
    * On Linux it is easier to add an alias to the shell like this:
 
             alias gp="java -jar $PWD/gp.jar"
-            # Now you can avoid typing java -jar and gp works from any folder
+            # Now you can avoid typing `java -jar` and `gp` works from any folder
             gp -h
 
 #### List / install / delete applets
+> Please consult the help output for options that are not described here
 
  * List applets (this and following commands open the secure channel and thus can brick your card with wrong keys!):
 

@@ -127,6 +127,19 @@ public class PlaintextKeys implements SessionKeyProvider {
 		return data;
 	}
 
+	public static byte[] fillVisa2(byte[] init_update_response, KeyType key) {
+		byte[] data = new byte[16];
+		System.arraycopy(init_update_response, 0, data, 0, 4);
+		System.arraycopy(init_update_response, 8, data, 4, 2);
+		data[6] = (byte) 0xF0;
+		data[7] = 0x01;
+		System.arraycopy(init_update_response, 0, data, 8, 4);
+		System.arraycopy(init_update_response, 8, data, 12, 2);
+		data[14] = (byte) 0x0F;
+		data[15] = 0x01;
+		return data;
+	}
+
 	public static byte[] fillEmv(byte[] init_update_response, KeyType key) {
 		byte[] data = new byte[16];
 		// 6 rightmost bytes of init update response (which is 10 bytes)

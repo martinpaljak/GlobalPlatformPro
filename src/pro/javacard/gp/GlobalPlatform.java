@@ -48,7 +48,6 @@ import javax.smartcardio.CardException;
 import javax.smartcardio.CommandAPDU;
 import javax.smartcardio.ResponseAPDU;
 
-import org.bouncycastle.asn1.ASN1ApplicationSpecific;
 import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1OctetString;
@@ -71,7 +70,6 @@ import pro.javacard.gp.GPKeySet.Diversification;
 import pro.javacard.gp.GPKeySet.GPKey;
 import pro.javacard.gp.GPKeySet.GPKey.Type;
 import pro.javacard.gp.GPRegistryEntry.Kind;
-import pro.javacard.gp.GPRegistryEntry.Privileges;
 
 /**
  * The main Global Platform class. Provides most of the Global Platform
@@ -979,7 +977,8 @@ public class GlobalPlatform {
 	}
 
 
-	private byte[] getConcatenatedStatus(int p1, byte[] data) throws CardException, GPException {
+	// TODO: The way registry parsing mode is piggybacked to the registry class is not really nice.
+	private byte[] getConcatenatedStatus(GPRegistry reg, int p1, byte[] data) throws CardException, GPException {
 		int p2 = 0x0;
 
 		if (spec != GPSpec.OP201) {
@@ -992,7 +991,7 @@ public class GlobalPlatform {
 		// Find a different way to adjust the response parser without touching the overall spec mode
 		if (response.getSW() == 0x6A86 && spec != GPSpec.OP201) {
 			p2 = 0x00;
-			spec = GPSpec.OP201; // This will trigger the legacy response parser
+			reg.tags = false;
 			cmd = new CommandAPDU(CLA_GP, INS_GET_STATUS, p1, p2, data, 256);
 			response = transmit(cmd);
 		}
@@ -1028,142 +1027,26 @@ public class GlobalPlatform {
 		return bo.toByteArray();
 	}
 
-	private void populate_legacy(GPRegistry registry, byte[] data, Kind type) throws GPDataException {
-		int offset = 0;
-		try {
-			while (offset < data.length) {
-				int len = data[offset++];
-				AID aid = new AID(data, offset, len);
-				offset += len;
-				int lifecycle = (data[offset++] & 0xFF);
-				byte privileges = data[offset++];
-
-				if (type == Kind.IssuerSecurityDomain || type == Kind.Application) {
-					GPRegistryEntryApp app = new GPRegistryEntryApp();
-					app.setType(type);
-					app.setAID(aid);
-					app.setPrivileges(Privileges.fromByte(privileges));
-					app.setLifeCycle(lifecycle);
-					registry.add(app);
-				} else if (type == Kind.ExecutableLoadFile) {
-					if (privileges != 0x00) {
-						throw new GPDataException("Privileges of Load File is not 0x00");
-					}
-					GPRegistryEntryPkg pkg = new GPRegistryEntryPkg();
-					pkg.setAID(aid);
-					pkg.setLifeCycle(lifecycle);
-					pkg.setType(type);
-					// Modules
-					if (spec != GPSpec.OP201) {
-						int num = data[offset++];
-						for (int i = 0; i < num; i++) {
-							len = data[offset++] & 0xFF;
-							aid = new AID(data, offset, len);
-							offset += len;
-							pkg.addModule(aid);
-						}
-					}
-					registry.add(pkg);
-				}
-			}
-		}
-		catch (ArrayIndexOutOfBoundsException e) {
-			throw new GPDataException("Invalid response to GET STATUS", e);
-		}
-	}
-
-	private void populate_tags(GPRegistry registry, byte[] data, Kind type) throws GPDataException {
-		try (ASN1InputStream ais = new ASN1InputStream(data)) {
-			while (ais.available() > 0) {
-				DERApplicationSpecific registry_data = (DERApplicationSpecific) ais.readObject();
-				// System.out.println(ASN1Dump.dumpAsString(registry_data, true));
-				if (registry_data.getApplicationTag() == 3) {
-					// XXX: a bit ugly and wasting code, we populate both objects but add only one
-					GPRegistryEntryApp app = new GPRegistryEntryApp();
-					GPRegistryEntryPkg pkg = new GPRegistryEntryPkg();
-					ASN1Sequence seq = (ASN1Sequence) registry_data.getObject(BERTags.SEQUENCE);
-					for (ASN1Encodable p: Lists.newArrayList(seq.iterator())) {
-						if (p instanceof DERApplicationSpecific) {
-							ASN1ApplicationSpecific entry = DERApplicationSpecific.getInstance(p);
-							if (entry.getApplicationTag() == 15) {
-								AID aid = new AID(entry.getContents());
-								app.setAID(aid);
-								pkg.setAID(aid);
-							} else if (entry.getApplicationTag() == 5) {
-								// privileges
-								Privileges privs = Privileges.fromBytes(entry.getContents());
-								app.setPrivileges(privs);
-							} else if (entry.getApplicationTag() == 4) {
-								AID a = new AID(entry.getContents());
-								app.setLoadFile(a);
-							} else if (entry.getApplicationTag() == 12) {
-								AID a = new AID(entry.getContents());
-								app.setDomain(a);
-								pkg.setDomain(a);
-							} else if (entry.getApplicationTag() == 14) {
-								pkg.setVersion(entry.getContents());
-							} else {
-								throw new GPDataException("Invalid tag", entry.getEncoded());
-							}
-						} else if (p instanceof DERTaggedObject) {
-							ASN1TaggedObject tag = DERTaggedObject.getInstance(p);
-							if (tag.getTagNo() == 112) { // lifecycle
-								ASN1OctetString lc = DEROctetString.getInstance(tag, false);
-								app.setLifeCycle(lc.getOctets()[0] & 0xFF);
-								pkg.setLifeCycle(lc.getOctets()[0] & 0xFF);
-							} else if (tag.getTagNo() == 4) { // Executable module AID
-								ASN1OctetString lc = DEROctetString.getInstance(tag, false);
-								AID a = new AID(lc.getOctets());
-								pkg.addModule(a);
-							} else {
-								logger.warn("Unknown data: " + HexUtils.bin2hex(tag.getEncoded()));
-							}
-						}
-					}
-					// Construct entry
-					if (type == Kind.ExecutableLoadFile) {
-						pkg.setType(type);
-						registry.add(pkg);
-					} else {
-						app.setType(type);
-						registry.add(app);
-					}
-				} else {
-					throw new GPDataException("Invalid tag", registry_data.getEncoded());
-				}
-			}
-		} catch (IOException e) {
-			throw new GPDataException("Invalid data", e);
-		}
-	}
-
-	private void parse_status_response(GPRegistry reg, byte[] data, Kind type) throws GPDataException {
-		if (spec == GPSpec.OP201) {
-			populate_legacy(reg, data, type);
-		} else {
-			populate_tags(reg, data, type);
-		}
-	}
 
 	private GPRegistry getStatus() throws CardException, GPException {
 		GPRegistry registry = new GPRegistry();
 
 		// Issuer security domain
-		byte[] data = getConcatenatedStatus(0x80, new byte[] { 0x4F, 0x00 });
-		parse_status_response(registry, data, Kind.IssuerSecurityDomain);
+		byte[] data = getConcatenatedStatus(registry, 0x80, new byte[] { 0x4F, 0x00 });
+		registry.parse(data, Kind.IssuerSecurityDomain, spec);
 
 		// Apps and security domains
-		data = getConcatenatedStatus(0x40, new byte[] { 0x4F, 0x00 });
-		parse_status_response(registry, data, Kind.Application);
+		data = getConcatenatedStatus(registry, 0x40, new byte[] { 0x4F, 0x00 });
+		registry.parse(data, Kind.Application, spec);
 
 		// Load files
-		data = getConcatenatedStatus(0x20, new byte[] { 0x4F, 0x00 });
-		parse_status_response(registry, data, Kind.ExecutableLoadFile);
+		data = getConcatenatedStatus(registry, 0x20, new byte[] { 0x4F, 0x00 });
+		registry.parse(data, Kind.ExecutableLoadFile, spec);
 
-		if (spec != GPSpec.OP201) {
+		if (spec != GPSpec.OP201) { // TODO: remove
 			// Load files with modules
-			data = getConcatenatedStatus(0x10, new byte[] { 0x4F, 0x00 });
-			parse_status_response(registry, data, Kind.ExecutableLoadFile);
+			data = getConcatenatedStatus(registry, 0x10, new byte[] { 0x4F, 0x00 });
+			registry.parse(data, Kind.ExecutableLoadFile, spec);
 		}
 		return registry;
 	}

@@ -22,13 +22,32 @@
 
 package pro.javacard.gp;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 
+import org.bouncycastle.asn1.ASN1ApplicationSpecific;
+import org.bouncycastle.asn1.ASN1Encodable;
+import org.bouncycastle.asn1.ASN1InputStream;
+import org.bouncycastle.asn1.ASN1OctetString;
+import org.bouncycastle.asn1.ASN1Sequence;
+import org.bouncycastle.asn1.ASN1TaggedObject;
+import org.bouncycastle.asn1.BERTags;
+import org.bouncycastle.asn1.DERApplicationSpecific;
+import org.bouncycastle.asn1.DEROctetString;
+import org.bouncycastle.asn1.DERTaggedObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.Lists;
+
+import apdu4j.HexUtils;
 import pro.javacard.gp.GPRegistryEntry.Kind;
 import pro.javacard.gp.GPRegistryEntry.Privilege;
+import pro.javacard.gp.GPRegistryEntry.Privileges;
+import pro.javacard.gp.GlobalPlatform.GPSpec;
 
 /**
  * Convenience class managing a vector of {@link GPRegistryEntry
@@ -38,7 +57,8 @@ import pro.javacard.gp.GPRegistryEntry.Privilege;
  * {@code for(GPRegistryEntry e : registry) ...}.
  */
 public class GPRegistry implements Iterable<GPRegistryEntry> {
-
+	private static Logger logger = LoggerFactory.getLogger(GPRegistry.class);
+	boolean tags = true; // XXX (visibility) true if newer tags format should be used for parsing, false otherwise
 	LinkedHashMap<AID, GPRegistryEntry> entries = new LinkedHashMap<AID, GPRegistryEntry>();
 
 	/**
@@ -151,5 +171,122 @@ public class GPRegistry implements Iterable<GPRegistryEntry> {
 			}
 		}
 		return null;
+	}
+
+	private void populate_legacy(byte[] data, Kind type, GPSpec spec) throws GPDataException {
+		int offset = 0;
+		try {
+			while (offset < data.length) {
+				int len = data[offset++];
+				AID aid = new AID(data, offset, len);
+				offset += len;
+				int lifecycle = (data[offset++] & 0xFF);
+				byte privileges = data[offset++];
+
+				if (type == Kind.IssuerSecurityDomain || type == Kind.Application) {
+					GPRegistryEntryApp app = new GPRegistryEntryApp();
+					app.setType(type);
+					app.setAID(aid);
+					app.setPrivileges(Privileges.fromByte(privileges));
+					app.setLifeCycle(lifecycle);
+					add(app);
+				} else if (type == Kind.ExecutableLoadFile) {
+					if (privileges != 0x00) {
+						throw new GPDataException("Privileges of Load File is not 0x00");
+					}
+					GPRegistryEntryPkg pkg = new GPRegistryEntryPkg();
+					pkg.setAID(aid);
+					pkg.setLifeCycle(lifecycle);
+					pkg.setType(type);
+					// Modules TODO: remove
+					if (spec != GPSpec.OP201) {
+						int num = data[offset++];
+						for (int i = 0; i < num; i++) {
+							len = data[offset++] & 0xFF;
+							aid = new AID(data, offset, len);
+							offset += len;
+							pkg.addModule(aid);
+						}
+					}
+					add(pkg);
+				}
+			}
+		}
+		catch (ArrayIndexOutOfBoundsException e) {
+			throw new GPDataException("Invalid response to GET STATUS", e);
+		}
+	}
+
+	private void populate_tags(byte[] data, Kind type) throws GPDataException {
+		try (ASN1InputStream ais = new ASN1InputStream(data)) {
+			while (ais.available() > 0) {
+				DERApplicationSpecific registry_data = (DERApplicationSpecific) ais.readObject();
+				// System.out.println(ASN1Dump.dumpAsString(registry_data, true));
+				if (registry_data.getApplicationTag() == 3) {
+					// XXX: a bit ugly and wasting code, we populate both objects but add only one
+					GPRegistryEntryApp app = new GPRegistryEntryApp();
+					GPRegistryEntryPkg pkg = new GPRegistryEntryPkg();
+					ASN1Sequence seq = (ASN1Sequence) registry_data.getObject(BERTags.SEQUENCE);
+					for (ASN1Encodable p: Lists.newArrayList(seq.iterator())) {
+						if (p instanceof DERApplicationSpecific) {
+							ASN1ApplicationSpecific entry = DERApplicationSpecific.getInstance(p);
+							if (entry.getApplicationTag() == 15) {
+								AID aid = new AID(entry.getContents());
+								app.setAID(aid);
+								pkg.setAID(aid);
+							} else if (entry.getApplicationTag() == 5) {
+								// privileges
+								Privileges privs = Privileges.fromBytes(entry.getContents());
+								app.setPrivileges(privs);
+							} else if (entry.getApplicationTag() == 4) {
+								AID a = new AID(entry.getContents());
+								app.setLoadFile(a);
+							} else if (entry.getApplicationTag() == 12) {
+								AID a = new AID(entry.getContents());
+								app.setDomain(a);
+								pkg.setDomain(a);
+							} else if (entry.getApplicationTag() == 14) {
+								pkg.setVersion(entry.getContents());
+							} else {
+								throw new GPDataException("Invalid tag", entry.getEncoded());
+							}
+						} else if (p instanceof DERTaggedObject) {
+							ASN1TaggedObject tag = DERTaggedObject.getInstance(p);
+							if (tag.getTagNo() == 112) { // lifecycle
+								ASN1OctetString lc = DEROctetString.getInstance(tag, false);
+								app.setLifeCycle(lc.getOctets()[0] & 0xFF);
+								pkg.setLifeCycle(lc.getOctets()[0] & 0xFF);
+							} else if (tag.getTagNo() == 4) { // Executable module AID
+								ASN1OctetString lc = DEROctetString.getInstance(tag, false);
+								AID a = new AID(lc.getOctets());
+								pkg.addModule(a);
+							} else {
+								logger.warn("Unknown data: " + HexUtils.bin2hex(tag.getEncoded()));
+							}
+						}
+					}
+					// Construct entry
+					if (type == Kind.ExecutableLoadFile) {
+						pkg.setType(type);
+						add(pkg);
+					} else {
+						app.setType(type);
+						add(app);
+					}
+				} else {
+					throw new GPDataException("Invalid tag", registry_data.getEncoded());
+				}
+			}
+		} catch (IOException e) {
+			throw new GPDataException("Invalid data", e);
+		}
+	}
+
+	public void parse(byte[] data, Kind type, GPSpec spec) throws GPDataException {
+		if (tags) {
+			populate_tags(data, type);
+		} else {
+			populate_legacy(data, type, spec);
+		}
 	}
 }

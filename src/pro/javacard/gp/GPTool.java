@@ -610,18 +610,22 @@ public final class GPTool {
 
 						// --domain <AID>
 						if (args.has(OPT_DOMAIN)) {
-							if (!args.has(OPT_PACKAGE) || !args.has(OPT_APPLET)) {
-								fail("Need --" + OPT_PACKAGE + " and --" + OPT_APPLET + " with --" + OPT_DOMAIN);
+							// Default AID-s
+							AID packageAID = new AID("A0000001515350");
+							AID appletAID = new AID("A000000151535041");
+							if (args.has(OPT_PACKAGE) && args.has(OPT_APPLET)) {
+								packageAID = (AID) args.valueOf(OPT_PACKAGE);
+								appletAID = (AID) args.valueOf(OPT_APPLET);
+							} else {
+								System.out.println("Note: using default AID-s for SSD: " + appletAID + " from " + packageAID);
 							}
-							// AID-s
-							AID packageAID = (AID) args.valueOf(OPT_PACKAGE);
-							AID appletAID = (AID) args.valueOf(OPT_APPLET);
 							AID instanceAID = (AID) args.valueOf(OPT_DOMAIN);
 
 							// Extra privileges
 							byte priv = getInstPrivs(args);
 							priv |= GPData.securityDomainPriv;
-							// shoot
+
+							// shoot TODO: 3 byte privileges
 							gp.installAndMakeSelectable(packageAID, appletAID, instanceAID, priv, null, null);
 						}
 

@@ -824,7 +824,10 @@ public final class GPTool {
 
 	// FIXME: get rid
 	private static Privileges getInstPrivs(OptionSet args) {
-		Privileges privs = getPrivs((String)args.valueOf(OPT_PRIVS));
+		Privileges privs = new Privileges();
+		if (args.has(OPT_PRIVS)) {
+			addPrivs(privs, (String)args.valueOf(OPT_PRIVS));
+		}
 		if (args.has(OPT_DEFAULT)) {
 			privs.add(Privilege.CardReset);
 		}
@@ -835,8 +838,7 @@ public final class GPTool {
 		return privs;
 	}
 
-	private static Privileges getPrivs(String v) {
-		Privileges privs = new Privileges();
+	private static Privileges addPrivs(Privileges privs, String v) {
 		String [] parts = v.split(",");
 		for (String s: parts) {
 			boolean found = false;

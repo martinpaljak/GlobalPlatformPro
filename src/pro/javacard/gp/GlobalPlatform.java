@@ -70,6 +70,7 @@ import pro.javacard.gp.GPKeySet.Diversification;
 import pro.javacard.gp.GPKeySet.GPKey;
 import pro.javacard.gp.GPKeySet.GPKey.Type;
 import pro.javacard.gp.GPRegistryEntry.Kind;
+import pro.javacard.gp.GPRegistryEntry.Privileges;
 
 /**
  * The main Global Platform class. Provides most of the Global Platform
@@ -706,6 +707,11 @@ public class GlobalPlatform {
 	public void installAndMakeSelectable(AID packageAID, AID appletAID, AID instanceAID, byte privileges, byte[] installParams,
 			byte[] installToken) throws GPException, CardException {
 
+		installAndMakeSelectable(packageAID, appletAID, instanceAID, Privileges.fromByte(privileges), installParams, installToken);
+	}
+
+	public void installAndMakeSelectable(AID packageAID, AID appletAID, AID instanceAID, Privileges privileges, byte[] installParams, byte[] installToken) throws GPException, CardException {
+
 		if (instanceAID == null) {
 			instanceAID = appletAID;
 		}
@@ -718,6 +724,7 @@ public class GlobalPlatform {
 		if (installToken == null) {
 			installToken = new byte[0];
 		}
+		byte [] privs = privileges.toBytes();
 		ByteArrayOutputStream bo = new ByteArrayOutputStream();
 		try {
 			bo.write(packageAID.getLength());
@@ -729,8 +736,9 @@ public class GlobalPlatform {
 			bo.write(instanceAID.getLength());
 			bo.write(instanceAID.getBytes());
 
-			bo.write(1);
-			bo.write(privileges);
+
+			bo.write(privs.length);
+			bo.write(privs);
 
 			bo.write(installParams.length);
 			bo.write(installParams);
@@ -746,6 +754,7 @@ public class GlobalPlatform {
 		GPException.check(response, "Install for Install and make selectable failed");
 		dirty = true;
 	}
+
 
 	/**
 	 * Sends STORE DATA commands to the application identified

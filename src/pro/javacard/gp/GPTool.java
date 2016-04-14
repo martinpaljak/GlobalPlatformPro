@@ -38,6 +38,8 @@ import javax.smartcardio.CardTerminals.State;
 import javax.smartcardio.CommandAPDU;
 import javax.smartcardio.TerminalFactory;
 
+import com.google.common.base.Joiner;
+
 import apdu4j.APDUReplayProvider;
 import apdu4j.HexUtils;
 import apdu4j.LoggingCardTerminal;
@@ -50,6 +52,8 @@ import pro.javacard.gp.GPKeySet.Diversification;
 import pro.javacard.gp.GPKeySet.GPKey;
 import pro.javacard.gp.GPKeySet.GPKey.Type;
 import pro.javacard.gp.GPRegistryEntry.Kind;
+import pro.javacard.gp.GPRegistryEntry.Privilege;
+import pro.javacard.gp.GPRegistryEntry.Privileges;
 import pro.javacard.gp.GlobalPlatform.APDUMode;
 import pro.javacard.gp.GlobalPlatform.GPSpec;
 
@@ -75,6 +79,8 @@ public final class GPTool {
 	private final static String OPT_LOCK_CARD = "lock-card";
 	private final static String OPT_UNLOCK_CARD = "unlock-card";
 	private final static String OPT_STORE_DATA = "store-data";
+	private final static String OPT_PRIVS = "privs";
+	private final static String OPT_LIST_PRIVS = "list-privs";
 	private final static String OPT_PARAMS = "params";
 	private final static String OPT_SECURED = "secured";
 	private final static String OPT_INITIALIZED = "initialized";
@@ -146,6 +152,8 @@ public final class GPTool {
 
 		parser.accepts(OPT_INSTALL, "Install applet(s) from CAP").withOptionalArg().ofType(File.class);
 		parser.accepts(OPT_PARAMS, "Installation parameters").withRequiredArg().withValuesConvertedBy(ArgMatchers.hex());
+		parser.accepts(OPT_PRIVS, "Specify privileges for installation").withRequiredArg();
+		parser.accepts(OPT_LIST_PRIVS, "List known privileges");
 
 		parser.accepts(OPT_UNINSTALL, "Uninstall applet/package").withRequiredArg().ofType(File.class);
 		parser.accepts(OPT_DEFAULT, "Indicate Default Selected privilege");
@@ -318,6 +326,11 @@ public final class GPTool {
 				System.out.println("**** CAP info of " + capfile.getName());
 				cap.dump(System.out);
 			}
+		}
+
+		if (args.has(OPT_LIST_PRIVS)) {
+			System.out.println("# Known privileges:");
+			System.out.println(Joiner.on("\n").join(Privilege.values()));
 		}
 
 		// Now actually talk to possible terminals
@@ -613,6 +626,8 @@ public final class GPTool {
 							// Default AID-s
 							AID packageAID = new AID("A0000001515350");
 							AID appletAID = new AID("A000000151535041");
+
+							// Override if necessary
 							if (args.has(OPT_PACKAGE) && args.has(OPT_APPLET)) {
 								packageAID = (AID) args.valueOf(OPT_PACKAGE);
 								appletAID = (AID) args.valueOf(OPT_APPLET);
@@ -622,11 +637,11 @@ public final class GPTool {
 							AID instanceAID = (AID) args.valueOf(OPT_DOMAIN);
 
 							// Extra privileges
-							byte priv = getInstPrivs(args);
-							priv |= GPData.securityDomainPriv;
+							Privileges privs= getInstPrivs(args);
+							privs.add(Privilege.SecurityDomain);
 
-							// shoot TODO: 3 byte privileges
-							gp.installAndMakeSelectable(packageAID, appletAID, instanceAID, priv, null, null);
+							// shoot
+							gp.installAndMakeSelectable(packageAID, appletAID, instanceAID, privs, null, null);
 						}
 
 						// --store-data <XX>
@@ -806,13 +821,35 @@ public final class GPTool {
 		}
 		System.exit(0);
 	}
-	private static byte getInstPrivs(OptionSet args) {
-		byte privs = 0x00;
+
+	// FIXME: get rid
+	private static Privileges getInstPrivs(OptionSet args) {
+		Privileges privs = getPrivs((String)args.valueOf(OPT_PRIVS));
 		if (args.has(OPT_DEFAULT)) {
-			privs |= GPData.defaultSelectedPriv;
+			privs.add(Privilege.CardReset);
 		}
 		if (args.has(OPT_TERMINATE)) {
-			privs |= GPData.cardLockPriv | GPData.cardTerminatePriv;
+			privs.add(Privilege.CardLock);
+			privs.add(Privilege.CardTerminate);
+		}
+		return privs;
+	}
+
+	private static Privileges getPrivs(String v) {
+		Privileges privs = new Privileges();
+		String [] parts = v.split(",");
+		for (String s: parts) {
+			boolean found = false;
+			for (Privilege p: Privilege.values()) {
+				if (s.trim().equalsIgnoreCase(p.name())) {
+					found = true;
+					privs.add(p);
+					break;
+				}
+			}
+			if (!found) {
+				throw new IllegalArgumentException("Unknown privilege: " + s.trim());
+			}
 		}
 		return privs;
 	}

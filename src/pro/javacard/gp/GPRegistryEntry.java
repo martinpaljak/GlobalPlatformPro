@@ -182,6 +182,7 @@ public class GPRegistryEntry {
 		private EnumSet<Privilege> privs = EnumSet.noneOf(Privilege.class);
 
 		// TODO: implement GP 2.2 table 6.2
+		// TODO: bitmasks as symbolics, KAT tests
 		// See GP 2.2.1 Tables 11-7, 11-8, 11-9
 		// See GP 2.1.1 Table 9-7 (matches 2.2 Table 11-7)
 		public static Privileges fromBytes(byte[] data) throws GPDataException {
@@ -266,8 +267,81 @@ public class GPRegistryEntry {
 			return fromBytes(new byte[]{b});
 		}
 		public byte[] toBytes() {
-			// TODO
-			return new byte[0];
+
+			EnumSet<Privilege> p = EnumSet.copyOf(privs);
+			int b1 = 0x00;
+			if (p.remove(Privilege.SecurityDomain)) {
+				b1 |= 0x80;
+			}
+			if (p.remove(Privilege.DAPVerification)) {
+				b1 |= 0xC0;
+			}
+			if (p.remove(Privilege.DelegatedManagement)) {
+				b1 |= 0xA0;
+			}
+			if (p.remove(Privilege.CardLock)) {
+				b1 |= 0x10;
+			}
+			if (p.remove(Privilege.CardTerminate)) {
+				b1 |= 0x8;
+			}
+			if (p.remove(Privilege.CardReset)) {
+				b1 |= 0x4;
+			}
+			if (p.remove(Privilege.CVMManagement)) {
+				b1 |= 0x2;
+			}
+			if (p.remove(Privilege.MandatedDAPVerification)) {
+				b1 |= 0xC1;
+			}
+
+			// Fits in one byte
+			if (p.isEmpty()) {
+				return new byte[]{(byte) (b1 &0xFF)};
+			}
+
+			// Second
+			int b2 = 0x00;
+			if (p.remove(Privilege.TrustedPath)) {
+				b2 |= 0x80;
+			}
+			if (p.remove(Privilege.AuthorizedManagement)) {
+				b2 |= 0x40;
+			}
+			if (p.remove(Privilege.TokenVerification)) {
+				b2 |= 0x20;
+			}
+			if (p.remove(Privilege.GlobalDelete)) {
+				b2 |= 0x10;
+			}
+			if (p.remove(Privilege.GlobalLock)) {
+				b2 |= 0x8;
+			}
+			if (p.remove(Privilege.GlobalRegistry)) {
+				b2 |= 0x4;
+			}
+			if (p.remove(Privilege.FinalApplication)) {
+				b2 |= 0x2;
+			}
+			if (p.remove(Privilege.GlobalService)) {
+				b2 |= 0x1;
+			}
+
+			// Third
+			int b3 = 0x00;
+			if (p.remove(Privilege.ReceiptGeneration)) {
+				b3 |= 0x80;
+			}
+			if (p.remove(Privilege.CipheredLoadFileDataBlock)) {
+				b3 |= 0x40;
+			}
+			if (p.remove(Privilege.ContactlessActivation)) {
+				b3 |= 0x20;
+			}
+			if (p.remove(Privilege.ContactlessSelfActivation)) {
+				b3 |= 0x10;
+			}
+			return new byte[]{(byte)(b1 & 0xFF), (byte)(b2 & 0xFF),  (byte)(b3 & 0xFF) };
 		}
 
 		public String toString() {
@@ -275,6 +349,9 @@ public class GPRegistryEntry {
 		}
 		public boolean has(Privilege p) {
 			return privs.contains(p);
+		}
+		public void add(Privilege p) {
+			privs.add(p);
 		}
 		public boolean isEmpty() {
 			return privs.size() == 0;

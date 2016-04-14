@@ -1011,13 +1011,12 @@ public class GlobalPlatform {
 
 		int sw = response.getSW();
 		if ((sw != ISO7816.SW_NO_ERROR) && (sw != 0x6310)) {
-			if (sw == 0x6A88) { // Referenced data not found
-				return response.getData(); // Should be empty array
-			}
-			if (sw == 0x6A86) { // if ISD is requested from SSD XXX
-				return response.getData();
-			}
-			throw new GPException(sw, "GET STATUS failed for " + HexUtils.bin2hex(cmd.getBytes()));
+			// Possible values:
+			// 0x6A88 - referenced data not found
+			// 0x6A86 - no tags support or ISD asked from SSD
+			// 0a6A81 - Same as 6A88 ?
+			logger.warn("GET STATUS failed for " + HexUtils.bin2hex(cmd.getBytes()) + " with " + Integer.toHexString(sw));
+			return response.getData();
 		}
 
 		ByteArrayOutputStream bo = new ByteArrayOutputStream();
@@ -1049,20 +1048,20 @@ public class GlobalPlatform {
 		}
 		// Issuer security domain
 		byte[] data = getConcatenatedStatus(registry, 0x80, new byte[] { 0x4F, 0x00 });
-		registry.parse(data, Kind.IssuerSecurityDomain, spec);
+		registry.parse(0x80, data, Kind.IssuerSecurityDomain, spec);
 
 		// Apps and security domains
 		data = getConcatenatedStatus(registry, 0x40, new byte[] { 0x4F, 0x00 });
-		registry.parse(data, Kind.Application, spec);
+		registry.parse(0x40, data, Kind.Application, spec);
 
 		// Load files
 		data = getConcatenatedStatus(registry, 0x20, new byte[] { 0x4F, 0x00 });
-		registry.parse(data, Kind.ExecutableLoadFile, spec);
+		registry.parse(0x20, data, Kind.ExecutableLoadFile, spec);
 
 		if (spec != GPSpec.OP201) { // TODO: remove
 			// Load files with modules
 			data = getConcatenatedStatus(registry, 0x10, new byte[] { 0x4F, 0x00 });
-			registry.parse(data, Kind.ExecutableLoadFile, spec);
+			registry.parse(0x10, data, Kind.ExecutableLoadFile, spec);
 		}
 		return registry;
 	}

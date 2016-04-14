@@ -342,5 +342,6 @@ public class CapFile {
 		}
 		out.println("Total code size: " + getCodeLength(false) + " bytes (" + getCodeLength(true) + " with debug)");
 		out.println("SHA256 (code): " + HexUtils.bin2hex(getLoadFileDataHash("SHA-256", false)));
+		out.println("SHA1   (code): " + HexUtils.bin2hex(getLoadFileDataHash("SHA-1", false)));
 	}
 }

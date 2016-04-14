@@ -173,7 +173,7 @@ public class GPRegistry implements Iterable<GPRegistryEntry> {
 		return null;
 	}
 
-	private void populate_legacy(byte[] data, Kind type, GPSpec spec) throws GPDataException {
+	private void populate_legacy(int p1, byte[] data, Kind type, GPSpec spec) throws GPDataException {
 		int offset = 0;
 		try {
 			while (offset < data.length) {
@@ -199,7 +199,7 @@ public class GPRegistry implements Iterable<GPRegistryEntry> {
 					pkg.setLifeCycle(lifecycle);
 					pkg.setType(type);
 					// Modules TODO: remove
-					if (spec != GPSpec.OP201) {
+					if (spec != GPSpec.OP201 && p1 != 0x20) {
 						int num = data[offset++];
 						for (int i = 0; i < num; i++) {
 							len = data[offset++] & 0xFF;
@@ -282,11 +282,12 @@ public class GPRegistry implements Iterable<GPRegistryEntry> {
 		}
 	}
 
-	public void parse(byte[] data, Kind type, GPSpec spec) throws GPDataException {
+	// FIXME: this is ugly
+	public void parse(int p1, byte[] data, Kind type, GPSpec spec) throws GPDataException {
 		if (tags) {
 			populate_tags(data, type);
 		} else {
-			populate_legacy(data, type, spec);
+			populate_legacy(p1, data, type, spec);
 		}
 	}
 }

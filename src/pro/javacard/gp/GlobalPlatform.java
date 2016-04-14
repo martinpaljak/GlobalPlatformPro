@@ -617,14 +617,6 @@ public class GlobalPlatform {
 		return wrapper.unwrap(wr);
 	}
 
-	public GPRegistry getRegistry() throws GPException, CardException{
-		if (dirty) {
-			registry = getStatus();
-			dirty = false;
-		}
-		return registry;
-	}
-
 	public int getSCPVersion() {
 		return scpMajorVersion;
 	}
@@ -986,23 +978,35 @@ public class GlobalPlatform {
 	}
 
 
+	public GPRegistry getRegistry() throws GPException, CardException{
+		if (dirty) {
+			registry = getStatus();
+			dirty = false;
+		}
+		return registry;
+	}
+
+
 	// TODO: The way registry parsing mode is piggybacked to the registry class is not really nice.
 	private byte[] getConcatenatedStatus(GPRegistry reg, int p1, byte[] data) throws CardException, GPException {
-		int p2 = 0x0;
+		// By default use tags
+		int p2 = reg.tags? 0x02 : 0x00;
 
-		if (spec != GPSpec.OP201) {
-			p2 = 0x2;
-		}
 		CommandAPDU cmd = new CommandAPDU(CLA_GP, INS_GET_STATUS, p1, p2, data, 256);
 		ResponseAPDU response = transmit(cmd);
 
 		// Workaround for legacy cards, like SCE 6.0 FIXME: this does not work properly
 		// Find a different way to adjust the response parser without touching the overall spec mode
-		if (response.getSW() == 0x6A86 && spec != GPSpec.OP201) {
-			p2 = 0x00;
-			reg.tags = false;
-			cmd = new CommandAPDU(CLA_GP, INS_GET_STATUS, p1, p2, data, 256);
-			response = transmit(cmd);
+
+		// If ISD-s are asked and none is returned, it could be either
+		// - SSD
+		// - no support for tags
+		if (p1 == 0x80 && response.getSW() == 0x6A86) {
+			if (p2 == 0x02) {
+				// If no support for tags. Re-issue comman without requesting tags
+				reg.tags = false;
+				return getConcatenatedStatus(reg, p1, data);
+			}
 		}
 
 		int sw = response.getSW();
@@ -1040,6 +1044,9 @@ public class GlobalPlatform {
 	private GPRegistry getStatus() throws CardException, GPException {
 		GPRegistry registry = new GPRegistry();
 
+		if (spec == GPSpec.OP201) {
+			registry.tags = false;
+		}
 		// Issuer security domain
 		byte[] data = getConcatenatedStatus(registry, 0x80, new byte[] { 0x4F, 0x00 });
 		registry.parse(data, Kind.IssuerSecurityDomain, spec);

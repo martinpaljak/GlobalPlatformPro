@@ -717,7 +717,7 @@ public class GlobalPlatform {
 			instanceAID = appletAID;
 		}
 		if (getRegistry().allAppletAIDs().contains(instanceAID)) {
-			giveStrictWarning("Applet with instance AID " + instanceAID + " is already present on card");
+			giveStrictWarning("Instance AID " + instanceAID + " is already present on card");
 		}
 		if (installParams == null) {
 			installParams = new byte[] { (byte) 0xC9, 0x00 };
@@ -736,7 +736,6 @@ public class GlobalPlatform {
 
 			bo.write(instanceAID.getLength());
 			bo.write(instanceAID.getBytes());
-
 
 			bo.write(privs.length);
 			bo.write(privs);

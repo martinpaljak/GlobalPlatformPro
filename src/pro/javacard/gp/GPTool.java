@@ -243,7 +243,7 @@ public final class GPTool {
 			System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "warn");
 		}
 
-		if (args.has(OPT_VERSION)) {
+		if (args.has(OPT_VERSION) || args.has(OPT_VERBOSE) || args.has(OPT_DEBUG) || args.has(OPT_INFO)) {
 			String version = GlobalPlatform.getVersion();
 			// Append host information
 			version += "\nRunning on " + System.getProperty("os.name");

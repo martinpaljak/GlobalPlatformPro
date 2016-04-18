@@ -90,8 +90,10 @@ public final class GPTool {
 	private final static String OPT_DOMAIN = "domain";
 
 	private final static String OPT_CAP = "cap";
-	private final static String OPT_APPLET = "applet";
+	private final static String OPT_APPLET = "applet"; // can always be shortened, so -app is valid
 	private final static String OPT_PACKAGE = "package";
+	private final static String OPT_PKG = "pkg";
+
 	private final static String OPT_DO_ALL_READERS = "all";
 	private final static String OPT_TERMINALS = "terminals";
 
@@ -174,7 +176,7 @@ public final class GPTool {
 
 		parser.accepts(OPT_CREATE, "Create new instance of an applet").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
 		parser.accepts(OPT_APPLET, "Applet AID").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
-		parser.accepts(OPT_PACKAGE, "Package AID").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
+		parser.acceptsAll(Arrays.asList(OPT_PKG, OPT_PACKAGE), "Package AID").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
 
 		// Key options
 		parser.accepts(OPT_KEY, "Specify card (master) key").withRequiredArg().withValuesConvertedBy(ArgMatchers.key());
@@ -546,17 +548,18 @@ public final class GPTool {
 							if (args.has(OPT_VERBOSE)) {
 								instcap.dump(System.out);
 							}
-
-							Privileges privs = getInstPrivs(args);
+							// Only install if cap contains a single applet
+							if (instcap.getAppletAIDs().size() > 1) {
+								System.out.println("CAP contains more than one applet, create instances manually with --" + OPT_CREATE);
+							}
 
 							GPRegistry reg = gp.getRegistry();
+							Privileges privs = getInstPrivs(args);
 
 							// Remove existing default app
 							if (args.has(OPT_FORCE) && (reg.getDefaultSelectedAID() != null && privs.has(Privilege.CardReset))) {
 								gp.deleteAID(reg.getDefaultSelectedAID(), false);
 							}
-							// Update if necessary.
-							reg = gp.getRegistry();
 							// Remove existing load file
 							if (args.has(OPT_FORCE) && reg.allPackageAIDs().contains(instcap.getPackageAID())) {
 								gp.deleteAID(instcap.getPackageAID(), true);
@@ -564,31 +567,26 @@ public final class GPTool {
 
 							try {
 								gp.loadCapFile(instcap);
+								System.err.println("CAP loaded");
 							} catch (GPException e) {
 								if (e.sw == 0x6985 || e.sw == 0x6A80) {
 									System.err.println("Applet loading failed. Are you sure the CAP file (JC version, packages) is compatible with your card?");
 								}
 								throw e;
 							}
-							System.err.println("CAP loaded");
 
-							// Only install if cap contains a single applet
-							if (instcap.getAppletAIDs().size() > 1) {
-								System.out.println("CAP contains more than one applet, create instances manually with --" + OPT_CREATE);
-							} else {
-								// Take the applet AID from CAP but allow to override
-								AID appaid = instcap.getAppletAIDs().get(0);
-								if (args.has(OPT_APPLET)) {
-									appaid = (AID) args.valueOf(OPT_APPLET);
-								}
-								if (args.has(OPT_CREATE)) {
-									appaid = (AID) args.valueOf(OPT_CREATE);
-								}
-								if (gp.getRegistry().allAIDs().contains(appaid)) {
-									System.err.println("WARNING: Applet " + appaid + " already present on card");
-								}
-								gp.installAndMakeSelectable(instcap.getPackageAID(), appaid, null, privs, getInstParams(args), null);
+							// Take the applet AID from CAP but allow to override
+							AID appaid = instcap.getAppletAIDs().get(0);
+							if (args.has(OPT_APPLET)) {
+								appaid = (AID) args.valueOf(OPT_APPLET);
 							}
+							if (args.has(OPT_CREATE)) {
+								appaid = (AID) args.valueOf(OPT_CREATE);
+							}
+							if (gp.getRegistry().allAIDs().contains(appaid)) {
+								System.err.println("WARNING: Applet " + appaid + " already present on card");
+							}
+							gp.installAndMakeSelectable(instcap.getPackageAID(), appaid, null, privs, getInstParams(args), null);
 						}
 
 						// --create <aid> (--applet <aid> --package <aid> or --cap <cap>)

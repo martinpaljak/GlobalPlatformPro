@@ -285,15 +285,7 @@ public class GlobalPlatform {
 									} else if (proptag instanceof DERTaggedObject) {
 										DERTaggedObject tag = (DERTaggedObject)proptag;
 										if (tag.getTagNo() == 101) {
-											// Blocksize
-											ASN1OctetString blocksize = DEROctetString.getInstance(tag.getObject());
-											int bs = new BigInteger(1, blocksize.getOctets()).intValue();
-											if (bs > 255) {
-												logger.debug("Ignoring auto-detected block size " + bs);
-											} else {
-												this.blockSize = bs;
-												logger.debug("Auto-detected block size: " + blockSize);
-											}
+											setBlockSize(DEROctetString.getInstance(tag.getObject()));
 										} else {
 											logger.warn("Unknown/unhandled tag in FCI proprietary data: " + HexUtils.bin2hex(tag.getEncoded()));
 										}
@@ -306,10 +298,7 @@ public class GlobalPlatform {
 								if (t.getObject() instanceof DERTaggedObject) {
 									DERTaggedObject tag = (DERTaggedObject)t.getObject();
 									if (tag.getTagNo() == 101) {
-										// Blocksize
-										ASN1OctetString blocksize = DEROctetString.getInstance(tag.getObject());
-										this.blockSize = blocksize.getOctets()[0] & 0xFF;
-										logger.debug("Auto-detected block size: " + blockSize);
+										setBlockSize(DEROctetString.getInstance(tag.getObject()));
 									} else {
 										logger.warn("Unknown/unhandled tag in FCI proprietary data: " + HexUtils.bin2hex(tag.getEncoded()));
 									}
@@ -329,6 +318,15 @@ public class GlobalPlatform {
 
 	}
 
+	private void setBlockSize(ASN1OctetString blocksize) {
+		int bs = new BigInteger(1, blocksize.getOctets()).intValue();
+		if (bs > this.blockSize) {
+			logger.debug("Ignoring auto-detected block size that exceeds set maximum: " + bs);
+		} else {
+			this.blockSize = bs;
+			logger.debug("Auto-detected block size: " + blockSize);
+		}
+	}
 
 	/**
 	 * Establish a connection to the security domain specified in the

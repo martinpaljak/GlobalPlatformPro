@@ -103,7 +103,6 @@ public final class GPTool {
 	private final static String OPT_DUMP = "dump";
 	private final static String OPT_REPLAY = "replay";
 	private final static String OPT_VERBOSE = "verbose";
-	private final static String OPT_REINSTALL = "reinstall";
 	private final static String OPT_VIRGIN = "virgin";
 	private final static String OPT_SC_MODE = "mode";
 	private final static String OPT_BS = "bs";
@@ -121,6 +120,7 @@ public final class GPTool {
 
 	private final static String OPT_EMV = "emv";
 	private final static String OPT_VISA2 = "visa2";
+	private final static String OPT_FORCE = "force";
 
 
 	private static OptionSet parseArguments(String[] argv) throws IOException {
@@ -137,6 +137,7 @@ public final class GPTool {
 		parser.acceptsAll(Arrays.asList("i", OPT_INFO), "Show information");
 		parser.acceptsAll(Arrays.asList("a", OPT_APDU), "Send raw APDU (hex)").withRequiredArg().withValuesConvertedBy(ArgMatchers.hex());
 		parser.acceptsAll(Arrays.asList("s", OPT_SECURE_APDU), "Send raw APDU (hex) via SCP").withRequiredArg().withValuesConvertedBy(ArgMatchers.hex());
+		parser.acceptsAll(Arrays.asList("f", OPT_FORCE), "Force operation");
 		parser.accepts(OPT_DUMP, "Dump APDU communication to <File>").withRequiredArg().ofType(File.class);
 		parser.accepts(OPT_REPLAY, "Replay APDU responses from <File>").withRequiredArg().ofType(File.class);
 
@@ -167,7 +168,6 @@ public final class GPTool {
 		parser.accepts(OPT_INITIALIZED, "Transition SD to INITIALIZED state").withOptionalArg().withValuesConvertedBy(ArgMatchers.aid());
 		parser.accepts(OPT_STORE_DATA, "STORE DATA to applet").withRequiredArg().withValuesConvertedBy(ArgMatchers.hex());
 
-		parser.accepts(OPT_REINSTALL, "Reinstall CAP").withOptionalArg().ofType(File.class);
 		parser.accepts(OPT_MAKE_DEFAULT, "Make AID the default").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
 
 		parser.accepts(OPT_DELETE, "Delete applet/package").withOptionalArg().withValuesConvertedBy(ArgMatchers.aid());
@@ -486,14 +486,18 @@ public final class GPTool {
 
 							for (AID aid: aids) {
 								try {
-									// If the AID represents a package, use deletedeps by default.
-									gp.deleteAID(aid, reg.allPackageAIDs().contains(aid));
+									// If the AID represents a package or otherwise force is enabled.
+									gp.deleteAID(aid, reg.allPackageAIDs().contains(aid) || args.has(OPT_FORCE));
 								} catch (GPException e) {
 									if (!gp.getRegistry().allAIDs().contains(aid)) {
 										System.err.println("Could not delete AID (not present on card): " + aid);
 									} else {
 										System.err.println("Could not delete AID: " + aid);
-										throw e;
+										if (e.sw == 0x6985) {
+											System.err.println("Deletion not allowed. Some app still active?");
+										} else {
+											throw e;
+										}
 									}
 								}
 							}
@@ -533,17 +537,9 @@ public final class GPTool {
 
 
 						// --install <applet.cap>
-						if (args.has(OPT_INSTALL) || args.hasArgument(OPT_REINSTALL)) {
+						if (args.has(OPT_INSTALL)) {
 							final File capfile;
-
-							// Sanity check
-							if (args.hasArgument(OPT_REINSTALL) && args.has(OPT_INSTALL)) {
-								throw new IllegalArgumentException("Can't specify an argument for --reinstall if --install is present");
-							} else if (args.hasArgument(OPT_REINSTALL)) {
-								capfile = (File) args.valueOf(OPT_REINSTALL);
-							} else {
-								capfile = (File) args.valueOf(OPT_INSTALL);
-							}
+							capfile = (File) args.valueOf(OPT_INSTALL);
 
 							CapFile instcap = new CapFile(new FileInputStream(capfile));
 
@@ -551,17 +547,19 @@ public final class GPTool {
 								instcap.dump(System.out);
 							}
 
-							if (args.has(OPT_REINSTALL)) {
-								System.err.println("Removing existing package");
-								try {
-									gp.deleteAID(instcap.getPackageAID(), true);
-								} catch (GPException e) {
-									if (e.sw == 0x6A88) {
-										System.err.println("Applet with default AID-s not present on card. Ignoring.");
-									} else {
-										throw e;
-									}
-								}
+							Privileges privs = getInstPrivs(args);
+
+							GPRegistry reg = gp.getRegistry();
+
+							// Remove existing default app
+							if (args.has(OPT_FORCE) && (reg.getDefaultSelectedAID() != null && privs.has(Privilege.CardReset))) {
+								gp.deleteAID(reg.getDefaultSelectedAID(), false);
+							}
+							// Update if necessary.
+							reg = gp.getRegistry();
+							// Remove existing load file
+							if (args.has(OPT_FORCE) && reg.allPackageAIDs().contains(instcap.getPackageAID())) {
+								gp.deleteAID(instcap.getPackageAID(), true);
 							}
 
 							try {
@@ -589,7 +587,7 @@ public final class GPTool {
 								if (gp.getRegistry().allAIDs().contains(appaid)) {
 									System.err.println("WARNING: Applet " + appaid + " already present on card");
 								}
-								gp.installAndMakeSelectable(instcap.getPackageAID(), appaid, null, getInstPrivs(args), getInstParams(args), null);
+								gp.installAndMakeSelectable(instcap.getPackageAID(), appaid, null, privs, getInstParams(args), null);
 							}
 						}
 
@@ -794,14 +792,15 @@ public final class GPTool {
 						}
 					}
 				} catch (GPException e) {
+					if (args.has(OPT_VERBOSE)) {
+						e.printStackTrace();
+					}
 					// All unhandled GP exceptions halt the program unless it is run with -relax
 					if (!args.has(OPT_RELAX)) {
-						e.printStackTrace();
 						System.exit(1);
 					}
-					e.printStackTrace();
 				} catch (CardException e) {
-					// Card exceptions skip to the next reader, if available and allowed
+					// Card exceptions skip to the next reader, if available and allowed FIXME broken logic
 					continue;
 				} finally {
 					if (card != null) {
@@ -816,9 +815,12 @@ public final class GPTool {
 			if (TerminalManager.getExceptionMessage(e) != null) {
 				System.out.println("PC/SC failure: " + TerminalManager.getExceptionMessage(e));
 			} else {
-				throw e;
+				System.err.println("CardException, terminating");
+				e.printStackTrace();
+				System.exit(1);
 			}
 		}
+		// Other exceptions escape. fin.
 		System.exit(0);
 	}
 
@@ -875,7 +877,7 @@ public final class GPTool {
 	private static boolean needsAuthentication(OptionSet args) {
 		if (args.has(OPT_LIST) || args.has(OPT_LOAD) || args.has(OPT_INSTALL))
 			return true;
-		if (args.hasArgument(OPT_REINSTALL) || args.has(OPT_DELETE) || args.has(OPT_CREATE))
+		if (args.has(OPT_DELETE) || args.has(OPT_CREATE))
 			return true;
 		if (args.has(OPT_LOCK) || args.has(OPT_UNLOCK) || args.has(OPT_MAKE_DEFAULT))
 			return true;

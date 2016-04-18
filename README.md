@@ -88,9 +88,9 @@ Command line samples assume default test keys of `40..4F`. If you need a custom 
 
         gp -uninstall applet.cap
 
- * Reistall `applet.cap` (with AID information from the CAP):
+ * Force installation of `applet.cap`, deleting anything that's necessary, with AID information from the CAP:
 
-        gp -reinstall applet.cap
+        gp -f -install applet.cap
 
  * Create new instance of applet `D2760001240102000000000000000000` from package `D27600012401` with AID `D2760001240102000000000272950000`:
 

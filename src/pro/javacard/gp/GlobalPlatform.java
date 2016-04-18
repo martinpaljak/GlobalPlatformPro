@@ -286,6 +286,8 @@ public class GlobalPlatform {
 										DERTaggedObject tag = (DERTaggedObject)proptag;
 										if (tag.getTagNo() == 101) {
 											setBlockSize(DEROctetString.getInstance(tag.getObject()));
+										} else if (tag.getTagNo() == 110) {
+											logger.debug("Lifecycle data (ignored): " + HexUtils.bin2hex(tag.getObject().getEncoded()));
 										} else {
 											logger.warn("Unknown/unhandled tag in FCI proprietary data: " + HexUtils.bin2hex(tag.getEncoded()));
 										}

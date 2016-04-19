@@ -173,6 +173,17 @@ public class GPRegistry implements Iterable<GPRegistryEntry> {
 		return null;
 	}
 
+	// Shorthand
+	public GPRegistryEntryApp getISD() {
+		for (GPRegistryEntryApp a: allApplets()) {
+			if (a.getType() == Kind.IssuerSecurityDomain) {
+				return a;
+			}
+		}
+		// Could happen if the registry is a view from SSD
+		return null;
+	}
+
 	private void populate_legacy(int p1, byte[] data, Kind type, GPSpec spec) throws GPDataException {
 		int offset = 0;
 		try {

@@ -1003,7 +1003,7 @@ public class GlobalPlatform {
 		// - no support for tags
 		if (p1 == 0x80 && response.getSW() == 0x6A86) {
 			if (p2 == 0x02) {
-				// If no support for tags. Re-issue comman without requesting tags
+				// If no support for tags. Re-issue command without requesting tags
 				reg.tags = false;
 				return getConcatenatedStatus(reg, p1, data);
 			}
@@ -1012,7 +1012,11 @@ public class GlobalPlatform {
 		int sw = response.getSW();
 		if ((sw != ISO7816.SW_NO_ERROR) && (sw != 0x6310)) {
 			// Possible values:
-			// 0x6A88 - referenced data not found
+			if (sw == 0x6A88) {
+				// No data to report
+				return response.getData();
+
+			}
 			// 0x6A86 - no tags support or ISD asked from SSD
 			// 0a6A81 - Same as 6A88 ?
 			logger.warn("GET STATUS failed for " + HexUtils.bin2hex(cmd.getBytes()) + " with " + Integer.toHexString(sw));

@@ -94,7 +94,6 @@ public final class GPTool {
 	private final static String OPT_PACKAGE = "package";
 	private final static String OPT_PKG = "pkg";
 
-	private final static String OPT_DO_ALL_READERS = "all";
 	private final static String OPT_TERMINALS = "terminals";
 
 	private final static String OPT_RELAX = "relax";
@@ -145,7 +144,6 @@ public final class GPTool {
 
 		// Special options
 		parser.accepts(OPT_RELAX, "Relaxed error checking");
-		parser.accepts(OPT_DO_ALL_READERS, "Work with multiple readers");
 		parser.accepts(OPT_TERMINALS, "Use PC/SC provider from <jar:class>").withRequiredArg();
 
 
@@ -278,14 +276,12 @@ public final class GPTool {
 				} else if (k.getType() == Type.AES) {
 					expected = GPCrypto.scp03_key_check_value(k);
 				} else {
-					System.err.println("Don't know how to compute KCV for " + k.getType());
-					System.exit(1);
-					return;
+					fail("Don't know how to compute KCV for " + k.getType());
+					return; // static analyzer sugar
 				}
 				// Check KCV
 				if (!Arrays.equals(given, expected)) {
-					System.err.println("KCV does not match, expected " + HexUtils.bin2hex(expected) + " but given " + HexUtils.bin2hex(given));
-					System.exit(1);
+					fail("KCV does not match, expected " + HexUtils.bin2hex(expected) + " but given " + HexUtils.bin2hex(given));
 				}
 			}
 			keys = PlaintextKeys.fromMasterKey(k, div);
@@ -366,21 +362,18 @@ public final class GPTool {
 					reader = (String) args.valueOf(OPT_READER);
 				CardTerminal t = terminals.getTerminal(reader);
 				if (t == null) {
-					System.err.println("Reader \"" + reader + "\" not found.");
-					System.exit(1);
+					fail("Reader \"" + reader + "\" not found.");
 				}
 				do_readers = Arrays.asList(t);
 			} else {
 				do_readers = terminals.list(State.CARD_PRESENT);
-				if (do_readers.size() > 1 && !args.has(OPT_DO_ALL_READERS)) {
-					System.err.println("More than one reader with a card found.");
-					System.err.println("Run with --"+OPT_DO_ALL_READERS+" to work with all found cards");
-					System.exit(1);
-				}
 			}
 
 			// Work all readers
 			for (CardTerminal reader: do_readers) {
+				if (do_readers.size() > 1) {
+					System.out.println("# " + reader.getName());
+				}
 				// Wrap with logging if requested
 				if (args.has(OPT_DEBUG)) {
 					// And with APDU dumping
@@ -795,7 +788,7 @@ public final class GPTool {
 					}
 					// All unhandled GP exceptions halt the program unless it is run with -relax
 					if (!args.has(OPT_RELAX)) {
-						System.exit(1);
+						fail("GPexception caught, exiting without --" + OPT_RELAX);
 					}
 				} catch (CardException e) {
 					// Card exceptions skip to the next reader, if available and allowed FIXME broken logic
@@ -813,9 +806,8 @@ public final class GPTool {
 			if (TerminalManager.getExceptionMessage(e) != null) {
 				System.out.println("PC/SC failure: " + TerminalManager.getExceptionMessage(e));
 			} else {
-				System.err.println("CardException, terminating");
-				e.printStackTrace();
-				System.exit(1);
+				e.printStackTrace(); // TODO: remove
+				fail("CardException, terminating");
 			}
 		}
 		// Other exceptions escape. fin.

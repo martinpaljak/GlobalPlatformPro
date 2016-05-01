@@ -361,6 +361,9 @@ public final class GPTool {
 				do_readers = terminals.list(State.CARD_PRESENT);
 			}
 
+			if (do_readers.size() == 0) {
+				fail("No smart card readers found");
+			}
 			// Work all readers
 			for (CardTerminal reader: do_readers) {
 				if (do_readers.size() > 1) {

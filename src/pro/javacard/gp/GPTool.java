@@ -59,69 +59,61 @@ import pro.javacard.gp.GlobalPlatform.GPSpec;
 
 
 public final class GPTool {
-	private final static String OPT_INFO = "info";
 
-	private final static String OPT_LIST = "list";
-	private final static String OPT_LOCK = "lock";
-
-	private final static String OPT_INSTALL = "install";
-	private final static String OPT_UNINSTALL = "uninstall";
-	private final static String OPT_DELETE = "delete";
-	private final static String OPT_CREATE = "create";
-	private final static String OPT_LOAD = "load";
-	private final static String OPT_UNLOCK = "unlock";
-	private final static String OPT_MAKE_DEFAULT = "make-default";
 	private final static String OPT_APDU = "apdu";
-	private final static String OPT_SECURE_APDU = "secure-apdu";
-	private final static String OPT_SCP = "scp";
-	private final static String OPT_LOCK_APPLET = "lock-applet";
-	private final static String OPT_UNLOCK_APPLET = "unlock-applet";
-	private final static String OPT_LOCK_CARD = "lock-card";
-	private final static String OPT_UNLOCK_CARD = "unlock-card";
-	private final static String OPT_STORE_DATA = "store-data";
-	private final static String OPT_PRIVS = "privs";
-	private final static String OPT_LIST_PRIVS = "list-privs";
-	private final static String OPT_PARAMS = "params";
-	private final static String OPT_SECURED = "secured";
-	private final static String OPT_INITIALIZED = "initialized";
-
-	private final static String OPT_DEFAULT = "default";
-	private final static String OPT_TERMINATE = "terminate";
-	private final static String OPT_DOMAIN = "domain";
-
-	private final static String OPT_CAP = "cap";
 	private final static String OPT_APPLET = "applet"; // can always be shortened, so -app is valid
-	private final static String OPT_PACKAGE = "package";
-	private final static String OPT_PKG = "pkg";
-
-	private final static String OPT_TERMINALS = "terminals";
-
-	private final static String OPT_RELAX = "relax";
-	private final static String OPT_READER = "reader";
-	private final static String OPT_VERSION = "version";
-	private final static String OPT_SDAID = "sdaid";
-	private final static String OPT_DEBUG = "debug";
-	private final static String OPT_DUMP = "dump";
-	private final static String OPT_REPLAY = "replay";
-	private final static String OPT_VERBOSE = "verbose";
-	private final static String OPT_VIRGIN = "virgin";
-	private final static String OPT_SC_MODE = "mode";
 	private final static String OPT_BS = "bs";
-
-	private final static String OPT_KEY = "key";
+	private final static String OPT_CAP = "cap";
+	private final static String OPT_CREATE = "create";
+	private final static String OPT_DEBUG = "debug";
+	private final static String OPT_DEFAULT = "default";
+	private final static String OPT_DELETE = "delete";
+	private final static String OPT_DOMAIN = "domain";
+	private final static String OPT_DUMP = "dump";
+	private final static String OPT_EMV = "emv";
+	private final static String OPT_FORCE = "force";
+	private final static String OPT_INFO = "info";
+	private final static String OPT_INITIALIZED = "initialized";
+	private final static String OPT_INSTALL = "install";
 	private final static String OPT_KCV = "kcv";
-	private final static String OPT_KEY_MAC = "key-mac";
+	private final static String OPT_KEY = "key";
 	private final static String OPT_KEY_ENC = "key-enc";
-	private final static String OPT_KEY_KEK = "key-kek";
-
-	private final static String OPT_KEY_VERSION = "keyver";
 	private final static String OPT_KEY_ID = "keyid";
+	private final static String OPT_KEY_KEK = "key-kek";
+	private final static String OPT_KEY_MAC = "key-mac";
+	private final static String OPT_KEY_VERSION = "keyver";
+	private final static String OPT_LIST = "list";
+	private final static String OPT_LIST_PRIVS = "list-privs";
+	private final static String OPT_LOAD = "load";
+	private final static String OPT_LOCK = "lock";
+	private final static String OPT_LOCK_APPLET = "lock-applet";
+	private final static String OPT_LOCK_CARD = "lock-card";
+	private final static String OPT_MAKE_DEFAULT = "make-default";
 	private final static String OPT_NEW_KEY_VERSION = "new-keyver";
 	private final static String OPT_OP201 = "op201";
-
-	private final static String OPT_EMV = "emv";
+	private final static String OPT_PACKAGE = "package";
+	private final static String OPT_PARAMS = "params";
+	private final static String OPT_PKG = "pkg";
+	private final static String OPT_PRIVS = "privs";
+	private final static String OPT_READER = "reader";
+	private final static String OPT_RELAX = "relax";
+	private final static String OPT_REPLAY = "replay";
+	private final static String OPT_SC_MODE = "mode";
+	private final static String OPT_SCP = "scp";
+	private final static String OPT_SDAID = "sdaid";
+	private final static String OPT_SECURE_APDU = "secure-apdu";
+	private final static String OPT_SECURED = "secured";
+	private final static String OPT_STORE_DATA = "store-data";
+	private final static String OPT_TERMINALS = "terminals";
+	private final static String OPT_TERMINATE = "terminate";
+	private final static String OPT_UNINSTALL = "uninstall";
+	private final static String OPT_UNLOCK = "unlock";
+	private final static String OPT_UNLOCK_APPLET = "unlock-applet";
+	private final static String OPT_UNLOCK_CARD = "unlock-card";
+	private final static String OPT_VERBOSE = "verbose";
+	private final static String OPT_VERSION = "version";
+	private final static String OPT_VIRGIN = "virgin";
 	private final static String OPT_VISA2 = "visa2";
-	private final static String OPT_FORCE = "force";
 
 
 	private static OptionSet parseArguments(String[] argv) throws IOException {
@@ -208,7 +200,7 @@ public final class GPTool {
 		try {
 			args = parser.parse(argv);
 			// Try to fetch all values so that format is checked before usage
-			// for (String s: parser.recognizedOptions().keySet()) {args.valuesOf(s);} // FIXME: scres up logging hack
+			// for (String s: parser.recognizedOptions().keySet()) {args.valuesOf(s);} // FIXME: screws up logging hack
 		} catch (OptionException e) {
 			if (e.getCause() != null) {
 				System.err.println(e.getMessage() + ": " + e.getCause().getMessage());
@@ -852,7 +844,7 @@ public final class GPTool {
 		byte[] params = null;
 		if (args.has(OPT_PARAMS)) {
 			params = (byte []) args.valueOf(OPT_PARAMS);
-			// Simple use: only application paramters without tag, prepend 0xC9
+			// Simple use: only application parameters without tag, prepend 0xC9
 			if (params[0] != (byte) 0xC9) {
 				byte [] newparams = new byte[params.length + 2];
 				newparams[0] = (byte) 0xC9;

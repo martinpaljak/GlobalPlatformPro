@@ -55,9 +55,13 @@ public final class GPData {
 	public static final byte terminatedStatus = (byte) 0xFF;
 
 	// See GP 2.1.1 Table 9-7: Application Privileges
+	@Deprecated
 	public static final byte defaultSelectedPriv = 0x04;
+	@Deprecated
 	public static final byte cardLockPriv = 0x10;
+	@Deprecated
 	public static final byte cardTerminatePriv = 0x08;
+	@Deprecated
 	public static final byte securityDomainPriv = (byte) 0x80;
 
 	// TODO GP 2.2.1 11.1.2

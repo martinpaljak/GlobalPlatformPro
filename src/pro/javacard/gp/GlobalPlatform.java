@@ -289,7 +289,7 @@ public class GlobalPlatform {
 										} else if (tag.getTagNo() == 110) {
 											logger.debug("Lifecycle data (ignored): " + HexUtils.bin2hex(tag.getObject().getEncoded()));
 										} else {
-											logger.warn("Unknown/unhandled tag in FCI proprietary data: " + HexUtils.bin2hex(tag.getEncoded()));
+											logger.info("Unknown/unhandled tag in FCI proprietary data: " + HexUtils.bin2hex(tag.getEncoded()));
 										}
 									} else {
 										throw new GPException("Unknown data from card: " + HexUtils.bin2hex(proptag.getEncoded()));
@@ -302,12 +302,12 @@ public class GlobalPlatform {
 									if (tag.getTagNo() == 101) {
 										setBlockSize(DEROctetString.getInstance(tag.getObject()));
 									} else {
-										logger.warn("Unknown/unhandled tag in FCI proprietary data: " + HexUtils.bin2hex(tag.getEncoded()));
+										logger.info("Unknown/unhandled tag in FCI proprietary data: " + HexUtils.bin2hex(tag.getEncoded()));
 									}
 								}
 							}
 						} else {
-							logger.warn("Unknown/unhandled tag in FCI: " + HexUtils.bin2hex(t.getEncoded()));
+							logger.info("Unknown/unhandled tag in FCI: " + HexUtils.bin2hex(t.getEncoded()));
 						}
 					}
 				} else {

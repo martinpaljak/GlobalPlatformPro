@@ -362,7 +362,7 @@ public final class GPTool {
 			}
 
 			if (do_readers.size() == 0) {
-				fail("No smart card readers found");
+				fail("No smart card readers with a card found");
 			}
 			// Work all readers
 			for (CardTerminal reader: do_readers) {

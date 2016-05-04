@@ -779,11 +779,11 @@ public final class GPTool {
 					}
 				} catch (GPException e) {
 					if (args.has(OPT_VERBOSE)) {
-						e.printStackTrace();
+						e.printStackTrace(System.err);
 					}
 					// All unhandled GP exceptions halt the program unless it is run with -relax
 					if (!args.has(OPT_RELAX)) {
-						fail("GPexception caught, exiting without --" + OPT_RELAX);
+						fail(e.getMessage());
 					}
 				} catch (CardException e) {
 					// Card exceptions skip to the next reader, if available and allowed FIXME broken logic

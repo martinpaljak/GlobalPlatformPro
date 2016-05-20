@@ -537,8 +537,11 @@ public final class GPTool {
 								instcap.dump(System.out);
 							}
 							// Only install if cap contains a single applet
+							if (instcap.getAppletAIDs().size() == 0) {
+								fail("No applets in CAP, use --" + OPT_LOAD + " instead");
+							}
 							if (instcap.getAppletAIDs().size() > 1) {
-								System.out.println("CAP contains more than one applet, create instances manually with --" + OPT_CREATE);
+								fail("CAP contains more than one applet, create instances manually with --" + OPT_LOAD + " and --" + OPT_CREATE);
 							}
 
 							GPRegistry reg = gp.getRegistry();

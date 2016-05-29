@@ -259,7 +259,8 @@ public class GPRegistry implements Iterable<GPRegistryEntry> {
 							} else if (entry.getApplicationTag() == 14) {
 								pkg.setVersion(entry.getContents());
 							} else {
-								throw new GPDataException("Invalid tag", entry.getEncoded());
+								// XXX there are cards that have unknown tags.
+								logger.warn("Invalid tag: " + HexUtils.bin2hex(entry.getEncoded()));
 							}
 						} else if (p instanceof DERTaggedObject) {
 							ASN1TaggedObject tag = DERTaggedObject.getInstance(p);

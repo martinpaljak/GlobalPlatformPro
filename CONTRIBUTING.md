@@ -7,6 +7,9 @@
 ## Building the software
 Simple `ant` will produce working results if you have the dependencies.
 
+On OSX, if you have Eclipse installed, use this to get "ant" on command line:
+ `alias ant="java -jar $(find $(mdfind kMDItemCFBundleIdentifier = org.eclipse.platform.ide) -name ant-launcher.jar)"`
+
 ### Debian/Ubuntu
  * Install dependencies: `apt-get install --no-install-recommends libccid openjdk-7-jdk git ant`
 

@@ -30,6 +30,7 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 
+import javax.crypto.Cipher;
 import javax.smartcardio.Card;
 import javax.smartcardio.CardException;
 import javax.smartcardio.CardTerminal;
@@ -244,6 +245,11 @@ public final class GPTool {
 			version += ", Java " + System.getProperty("java.version");
 			version += " by " + System.getProperty("java.vendor");
 			System.out.println("GlobalPlatformPro " + version);
+
+			// Test for unlimited crypto
+			if (Cipher.getMaxAllowedKeyLength("AES") == 128) {
+				System.out.println("Unlimited crypto policy is NOT installed!");
+			}
 		}
 
 		// Normally assume a single master key

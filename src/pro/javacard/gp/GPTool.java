@@ -263,55 +263,54 @@ public final class GPTool {
 			div = Diversification.EMV;
 		}
 
-		if (args.has(OPT_KEY)) {
-			// Specified master key
-			GPKey k = (GPKeySet.GPKey)args.valueOf(OPT_KEY);
-			if (args.has(OPT_KCV)) {
-				final byte [] expected;
-				byte [] given = (byte[])args.valueOf(OPT_KCV);
-				if (k.getType() == Type.DES3) {
-					expected = GPCrypto.kcv_3des(k);
-				} else if (k.getType() == Type.AES) {
-					expected = GPCrypto.scp03_key_check_value(k);
-				} else {
-					fail("Don't know how to compute KCV for " + k.getType());
-					return; // static analyzer sugar
+		if (args.has(OPT_KEY) || args.has(OPT_KEY_MAC) || args.has(OPT_KEY_ENC) || args.has(OPT_KEY_KEK)) {
+			GPKeySet ks;
+			if (args.has(OPT_KEY)) {
+				// Specified master key
+				GPKey k = (GPKeySet.GPKey)args.valueOf(OPT_KEY);
+				if (args.has(OPT_KCV)) {
+					final byte [] expected;
+					byte [] given = (byte[])args.valueOf(OPT_KCV);
+					if (k.getType() == Type.DES3) {
+						expected = GPCrypto.kcv_3des(k);
+					} else if (k.getType() == Type.AES) {
+						expected = GPCrypto.scp03_key_check_value(k);
+					} else {
+						fail("Don't know how to compute KCV for " + k.getType());
+						return; // static analyzer sugar
+					}
+					// Check KCV
+					if (!Arrays.equals(given, expected)) {
+						fail("KCV does not match, expected " + HexUtils.bin2hex(expected) + " but given " + HexUtils.bin2hex(given));
+					}
 				}
-				// Check KCV
-				if (!Arrays.equals(given, expected)) {
-					fail("KCV does not match, expected " + HexUtils.bin2hex(expected) + " but given " + HexUtils.bin2hex(given));
+				ks = new GPKeySet(k);
+			} else {
+				System.out.println("ATTENTION: Overriding default keys ...");
+				// Override some keys
+				ks = new GPKeySet(GPData.defaultKey);
+				if (args.has(OPT_KEY_MAC)) {
+					ks.setKey(KeyType.MAC, (GPKey) args.valueOf(OPT_KEY_MAC));
+				}
+				if (args.has(OPT_KEY_ENC)) {
+					ks.setKey(KeyType.ENC, (GPKey) args.valueOf(OPT_KEY_ENC));
+				}
+				if (args.has(OPT_KEY_KEK)) {
+					ks.setKey(KeyType.KEK, (GPKey) args.valueOf(OPT_KEY_KEK));
 				}
 			}
-			keys = PlaintextKeys.fromMasterKey(k, div);
-		} else if (args.has(OPT_KEY_MAC) || args.has(OPT_KEY_ENC) || args.has(OPT_KEY_KEK)) {
-			System.out.println("ATTENTION: Overriding default keys ...");
-			// Override some keys
-			GPKeySet ks = new GPKeySet(GPData.defaultKey);
-			if (args.has(OPT_KEY_MAC)) {
-				ks.setKey(KeyType.MAC, (GPKey) args.valueOf(OPT_KEY_MAC));
+			// Key ID and Version
+			if (args.has(OPT_KEY_ID)) {
+				ks.setKeyID((int) args.valueOf(OPT_KEY_ID));
 			}
-			if (args.has(OPT_KEY_ENC)) {
-				ks.setKey(KeyType.ENC, (GPKey) args.valueOf(OPT_KEY_ENC));
-			}
-			if (args.has(OPT_KEY_KEK)) {
-				ks.setKey(KeyType.KEK, (GPKey) args.valueOf(OPT_KEY_KEK));
+			if (args.has(OPT_KEY_VERSION)) {
+				ks.setKeyVersion((int) args.valueOf(OPT_KEY_VERSION));
 			}
 			keys = PlaintextKeys.fromKeySet(ks);
 		} else {
 			// Use default test key with optional diversification.
 			keys = PlaintextKeys.fromMasterKey(GPData.defaultKey, div);
 		}
-
-
-		// FIXME: somehow expose this.
-		//		// Key ID and Version
-		//		if (args.has(OPT_KEY_ID)) {
-		//			ks.setKeyID((int) args.valueOf(OPT_KEY_ID));
-		//		}
-		//		if (args.has(OPT_KEY_VERSION)) {
-		//			ks.setKeyVersion((int) args.valueOf(OPT_KEY_VERSION));
-		//		}
-
 
 		// Load a CAP file, if specified
 		CapFile cap = null;

@@ -40,6 +40,7 @@ deploy:
       repo: martinpaljak/GlobalPlatformPro
     skip_cleanup: true
     acl: public-read
+    all_branches: true
     local-dir: output
     upload-dir: travis-builds-123
   - provider: releases

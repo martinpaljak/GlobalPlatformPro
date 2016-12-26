@@ -39,6 +39,9 @@ deploy:
     on:
       repo: martinpaljak/GlobalPlatformPro
     skip_cleanup: true
+    acl: public-read
+    local-dir: output
+    upload-dir: travis-builds-123
   - provider: releases
     file:
       - gp.jar

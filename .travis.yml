@@ -2,28 +2,27 @@ sudo: false
 language: java
 jdk:
 - oraclejdk8
-# For making the Windows executable
 before_script:
-  - mkdir -p ext
-  - wget http://heanet.dl.sourceforge.net/project/launch4j/launch4j-3/3.9/launch4j-3.9-linux.tgz
-  - echo "e6e9a83927585d16efcb82f41d4ae480f14eccc19ced611a59f31fffb5ca549b  launch4j-3.9-linux.tgz" | sha256sum -c
-  - tar -C ext -xzf launch4j-3.9-linux.tgz
-  - ant fetch
+- mkdir -p ext
+- wget http://heanet.dl.sourceforge.net/project/launch4j/launch4j-3/3.9/launch4j-3.9-linux.tgz
+- echo "e6e9a83927585d16efcb82f41d4ae480f14eccc19ced611a59f31fffb5ca549b  launch4j-3.9-linux.tgz"
+  | sha256sum -c
+- tar -C ext -xzf launch4j-3.9-linux.tgz
+- ant fetch
 script: ant windist
 env:
   global:
     secure: Df5FIHnieDJj8AAwgeAh779Rs+aoJ8e9WQN0ero4OfcJ2Y1G7InBZQIGesfVR1M7EX4Hf0fvmUam9zthdwi4culk+gJeOAMM/wpCqvEUyWDTd78Cr08L7PjNW8RCq5NCYhgvO1j+IzJOA3IR6h8DSS4QGZtJqPYk65ZQ1uRyAGc=
-
 notifications:
   irc:
     on_success: change
     on_failure: always
     channels:
-      - "irc.freenode.org#javacard"
+    - irc.freenode.org#javacard
 addons:
   apt:
     packages:
-      - libc6:i386
+    - libc6:i386
   coverity_scan:
     project:
       name: martinpaljak/GlobalPlatformPro
@@ -31,18 +30,23 @@ addons:
     build_command_prepend: ant fetch
     build_command: ant compile
     branch_pattern: coverity
-
-
-
-# Deploy releases to Github.
 deploy:
-  provider: releases
-  file:
-    - gp.jar
-    - openkms-gp.jar
-    - gp.exe
-  api-key:
-    secure: JD2xCdTGa6Vif2Qs7z77tWWMM8KdlgRVKFkzOprCXiDJRr36Vu2lVkOFW4AvvNudKQNZn8xOhYcebd2YBITdmFczt1vyPItoSjZ+sAQO3hIJ0r2+E+XVX8mj5Nw6NF6Jobd87VFMPJ7cE07gaDE5FzpdIWB7hMpyEPYV++azCG8=
-  skip_cleanup: true
-  on:
-    tags: true
+  - provider: gcs
+    access_key_id: GOOGQ7KC7VVKLVNTAVB7
+    secret_access_key:
+      secure: D/g4zF7rKLLDcNR8eQsa5mUS7iFvaOP5d83n4pgjIVDNcDyeMS2eiZORw+rqqKgS9rpbliFU7MDbDK40yqCSK6a1shVfmpBwSfEZXE1TjfflN13LkreCIQ+ZACo3zt2jIr7xxMZz9um0FofOuLJbdjvQNG66hbgN9rXxyeOxSoE=
+    bucket: github-martinpaljak-builds
+    on:
+      repo: martinpaljak/GlobalPlatformPro
+    skip_cleanup: true
+  - provider: releases
+    file:
+      - gp.jar
+      - openkms-gp.jar
+      - gp.exe
+    api-key:
+      secure: JD2xCdTGa6Vif2Qs7z77tWWMM8KdlgRVKFkzOprCXiDJRr36Vu2lVkOFW4AvvNudKQNZn8xOhYcebd2YBITdmFczt1vyPItoSjZ+sAQO3hIJ0r2+E+XVX8mj5Nw6NF6Jobd87VFMPJ7cE07gaDE5FzpdIWB7hMpyEPYV++azCG8=
+    skip_cleanup: true
+    on:
+      tags: true
+      repo: martinpaljak/GlobalPlatformPro

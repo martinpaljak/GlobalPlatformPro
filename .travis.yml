@@ -30,6 +30,9 @@ addons:
     build_command_prepend: ant fetch
     build_command: ant compile
     branch_pattern: coverity
+before_deploy:
+- mkdir -p output
+- cp gp.jar output
 deploy:
   - provider: gcs
     access_key_id: GOOGQ7KC7VVKLVNTAVB7

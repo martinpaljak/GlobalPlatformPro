@@ -12,7 +12,7 @@ Building JavaCard applets is equally pleasing with [ant-javacard](https://github
 * [Supported cards](#supported-cards)
 * [Contact & support](#contact)
 * [Similar projects](#similar-projects)
-* [About OpenKMS & legal](#about-openkms)
+* [About & legal](#about)
 
 
 ### Get it now!
@@ -237,14 +237,12 @@ The ancestor of this code is GPJ (Global Platform for SmartCardIO) which is (sti
  * thin and self-contained, re-usable, easy to integrate
  * easily readable, auditable and secure codebase (less is more)
 
-## About OpenKMS
-The promise of OpenKMS is similar<sup>*</sup> to OpenSSL: 
+## About
+The promise of GlobalPlatformPro is similar to OpenSSL:
     
 > Why buy a smart card **software kit as a black box** when you can get an **open one for free**?
 
 In regard to GlobalPlatform, the goal is to make simple operations like installing and removing applets and locking the card with new keys as easy as next-next-done - you don't have to know the whole Global Platform specification by heart for that or buy a piece of proprietary software for a few hundred euros! For all those features that are not described in the GlobalPlatform specification that actually make your card work... you still have to use those proprietary commands, but OpenKMS GlobalPlatformPro toolkit's flexibility (and its license) should allow you to do that as well.
-
-\* <sub>With the difference that OpenKMS thrives for a easily usable and pleasantly readable, auditable and secure codebase. And yes, you have probably already sold your soul to the devil...</sub>
 
 ### License
 
@@ -271,4 +269,4 @@ In regard to GlobalPlatform, the goal is to make simple operations like installi
  The casual: trademarks to their owners, copyrights to authors, software patents to hell, legal letters to ~~/dev/null~~ PGP key 0x307E3452. Everything is provided AS-IS AND THERE IS A CONSTANT RISK OF DEATH FROM SUDDEN LIGHTNING. Writing in all caps made it look like serious, didn't it?
 
 ----
-OpenKMS - open source key management - [openkms.org](http://openkms.org) / [JavaCard.pro](http://javacard.pro)
+[JavaCard.pro](http://javacard.pro)

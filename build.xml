@@ -5,20 +5,20 @@
   <target name="fetch">
     <mkdir dir="lib"/>
     <!-- Remember to update globalplatform.pro and .classpath as well! -->
-    <get src="https://repo1.maven.org/maven2/net/sf/jopt-simple/jopt-simple/4.9/jopt-simple-4.9.jar" dest="lib" verbose="true" skipexisting="true"/>
-    <get src="http://repo2.maven.org/maven2/org/slf4j/slf4j-api/1.7.13/slf4j-api-1.7.13.jar" dest="lib" verbose="true" skipexisting="true"/>
-    <get src="http://repo2.maven.org/maven2/org/slf4j/slf4j-simple/1.7.13/slf4j-simple-1.7.13.jar" dest="lib" verbose="true" skipexisting="true"/>
-    <get src="http://central.maven.org/maven2/net/sf/proguard/proguard-base/5.2.1/proguard-base-5.2.1.jar" dest="lib" verbose="true" skipexisting="true"/>
-    <get src="http://downloads.bouncycastle.org/java/bcprov-jdk15on-154.jar" dest="lib" verbose="true" skipexisting="true"/>
+    <get src="https://repo1.maven.org/maven2/net/sf/jopt-simple/jopt-simple/5.0.4/jopt-simple-5.0.4.jar" dest="lib" verbose="true" skipexisting="true"/>
+    <get src="http://repo2.maven.org/maven2/org/slf4j/slf4j-api/1.7.25/slf4j-api-1.7.25.jar" dest="lib" verbose="true" skipexisting="true"/>
+    <get src="http://repo2.maven.org/maven2/org/slf4j/slf4j-simple/1.7.25/slf4j-simple-1.7.25.jar" dest="lib" verbose="true" skipexisting="true"/>
+    <get src="http://central.maven.org/maven2/net/sf/proguard/proguard-base/5.3.3/proguard-base-5.3.3.jar" dest="lib" verbose="true" skipexisting="true"/>
+    <get src="https://downloads.bouncycastle.org/java/bcprov-jdk15on-157.jar" dest="lib" verbose="true" skipexisting="true"/>
     <get src="https://github.com/martinpaljak/apdu4j/releases/download/v0.0.34/apdu4j-pcsc.jar" dest="lib" verbose="true" skipexisting="true"/>
-    <get src="https://repo1.maven.org/maven2/com/google/guava/guava/19.0/guava-19.0.jar" dest="lib" verbose="true" skipexisting="true"/>
-    <checksum algorithm="SHA-256" file="lib/jopt-simple-4.9.jar" property="26c5856e954b5f864db76f13b86919b59c6eecf9fd930b96baa8884626baf2f5" verifyProperty="joptOK"/>
-    <checksum algorithm="SHA-256" file="lib/slf4j-api-1.7.13.jar" property="20d68d0c2e4fb984ffc164852b8b68df49a2b8716076f576881bcef7649a0e35" verifyProperty="slfjapiOK"/>
-    <checksum algorithm="SHA-256" file="lib/slf4j-simple-1.7.13.jar" property="4709c0b535057c6a9a794da9522b1291de9c72b6d61f41b7ecf63156bc7bee35" verifyProperty="slfjsimpleOK"/>
-    <checksum algorithm="SHA-256" file="lib/proguard-base-5.2.1.jar" property="f163bdd73c58cbc9b789ab14f5d602b4994dbd82eacb5d54b3bd2a95de63f3bf" verifyProperty="proguardOK"/>
-    <checksum algorithm="SHA-256" file="lib/bcprov-jdk15on-154.jar" property="d0ae14598f9c528d2ab7bb8ed00e785a5440f692712cd362d69328aba25efb57" verifyProperty="bouncyOK"/>
+    <get src="https://repo1.maven.org/maven2/com/google/guava/guava/22.0/guava-22.0.jar" dest="lib" verbose="true" skipexisting="true"/>
+    <checksum algorithm="SHA-256" file="lib/jopt-simple-5.0.4.jar" property="df26cc58f235f477db07f753ba5a3ab243ebe5789d9f89ecf68dd62ea9a66c28" verifyProperty="joptOK"/>
+    <checksum algorithm="SHA-256" file="lib/slf4j-api-1.7.25.jar" property="18c4a0095d5c1da6b817592e767bb23d29dd2f560ad74df75ff3961dbde25b79" verifyProperty="slfjapiOK"/>
+    <checksum algorithm="SHA-256" file="lib/slf4j-simple-1.7.25.jar" property="0966e86fffa5be52d3d9e7b89dd674d98a03eed0a454fbaf7c1bd9493bd9d874" verifyProperty="slfjsimpleOK"/>
+    <checksum algorithm="SHA-256" file="lib/proguard-base-5.3.3.jar" property="1d2e883717b8ab7d3fcc9fa01034d165809a9c94daa6303a838f11e4d36adc86" verifyProperty="proguardOK"/>
+    <checksum algorithm="SHA-256" file="lib/bcprov-jdk15on-157.jar" property="4c7fb5f7fb043fedc4b7e7af88871050f61af8dea7aaade87f8ebd60e509cd89" verifyProperty="bouncyOK"/>
     <checksum algorithm="SHA-256" file="lib/apdu4j-pcsc.jar" property="c83739847a7b1e323e4d0cad94fe50858ecc9435a59ee429d55ec02934d52a30" verifyProperty="apduOK"/>
-    <checksum algorithm="SHA-256" file="lib/guava-19.0.jar" property="58d4cc2e05ebb012bbac568b032f75623be1cb6fb096f3c60c72a86f7f057de4" verifyProperty="guavaOK"/>
+    <checksum algorithm="SHA-256" file="lib/guava-22.0.jar" property="1158e94c7de4da480873f0b4ab4a1da14c0d23d4b1902cc94a58a6f0f9ab579e" verifyProperty="guavaOK"/>
     <fail message="Checksum failure">
       <condition>
         <or>
@@ -35,11 +35,11 @@
   </target>
   <!-- Build the software -->
   <path id="build.classpath">
-    <pathelement location="lib/jopt-simple-4.9.jar"/>
+    <pathelement location="lib/jopt-simple-5.0.4.jar"/>
     <pathelement location="lib/apdu4j-pcsc.jar"/>
-    <pathelement location="lib/bcprov-jdk15on-154.jar"/>
-    <pathelement location="lib/slf4j-api-1.7.13.jar"/>
-    <pathelement location="lib/guava-19.0.jar"/>
+    <pathelement location="lib/bcprov-jdk15on-157.jar"/>
+    <pathelement location="lib/slf4j-api-1.7.25.jar"/>
+    <pathelement location="lib/guava-22.0.jar"/>
   </path>
   <target name="make" depends="fetch,compile"/>
   <target name="compile" description="compile the source">
@@ -55,14 +55,14 @@
     <java classname="proguard.ProGuard" fork="true" failonerror="true">
       <arg line="@globalplatform.pro"/>
       <classpath>
-        <pathelement location="lib/proguard-base-5.2.1.jar"/>
+        <pathelement location="lib/proguard-base-5.3.3.jar"/>
       </classpath>
     </java>
     <jar destfile="openkms-gp.jar" level="9" basedir="build"/>
     <jar destfile="gp.jar" level="9">
       <zipfileset src="lib/apdu4j-pcsc.jar" />
       <zipfileset src="optimized-globalplatform.jar" excludes="org/bouncycastle/x509/"/>
-      <zipfileset src="lib/slf4j-simple-1.7.13.jar" excludes="META-INF/maven/"/>
+      <zipfileset src="lib/slf4j-simple-1.7.25.jar" excludes="META-INF/maven/"/>
       <manifest><attribute name="Main-Class" value="pro.javacard.gp.GPTool"/></manifest>
     </jar>
     <delete file="optimized-globalplatform.jar"/>
@@ -73,7 +73,7 @@
     <taskdef name="launch4j" classname="net.sf.launch4j.ant.Launch4jTask" classpath="${launch4j.dir}/launch4j.jar:${launch4j.dir}/lib/xstream.jar"/>
     <launch4j>
       <config headerType="console" outfile="gp.exe" jar="gp.jar" errTitle="GlobalPlatformPro">
-        <jre minVersion="1.7.0"/>
+        <jre minVersion="1.8.0"/>
       </config>
     </launch4j>
   </target>

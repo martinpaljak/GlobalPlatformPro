@@ -181,6 +181,14 @@ public class GPRegistryEntry {
 	public static class Privileges {
 		private EnumSet<Privilege> privs = EnumSet.noneOf(Privilege.class);
 
+		public static Privileges set(Privilege...privs) {
+			Privileges p = new Privileges();
+			for (Privilege pv: privs) {
+				p.add(pv);
+			}
+			return p;
+		}
+
 		// TODO: implement GP 2.2 table 6.2
 		// TODO: bitmasks as symbolics, KAT tests
 		// See GP 2.2.1 Tables 11-7, 11-8, 11-9
@@ -342,6 +350,13 @@ public class GPRegistryEntry {
 				b3 |= 0x10;
 			}
 			return new byte[]{(byte)(b1 & 0xFF), (byte)(b2 & 0xFF),  (byte)(b3 & 0xFF) };
+		}
+
+		public byte toByte() {
+			byte [] bytes = toBytes();
+			if (bytes.length == 1)
+				return bytes[0];
+			throw new IllegalStateException("This privileges set can not be encoded in one byte");
 		}
 
 		public String toString() {

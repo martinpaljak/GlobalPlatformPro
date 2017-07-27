@@ -70,6 +70,7 @@ import pro.javacard.gp.GPKeySet.Diversification;
 import pro.javacard.gp.GPKeySet.GPKey;
 import pro.javacard.gp.GPKeySet.GPKey.Type;
 import pro.javacard.gp.GPRegistryEntry.Kind;
+import pro.javacard.gp.GPRegistryEntry.Privilege;
 import pro.javacard.gp.GPRegistryEntry.Privileges;
 
 /**
@@ -789,10 +790,12 @@ public class GlobalPlatform {
 	}
 
 	public void makeDefaultSelected(AID aid) throws CardException, GPException {
-		// FIXME: only works for some 2.1.1 cards ?
+		// FIXME: only works for some 2.1.1 cards ? Clarify and document
 		ByteArrayOutputStream bo = new ByteArrayOutputStream();
 		// Only supported privilege.
-		byte privileges = GPData.defaultSelectedPriv;
+		Privileges ds = Privileges.set(Privilege.CardReset);
+		byte privileges = ds.toByte();
+
 		try {
 			bo.write(0);
 			bo.write(0);

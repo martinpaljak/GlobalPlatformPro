@@ -131,7 +131,7 @@ public final class GPData {
 		if ((0xA9 <= type) && (type <= 0xFE))
 			return "RFU (asymmetric algorithms)";
 		if (0xFF == type)
-			return "Extened Format";
+			return "Extended Format";
 
 		return "UNKNOWN";
 	}

@@ -1,7 +1,7 @@
 # Contributing to GlobalPlatformPro
  * Use the software!
  * Send card information
- * Send debug logs (with ```--debug``` and ```--verbose```)
+ * Send debug logs (with `--debug` and `--verbose`)
  * All patches must be with MIT license.
 
 ## Building the software
@@ -21,11 +21,8 @@ On OSX, if you have Eclipse installed, use this to get "ant" on command line:
  * Install dependencies: `pkg install devel/libccid java/openjdk7 devel/apache-ant devel/git`
 
 ## Note about Oracle JDK
- * Compiled against Java 1.7+ but only tested with latest Java 1.8
-  * 1.7 is at EOL: http://www.oracle.com/us/technologies/java/eol-135779.html   
  * Requires "Unlimited Strength Jurisdiction Policy Files"
-  * Download for Java 1.7: http://www.oracle.com/technetwork/java/javase/downloads/jce-7-download-432124.html
-  * Download for Java 1.8: http://www.oracle.com/technetwork/java/javase/downloads/jce8-download-2133166.html
+ * Download for Java 1.8: http://www.oracle.com/technetwork/java/javase/downloads/jce8-download-2133166.html
 
 ## Building Windows executable
  * Download [launch4j](http://launch4j.sourceforge.net/) and extract a version matching your host platform into `ext/launch4j`

@@ -114,17 +114,17 @@ public class GlobalPlatform {
 	public static EnumSet<APDUMode> defaultMode = EnumSet.of(APDUMode.MAC);
 
 	// Implementation details
-	private static final byte CLA_GP = (byte) 0x80;
-	private static final byte CLA_MAC = (byte) 0x84;
-	private static final byte INS_INITIALIZE_UPDATE = (byte) 0x50;
-	private static final byte INS_INSTALL = (byte) 0xE6;
-	private static final byte INS_LOAD = (byte) 0xE8;
-	private static final byte INS_DELETE = (byte) 0xE4;
-	private static final byte INS_GET_STATUS = (byte) 0xF2;
-	private static final byte INS_SET_STATUS = (byte) 0xF0;
-	private static final byte INS_PUT_KEY = (byte) 0xD8;
-	private static final byte INS_STORE_DATA = (byte) 0xE2;
-	private static final byte INS_GET_DATA = (byte) 0xCA;
+	public static final byte CLA_GP = (byte) 0x80;
+	public static final byte CLA_MAC = (byte) 0x84;
+	public static final byte INS_INITIALIZE_UPDATE = (byte) 0x50;
+	public static final byte INS_INSTALL = (byte) 0xE6;
+	public static final byte INS_LOAD = (byte) 0xE8;
+	public static final byte INS_DELETE = (byte) 0xE4;
+	public static final byte INS_GET_STATUS = (byte) 0xF2;
+	public static final byte INS_SET_STATUS = (byte) 0xF0;
+	public static final byte INS_PUT_KEY = (byte) 0xD8;
+	public static final byte INS_STORE_DATA = (byte) 0xE2;
+	public static final byte INS_GET_DATA = (byte) 0xCA;
 
 	// SD AID of the card successfully selected or null
 	public AID sdAID = null;
@@ -748,6 +748,20 @@ public class GlobalPlatform {
 		dirty = true;
 	}
 
+	/**
+	 * Sends STORE DATA commands to the application identified
+	 *
+	 * @param aid - AID of the target application (or Security Domain)
+	 *
+	 * @throws GPException
+	 * @throws CardException
+	 *
+	 * @see GP 2.1.1 9.5.2
+	 *
+	 */
+	public void storeData(AID aid, byte[] data) throws CardException, GPException {
+		storeData(aid, data, (byte)0x80);
+	}
 
 	/**
 	 * Sends STORE DATA commands to the application identified
@@ -760,7 +774,7 @@ public class GlobalPlatform {
 	 * @see GP 2.1.1 9.5.2
 	 *
 	 */
-	public void storeData(AID aid, byte []data) throws CardException, GPException {
+	public void storeData(AID aid, byte[] data, byte P1) throws CardException, GPException {
 		// send the INSTALL for personalization command
 		ByteArrayOutputStream bo = new ByteArrayOutputStream();
 		try {
@@ -783,7 +797,7 @@ public class GlobalPlatform {
 		// Now pump the data
 		List<byte[]> blocks = GPUtils.splitArray(data, wrapper.getBlockSize());
 		for (int i = 0; i < blocks.size(); i++) {
-			CommandAPDU load = new CommandAPDU(CLA_GP, INS_STORE_DATA, (i == (blocks.size() - 1)) ? 0x80 : 0x00, (byte) i, blocks.get(i));
+			CommandAPDU load = new CommandAPDU(CLA_GP, INS_STORE_DATA, (i == (blocks.size() - 1)) ? P1 : 0x00, (byte) i, blocks.get(i));
 			response = transmit(load);
 			GPException.check(response, "STORE DATA failed");
 		}

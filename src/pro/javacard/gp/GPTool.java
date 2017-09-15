@@ -115,7 +115,11 @@ public final class GPTool {
 	private final static String OPT_VERSION = "version";
 	private final static String OPT_VIRGIN = "virgin";
 	private final static String OPT_VISA2 = "visa2";
-
+	private final static String OPT_ACR_LIST = "acr-list";
+	private final static String OPT_ACR_ADD = "acr-add";
+	private final static String OPT_ACR_DELETE = "acr-delete";
+	private final static String OPT_ACR_RULE = "acr-rule";
+	private final static String OPT_ACR_CERT_HASH = "acr-hash";
 
 	private static OptionSet parseArguments(String[] argv) throws IOException {
 		OptionSet args = null;
@@ -189,6 +193,13 @@ public final class GPTool {
 		parser.accepts(OPT_NEW_KEY_VERSION, "key version for the new key").withRequiredArg().ofType(Integer.class);
 
 		parser.accepts(OPT_VIRGIN, "Card has virgin keys");
+
+		// access rules
+		parser.accepts(OPT_ACR_LIST, "List access rules");
+		parser.accepts(OPT_ACR_ADD, "Add an access rule");
+		parser.accepts(OPT_ACR_DELETE, "Delete an access rule");
+		parser.accepts(OPT_ACR_RULE, "Access control rule (can be 0x00(NEVER),0x01(ALWAYS) or an apdu filter").withRequiredArg().withValuesConvertedBy(ArgMatchers.hex());
+		parser.accepts(OPT_ACR_CERT_HASH, "Certicate hash (sha1)").withRequiredArg().withValuesConvertedBy(ArgMatchers.hex());;
 
 		// General GP options
 		parser.accepts(OPT_SC_MODE, "Secure channel to use (mac/enc/clr)").withRequiredArg().withValuesConvertedBy(ArgMatchers.mode());;
@@ -429,6 +440,11 @@ public final class GPTool {
 						}
 					}
 
+					// list access rules
+					if (args.has(OPT_ACR_LIST)) {
+						SEAccessControlUtility.acrList(gp, card);
+					}
+
 					// Talk to the card manager (can be null)
 					gp.select((AID) args.valueOf(OPT_SDAID));
 
@@ -440,7 +456,6 @@ public final class GPTool {
 
 					// Authenticate, only if needed
 					if (needsAuthentication(args)) {
-
 						EnumSet<APDUMode> mode = GlobalPlatform.defaultMode.clone();
 						// Override default mode if needed.
 						if (args.has(OPT_SC_MODE)) {
@@ -644,6 +659,42 @@ public final class GPTool {
 								System.err.println("Must specify target application with -" + OPT_APPLET);
 							}
 						}
+
+						if (args.has(OPT_ACR_ADD)){
+							if (!args.has(OPT_ACR_CERT_HASH)){
+								System.err.println("Must specify certificate hash with -" + OPT_ACR_CERT_HASH);
+							}
+							else if (!args.has(OPT_APPLET)){
+								System.err.println("Must specify target application id with -" + OPT_APPLET);
+							}
+							else if (!args.has(OPT_ACR_RULE)){
+								System.err.println("Must specify an access rule with -" + OPT_ACR_RULE  + " (00, 01 or an apdu filter)");
+							}
+							else if (((byte[])args.valueOf(OPT_ACR_CERT_HASH)).length == 20) {
+								SEAccessControlUtility.acrAdd(gp, (AID) args.valueOf(OPT_APPLET), (byte[]) args.valueOf(OPT_ACR_CERT_HASH), (byte[]) args.valueOf(OPT_ACR_RULE));
+							}
+							else {
+								System.err.println("certificate hash must be 20 bytes");
+							}
+						}
+
+						if (args.has(OPT_ACR_DELETE)){
+							if (!args.has(OPT_APPLET)){
+								System.err.println("Must specify target application id with -" + OPT_APPLET);
+							}
+							else if (args.has(OPT_ACR_CERT_HASH)) {
+								if (((byte[])args.valueOf(OPT_ACR_CERT_HASH)).length == 20) {
+									SEAccessControlUtility.acrDelete(gp, (AID) args.valueOf(OPT_APPLET), (byte[]) args.valueOf(OPT_ACR_CERT_HASH));
+								}
+								else {
+									System.err.println("certificate hash must be 20 bytes");
+								}
+							}
+							else {
+								SEAccessControlUtility.acrDelete(gp, (AID) args.valueOf(OPT_APPLET), null);
+							}
+						}
+
 						// --lock-card
 						if (args.has(OPT_LOCK_CARD)) {
 							gp.setCardStatus(GPData.lockedStatus);
@@ -871,6 +922,8 @@ public final class GPTool {
 		if (args.has(OPT_LIST) || args.has(OPT_LOAD) || args.has(OPT_INSTALL))
 			return true;
 		if (args.has(OPT_DELETE) || args.has(OPT_CREATE))
+			return true;
+		if (args.has(OPT_ACR_ADD) || args.has(OPT_ACR_DELETE))
 			return true;
 		if (args.has(OPT_LOCK) || args.has(OPT_UNLOCK) || args.has(OPT_MAKE_DEFAULT))
 			return true;

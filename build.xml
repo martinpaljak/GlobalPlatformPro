@@ -4,68 +4,24 @@
   <!-- Build dependencies -->
   <target name="fetch">
     <mkdir dir="lib"/>
-    <!-- Remember to update globalplatform.pro and .classpath as well! -->
-    <get src="https://repo1.maven.org/maven2/net/sf/jopt-simple/jopt-simple/5.0.4/jopt-simple-5.0.4.jar" dest="lib" verbose="true" skipexisting="true"/>
-    <get src="http://repo2.maven.org/maven2/org/slf4j/slf4j-api/1.7.25/slf4j-api-1.7.25.jar" dest="lib" verbose="true" skipexisting="true"/>
-    <get src="http://repo2.maven.org/maven2/org/slf4j/slf4j-simple/1.7.25/slf4j-simple-1.7.25.jar" dest="lib" verbose="true" skipexisting="true"/>
-    <get src="http://central.maven.org/maven2/net/sf/proguard/proguard-base/5.3.3/proguard-base-5.3.3.jar" dest="lib" verbose="true" skipexisting="true"/>
-    <get src="https://downloads.bouncycastle.org/java/bcprov-jdk15on-157.jar" dest="lib" verbose="true" skipexisting="true"/>
-    <get src="https://github.com/martinpaljak/apdu4j/releases/download/v0.0.34/apdu4j-pcsc.jar" dest="lib" verbose="true" skipexisting="true"/>
-    <get src="https://repo1.maven.org/maven2/com/google/guava/guava/22.0/guava-22.0.jar" dest="lib" verbose="true" skipexisting="true"/>
-    <checksum algorithm="SHA-256" file="lib/jopt-simple-5.0.4.jar" property="df26cc58f235f477db07f753ba5a3ab243ebe5789d9f89ecf68dd62ea9a66c28" verifyProperty="joptOK"/>
-    <checksum algorithm="SHA-256" file="lib/slf4j-api-1.7.25.jar" property="18c4a0095d5c1da6b817592e767bb23d29dd2f560ad74df75ff3961dbde25b79" verifyProperty="slfjapiOK"/>
-    <checksum algorithm="SHA-256" file="lib/slf4j-simple-1.7.25.jar" property="0966e86fffa5be52d3d9e7b89dd674d98a03eed0a454fbaf7c1bd9493bd9d874" verifyProperty="slfjsimpleOK"/>
-    <checksum algorithm="SHA-256" file="lib/proguard-base-5.3.3.jar" property="1d2e883717b8ab7d3fcc9fa01034d165809a9c94daa6303a838f11e4d36adc86" verifyProperty="proguardOK"/>
-    <checksum algorithm="SHA-256" file="lib/bcprov-jdk15on-157.jar" property="4c7fb5f7fb043fedc4b7e7af88871050f61af8dea7aaade87f8ebd60e509cd89" verifyProperty="bouncyOK"/>
-    <checksum algorithm="SHA-256" file="lib/apdu4j-pcsc.jar" property="c83739847a7b1e323e4d0cad94fe50858ecc9435a59ee429d55ec02934d52a30" verifyProperty="apduOK"/>
-    <checksum algorithm="SHA-256" file="lib/guava-22.0.jar" property="1158e94c7de4da480873f0b4ab4a1da14c0d23d4b1902cc94a58a6f0f9ab579e" verifyProperty="guavaOK"/>
+    <get src="http://central.maven.org/maven2/net/sf/proguard/proguard-base/5.3/proguard-base-5.3.jar" dest="lib" verbose="true" skipexisting="true"/>
+    <checksum algorithm="SHA-256" file="lib/proguard-base-5.3.jar" property="6ddbbcbd3ef979a588ee2732920b00c335649dcb72f464eaaf0ce9685a539572" verifyProperty="proguardOK"/>
     <fail message="Checksum failure">
       <condition>
         <or>
-          <isfalse value="${joptOK}"/>
-          <isfalse value="${slfjapiOK}"/>
-          <isfalse value="${slfjsimpleOK}"/>
           <isfalse value="${proguardOK}"/>
-          <isfalse value="${bouncyOK}"/>
-          <isfalse value="${apduOK}"/>
-          <isfalse value="${guavaOK}"/>
         </or>
       </condition>
     </fail>
   </target>
-  <!-- Build the software -->
-  <path id="build.classpath">
-    <pathelement location="lib/jopt-simple-5.0.4.jar"/>
-    <pathelement location="lib/apdu4j-pcsc.jar"/>
-    <pathelement location="lib/bcprov-jdk15on-157.jar"/>
-    <pathelement location="lib/slf4j-api-1.7.25.jar"/>
-    <pathelement location="lib/guava-22.0.jar"/>
-  </path>
-  <target name="make" depends="fetch,compile"/>
-  <target name="compile" description="compile the source">
-    <mkdir dir="build"/>
-    <javac srcdir="src" destdir="build" includeantruntime="false" excludes="**/tests/**" debug="true" debuglevel="lines,vars,source">
-      <compilerarg value="-Xlint"/>
-      <classpath refid="build.classpath"/>
-    </javac>
-  </target>
   <!-- Package it into a nice little JAR -->
-  <target name="dist" depends="make" description="generate the distribution">
-    <exec command="git describe --always --tags --long" output="build/pro/javacard/gp/version.txt"/>
+  <target name="dist" depends="fetch" description="generate the distribution">
     <java classname="proguard.ProGuard" fork="true" failonerror="true">
       <arg line="@globalplatform.pro"/>
       <classpath>
-        <pathelement location="lib/proguard-base-5.3.3.jar"/>
+        <pathelement location="lib/proguard-base-5.3.jar"/>
       </classpath>
     </java>
-    <jar destfile="openkms-gp.jar" level="9" basedir="build"/>
-    <jar destfile="gp.jar" level="9">
-      <zipfileset src="lib/apdu4j-pcsc.jar" />
-      <zipfileset src="optimized-globalplatform.jar" excludes="org/bouncycastle/x509/"/>
-      <zipfileset src="lib/slf4j-simple-1.7.25.jar" excludes="META-INF/maven/"/>
-      <manifest><attribute name="Main-Class" value="pro.javacard.gp.GPTool"/></manifest>
-    </jar>
-    <delete file="optimized-globalplatform.jar"/>
   </target>
   <!-- Wrap the JAR into .EXE for Windows users -->
   <target name="windist" depends="dist" description="package as .exe">

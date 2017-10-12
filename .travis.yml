@@ -8,7 +8,9 @@ before_script:
 - echo "fd1b654e5024d3f58419e05da2170d44dc5e924f1f369ebee8d2fb2e9cbd2b68  launch4j-3.11-linux.tgz" | sha256sum -c
 - tar -C ext -xzf launch4j-3.11-linux.tgz
 - ant fetch
-script: ant windist
+script:
+- mvn clean package
+- ant windist
 env:
   global:
     secure: Df5FIHnieDJj8AAwgeAh779Rs+aoJ8e9WQN0ero4OfcJ2Y1G7InBZQIGesfVR1M7EX4Hf0fvmUam9zthdwi4culk+gJeOAMM/wpCqvEUyWDTd78Cr08L7PjNW8RCq5NCYhgvO1j+IzJOA3IR6h8DSS4QGZtJqPYk65ZQ1uRyAGc=

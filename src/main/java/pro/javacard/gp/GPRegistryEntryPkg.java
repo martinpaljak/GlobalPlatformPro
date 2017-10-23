@@ -19,11 +19,13 @@
  */
 package pro.javacard.gp;
 
+import apdu4j.HexUtils;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class GPRegistryEntryPkg extends GPRegistryEntry {
+public final class GPRegistryEntryPkg extends GPRegistryEntry {
 
 	private byte[] version;
 	private List<AID> modules = new ArrayList<AID>();
@@ -35,7 +37,7 @@ public class GPRegistryEntryPkg extends GPRegistryEntry {
 		if (version != null && version.length == 2) {
 			return Integer.valueOf(version[0]) + "." + Integer.valueOf(version[1]);
 		}
-		return "<unknown format>";
+		return "<unknown format>:" + HexUtils.bin2hex(version);
 	}
 
 	void setVersion(byte[] v) {

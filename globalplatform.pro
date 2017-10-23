@@ -25,3 +25,5 @@
 -keep public class * extends java.security.Provider {*;}
 -keep class com.sun.jna.** { *; }
 -keep class jnasmartcardio.** { *; }
+
+-keep class org.slf4j.impl.Simple** { *; }

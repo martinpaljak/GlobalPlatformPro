@@ -16,6 +16,11 @@
     </repository>
   </repositories>
   <dependencies>
+    <dependency>
+      <groupId>com.payneteasy</groupId>
+      <artifactId>ber-tlv</artifactId>
+      <version>1.0-7</version>
+    </dependency>
     <!-- https://javacard.pro/maven -->
     <dependency>
       <groupId>com.github.martinpaljak</groupId>
@@ -52,16 +57,10 @@
       <artifactId>jopt-simple</artifactId>
       <version>5.0.4</version>
     </dependency>
-    <!-- https://mvnrepository.com/artifact/com.google.guava/guava -->
-    <dependency>
-      <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
-      <version>23.0</version>
-    </dependency>
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>3.8.1</version>
+      <version>4.12</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

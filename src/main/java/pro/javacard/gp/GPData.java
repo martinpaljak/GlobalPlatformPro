@@ -19,31 +19,26 @@
  */
 package pro.javacard.gp;
 
-import java.io.IOException;
 import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.math.BigInteger;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import javax.smartcardio.CardException;
 
-import org.bouncycastle.asn1.ASN1ApplicationSpecific;
-import org.bouncycastle.asn1.ASN1Encodable;
-import org.bouncycastle.asn1.ASN1InputStream;
-import org.bouncycastle.asn1.ASN1ObjectIdentifier;
-import org.bouncycastle.asn1.ASN1Sequence;
-import org.bouncycastle.asn1.BERTags;
-import org.bouncycastle.asn1.DERApplicationSpecific;
-
-import com.google.common.collect.Lists;
+import com.payneteasy.tlv.*;
 
 import apdu4j.HexUtils;
+import com.sun.jmx.snmp.BerDecoder;
+import com.sun.jmx.snmp.BerException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import pro.javacard.gp.GPKeySet.GPKey;
 import pro.javacard.gp.GPKeySet.GPKey.Type;
-import pro.javacard.gp.GlobalPlatform.GPSpec;
 
 public final class GPData {
+	final static Logger logger = LoggerFactory.getLogger(GPData.class);
+
 	public static final byte[] defaultKeyBytes = { 0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F };
 	public static final GPKey defaultKey = new GPKey(defaultKeyBytes, Type.DES3);
 
@@ -64,9 +59,21 @@ public final class GPData {
 	@Deprecated
 	public static final byte securityDomainPriv = (byte) 0x80;
 
+	public static IBerTlvLogger getLoggerInstance() {
+		return new IBerTlvLogger() {
+			@Override
+			public boolean isDebugEnabled() {
+				return true;
+			}
+
+			@Override
+			public void debug(String s, Object... objects) {
+				logger.trace(s, objects);
+			}
+		};
+	}
+
 	// TODO GP 2.2.1 11.1.2
-
-
 	public enum KeyType {
 		// ID is as used in diversification/derivation
 		// That is - one based.
@@ -74,7 +81,7 @@ public final class GPData {
 
 		private final int value;
 
-		private KeyType(int value) {
+		KeyType(int value) {
 			this.value = value;
 		}
 
@@ -156,146 +163,69 @@ public final class GPData {
 	public static List<GPKeySet.GPKey> get_key_template_list(byte[] data) throws GPException {
 		List<GPKey> r = new ArrayList<>();
 
-		try (ASN1InputStream ais = new ASN1InputStream(data)) {
-			while (ais.available() > 0) {
-				ASN1ApplicationSpecific keys = (DERApplicationSpecific)ais.readObject();
-				// System.out.println(ASN1Dump.dumpAsString(keys, true));
+		BerTlvParser parser = new BerTlvParser();
+		BerTlvs tlvs = parser.parse(data);
+		BerTlvLogger.log("    ", tlvs, GPData.getLoggerInstance());
 
-				ASN1Sequence seq = (ASN1Sequence) keys.getObject(BERTags.SEQUENCE);
-				for (ASN1Encodable p: Lists.newArrayList(seq.iterator())) {
-					ASN1ApplicationSpecific key = (DERApplicationSpecific) p.toASN1Primitive();
-					byte [] tmpl = key.getContents();
-					if (tmpl.length < 4) {
-						throw new GPDataException("Key info template shorter than 4 bytes", tmpl);
-					}
-					int id = tmpl[0] & 0xFF;
-					int version = tmpl[1] & 0xFF;
-					int type = tmpl[2] & 0xFF;
-					int length = tmpl[3] & 0xFF;
-					if (type == 0xFF) {
-						throw new GPDataException("Extended key template not yet supported", tmpl);
-					}
-					r.add(new GPKey(version, id, length, type));
+		BerTlv keys = tlvs.find(new BerTag(0xE0));
+		if (keys != null && keys.isConstructed()) {
+			for (BerTlv key: keys.findAll(new BerTag(0xC0))) {
+				byte [] tmpl = key.getBytesValue();
+				if (tmpl.length < 4) {
+					throw new GPDataException("Key info template shorter than 4 bytes", tmpl);
 				}
+				int id = tmpl[0] & 0xFF;
+				int version = tmpl[1] & 0xFF;
+				int type = tmpl[2] & 0xFF;
+				int length = tmpl[3] & 0xFF;
+				if (type == 0xFF) {
+					// TODO
+					throw new GPDataException("Extended key template not yet supported", tmpl);
+				}
+				r.add(new GPKey(version, id, length, type));
 			}
-		} catch (IOException | ClassCastException e) {
-			throw new GPDataException("Could not parse key template: " + e.getMessage(), e);
 		}
 		return r;
 	}
 
-	public static GPSpec get_version_from_card_data(byte[] data) throws GPException {
-		try (ASN1InputStream ais = new ASN1InputStream(data)) {
-			if (ais.available() > 0) {
-				// Read card recognition data
-				DERApplicationSpecific card_data = (DERApplicationSpecific) ais.readObject();
-				ASN1Sequence seq = (ASN1Sequence) card_data.getObject(BERTags.SEQUENCE);
-				for (ASN1Encodable p: Lists.newArrayList(seq.iterator())) {
-					if (p instanceof ASN1ObjectIdentifier) {
-						ASN1ObjectIdentifier oid = (ASN1ObjectIdentifier) p;
-						// Must be fixed
-						if (!oid.toString().equalsIgnoreCase("1.2.840.114283.1")) {
-							throw new GPDataException("Invalid CardRecognitionData: " + oid.toString());
-						}
-					} else if (p instanceof DERApplicationSpecific) {
-						DERApplicationSpecific tag = (DERApplicationSpecific) p;
-						int n = tag.getApplicationTag();
-						if (n == 0) {
-							// Version
-							String oid = ASN1ObjectIdentifier.getInstance(tag.getObject()).toString();
+	// GP 2.1.1: F.2 Table F-1
+	// Tag 66 with nested 73
+	public static void pretty_print_card_data(byte[] data) {
+		if (data == null) {
+			System.err.println("NO CARD DATA");
+			return;
+		}
+		BerTlvParser parser = new BerTlvParser();
+		BerTlvs tlvs = parser.parse(data);
+		BerTlvLogger.log("    ", tlvs, GPData.getLoggerInstance());
 
-							if (oid.equalsIgnoreCase("1.2.840.114283.2.2.1.1")) {
-								return GPSpec.GP211;
-							} else if (oid.equalsIgnoreCase("1.2.840.114283.2.2.2")) {
-								return GPSpec.GP22;
-							} else if (oid.equals("1.2.840.114283.2.2.2.1")) {
-								return GPSpec.GP22; // TODO: no need to differentiate currently
-							} else {
-								throw new GPDataException("Invalid GP version OID: " + oid);
-							}
+		BerTlv cd = tlvs.find(new BerTag(0x66));
+		if (cd.isConstructed()) {
+			BerTlv isdd = tlvs.find(new BerTag(0x73));
+			if (isdd != null) {
+				// Loop all sub-values
+				for (BerTlv vt : isdd.getValues()) {
+					BerTlv ot = vt.find(new BerTag(0x06));
+					if (ot != null) {
+						String oid = oid2string(ot.getBytesValue());
+						System.out.println("Tag " + new BigInteger(1, vt.getTag().bytes).toString(16) + ": " + oid);
+
+						if (oid.equals("1.2.840.114283.1")) {
+							System.out.println("-> Global Platform card");
 						}
-					} else {
-						throw new GPDataException("Invalid type in card data", p.toASN1Primitive().getEncoded());
+						if (oid.startsWith("1.2.840.114283.2")) {
+							String[] p = oid.substring("1.2.840.114283.2.".length()).split("\\.");
+							System.out.println("-> GP Version: " + String.join(".", p));
+						}
+
+						if (oid.startsWith("1.2.840.114283.4")) {
+							String[] p = oid.substring("1.2.840.114283.4.".length()).split("\\.");
+							System.out.println("-> GP SCP_0" + p[0] + "_" + String.format("%02x", Integer.valueOf(p[1])));
+						}
 					}
 				}
 			}
-		} catch (IOException | ClassCastException e) {
-			throw new GPDataException("Invalid data: " + e.getMessage());
 		}
-		// Default to GP211
-		return GPSpec.GP211;
-	}
-
-
-	// GP 2.1.1: F.2 Table F-1
-	public static void pretty_print_card_data(byte[] data, PrintStream out) {
-		if (data == null) {
-			out.println("NO CARD DATA");
-			return;
-		}
-		try {
-			int offset = 0;
-			offset = TLVUtils.skipTagAndLength(data, offset, (byte) 0x73);
-			while (offset < data.length) {
-				int tag = TLVUtils.getTLVTag(data, offset);
-				if (tag == 0x06) {
-					String oid = ASN1ObjectIdentifier.fromByteArray(TLVUtils.getTLVAsBytes(data, offset)).toString();
-					if (oid.equals("1.2.840.114283.1"))
-						out.println("GlobalPlatform card");
-				} else if (tag == 0x60) {
-					out.println("Version: " + gp_version_from_tlv(data, offset));
-				} else if (tag == 0x63) {
-					out.println("TAG3: " + ASN1ObjectIdentifier.fromByteArray(TLVUtils.getTLVValueAsBytes(data, offset)));
-				} else if (tag == 0x64) {
-					out.println("SCP version: " + gp_scp_version_from_tlv(data, offset));
-				} else if (tag == 0x65) {
-					out.println("TAG5: " + ASN1ObjectIdentifier.fromByteArray(TLVUtils.getTLVValueAsBytes(data, offset)));
-				} else if (tag == 0x66) {
-					out.println("TAG6: " + ASN1ObjectIdentifier.fromByteArray(TLVUtils.getTLVValueAsBytes(data, offset)));
-				} else {
-					out.println("Unknown tag: " + Integer.toHexString(tag));
-				}
-				offset = TLVUtils.skipAnyTag(data, offset);
-			}
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	static String gp_version_from_tlv(byte[] data, int offset) {
-		try {
-			String oid;
-			oid = ASN1ObjectIdentifier.fromByteArray(TLVUtils.getTLVValueAsBytes(data, offset)).toString();
-			if (oid.startsWith("1.2.840.114283.2")) {
-				return oid.substring("1.2.840.114283.2.".length());
-			} else {
-				return "unknown";
-			}
-		} catch (IOException e) {
-			return "error";
-		}
-	}
-
-	static String gp_scp_version_from_tlv(byte[] data, int offset) {
-		try {
-			String oid;
-			oid = ASN1ObjectIdentifier.fromByteArray(TLVUtils.getTLVValueAsBytes(data, offset)).toString();
-			if (oid.startsWith("1.2.840.114283.4")) {
-				String[] p = oid.substring("1.2.840.114283.4.".length()).split("\\.");
-				return "SCP_0" +p[0] + "_" + String.format("%02x",Integer.valueOf(p[1]));
-			} else {
-				return "unknown";
-			}
-		} catch (IOException e) {
-			return "error";
-		}
-	}
-
-	public static void get_global_platform_version(byte[] data) {
-		int offset = 0;
-		offset = TLVUtils.skipTagAndLength(data, offset, (byte) 0x66);
-		offset = TLVUtils.skipTagAndLength(data, offset, (byte) 0x73);
-		offset = TLVUtils.findTag(data, offset, (byte) 0x60);
 	}
 
 	public static void pretty_print_cplc(byte [] data, PrintStream out) {
@@ -303,10 +233,9 @@ public final class GPData {
 			out.println("NO CPLC");
 			return;
 		}
-		CPLC cplc = new CPLC(data);
+		CPLC cplc = CPLC.fromBytes(data);
 		out.println(cplc);
 	}
-
 
 	// TODO public for debuggin purposes
 	public static void print_card_info(GlobalPlatform gp) throws CardException, GPException {
@@ -316,7 +245,7 @@ public final class GPData {
 		// Print CardData
 		System.out.println("***** CARD DATA");
 		byte [] card_data = gp.fetchCardData();
-		pretty_print_card_data(card_data, System.out);
+		pretty_print_card_data(card_data);
 		// Print Key Info Template
 		System.out.println("***** KEY INFO");
 		pretty_print_key_template(gp.getKeyInfoTemplate(), System.out);
@@ -347,10 +276,17 @@ public final class GPData {
 		};
 		private HashMap<Field, byte[]> values = null;
 
-		public CPLC(byte [] data) {
+		public static CPLC fromBytes(byte[] data) {
 			if (data == null || data.length < 3 || data[2] != 0x2A)
-				throw new IllegalArgumentException("CPLC must be 0x2A bytes long");
-			//offset = TLVUtils.skipTag(data, offset, (short)0x9F7F);
+				throw new IllegalArgumentException("CPLC MUST be 0x2A bytes long");
+			return new CPLC(data);
+		}
+		public byte[] get(Field f) {
+			return values.get(f);
+		}
+
+		private CPLC(byte [] data) {
+			// prepended by tag 0x9F7F
 			short offset = 3;
 			values = new HashMap<>();
 			values.put(Field.ICFabricator, Arrays.copyOfRange(data, offset, offset + 2)); offset += 2;
@@ -374,15 +310,54 @@ public final class GPData {
 		}
 
 		public String toString() {
-			String s = "Card CPLC:";
-			for (Field f: Field.values()) {
-				s += "\n" + f.name() + ": " + HexUtils.bin2hex(values.get(f));
-			}
-			return s;
+			return Arrays.asList(Field.values()).stream().map(i -> i.toString() + "=" + HexUtils.bin2hex(values.get(i))).collect(Collectors.joining(", ", "[CPLC ", "]"));
 		}
 	}
 
-	public static void main(String[] args) throws Exception {
-		get_version_from_card_data(HexUtils.hex2bin("734A06072A864886FC6B01600C060A2A864886FC6B02020101630906072A864886FC6B03640B06092A864886FC6B040215650B06092B8510864864020103660C060A2B060104012A026E0102"));
+	static Map<Integer, String> sw = new HashMap<>();
+	static {
+		// Some generics.
+		sw.put(0x6400, "No specific diagnosis"); // Table 11-10
+		sw.put(0x6700, "Wrong length (Lc)"); // Table 11-10
+		sw.put(0x6D00, "Invalid INStruction"); // Table 11-10
+		sw.put(0x6E00, "Invalid CLAss"); // Table 11-10
+
+		sw.put(0x6283, "Card Life Cycle State is CARD_LOCKED"); // Table 11-83: SELECT Warning Condition
+
+		sw.put(0x6581, "Memory failure"); // 2.3 Table 11-26: DELETE Error Conditions
+
+		sw.put(0x6882, "Secure messaging not supported");  // 2.3 Table 11-63
+
+		sw.put(0x6982, "Security status not satisfied");  // 2.3 Table 11-78
+		sw.put(0x6985, "Conditions of use not satisfied");  // 2.3 Table 11-78
+
+		sw.put(0x6A80, "Wrong data/incorrect values in data"); // Table 11-78
+		sw.put(0x6A81, "Function not supported e.g. card Life Cycle State is CARD_LOCKED"); // 2.3 Table 11-63
+		sw.put(0x6A82, "Application/file not found"); // 2.3 Table 11-26: DELETE Error Conditions
+		sw.put(0x6A84, "Not enough memory space"); // 2.3 Table 11-15
+		sw.put(0x6A86, "Incorrect P1/P2"); // 2.3 Table 11-15
+		sw.put(0x6A88, "Referenced data not found");  // 2.3 Table 11-78
+	}
+
+	public static String getSWReason(int sw) {
+		String msg = GPData.sw.get(sw);
+		if (msg == null)
+			return "";
+		return " (" + msg + ")";
+	}
+
+	public static String oid2string(byte [] oid) {
+		try {
+			// Prepend 0x06 tag
+			byte [] tag  = GPUtils.concatenate(new byte [] {0x06, (byte) oid.length}, oid);
+
+			StringJoiner joiner = new StringJoiner(".");
+			for (long l: new BerDecoder(tag).fetchOid()) {
+				joiner.add(Long.toString(l));
+			}
+			return joiner.toString();
+		} catch (BerException e) {
+			throw new IllegalArgumentException("Could not handle " + HexUtils.bin2hex(oid));
+		}
 	}
 }

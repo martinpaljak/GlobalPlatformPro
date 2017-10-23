@@ -20,17 +20,16 @@
 package pro.javacard.gp;
 
 import java.util.EnumSet;
-
-import com.google.common.base.Joiner;
+import java.util.stream.Collectors;
 
 public class GPRegistryEntry {
 
 	protected AID aid;
 	protected int lifecycle;
 	protected Kind kind;
-	protected AID domain;
+	protected AID domain; // Associated security domain
 
-	public static enum Kind {
+	public enum Kind {
 		IssuerSecurityDomain, Application, SecurityDomain, ExecutableLoadFile;
 
 
@@ -56,7 +55,6 @@ public class GPRegistryEntry {
 	void setAID(AID aid) {
 		this.aid = aid;
 	}
-
 
 	void setDomain(AID dom) {
 		this.domain = dom;
@@ -96,7 +94,7 @@ public class GPRegistryEntry {
 		return getLifeCycleString(kind, lifecycle);
 	}
 
-	public static String getLifeCycleString(Kind kind, int lifeCycleState) {
+	private static String getLifeCycleString(Kind kind, int lifeCycleState) {
 		switch (kind) {
 			case IssuerSecurityDomain:
 				switch (lifeCycleState) {
@@ -155,7 +153,7 @@ public class GPRegistryEntry {
 		}
 	}
 
-	public static enum Privilege {
+	public enum Privilege {
 		SecurityDomain,
 		DAPVerification,
 		DelegatedManagement,
@@ -274,8 +272,8 @@ public class GPRegistryEntry {
 		public static Privileges fromByte(byte b) throws GPDataException {
 			return fromBytes(new byte[]{b});
 		}
-		public byte[] toBytes() {
 
+		public byte[] toBytes() {
 			EnumSet<Privilege> p = EnumSet.copyOf(privs);
 			int b1 = 0x00;
 			if (p.remove(Privilege.SecurityDomain)) {
@@ -360,7 +358,7 @@ public class GPRegistryEntry {
 		}
 
 		public String toString() {
-			return Joiner.on(", ").join(privs);
+			return privs.stream().map(i -> i.toString()).collect(Collectors.joining(", ", "[", "]"));
 		}
 		public boolean has(Privilege p) {
 			return privs.contains(p);

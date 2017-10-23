@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import javax.crypto.Cipher;
 import javax.smartcardio.Card;
@@ -38,8 +39,6 @@ import javax.smartcardio.CardTerminals;
 import javax.smartcardio.CardTerminals.State;
 import javax.smartcardio.CommandAPDU;
 import javax.smartcardio.TerminalFactory;
-
-import com.google.common.base.Joiner;
 
 import apdu4j.APDUReplayProvider;
 import apdu4j.HexUtils;
@@ -237,12 +236,13 @@ public final class GPTool {
 
 		OptionSet args = parseArguments(argv);
 
+		// Set up slf4j simple in a way that pleases us
+		System.setProperty("org.slf4j.simpleLogger.showThreadName", "false");
+		System.setProperty("org.slf4j.simpleLogger.levelInBrackets", "true");
+		System.setProperty("org.slf4j.simpleLogger.showShortLogName", "true");
+
 		if (args.has(OPT_VERBOSE)) {
-			// Set up slf4j simple in a way that pleases us
 			System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "debug");
-			System.setProperty("org.slf4j.simpleLogger.showThreadName", "false");
-			System.setProperty("org.slf4j.simpleLogger.showShortLogName", "true");
-			System.setProperty("org.slf4j.simpleLogger.levelInBrackets", "true");
 		} else {
 			System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "warn");
 		}
@@ -336,7 +336,7 @@ public final class GPTool {
 
 		if (args.has(OPT_LIST_PRIVS)) {
 			System.out.println("# Known privileges:");
-			System.out.println(Joiner.on("\n").join(Privilege.values()));
+			System.out.println(Arrays.asList(Privilege.values()).stream().map(i-> i.toString()).collect(Collectors.joining("\n")));
 		}
 
 		// Now actually talk to possible terminals

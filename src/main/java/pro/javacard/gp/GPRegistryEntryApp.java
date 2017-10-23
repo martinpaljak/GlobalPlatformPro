@@ -19,7 +19,7 @@
  */
 package pro.javacard.gp;
 
-public class GPRegistryEntryApp extends GPRegistryEntry {
+public final class GPRegistryEntryApp extends GPRegistryEntry {
 	private Privileges privileges;
 	private AID loadfile;
 

@@ -28,46 +28,44 @@ import javax.smartcardio.ResponseAPDU;
 /**
  * Root exception class for all global platform protocol errors.
  */
+@SuppressWarnings("serial")
 public class GPException extends Exception {
 
-	private static final long serialVersionUID = -642613357615559636L;
+    /**
+     * Response status indicating the error, or 0 if not applicable.
+     */
+    public final int sw;
 
-	/**
-	 * Response status indicating the error, or 0 if not applicable.
-	 */
-	public final int sw;
+    public GPException(int sw, String message) {
+        super(message + " SW: " + String.format("%04X", sw) + GPData.getSWReason(sw));
+        this.sw = sw;
+    }
 
-	/**
-	 *
-	 * Constructs a new GPException with the specified detail message.
-	 *
-	 * @param sw
-	 *            failing response status
-	 * @param message
-	 *            the detailed message
-	 */
-	public GPException(int sw, String message) {
-		super(message + " SW: " + GPUtils.swToString(sw));
-		this.sw = sw;
-	}
+    public GPException(String message) {
+        super(message);
+        this.sw = 0x0000;
+    }
 
-	public GPException(String message) {
-		super(message);
-		this.sw = 0x0000;
-	}
+    public GPException(String message, Throwable e) {
+        super(message, e);
+        this.sw = 0x0000;
+    }
 
-	public GPException(String message, Throwable e) {
-		super(message, e);
-		this.sw = 0x0000;
-	}
+    public static ResponseAPDU check(ResponseAPDU response, String message, int... sws) throws GPException {
+        for (int sw : sws) {
+            if (response.getSW() == sw) {
+                return response;
+            }
+        }
+        // Fallback
+        if (response.getSW() == 0x9000) {
+            return response;
+        }
 
-	public static ResponseAPDU check(ResponseAPDU response, String message) throws GPException {
-		if (response.getSW() != 0x9000) {
-			throw new GPException(response.getSW(), message);
-		}
-		return response;
-	}
-	public static ResponseAPDU check(ResponseAPDU response) throws GPException {
-		return check(response, "GlobalPlatform failed");
-	}
+        throw new GPException(response.getSW(), message);
+    }
+
+    public static ResponseAPDU check(ResponseAPDU response) throws GPException {
+        return check(response, "GlobalPlatform failed");
+    }
 }

@@ -71,7 +71,7 @@ public class AID {
 	}
 
 	public byte[] getBytes() {
-		return aidBytes;
+		return aidBytes.clone();
 	}
 
 	public int getLength() {
@@ -79,7 +79,7 @@ public class AID {
 	}
 
 	public String toString() {
-		return HexUtils.bin2hex(aidBytes);
+		return "[AID: " + HexUtils.bin2hex(aidBytes) + "]";
 	}
 
 	public int hashCode() {

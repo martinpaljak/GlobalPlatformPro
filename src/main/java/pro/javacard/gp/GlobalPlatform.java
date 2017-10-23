@@ -23,20 +23,14 @@
 
 package pro.javacard.gp;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.PrintStream;
+import java.io.*;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.List;
+import java.util.*;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -48,20 +42,11 @@ import javax.smartcardio.CardException;
 import javax.smartcardio.CommandAPDU;
 import javax.smartcardio.ResponseAPDU;
 
-import org.bouncycastle.asn1.ASN1Encodable;
-import org.bouncycastle.asn1.ASN1InputStream;
-import org.bouncycastle.asn1.ASN1OctetString;
-import org.bouncycastle.asn1.ASN1Primitive;
-import org.bouncycastle.asn1.ASN1Sequence;
-import org.bouncycastle.asn1.ASN1TaggedObject;
-import org.bouncycastle.asn1.BERTags;
-import org.bouncycastle.asn1.DERApplicationSpecific;
-import org.bouncycastle.asn1.DEROctetString;
-import org.bouncycastle.asn1.DERTaggedObject;
+import com.payneteasy.tlv.*;
+import com.sun.jmx.snmp.BerDecoder;
+import com.sun.jmx.snmp.BerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.collect.Lists;
 
 import apdu4j.HexUtils;
 import apdu4j.ISO7816;
@@ -78,8 +63,6 @@ import pro.javacard.gp.GPRegistryEntry.Privileges;
  * functionality for managing GP compliant smart cards.
  */
 public class GlobalPlatform {
-	// Not static because of the overall statefulness of the class
-	// Also allows to have the "-v" in the gp tool
 	private static Logger logger = LoggerFactory.getLogger(GlobalPlatform.class);
 
 	public static final short SHORT_0 = 0;
@@ -128,7 +111,7 @@ public class GlobalPlatform {
 
 	// SD AID of the card successfully selected or null
 	public AID sdAID = null;
-	public static enum GPSpec {OP201, GP211, GP22};
+	public enum GPSpec {OP201, GP211, GP22};
 	GPSpec spec = GPSpec.GP211;
 
 	// Either 1 or 2 or 3
@@ -170,10 +153,10 @@ public class GlobalPlatform {
 	 * @return
 	 */
 	public static String getVersion() {
-		try (InputStream versionfile = GlobalPlatform.class.getResourceAsStream("version.txt")) {
+		try (InputStream versionfile = GlobalPlatform.class.getResourceAsStream("pro_version.txt")) {
 			String version = "unknown-development";
 			if (versionfile != null) {
-				try (BufferedReader vinfo = new BufferedReader(new InputStreamReader(versionfile)) ) {
+				try (BufferedReader vinfo = new BufferedReader(new InputStreamReader(versionfile, StandardCharsets.US_ASCII)) ) {
 					version = vinfo.readLine();
 				}
 			}
@@ -235,14 +218,16 @@ public class GlobalPlatform {
 				}
 			}
 		}
-		// If the ISD is locked, log it.
+
+		// If the ISD is locked, log it, but do not stop
 		if (resp.getSW() == 0x6283) {
-			logger.warn("SELECT ISD returned 6283 - CARD_LOCKED");
+			logger.warn("SELECT FILE ISD returned 6283 - CARD_LOCKED");
 		}
 
 		if (resp.getSW() == 0x9000 || resp.getSW() == 0x6283) {
 			// The security domain AID is in FCI.
 			byte[] fci = resp.getData();
+			// Auto-detect some values if possible
 			parse_select_response(fci);
 			return true;
 		}
@@ -251,78 +236,81 @@ public class GlobalPlatform {
 
 
 	private void parse_select_response(byte [] fci) throws GPException {
-		try (ASN1InputStream ais = new ASN1InputStream(fci)) {
-			if (ais.available() > 0) {
-				// Read FCI
-				DERApplicationSpecific fcidata = (DERApplicationSpecific) ais.readObject();
-				// FIXME System.out.println(ASN1Dump.dumpAsString(fcidata, true));
-				if (fcidata.getApplicationTag() == 15) {
-					ASN1Sequence s = ASN1Sequence.getInstance(fcidata.getObject(BERTags.SEQUENCE));
-					for (ASN1Encodable e: Lists.newArrayList(s.iterator())) {
-						ASN1TaggedObject t = DERTaggedObject.getInstance(e);
-						if (t.getTagNo() == 4) {
-							// ISD AID
-							ASN1OctetString isdaid = DEROctetString.getInstance(t.getObject());
-							AID detectedAID = new AID(isdaid.getOctets());
-							if (sdAID == null) {
-								logger.debug("Auto-detected ISD AID: " + detectedAID);
-							}
-							if (sdAID != null && !detectedAID.equals(sdAID)) {
-								giveStrictWarning("SD AID in FCI does not match the requested AID!");
-							}
-							this.sdAID = sdAID == null ? detectedAID : sdAID;
-						} else if (t.getTagNo() == 5) {
-							// Proprietary, usually a sequence
-							if (t.getObject() instanceof ASN1Sequence) {
-								ASN1Sequence prop = ASN1Sequence.getInstance(t.getObject());
-								for (ASN1Encodable enc: Lists.newArrayList(prop.iterator())) {
-									ASN1Primitive proptag = enc.toASN1Primitive();
-									if (proptag instanceof DERApplicationSpecific) {
-										DERApplicationSpecific isddata = (DERApplicationSpecific) proptag;
-										if (isddata.getApplicationTag() == 19) {
-											spec = GPData.get_version_from_card_data(isddata.getEncoded());
-											logger.debug("Auto-detected GP version: " + spec);
-										}
-									} else if (proptag instanceof DERTaggedObject) {
-										DERTaggedObject tag = (DERTaggedObject)proptag;
-										if (tag.getTagNo() == 101) {
-											setBlockSize(DEROctetString.getInstance(tag.getObject()));
-										} else if (tag.getTagNo() == 110) {
-											logger.debug("Lifecycle data (ignored): " + HexUtils.bin2hex(tag.getObject().getEncoded()));
-										} else {
-											logger.info("Unknown/unhandled tag in FCI proprietary data: " + HexUtils.bin2hex(tag.getEncoded()));
-										}
+		BerTlvParser parser = new BerTlvParser();
+		BerTlvs tlvs = parser.parse(fci);
+		BerTlvLogger.log("    ", tlvs, GPData.getLoggerInstance());
+
+		BerTlv fcitag = tlvs.find(new BerTag(0x6F));
+		if (fcitag != null) {
+			BerTlv isdaid = fcitag.find(new BerTag(0x84));
+			if (isdaid != null) {
+				AID detectedAID = new AID(isdaid.getBytesValue());
+				if (sdAID == null) {
+					logger.debug("Auto-detected ISD: " + detectedAID);
+				}
+				if (sdAID != null && !detectedAID.equals(sdAID)) {
+					giveStrictWarning("SD AID in FCI does not match the requested AID!");
+				}
+				this.sdAID = sdAID == null ? detectedAID : sdAID;
+			}
+
+			//
+			BerTlv prop = fcitag.find(new BerTag(0xA5));
+			if (prop != null) {
+
+				BerTlv isdd = prop.find(new BerTag(0x73));
+				if (isdd != null) {
+					// Tag 73 is a constructed tag.
+					BerTlv oidtag = isdd.find(new BerTag(0x06));
+					if (oidtag != null) {
+						if (Arrays.equals(oidtag.getBytesValue(), HexUtils.hex2bin("2A864886FC6B01"))) {
+							// Detect versions
+							BerTlv vertag = isdd.find(new BerTag(0x60));
+							if (vertag != null) {
+								System.out.println("Vertag is constrcuted: " + vertag.isConstructed());
+								BerTlv veroid = vertag.find(new BerTag(0x06));
+
+								if (veroid != null) {
+									if (Arrays.equals(veroid.getBytesValue(), HexUtils.hex2bin("2A864886FC6B020202"))) {
+										spec = GPSpec.GP22;
+									} else if (Arrays.equals(veroid.getBytesValue(), HexUtils.hex2bin("2A864886FC6B02020201"))) {
+										spec = GPSpec.GP22;
+									} else if (Arrays.equals(veroid.getBytesValue(), HexUtils.hex2bin("2A864886FC6B02020101"))) {
+										spec = GPSpec.GP211;
 									} else {
-										throw new GPException("Unknown data from card: " + HexUtils.bin2hex(proptag.getEncoded()));
+										throw new GPDataException("Invalid GP version OID: " + veroid.getHexValue());
 									}
-								}
-							} else {
-								// Except Feitian cards which have a plain nested tag
-								if (t.getObject() instanceof DERTaggedObject) {
-									DERTaggedObject tag = (DERTaggedObject)t.getObject();
-									if (tag.getTagNo() == 101) {
-										setBlockSize(DEROctetString.getInstance(tag.getObject()));
-									} else {
-										logger.info("Unknown/unhandled tag in FCI proprietary data: " + HexUtils.bin2hex(tag.getEncoded()));
-									}
+									logger.debug("Auto-detected GP version: " + spec);
 								}
 							}
 						} else {
-							logger.info("Unknown/unhandled tag in FCI: " + HexUtils.bin2hex(t.getEncoded()));
+							throw new GPDataException("Invalid CardRecognitionData: " + oidtag.getHexValue());
 						}
+					} else {
+						logger.warn("Not global platform OID");
 					}
-				} else {
-					throw new GPException("Unknown data from card: " + HexUtils.bin2hex(fci));
 				}
-			}
-		} catch (IOException | ClassCastException e) {
-			throw new GPException("Invalid data: " + e.getMessage(), e);
-		}
 
+				// Lifecycle
+				BerTlv lc = prop.find(new BerTag(0x9F, 0x6E));
+				if (lc != null) {
+					logger.debug("Lifecycle data (ignored): " + HexUtils.bin2hex(lc.getBytesValue()));
+				}
+				// Max block size
+				BerTlv maxbs = prop.find(new BerTag(0x9F, 0x65));
+				if (maxbs != null) {
+					setBlockSize(maxbs.getBytesValue());
+				}
+			} else {
+				logger.warn("No mandatory proprietary info present in FCI");
+			}
+		} else {
+			logger.error("No FCI returned");
+		}
 	}
 
-	private void setBlockSize(ASN1OctetString blocksize) {
-		int bs = new BigInteger(1, blocksize.getOctets()).intValue();
+	private void setBlockSize(byte[] blocksize) {
+		int bs = new BigInteger(1, blocksize).intValue();
 		if (bs > this.blockSize) {
 			logger.debug("Ignoring auto-detected block size that exceeds set maximum: " + bs);
 		} else {
@@ -357,17 +345,18 @@ public class GlobalPlatform {
 	}
 
 	public List<GPKeySet.GPKey> getKeyInfoTemplate() throws CardException, GPException {
-		// FIXME: this assumes selected ISD. We always request the version with tags (GP CLA)
+		List<GPKeySet.GPKey> result = new ArrayList<>();
+		// FIXME: this assumes selected SD. We always request the version with tags (GP CLA)
 		// Key Information Template
 		CommandAPDU command = new CommandAPDU(CLA_GP, ISO7816.INS_GET_DATA, 0x00, 0xE0, 256);
 		ResponseAPDU resp = always_transmit(command);
 
 		if (resp.getSW() == ISO7816.SW_NO_ERROR) {
-			return GPData.get_key_template_list(resp.getData());
+			result.addAll(GPData.get_key_template_list(resp.getData()));
 		} else {
 			logger.warn("GET DATA(Key Information Template) not supported");
 		}
-		return GPData.get_key_template_list(null);
+		return result;
 	}
 
 	public byte[] fetchCardData() throws CardException, GPException {
@@ -377,7 +366,7 @@ public class GlobalPlatform {
 		if (resp.getSW() == 0x6A86) {
 			logger.debug("GET DATA(CardData) not supported, Open Platform 2.0.1 card? " + GPUtils.swToString(resp.getSW()));
 			return null;
-		} else if (resp.getSW() == 0x9000) {
+		} else if (resp.getSW() == ISO7816.SW_NO_ERROR) {
 			return resp.getData();
 		}
 		return null;
@@ -396,7 +385,7 @@ public class GlobalPlatform {
 		// Issuer Identification Number (IIN)
 		CommandAPDU command = new CommandAPDU(CLA_GP, ISO7816.INS_GET_DATA, 0x00, 0x42, 256);
 		ResponseAPDU resp = channel.transmit(command);
-		if (resp.getSW() == 0x9000) {
+		if (resp.getSW() == ISO7816.SW_NO_ERROR) {
 			out.println("IIN " + HexUtils.bin2hex(resp.getData()));
 		} else {
 			out.println("GET DATA(IIN) not supported");
@@ -405,7 +394,7 @@ public class GlobalPlatform {
 		// Card Image Number (CIN)
 		command = new CommandAPDU(CLA_GP, ISO7816.INS_GET_DATA, 0x00, 0x45, 256);
 		resp = channel.transmit(command);
-		if (resp.getSW() == 0x9000) {
+		if (resp.getSW() == ISO7816.SW_NO_ERROR) {
 			out.println("CIN " + HexUtils.bin2hex(resp.getData()));
 		} else {
 			out.println("GET DATA(CIN) not supported");
@@ -414,7 +403,7 @@ public class GlobalPlatform {
 		// Sequence Counter of the default Key Version Number (tag 0xC1)
 		command = new CommandAPDU(CLA_GP, ISO7816.INS_GET_DATA, 0x00, 0xC1, 256);
 		resp = channel.transmit(command);
-		if (resp.getSW() == 0x9000) {
+		if (resp.getSW() == ISO7816.SW_NO_ERROR) {
 			byte [] ssc = resp.getData();
 			out.println("SSC " + HexUtils.bin2hex(TLVUtils.getTLVValueAsBytes(ssc, SHORT_0)));
 		} else {
@@ -581,6 +570,10 @@ public class GlobalPlatform {
 
 		// This is the main check for possible successful authentication.
 		if (!Arrays.equals(card_cryptogram, my_card_cryptogram)) {
+			if (System.console() != null) {
+				// FIXME: this should be possible from GPTool
+				System.err.println("Read more from https://github.com/martinpaljak/GlobalPlatformPro/wiki/Keys");
+			}
 			giveStrictWarning("Card cryptogram invalid!\nCard: " + HexUtils.bin2hex(card_cryptogram) + "\nHost: "+ HexUtils.bin2hex(my_card_cryptogram) + "\n!!! DO NOT RE-TRY THE SAME COMMAND/KEYS OR YOU MAY BRICK YOUR CARD !!!");
 		} else {
 			logger.debug("Verified card cryptogram: " + HexUtils.bin2hex(my_card_cryptogram));
@@ -756,8 +749,6 @@ public class GlobalPlatform {
 	 * @throws GPException
 	 * @throws CardException
 	 *
-	 * @see GP 2.1.1 9.5.2
-	 *
 	 */
 	public void storeData(AID aid, byte[] data) throws CardException, GPException {
 		storeData(aid, data, (byte)0x80);
@@ -770,8 +761,6 @@ public class GlobalPlatform {
 	 *
 	 * @throws GPException
 	 * @throws CardException
-	 *
-	 * @see GP 2.1.1 9.5.2
 	 *
 	 */
 	public void storeData(AID aid, byte[] data, byte P1) throws CardException, GPException {
@@ -1043,15 +1032,10 @@ public class GlobalPlatform {
 		ByteArrayOutputStream bo = new ByteArrayOutputStream();
 		try {
 			bo.write(response.getData());
-
 			while (response.getSW() == 0x6310) {
 				cmd = new CommandAPDU(CLA_GP, INS_GET_STATUS, p1, p2 | 0x01, data, 256);
 				response = transmit(cmd);
-
-				sw = response.getSW();
-				if ((sw != ISO7816.SW_NO_ERROR) && (sw != 0x6310)) {
-					throw new GPException(sw, "GET STATUS failed for " + HexUtils.bin2hex(cmd.getBytes()));
-				}
+				GPException.check(response, "GET STATUS failed for " + HexUtils.bin2hex(cmd.getBytes()), 0x6310);
 				bo.write(response.getData());
 			}
 		} catch (IOException e) {

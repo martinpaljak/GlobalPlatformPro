@@ -39,10 +39,6 @@ public class GPUtils {
 		return "|" + s.toString() + "|";
 	}
 
-	public static String swToString(int sw) {
-		return String.format("%04X", sw);
-	}
-
 	public static byte[] concatenate(byte[]... args) {
 		int length = 0, pos = 0;
 		for (byte[] arg : args) {

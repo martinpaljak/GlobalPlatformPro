@@ -33,14 +33,19 @@ import com.sun.jmx.snmp.BerDecoder;
 import com.sun.jmx.snmp.BerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pro.javacard.gp.GPKeySet.GPKey;
-import pro.javacard.gp.GPKeySet.GPKey.Type;
+import pro.javacard.gp.GPKey.Type;
 
+// Various constants from GP specification and other sources
+// Methods to pretty-print those structures and constants.
 public final class GPData {
 	final static Logger logger = LoggerFactory.getLogger(GPData.class);
 
+	// Default test key
 	public static final byte[] defaultKeyBytes = { 0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F };
 	public static final GPKey defaultKey = new GPKey(defaultKeyBytes, Type.DES3);
+
+	// Default ISD AID-s
+	public static final byte [] defaultISDBytes = HexUtils.hex2bin("A000000151000000");
 
 	// SD states
 	public static final byte readyStatus = 0x1;
@@ -59,6 +64,7 @@ public final class GPData {
 	@Deprecated
 	public static final byte securityDomainPriv = (byte) 0x80;
 
+	@Deprecated
 	public static IBerTlvLogger getLoggerInstance() {
 		return new IBerTlvLogger() {
 			@Override
@@ -73,22 +79,7 @@ public final class GPData {
 		};
 	}
 
-	// TODO GP 2.2.1 11.1.2
-	public enum KeyType {
-		// ID is as used in diversification/derivation
-		// That is - one based.
-		ENC(1), MAC(2), KEK(3), RMAC(4);
-
-		private final int value;
-
-		KeyType(int value) {
-			this.value = value;
-		}
-
-		public byte getValue() {
-			return (byte) (value & 0xFF);
-		}
-	};
+	;
 
 	// GP 2.1.1 9.1.6
 	// GP 2.2.1 11.1.8
@@ -144,7 +135,7 @@ public final class GPData {
 	}
 
 	// Print the key template
-	public static void pretty_print_key_template(List<GPKeySet.GPKey> list, PrintStream out) {
+	public static void pretty_print_key_template(List<GPKey> list, PrintStream out) {
 		boolean factory_keys = false;
 		out.flush();
 		for (GPKey k: list) {
@@ -160,7 +151,7 @@ public final class GPData {
 
 	// GP 2.1.1 9.3.3.1
 	// GP 2.2.1 11.1.8
-	public static List<GPKeySet.GPKey> get_key_template_list(byte[] data) throws GPException {
+	public static List<GPKey> get_key_template_list(byte[] data) throws GPException {
 		List<GPKey> r = new ArrayList<>();
 
 		BerTlvParser parser = new BerTlvParser();
@@ -191,16 +182,12 @@ public final class GPData {
 	// GP 2.1.1: F.2 Table F-1
 	// Tag 66 with nested 73
 	public static void pretty_print_card_data(byte[] data) {
-		if (data == null) {
-			System.err.println("NO CARD DATA");
-			return;
-		}
 		BerTlvParser parser = new BerTlvParser();
 		BerTlvs tlvs = parser.parse(data);
 		BerTlvLogger.log("    ", tlvs, GPData.getLoggerInstance());
 
 		BerTlv cd = tlvs.find(new BerTag(0x66));
-		if (cd.isConstructed()) {
+		if (cd != null && cd.isConstructed()) {
 			BerTlv isdd = tlvs.find(new BerTag(0x73));
 			if (isdd != null) {
 				// Loop all sub-values
@@ -225,6 +212,8 @@ public final class GPData {
 					}
 				}
 			}
+		} else {
+			System.out.println("No Card Data");
 		}
 	}
 
@@ -240,8 +229,10 @@ public final class GPData {
 	// TODO public for debuggin purposes
 	public static void print_card_info(GlobalPlatform gp) throws CardException, GPException {
 		// Print CPLC
-		pretty_print_cplc(gp.getCPLC(), System.out);
-		// Requires GP?
+		pretty_print_cplc(gp.fetchCPLC(), System.out);
+
+		//
+		gp.dumpCardProperties(System.out);
 		// Print CardData
 		System.out.println("***** CARD DATA");
 		byte [] card_data = gp.fetchCardData();
@@ -339,25 +330,40 @@ public final class GPData {
 		sw.put(0x6A88, "Referenced data not found");  // 2.3 Table 11-78
 	}
 
-	public static String getSWReason(int sw) {
+	public static String sw2str(int sw) {
 		String msg = GPData.sw.get(sw);
 		if (msg == null)
-			return "";
-		return " (" + msg + ")";
+			return String.format("0x%04X", sw);
+		return String.format("0x%04X (%s)", sw, msg);
 	}
 
 	public static String oid2string(byte [] oid) {
 		try {
-			// Prepend 0x06 tag
-			byte [] tag  = GPUtils.concatenate(new byte [] {0x06, (byte) oid.length}, oid);
+			// Prepend 0x06 tag, if not present
+			if (oid[0] != 0x06) {
+				oid = GPUtils.concatenate(new byte[]{0x06, (byte) oid.length}, oid);
+			}
 
 			StringJoiner joiner = new StringJoiner(".");
-			for (long l: new BerDecoder(tag).fetchOid()) {
+			for (long l: new BerDecoder(oid).fetchOid()) {
 				joiner.add(Long.toString(l));
 			}
 			return joiner.toString();
 		} catch (BerException e) {
 			throw new IllegalArgumentException("Could not handle " + HexUtils.bin2hex(oid));
+		}
+	}
+
+	public static GlobalPlatform.GPSpec oid2version(byte [] bytes) throws GPDataException {
+		String oid = oid2string(bytes);
+		if (oid.equals("1.2.840.114283.2.2.1.1")) {
+			return GlobalPlatform.GPSpec.GP211;
+		} else if (oid.equals("1.2.840.114283.2.2.2")) {
+			return GlobalPlatform.GPSpec.GP22;
+		} else if (oid.equals("1.2.840.114283.2.2.2.1")) {
+			return GlobalPlatform.GPSpec.GP22; // No need to make a difference
+		} else {
+			throw new GPDataException("Unknown GP version OID: " + oid, bytes);
 		}
 	}
 }

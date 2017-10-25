@@ -66,8 +66,8 @@ public final class SEAccessControlUtility {
 	 * @throws GPException
 	 */
 	public static void acrList(final GlobalPlatform gp, final Card card) throws CardException, GPException {
-		boolean selected = gp.select(SEAccessControl.ACR_AID);
-		if (selected) {
+		try {
+			gp.select(SEAccessControl.ACR_AID);
 			ResponseAPDU response = sendAcrGetData(card, SEAccessControl.ACR_GET_DATA_ALL);
 			SEAccessControl.BerTlvData temp = SEAccessControl.AcrListResponse.getAcrListData(null, response.getData());
 
@@ -78,8 +78,8 @@ public final class SEAccessControlUtility {
 
 			SEAccessControl.AcrListResponse resp = SEAccessControl.AcrListResponse.fromBytes(temp.getLength(), temp.getData());
 			SEAccessControl.printList(resp.acrList);
-		} else {
-			throw new GPException("no AID " + SEAccessControl.ACR_AID + " found");
+		} catch (GPException e) {
+			throw new GPException("Could not read " + SEAccessControl.ACR_AID);
 		}
 	}
 

@@ -26,7 +26,7 @@ import java.util.Arrays;
 
 import apdu4j.HexUtils;
 
-public class AID {
+public final class AID {
 
 	private byte[] aidBytes = null;
 

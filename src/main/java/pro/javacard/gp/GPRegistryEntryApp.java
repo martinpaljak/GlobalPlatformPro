@@ -20,22 +20,22 @@
 package pro.javacard.gp;
 
 public final class GPRegistryEntryApp extends GPRegistryEntry {
-	private Privileges privileges;
-	private AID loadfile;
+    private Privileges privileges;
+    private AID loadfile;
 
-	void setPrivileges(Privileges privs)  {
-		privileges = privs;
-	}
+    public Privileges getPrivileges() {
+        return privileges;
+    }
 
-	public Privileges getPrivileges() {
-		return privileges;
-	}
+    void setPrivileges(Privileges privs) {
+        privileges = privs;
+    }
 
-	public void setLoadFile(AID aid) {
-		this.loadfile = aid;
-	}
+    public AID getLoadFile() {
+        return loadfile;
+    }
 
-	public AID getLoadFile() {
-		return loadfile;
-	}
+    public void setLoadFile(AID aid) {
+        this.loadfile = aid;
+    }
 }

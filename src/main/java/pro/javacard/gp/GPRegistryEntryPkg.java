@@ -27,30 +27,31 @@ import java.util.List;
 
 public final class GPRegistryEntryPkg extends GPRegistryEntry {
 
-	private byte[] version;
-	private List<AID> modules = new ArrayList<AID>();
+    private byte[] version;
+    private List<AID> modules = new ArrayList<AID>();
 
-	public byte[] getVersion() {
-		return version;
-	}
-	public String getVersionString() {
-		if (version != null && version.length == 2) {
-			return Integer.valueOf(version[0]) + "." + Integer.valueOf(version[1]);
-		}
-		return "<unknown format>:" + HexUtils.bin2hex(version);
-	}
+    public byte[] getVersion() {
+        return version;
+    }
 
-	void setVersion(byte[] v) {
-		version = Arrays.copyOf(v, v.length);
-	}
+    void setVersion(byte[] v) {
+        version = Arrays.copyOf(v, v.length);
+    }
 
-	public void addModule(AID aid) {
-		modules.add(aid);
-	}
+    public String getVersionString() {
+        if (version != null && version.length == 2) {
+            return Integer.valueOf(version[0]) + "." + Integer.valueOf(version[1]);
+        }
+        return "<unknown format>:" + HexUtils.bin2hex(version);
+    }
 
-	public List<AID> getModules() {
-		List<AID> r = new ArrayList<AID>();
-		r.addAll(modules);
-		return r;
-	}
+    public void addModule(AID aid) {
+        modules.add(aid);
+    }
+
+    public List<AID> getModules() {
+        List<AID> r = new ArrayList<AID>();
+        r.addAll(modules);
+        return r;
+    }
 }

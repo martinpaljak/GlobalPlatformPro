@@ -37,7 +37,7 @@ public class GPException extends Exception {
     public final int sw;
 
     public GPException(int sw, String message) {
-        super(message + " SW: " + String.format("%04X", sw) + GPData.getSWReason(sw));
+        super(message + ": " + GPData.sw2str(sw));
         this.sw = sw;
     }
 

@@ -45,7 +45,7 @@ import apdu4j.HexUtils;
  * Parses a CAP file as specified in JavaCard 2.2 VM Specification, chapter 6.
  *
  */
-public class CapFile {
+public final class CAPFile {
 
 	public static final String[] componentNames = { "Header", "Directory", "Import", "Applet", "Class", "Method", "StaticField", "Export",
 			"ConstantPool", "RefLocation", "Descriptor", "Debug" };
@@ -61,11 +61,11 @@ public class CapFile {
 	private final List<byte[]> installTokens = new ArrayList<byte[]>();
 	private Manifest manifest = null;
 
-	public CapFile(InputStream in) throws IOException {
+	public CAPFile(InputStream in) throws IOException {
 		this(in, null);
 	}
 
-	private CapFile(InputStream in, String packageName) throws IOException {
+	private CAPFile(InputStream in, String packageName) throws IOException {
 		ZipInputStream zip = new ZipInputStream(in);
 		Map<String, byte[]> entries = getEntries(zip);
 		if (packageName != null) {

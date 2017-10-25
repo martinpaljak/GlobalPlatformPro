@@ -2,10 +2,7 @@ import apdu4j.HexUtils;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pro.javacard.gp.GPData;
-import pro.javacard.gp.GPRegistry;
-import pro.javacard.gp.GPRegistryEntry;
-import pro.javacard.gp.GlobalPlatform;
+import pro.javacard.gp.*;
 
 public class TestParseTags {
     final static Logger logger = LoggerFactory.getLogger(TestParseTags.class);
@@ -22,5 +19,15 @@ public class TestParseTags {
         byte[] data = HexUtils.hex2bin("664C734A06072A864886FC6B01600C060A2A864886FC6B02020101630906072A864886FC6B03640B06092A864886FC6B040215650B06092B8510864864020103660C060A2B060104012A026E0102");
         GPData.pretty_print_card_data(data);
     }
+
+    @Test
+    public void testOracle() throws Exception {
+        byte[] atr = HexUtils.hex2bin("664C734A06072A864886FC6B01600C060A2A864886FC6B02020101630906072A864886FC6B03640B06092A864886FC6B040215650B06092B8510864864020103660C060A2B060104012A026E0102");
+        byte[] cplc = HexUtils.hex2bin("664C734A06072A864886FC6B01600C060A2A864886FC6B02020101630906072A864886FC6B03640B06092A864886FC6B040215650B06092B8510864864020103660C060A2B060104012A026E0102");
+        byte[] kinfo = HexUtils.hex2bin("664C734A06072A864886FC6B01600C060A2A864886FC6B02020101630906072A864886FC6B03640B06092A864886FC6B040215650B06092B8510864864020103660C060A2B060104012A026E0102");
+
+        //CardOracle.ask("https://javacard.pro/pythia", atr, cplc, kinfo, new AID("A000000151000000"));
+    }
+
 
 }

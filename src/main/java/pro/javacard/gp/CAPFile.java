@@ -3,7 +3,7 @@
  *
  * Copyright (C) 2009 Wojciech Mostowski, woj@cs.ru.nl
  * Copyright (C) 2009 Francois Kooman, F.Kooman@student.science.ru.nl
- * Copyright (C) 2015 Martin Paljak, martin@martinpaljak.net
+ * Copyright (C) 2015-2017 Martin Paljak, martin@martinpaljak.net
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public

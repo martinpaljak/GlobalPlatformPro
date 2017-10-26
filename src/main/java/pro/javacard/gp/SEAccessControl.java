@@ -23,10 +23,7 @@
  */
 package pro.javacard.gp;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import apdu4j.ISO7816;
 import org.bouncycastle.util.Arrays;
@@ -68,35 +65,39 @@ public class SEAccessControl {
 	/**
 	 * Store data status work (p44 Secure Element Access control spec v1.0)
 	 */
-	public final static Map<Integer, String> ACR_STORE_DATA_ERROR = new HashMap<>();
+	public final static Map<Integer, String> ACR_STORE_DATA_ERROR;
 	static {
-		ACR_STORE_DATA_ERROR.put(0x6381, "Rule successfully stored but an access rule already exists for this target");
-		ACR_STORE_DATA_ERROR.put(0x6581, "Memory problem");
-		ACR_STORE_DATA_ERROR.put(ISO7816.SW_WRONG_LENGTH, "Wrong length in Lc");
-		ACR_STORE_DATA_ERROR.put(ISO7816.SW_SECURITY_STATUS_NOT_SATISFIED, "Security status not satisfied");
-		ACR_STORE_DATA_ERROR.put(ISO7816.SW_CONDITIONS_OF_USE_NOT_SATISFIED, "Conditions not satisfied");
-		ACR_STORE_DATA_ERROR.put(ISO7816.SW_WRONG_DATA, "Incorrect values in the command data");
-		ACR_STORE_DATA_ERROR.put(ISO7816.SW_OUT_OF_MEMORY, "Not enough memory space");
-		ACR_STORE_DATA_ERROR.put(ISO7816.SW_INCORRECT_P1P2, "Incorrect P1 P2");
-		ACR_STORE_DATA_ERROR.put(ISO7816.SW_KEY_NOT_FOUND, "Referenced data not found");
-		ACR_STORE_DATA_ERROR.put(0x6A89, "Conflicting access rule already exists in the Secure Element");
-		ACR_STORE_DATA_ERROR.put(ISO7816.SW_INS_NOT_SUPPORTED, "Invalid instruction");
-		ACR_STORE_DATA_ERROR.put(ISO7816.SW_CLA_NOT_SUPPORTED, "Invalid class");
+		Map<Integer, String> tmp = new HashMap<>();
+		tmp.put(0x6381, "Rule successfully stored but an access rule already exists for this target");
+		tmp.put(0x6581, "Memory problem");
+		tmp.put(ISO7816.SW_WRONG_LENGTH, "Wrong length in Lc");
+		tmp.put(ISO7816.SW_SECURITY_STATUS_NOT_SATISFIED, "Security status not satisfied");
+		tmp.put(ISO7816.SW_CONDITIONS_OF_USE_NOT_SATISFIED, "Conditions not satisfied");
+		tmp.put(ISO7816.SW_WRONG_DATA, "Incorrect values in the command data");
+		tmp.put(ISO7816.SW_OUT_OF_MEMORY, "Not enough memory space");
+		tmp.put(ISO7816.SW_INCORRECT_P1P2, "Incorrect P1 P2");
+		tmp.put(ISO7816.SW_KEY_NOT_FOUND, "Referenced data not found");
+		tmp.put(0x6A89, "Conflicting access rule already exists in the Secure Element");
+		tmp.put(ISO7816.SW_INS_NOT_SUPPORTED, "Invalid instruction");
+		tmp.put(ISO7816.SW_CLA_NOT_SUPPORTED, "Invalid class");
+		ACR_STORE_DATA_ERROR = Collections.unmodifiableMap(tmp);
 	}
 
 	/**
 	 * Get Data status word (p27 Secure Element Access control spec v1.0)
 	 */
-	public final static Map<Integer, String> ACR_GET_DATA_ERROR = new HashMap<>();
+	public final static Map<Integer, String> ACR_GET_DATA_ERROR;
 	static {
-		ACR_GET_DATA_ERROR.put(0x6581, "Memory problem");
-		ACR_GET_DATA_ERROR.put(ISO7816.SW_WRONG_LENGTH, "Wrong length in Lc");
-		ACR_GET_DATA_ERROR.put(ISO7816.SW_CONDITIONS_OF_USE_NOT_SATISFIED, "Conditions not satisfied");
-		ACR_GET_DATA_ERROR.put(ISO7816.SW_WRONG_DATA, "Incorrect values in the command data");
-		ACR_GET_DATA_ERROR.put(ISO7816.SW_INCORRECT_P1P2, "Incorrect P1 P2");
-		ACR_GET_DATA_ERROR.put(ISO7816.SW_KEY_NOT_FOUND, "Referenced data not found");
-		ACR_GET_DATA_ERROR.put(ISO7816.SW_INS_NOT_SUPPORTED, "Invalid instruction");
-		ACR_GET_DATA_ERROR.put(ISO7816.SW_CLA_NOT_SUPPORTED, "Invalid class");
+		Map<Integer, String> tmp = new HashMap<>();
+		tmp.put(0x6581, "Memory problem");
+		tmp.put(ISO7816.SW_WRONG_LENGTH, "Wrong length in Lc");
+		tmp.put(ISO7816.SW_CONDITIONS_OF_USE_NOT_SATISFIED, "Conditions not satisfied");
+		tmp.put(ISO7816.SW_WRONG_DATA, "Incorrect values in the command data");
+		tmp.put(ISO7816.SW_INCORRECT_P1P2, "Incorrect P1 P2");
+		tmp.put(ISO7816.SW_KEY_NOT_FOUND, "Referenced data not found");
+		tmp.put(ISO7816.SW_INS_NOT_SUPPORTED, "Invalid instruction");
+		tmp.put(ISO7816.SW_CLA_NOT_SUPPORTED, "Invalid class");
+		ACR_GET_DATA_ERROR = Collections.unmodifiableMap(tmp);
 	}
 
 	/**
@@ -339,10 +340,10 @@ public class SEAccessControl {
 			if (apduArDo != null && nfcArDo == null){
 				return apduArDo.getBytes();
 			}
-			else if (apduArDo == null && nfcArDo != null){
+			if (apduArDo == null && nfcArDo != null){
 				return nfcArDo.getBytes();
 			}
-			else {
+			if (apduArDo != null && nfcArDo != null) {
 				byte[] apduBytes = apduArDo.getBytes();
 				byte[] nfcBytes = nfcArDo.getBytes();
 
@@ -351,6 +352,7 @@ public class SEAccessControl {
 				System.arraycopy(nfcBytes, 0, data, apduBytes.length, nfcBytes.length);
 				return data;
 			}
+			return new byte[]{};
 		}
 	}
 
@@ -375,6 +377,8 @@ public class SEAccessControl {
 						break;
 					case 0x01:
 						this.rule = EventAccessRules.ALWAYS;
+						break;
+					default:
 						break;
 				}
 			}
@@ -695,6 +699,8 @@ public class SEAccessControl {
 					break;
 				case NFC_AR_DO:
 					nfcArDo = parseNfcArDo(Arrays.copyOfRange(data, 2, data.length));
+					break;
+				default:
 					break;
 			}
 			return new ArDo(apduArDo,nfcArDo);

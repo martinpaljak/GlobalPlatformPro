@@ -39,10 +39,13 @@ public final class GPRegistryEntryPkg extends GPRegistryEntry {
     }
 
     public String getVersionString() {
-        if (version != null && version.length == 2) {
-            return Integer.valueOf(version[0]) + "." + Integer.valueOf(version[1]);
+        if (version == null) {
+            return "<null>";
         }
-        return "<unknown format>:" + HexUtils.bin2hex(version);
+        if (version.length == 2) {
+            return version[0] + "." + version[1];
+        }
+        return "<unknown format " + HexUtils.bin2hex(version) + ">";
     }
 
     public void addModule(AID aid) {

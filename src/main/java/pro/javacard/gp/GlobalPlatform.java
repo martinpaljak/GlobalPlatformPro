@@ -410,8 +410,12 @@ public class GlobalPlatform implements AutoCloseable {
 			BerTlvParser parser = new BerTlvParser();
 			BerTlvs tlvs = parser.parse(resp.getData());
 			BerTlvLogger.log("    ", tlvs, GPData.getLoggerInstance());
-			BerTlv ssc = tlvs.find(new BerTag(0xC1));
-			out.println("SSC " + HexUtils.bin2hex(ssc.getBytesValue()));
+			if (tlvs != null) {
+				BerTlv ssc = tlvs.find(new BerTag(0xC1));
+				if (ssc != null) {
+					out.println("SSC " + HexUtils.bin2hex(ssc.getBytesValue()));
+				}
+			}
 		} else {
 			out.println("GET DATA(SSC) not supported: " + GPData.sw2str(resp.getSW()));
 		}
@@ -856,7 +860,7 @@ public class GlobalPlatform implements AutoCloseable {
 				baos.write(16);
 				// Encrypt key with DEK
 				Cipher cipher;
-				cipher = Cipher.getInstance("DESede/ECB/NoPadding");
+				cipher = Cipher.getInstance(GPCrypto.DES3_ECB_CIPHER);
 				cipher.init(Cipher.ENCRYPT_MODE, kek.getKeyAs(Type.DES3));
 				baos.write(cipher.doFinal(key.getBytes(), 0, 16));
 				if (withCheck) {

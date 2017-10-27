@@ -26,14 +26,14 @@ import com.google.gson.annotations.SerializedName;
 import javax.net.ssl.*;
 import java.io.Console;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
-import java.util.HashMap;
-import java.util.Map;
 
 // Knows keying information to access a card.
 public class PythiaKeys {
@@ -67,7 +67,6 @@ public class PythiaKeys {
 
     // Ask Pythia for help, choosing from many possibilities.
     public static PlaintextKeys ask(byte[] atr, byte[] cplc, byte[] kinfo) throws GPDataException {
-        Map<String, String> r = new HashMap<>();
         try {
             // FIXME: not that OK for contactless, but ....
             String urlstring = PYTHIA_URL;
@@ -84,15 +83,40 @@ public class PythiaKeys {
             ssl.init(null, new TrustManager[]{new X509TrustManager() {
                 @Override
                 public void checkClientTrusted(X509Certificate[] x509Certificates, String s) throws CertificateException {
-
+                    throw new CertificateException("No client authentication required");
                 }
 
                 @Override
                 public void checkServerTrusted(X509Certificate[] x509Certificates, String s) throws CertificateException {
+                    if (x509Certificates.length < 1)
+                        throw new CertificateException("No certificate");
+                    try (InputStream cert = PythiaKeys.class.getResourceAsStream("javacard.pro.pem")) {
+                        if (cert == null) {
+                            throw new CertificateException("No certificate bundled");
+                        }
+                        CertificateFactory cf = CertificateFactory.getInstance("X509");
+                        X509Certificate c = (X509Certificate) cf.generateCertificate(cert);
+                        if (x509Certificates[0].equals(c)) {
+                            return;
+                        }
+                    } catch (IOException e) {
+                        // Ignore
+                    }
+
+                    throw new CertificateException("javacard.pro certificate not in server chain");
                 }
 
                 @Override
                 public X509Certificate[] getAcceptedIssuers() {
+                    try (InputStream cert = PythiaKeys.class.getResourceAsStream("letsencrypt.pem")) {
+                        if (cert != null) {
+                            CertificateFactory cf = CertificateFactory.getInstance("X509");
+                            X509Certificate c = (X509Certificate) cf.generateCertificate(cert);
+                            return new X509Certificate[]{c};
+                        }
+                    } catch (CertificateException|IOException e) {
+                        // Ignore
+                    }
                     return new X509Certificate[0];
                 }
 
@@ -106,8 +130,12 @@ public class PythiaKeys {
             OracleHint[] hints;
             try (InputStreamReader in = new InputStreamReader(con.getInputStream(), StandardCharsets.UTF_8)) {
                 hints = new Gson().fromJson(in, OracleHint[].class);
+                if (hints == null) {
+                    throw new GPDataException("Pythia is confused, there are no hints");
+                }
+            } catch (SSLHandshakeException e) {
+                throw new GPDataException("Can not establish a connection to Pythia");
             }
-
 
             if (hints.length > 1) {
                 Console c = System.console();

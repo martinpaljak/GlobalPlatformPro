@@ -232,7 +232,7 @@ final class GPCrypto {
 
 	public static byte[] kcv_3des(GPKey key) {
 		try {
-			Cipher cipher = Cipher.getInstance("DESede/ECB/NoPadding");
+			Cipher cipher = Cipher.getInstance(DES3_ECB_CIPHER);
 			cipher.init(Cipher.ENCRYPT_MODE, key.getKeyAs(Type.DES3));
 			byte check[] = cipher.doFinal(GPCrypto.null_bytes_8);
 			return Arrays.copyOf(check, 3);

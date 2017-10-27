@@ -901,18 +901,15 @@ public final class GPTool {
     }
 
     private static Privileges addPrivs(Privileges privs, String v) {
+        if (v == null)
+            return privs;
         String[] parts = v.split(",");
         for (String s : parts) {
-            boolean found = false;
-            for (Privilege p : Privilege.values()) {
-                if (s.trim().equalsIgnoreCase(p.name())) {
-                    found = true;
-                    privs.add(p);
-                    break;
-                }
-            }
-            if (!found) {
+            Privilege p = Privilege.lookup(s.trim());
+            if (p == null) {
                 throw new IllegalArgumentException("Unknown privilege: " + s.trim());
+            } else {
+                privs.add(p);
             }
         }
         return privs;

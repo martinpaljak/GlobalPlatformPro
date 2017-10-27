@@ -182,7 +182,16 @@ public class GPRegistryEntry {
         ReceiptGeneration,
         CipheredLoadFileDataBlock,
         ContactlessActivation,
-        ContactlessSelfActivation
+        ContactlessSelfActivation;
+
+        public static Privilege lookup(String v) {
+            for (Privilege d : Privilege.values()) {
+                if (d.name().equalsIgnoreCase(v)) {
+                    return d;
+                }
+            }
+            return null;
+        }
     }
 
     public static class Privileges {

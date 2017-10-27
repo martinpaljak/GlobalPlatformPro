@@ -34,11 +34,11 @@ import java.util.stream.Collectors;
 // Various constants from GP specification and other sources
 // Methods to pretty-print those structures and constants.
 public final class GPData {
-    // Default test key
-    public static final byte[] defaultKeyBytes = {0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F};
-    public static final GPKey defaultKey = new GPKey(defaultKeyBytes, Type.DES3);
+    // Default test key TODO: provide getters for arrays, this class should be kept public
+    static final byte[] defaultKeyBytes = {0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F};
+    static final GPKey defaultKey = new GPKey(defaultKeyBytes, Type.DES3);
     // Default ISD AID-s
-    public static final byte[] defaultISDBytes = HexUtils.hex2bin("A000000151000000");
+    static final byte[] defaultISDBytes = HexUtils.hex2bin("A000000151000000");
     // SD states
     public static final byte readyStatus = 0x1;
     public static final byte initializedStatus = 0x7;

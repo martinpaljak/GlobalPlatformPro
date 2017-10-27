@@ -28,8 +28,7 @@ addons:
     project:
       name: martinpaljak/GlobalPlatformPro
     notification_email: martin@martinpaljak.net
-    build_command_prepend: ant fetch
-    build_command: ant compile
+    build_command: mvn clean compile
     branch_pattern: coverity
 before_deploy:
 - mkdir -p output

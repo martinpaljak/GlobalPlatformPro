@@ -753,7 +753,12 @@ public final class GPTool {
                         // --secured
                         if (args.has(OPT_SECURED)) {
                             // Skip INITIALIZED
-                            if (gp.getRegistry().getISD().getLifeCycle() != 0x7) {
+                            GPRegistryEntryApp isd = gp.getRegistry().getISD();
+                            if (isd == null) {
+                                GPCommands.listRegistry(gp.getRegistry(), System.out, true);
+                                fail("ISD is null");
+                            }
+                            if (isd.getLifeCycle() != 0x7) {
                                 if (args.has(OPT_FORCE)) {
                                     gp.setCardStatus(GPData.initializedStatus);
                                 }
@@ -825,7 +830,7 @@ public final class GPTool {
 */
                             boolean replace = true;
                             List<GPKey> current = gp.getKeyInfoTemplate();
-                            if (current.get(0).getVersion() == 255) {
+                            if (current.size() > 0 && current.get(0).getVersion() == 255) {
                                 replace = false;
                             }
 

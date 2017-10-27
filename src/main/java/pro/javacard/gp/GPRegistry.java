@@ -119,6 +119,7 @@ public class GPRegistry implements Iterable<GPRegistryEntry> {
 		}
 		return res;
 	}
+
 	public List<AID> allAIDs() {
 		List<AID> res = new ArrayList<AID>();
 		for (GPRegistryEntry e : entries.values()) {
@@ -135,6 +136,16 @@ public class GPRegistry implements Iterable<GPRegistryEntry> {
 		List<GPRegistryEntryApp> res = new ArrayList<GPRegistryEntryApp>();
 		for (GPRegistryEntry e : entries.values()) {
 			if (e.isApplet()) {
+				res.add((GPRegistryEntryApp)e);
+			}
+		}
+		return res;
+	}
+
+	public List<GPRegistryEntryApp> allDomains() {
+		List<GPRegistryEntryApp> res = new ArrayList<>();
+		for (GPRegistryEntry e : entries.values()) {
+			if (e.isDomain()) {
 				res.add((GPRegistryEntryApp)e);
 			}
 		}
@@ -168,7 +179,7 @@ public class GPRegistry implements Iterable<GPRegistryEntry> {
 
 	// Shorthand
 	public GPRegistryEntryApp getISD() {
-		for (GPRegistryEntryApp a: allApplets()) {
+		for (GPRegistryEntryApp a: allDomains()) {
 			if (a.getType() == Kind.IssuerSecurityDomain) {
 				return a;
 			}

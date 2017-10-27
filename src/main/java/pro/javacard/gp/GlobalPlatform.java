@@ -853,8 +853,8 @@ public class GlobalPlatform implements AutoCloseable {
 	public void deleteKey(int keyver) throws GPException, CardException {
 		// FIXME: no card seems to support it
 		ByteArrayOutputStream bo = new ByteArrayOutputStream();
-		bo.write(0xd0);
-		bo.write(1);
+		//bo.write(0xd0);
+		//bo.write(1);
 		bo.write(0xd2);
 		bo.write(keyver);
 

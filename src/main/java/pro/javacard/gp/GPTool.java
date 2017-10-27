@@ -957,7 +957,7 @@ public final class GPTool {
     private static boolean needsAuthentication(OptionSet args) {
         if (args.has(OPT_LIST) || args.has(OPT_LOAD) || args.has(OPT_INSTALL))
             return true;
-        if (args.has(OPT_DELETE) || args.has(OPT_CREATE))
+        if (args.has(OPT_DELETE_KEY) || args.has(OPT_DELETE) || args.has(OPT_CREATE))
             return true;
         if (args.has(OPT_ACR_ADD) || args.has(OPT_ACR_DELETE))
             return true;
@@ -967,7 +967,7 @@ public final class GPTool {
             return true;
         if (args.has(OPT_LOCK_CARD) || args.has(OPT_UNLOCK_CARD) || args.has(OPT_LOCK_APPLET) || args.has(OPT_UNLOCK_APPLET))
             return true;
-        if (args.has(OPT_STORE_DATA) || args.has(OPT_INITIALIZED) || args.has(OPT_SECURED))
+        if (args.has(OPT_STORE_DATA) || args.has(OPT_INITIALIZED) || args.has(OPT_SECURED) || args.has(OPT_RENAME_ISD))
             return true;
         return false;
     }

@@ -52,6 +52,8 @@ public final class GPTool {
     private final static String OPT_DEBUG = "debug";
     private final static String OPT_DEFAULT = "default";
     private final static String OPT_DELETE = "delete";
+    private final static String OPT_DELETE_KEY = "delete-key";
+
     private final static String OPT_DOMAIN = "domain";
     private final static String OPT_DUMP = "dump";
     private final static String OPT_EMV = "emv";
@@ -80,6 +82,7 @@ public final class GPTool {
     private final static String OPT_PARAMS = "params";
     private final static String OPT_PRIVS = "privs";
     private final static String OPT_READER = "reader";
+    private final static String OPT_RENAME_ISD = "rename-isd";
     private final static String OPT_REPLAY = "replay";
     private final static String OPT_SC_MODE = "mode";
     private final static String OPT_SCP = "scp";
@@ -147,8 +150,10 @@ public final class GPTool {
         parser.accepts(OPT_STORE_DATA, "STORE DATA to applet").withRequiredArg().withValuesConvertedBy(ArgMatchers.hex());
 
         parser.accepts(OPT_MAKE_DEFAULT, "Make AID the default").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
+        parser.accepts(OPT_RENAME_ISD, "Rename ISD").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
 
         parser.accepts(OPT_DELETE, "Delete applet/package").withOptionalArg().withValuesConvertedBy(ArgMatchers.aid());
+        parser.accepts(OPT_DELETE_KEY, "Delete key with version").withRequiredArg().ofType(Integer.class);
 
         parser.accepts(OPT_CREATE, "Create new instance of an applet").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
         parser.accepts(OPT_APPLET, "Applet AID").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
@@ -181,11 +186,9 @@ public final class GPTool {
         parser.accepts(OPT_ACR_DELETE, "Delete an access rule");
         parser.accepts(OPT_ACR_RULE, "Access control rule (can be 0x00(NEVER),0x01(ALWAYS) or an apdu filter").withRequiredArg().withValuesConvertedBy(ArgMatchers.hex());
         parser.accepts(OPT_ACR_CERT_HASH, "Certicate hash (sha1)").withRequiredArg().withValuesConvertedBy(ArgMatchers.hex());
-        ;
 
         // General GP options
         parser.accepts(OPT_SC_MODE, "Secure channel to use (mac/enc/clr)").withRequiredArg().withValuesConvertedBy(ArgMatchers.mode());
-        ;
         parser.accepts(OPT_BS, "maximum APDU payload size").withRequiredArg().ofType(Integer.class);
         parser.accepts(OPT_OP201, "Enable OpenPlatform 2.0.1 mode");
 
@@ -448,6 +451,10 @@ public final class GPTool {
                             keyz.setDiversifier(PlaintextKeys.Diversification.VISA2.VISA2);
                         } else if (args.has(OPT_EMV)) {
                             keyz.setDiversifier(PlaintextKeys.Diversification.EMV.EMV);
+                        }
+
+                        if (args.has(OPT_KEY_VERSION)) {
+                            keyz.setVersion((Integer) args.valueOf(OPT_KEY_VERSION));
                         }
                         keys = keyz;
                     }
@@ -769,6 +776,13 @@ public final class GPTool {
                             GPCommands.listRegistry(gp.getRegistry(), System.out, args.has(OPT_VERBOSE));
                         }
 
+                        // --delete-key
+                        if (args.has(OPT_DELETE_KEY)) {
+                            int keyver = (Integer) args.valueOf(OPT_DELETE_KEY);
+                            System.out.println("Deleting key " + keyver);
+                            gp.deleteKey(keyver);
+                        }
+
                         // TODO: Move to GPCommands
                         // --unlock
                         if (args.has(OPT_UNLOCK)) {
@@ -827,6 +841,8 @@ public final class GPTool {
 
                             if (args.has(OPT_NEW_KEY_VERSION)) {
                                 new_version = (int) args.valueOf(OPT_NEW_KEY_VERSION);
+                                System.out.println("New version: " + new_version);
+                                replace = false; // FIXME: only if current key is factory
                             }
                             // Add into a list
                             List<GPKey> updatekeys = new ArrayList<>();
@@ -850,6 +866,11 @@ public final class GPTool {
                         // --make-default <aid>
                         if (args.has(OPT_MAKE_DEFAULT)) {
                             gp.makeDefaultSelected((AID) args.valueOf(OPT_MAKE_DEFAULT));
+                        }
+
+                        // --rename-isd
+                        if (args.has(OPT_RENAME_ISD)) {
+                            gp.renameISD((AID) args.valueOf(OPT_RENAME_ISD));
                         }
                     }
                 } catch (GPException e) {

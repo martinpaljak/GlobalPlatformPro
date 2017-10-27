@@ -273,6 +273,9 @@ public class PlaintextKeys extends GPSessionKeyProvider {
         this.diversifier = diversifier;
     }
 
+    public void setVersion(int version) {
+        this.version = version;
+    }
     // diversification methods
     public enum Diversification {
         VISA2, EMV

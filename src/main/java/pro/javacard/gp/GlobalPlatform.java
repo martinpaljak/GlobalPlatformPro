@@ -850,6 +850,34 @@ public class GlobalPlatform implements AutoCloseable {
 		dirty = true;
 	}
 
+	public void deleteKey(int keyver) throws GPException, CardException {
+		// FIXME: no card seems to support it
+		ByteArrayOutputStream bo = new ByteArrayOutputStream();
+		bo.write(0xd0);
+		bo.write(1);
+		bo.write(0xd2);
+		bo.write(keyver);
+
+//		bo.write(0xd0);
+//		bo.write(2);
+//		bo.write(0xd2);
+//		bo.write(keyver);
+//
+//		bo.write(0xd0);
+//		bo.write(3);
+//		bo.write(0xd2);
+//		bo.write(keyver);
+		CommandAPDU delete = new CommandAPDU(CLA_GP, INS_DELETE, 0x00, 0x00, bo.toByteArray());
+		ResponseAPDU response = transmit(delete);
+		GPException.check(response, "Deletion failed");
+	}
+
+
+	public void renameISD(AID newaid) throws GPException, CardException {
+		CommandAPDU rename = new CommandAPDU(CLA_GP, INS_STORE_DATA, 0x90, 0x00, GPUtils.concatenate(new byte[]{0x4f, (byte)newaid.getLength()}, newaid.getBytes()));
+		ResponseAPDU response = transmit(rename);
+		GPException.check(response, "Rename failed");
+	}
 	// FIXME: remove the withCheck parameter, as always true?
 	private byte[] encodeKey(GPKey key, GPKey kek, boolean withCheck) {
 		try {

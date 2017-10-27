@@ -1,4 +1,4 @@
-# GlobalPlatformPro &nbsp; [![Build Status](https://travis-ci.org/martinpaljak/GlobalPlatformPro.svg?branch=master)](https://travis-ci.org/martinpaljak/GlobalPlatformPro) [![Coverity status](https://scan.coverity.com/projects/4020/badge.svg?flat=1)](https://scan.coverity.com/projects/4020/) [![Latest release](https://img.shields.io/github/release/martinpaljak/GlobalPlatformPro.svg)](https://github.com/martinpaljak/GlobalPlatformPro/releases/latest)
+# GlobalPlatformPro &nbsp; [![Build Status](https://travis-ci.org/martinpaljak/GlobalPlatformPro.svg?branch=master)](https://travis-ci.org/martinpaljak/GlobalPlatformPro) [![Coverity status](https://scan.coverity.com/projects/4020/badge.svg?flat=1)](https://scan.coverity.com/projects/4020/) [![Latest release](https://img.shields.io/github/release/martinpaljak/GlobalPlatformPro.svg)](https://github.com/martinpaljak/GlobalPlatformPro/releases/latest)[![Gitter](https://badges.gitter.im/martinpaljak/GlobalPlatformPro.svg)](https://gitter.im/martinpaljak/GlobalPlatformPro?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 *&nbsp;&nbsp;from [javacard.pro](http://javacard.pro)*
 
 Load and manage applets on compatible JavaCards from command line or from your Java project with a [Do What I Mean](http://en.wikipedia.org/wiki/DWIM) approach ([testimonials](./docs/Testimonials.md)).
@@ -284,6 +284,7 @@ In regard to GlobalPlatform, the goal is to make simple operations like installi
   * re-run your failing command with ```-d -v -i``` switches and send the output, information about your card and applet/CAP
   * **Only plaintext** logs. **NO** screenshots, pictures, word documents. **NO** generic questions about java/linux/windows/globalplatform. Questions about jcshell/gpshell/gpj/something else **shall be ignored**.
   * If unsure, first read about [asking questions](http://www.catb.org/esr/faqs/smart-questions.html)
+  * If you want to have a chat-like experience, try to [![Gitter](https://badges.gitter.im/martinpaljak/GlobalPlatformPro.svg)](https://gitter.im/martinpaljak/GlobalPlatformPro?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 * [File an issue on Github](https://github.com/martinpaljak/GlobalPlatformPro/issues/new). Better yet - a pull request!
 * Want to **donate**? E-mail or paypal to martin@martinpaljak.net
 

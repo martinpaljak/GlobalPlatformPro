@@ -93,7 +93,7 @@ public final class GPKey {
     }
 
     public byte[] getBytes() {
-        return bytes;
+        return Arrays.copyOf(bytes, bytes.length);
     }
 
     public int getLength() {

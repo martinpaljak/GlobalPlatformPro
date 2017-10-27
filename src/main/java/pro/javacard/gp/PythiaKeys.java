@@ -126,7 +126,7 @@ public class PythiaKeys {
                             c.writer().println("Closing up");
                             System.exit(1);
                         } else {
-                            int idx = Integer.valueOf(res);
+                            int idx = Integer.parseInt(res);
                             if (idx < 0 || idx >= i) {
                                 System.out.println("Wrong value, try again");
                             } else {

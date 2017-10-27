@@ -30,7 +30,9 @@ import javax.crypto.NoSuchPaddingException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.Map;
 
 // Handles plaintext card keys.
 // Supports diversification of card keys with some known algorithms.
@@ -38,18 +40,22 @@ public class PlaintextKeys extends GPSessionKeyProvider {
     private static final Logger logger = LoggerFactory.getLogger(PlaintextKeys.class);
 
     // Derivation constants
-    public static HashMap<KeyPurpose, byte[]> SCP02_CONSTANTS = new HashMap<>();
-    public static HashMap<KeyPurpose, Byte> SCP03_CONSTANTS = new HashMap<>();
+    public static final Map<KeyPurpose, byte[]> SCP02_CONSTANTS;
+    public static final Map<KeyPurpose, Byte> SCP03_CONSTANTS;
 
     static {
-        SCP02_CONSTANTS.put(KeyPurpose.MAC, new byte[]{(byte) 0x01, (byte) 0x01});
-        SCP02_CONSTANTS.put(KeyPurpose.RMAC, new byte[]{(byte) 0x01, (byte) 0x02});
-        SCP02_CONSTANTS.put(KeyPurpose.DEK, new byte[]{(byte) 0x01, (byte) 0x81});
-        SCP02_CONSTANTS.put(KeyPurpose.ENC, new byte[]{(byte) 0x01, (byte) 0x82});
+        HashMap<KeyPurpose, byte[]> scp2 = new HashMap<>();
+        scp2.put(KeyPurpose.MAC, new byte[]{(byte) 0x01, (byte) 0x01});
+        scp2.put(KeyPurpose.RMAC, new byte[]{(byte) 0x01, (byte) 0x02});
+        scp2.put(KeyPurpose.DEK, new byte[]{(byte) 0x01, (byte) 0x81});
+        scp2.put(KeyPurpose.ENC, new byte[]{(byte) 0x01, (byte) 0x82});
+        SCP02_CONSTANTS = Collections.unmodifiableMap(scp2);
 
-        SCP03_CONSTANTS.put(KeyPurpose.ENC, (byte) 0x04);
-        SCP03_CONSTANTS.put(KeyPurpose.MAC, (byte) 0x06);
-        SCP03_CONSTANTS.put(KeyPurpose.RMAC, (byte) 0x07);
+        HashMap<KeyPurpose, Byte> scp3 = new HashMap<>();
+        scp3.put(KeyPurpose.ENC, (byte) 0x04);
+        scp3.put(KeyPurpose.MAC, (byte) 0x06);
+        scp3.put(KeyPurpose.RMAC, (byte) 0x07);
+        SCP03_CONSTANTS = Collections.unmodifiableMap(scp3);
     }
 
     // If diverisification is to be used, which method
@@ -233,20 +239,20 @@ public class PlaintextKeys extends GPSessionKeyProvider {
 
         // Calculate per-card keys from master key(s), if needed
         if (diversifier != null) {
-            for (KeyPurpose p : cardKeys.keySet()) {
-                cardKeys.put(p, diversify(cardKeys.get(p), p, kdd, diversifier));
+            for (Map.Entry<KeyPurpose, GPKey> e: cardKeys.entrySet()) {
+                cardKeys.put(e.getKey(), diversify(e.getValue(), e.getKey(), kdd, diversifier));
             }
             logger.debug("Derived per-card keys: {}", cardKeys.toString());
         }
 
         // Calculate session keys
-        for (KeyPurpose p : cardKeys.keySet()) {
+        for (Map.Entry<KeyPurpose, GPKey> e: cardKeys.entrySet()) {
             if (scp == 1) {
-                sessionKeys.put(p, deriveSessionKeySCP01(cardKeys.get(p), p, host_challenge, card_challenge));
+                sessionKeys.put(e.getKey(), deriveSessionKeySCP01(e.getValue(), e.getKey(), host_challenge, card_challenge));
             } else if (scp == 2) {
-                sessionKeys.put(p, deriveSessionKeySCP02(cardKeys.get(p), p, ssc));
+                sessionKeys.put(e.getKey(), deriveSessionKeySCP02(e.getValue(), e.getKey(), ssc));
             } else if (scp == 3) {
-                sessionKeys.put(p, deriveSessionKeySCP03(cardKeys.get(p), p, host_challenge, card_challenge));
+                sessionKeys.put(e.getKey(), deriveSessionKeySCP03(e.getValue(), e.getKey(), host_challenge, card_challenge));
             }
         }
         logger.debug("session keys: {}", sessionKeys.toString());

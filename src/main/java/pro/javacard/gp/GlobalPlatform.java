@@ -92,7 +92,7 @@ public class GlobalPlatform implements AutoCloseable {
 		}
 	};
 
-	public static EnumSet<APDUMode> defaultMode = EnumSet.of(APDUMode.MAC);
+	public static final EnumSet<APDUMode> defaultMode = EnumSet.of(APDUMode.MAC);
 
 	// Implementation details
 	public static final byte CLA_GP = (byte) 0x80;
@@ -108,7 +108,7 @@ public class GlobalPlatform implements AutoCloseable {
 	public static final byte INS_GET_DATA = (byte) 0xCA;
 
 	// (I)SD AID of the card successfully selected or null
-	private AID sdAID = null; // FIXME: visibility
+	private AID sdAID = null;
 	public enum GPSpec {OP201, GP211, GP22};
 	GPSpec spec = GPSpec.GP211;
 
@@ -120,13 +120,11 @@ public class GlobalPlatform implements AutoCloseable {
 	private GPSessionKeyProvider sessionKeys = null;
 	private SCPWrapper wrapper = null;
 	private CardChannel channel = null;
-	private byte[] diversification_data = null;
 
 	private GPRegistry registry = null;
 	private boolean dirty = true; // True if registry is dirty.
 
 	protected boolean strict = true;
-
 
 	/**
 	 * Maintaining locks to the underlying hardware is the duty of the caller
@@ -432,10 +430,6 @@ public class GlobalPlatform implements AutoCloseable {
 		return null;
 	}
 
-	public byte [] getDiversificationData() {
-		return diversification_data;
-	}
-
 	/**
 	 * Establishes a secure channel to the security domain.
 	 *
@@ -479,7 +473,7 @@ public class GlobalPlatform implements AutoCloseable {
 		}
 		// Parse the response
 		int offset = 0;
-		diversification_data = Arrays.copyOfRange(update_response, 0, 10);
+		byte[] diversification_data = Arrays.copyOfRange(update_response, 0, 10);
 		offset += diversification_data.length;
 		// Get used key version from response
 		int keyVersion = update_response[offset] & 0xFF;
@@ -1055,7 +1049,7 @@ public class GlobalPlatform implements AutoCloseable {
 		return registry;
 	}
 
-	public static class SCP0102Wrapper extends SCPWrapper {
+	static class SCP0102Wrapper extends SCPWrapper {
 
 		private byte[] icv = null;
 		private byte[] ricv = null;
@@ -1267,7 +1261,7 @@ public class GlobalPlatform implements AutoCloseable {
 		}
 	}
 
-	public static class SCP03Wrapper extends SCPWrapper {
+	static class SCP03Wrapper extends SCPWrapper {
 		// Both are block size length
 		byte [] chaining_value = new byte[16];
 		byte [] encryption_counter = new byte[16];
@@ -1355,7 +1349,7 @@ public class GlobalPlatform implements AutoCloseable {
 		}
 	}
 
-	public static abstract class SCPWrapper {
+	static abstract class SCPWrapper {
 		protected int blockSize = 0;
 		protected GPSessionKeyProvider sessionKeys = null;
 		protected boolean mac = false;

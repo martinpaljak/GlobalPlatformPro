@@ -203,7 +203,7 @@ public class PlaintextKeys extends GPSessionKeyProvider {
             return cardKey;
         }
         byte[] context = GPUtils.concatenate(host_challenge, card_challenge);
-        byte[] kdf = GPCrypto.scp03_kdf(cardKey, SCP03_CONSTANTS.get(p), context, 128);
+        byte[] kdf = GPCrypto.scp03_kdf(cardKey, SCP03_CONSTANTS.get(p), context, cardKey.getLength() * 8);
         return new GPKey(kdf, Type.AES);
     }
 

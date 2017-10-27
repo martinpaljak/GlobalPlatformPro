@@ -31,6 +31,8 @@ public final class GPRegistryEntryPkg extends GPRegistryEntry {
     private List<AID> modules = new ArrayList<AID>();
 
     public byte[] getVersion() {
+        if (version == null)
+            return null;
         return Arrays.copyOf(version, version.length);
     }
 

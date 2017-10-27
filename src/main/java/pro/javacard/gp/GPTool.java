@@ -919,6 +919,8 @@ public final class GPTool {
         byte[] params = null;
         if (args.has(OPT_PARAMS)) {
             params = (byte[]) args.valueOf(OPT_PARAMS);
+            if (params == null || params.length == 0)
+                return params;
             // Simple use: only application parameters without tag, prepend 0xC9
             if (params[0] != (byte) 0xC9) {
                 byte[] newparams = new byte[params.length + 2];

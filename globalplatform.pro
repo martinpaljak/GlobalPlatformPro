@@ -17,7 +17,7 @@
     public static ** valueOf(java.lang.String);
 }
 
--printseeds
+-printseeds seeds.txt
 -dontnote !pro.javacard.**
 -dontwarn !pro.javacard.**
 

@@ -56,3 +56,6 @@ deploy:
     on:
       tags: true
       repo: martinpaljak/GlobalPlatformPro
+cache:
+  directories:
+  - $HOME/.m2

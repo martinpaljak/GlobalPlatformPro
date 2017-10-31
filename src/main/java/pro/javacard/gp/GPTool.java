@@ -442,8 +442,13 @@ public final class GPTool {
                             }
                             keyz = PlaintextKeys.fromMasterKey(k);
                         } else {
-                            System.out.println("Warning: using default test key " + HexUtils.bin2hex(GPData.defaultKeyBytes));
-                            keyz = PlaintextKeys.fromMasterKey(GPData.defaultKey);
+                            // XXX: better checks for exclusive key options
+                            if (args.has(OPT_KEY_MAC) && args.has(OPT_KEY_ENC) && args.has(OPT_KEY_DEC)) {
+                                keyz = PlaintextKeys.fromKeys((GPKey) args.valueOf(OPT_KEY_ENC), (GPKey) args.valueOf(OPT_KEY_MAC), (GPKey) args.valueOf(OPT_KEY_DEC));
+                            } else {
+                                System.out.println("Warning: no keys given, using default test key " + HexUtils.bin2hex(GPData.defaultKeyBytes));
+                                keyz = PlaintextKeys.fromMasterKey(GPData.defaultKey);
+                            }
                         }
 
                         // "gp -l -emv" should still work

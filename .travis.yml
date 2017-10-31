@@ -32,7 +32,7 @@ addons:
     branch_pattern: coverity
 deploy:
   - provider: releases
-    files:
+    file:
       - gp.jar
       - gp.exe
     api-key:

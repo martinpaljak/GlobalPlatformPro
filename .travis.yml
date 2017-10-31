@@ -30,22 +30,7 @@ addons:
     notification_email: martin@martinpaljak.net
     build_command: mvn clean compile
     branch_pattern: coverity
-before_deploy:
-- mkdir -p output
-- cp gp.jar output
 deploy:
-  - provider: gcs
-    access_key_id: GOOGQ7KC7VVKLVNTAVB7
-    secret_access_key:
-      secure: D/g4zF7rKLLDcNR8eQsa5mUS7iFvaOP5d83n4pgjIVDNcDyeMS2eiZORw+rqqKgS9rpbliFU7MDbDK40yqCSK6a1shVfmpBwSfEZXE1TjfflN13LkreCIQ+ZACo3zt2jIr7xxMZz9um0FofOuLJbdjvQNG66hbgN9rXxyeOxSoE=
-    bucket: github-martinpaljak-builds
-    on:
-      repo: martinpaljak/GlobalPlatformPro
-    skip_cleanup: true
-    acl: public-read
-    all_branches: true
-    local-dir: output
-    upload-dir: travis-builds-123
   - provider: releases
     file:
       - gp.jar

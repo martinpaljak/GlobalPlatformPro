@@ -32,11 +32,11 @@ addons:
     branch_pattern: coverity
 deploy:
   - provider: releases
-    file:
+    files:
       - gp.jar
       - gp.exe
     api-key:
-      secure: JD2xCdTGa6Vif2Qs7z77tWWMM8KdlgRVKFkzOprCXiDJRr36Vu2lVkOFW4AvvNudKQNZn8xOhYcebd2YBITdmFczt1vyPItoSjZ+sAQO3hIJ0r2+E+XVX8mj5Nw6NF6Jobd87VFMPJ7cE07gaDE5FzpdIWB7hMpyEPYV++azCG8=
+      secure: "Pn3sXjb06x932nCgRzKirytYZKKLATjc7dVFndsnf1XqPvcmdq2vproWpTetz6nT94YFepP/R26uizdJbZcf9XL1LyHf77klGFHJY/XXGJY4MeVD6l3rIckFmDFiETo8WcRTzk9jhGYM1trIRk/w8RJFawimxxn8KA8ZEIluySA="
     skip_cleanup: true
     on:
       tags: true

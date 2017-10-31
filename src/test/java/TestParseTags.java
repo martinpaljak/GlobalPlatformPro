@@ -2,7 +2,10 @@ import apdu4j.HexUtils;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pro.javacard.gp.*;
+import pro.javacard.gp.GPData;
+import pro.javacard.gp.GPRegistry;
+import pro.javacard.gp.GPRegistryEntry;
+import pro.javacard.gp.GlobalPlatform;
 
 public class TestParseTags {
     final static Logger logger = LoggerFactory.getLogger(TestParseTags.class);
@@ -17,6 +20,8 @@ public class TestParseTags {
     @Test
     public void testOther() throws Exception {
         byte[] data = HexUtils.hex2bin("664C734A06072A864886FC6B01600C060A2A864886FC6B02020101630906072A864886FC6B03640B06092A864886FC6B040215650B06092B8510864864020103660C060A2B060104012A026E0102");
+        GPData.pretty_print_card_data(data);
+        data = HexUtils.hex2bin("6657735506072A864886FC6B01600B06092A864886FC6B020202630906072A864886FC6B03640B06092A864886FC6B040370640B06092A864886FC6B048000650A06082A864886FC6B0504660C060A2B060104012A026E0103");
         GPData.pretty_print_card_data(data);
     }
 

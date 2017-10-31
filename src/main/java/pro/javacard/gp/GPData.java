@@ -222,7 +222,13 @@ public final class GPData {
 
                         if (oid.startsWith("1.2.840.114283.4")) {
                             String[] p = oid.substring("1.2.840.114283.4.".length()).split("\\.");
-                            System.out.println("-> GP SCP_0" + p[0] + "_" + String.format("%02x", Integer.valueOf(p[1])));
+                            if (p.length == 2) {
+                                System.out.println("-> GP SCP0" + p[0] + " i=" + String.format("%02x", Integer.valueOf(p[1])));
+                            } else {
+                                if (oid.equals("1.2.840.114283.4.0")) {
+                                    System.out.println("-> GP SCP80 i=0x00");
+                                }
+                            }
                         }
                     }
                 }

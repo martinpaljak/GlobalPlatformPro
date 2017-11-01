@@ -27,3 +27,6 @@
 -keep class jnasmartcardio.** { *; }
 
 -keep class org.slf4j.impl.Simple** { *; }
+
+# Fix for java.lang.ClassFormatError: LVTT entry for 'X' in class file Z does not match any LVT entry
+-optimizations !code/allocation/variable

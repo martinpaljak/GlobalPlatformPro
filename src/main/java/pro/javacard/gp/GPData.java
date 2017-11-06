@@ -21,11 +21,13 @@ package pro.javacard.gp;
 
 import apdu4j.HexUtils;
 import com.payneteasy.tlv.*;
+import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pro.javacard.gp.GPKey.Type;
 
 import javax.smartcardio.CardException;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.math.BigInteger;
 import java.util.*;
@@ -226,7 +228,7 @@ public final class GPData {
                                 System.out.println("-> GP SCP0" + p[0] + " i=" + String.format("%02x", Integer.valueOf(p[1])));
                             } else {
                                 if (oid.equals("1.2.840.114283.4.0")) {
-                                    System.out.println("-> GP SCP80 i=0x00");
+                                    System.out.println("-> GP SCP80 i=00");
                                 }
                             }
                         }
@@ -270,20 +272,15 @@ public final class GPData {
         return String.format("0x%04X (%s)", sw, msg);
     }
 
-    @SuppressWarnings("sunapi")
     public static String oid2string(byte[] oid) {
         try {
             // Prepend 0x06 tag, if not present
             if (oid[0] != 0x06) {
                 oid = GPUtils.concatenate(new byte[]{0x06, (byte) oid.length}, oid);
             }
-
-            StringJoiner joiner = new StringJoiner(".");
-            for (long l : new com.sun.jmx.snmp.BerDecoder(oid).fetchOid()) {
-                joiner.add(Long.toString(l));
-            }
-            return joiner.toString();
-        } catch (com.sun.jmx.snmp.BerException e) {
+            ASN1ObjectIdentifier realoid = (ASN1ObjectIdentifier) ASN1ObjectIdentifier.fromByteArray(oid);
+            return realoid.toString();
+        } catch (IOException e) {
             throw new IllegalArgumentException("Could not handle " + HexUtils.bin2hex(oid));
         }
     }

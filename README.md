@@ -17,11 +17,12 @@ Building JavaCard applets is equally pleasing with [ant-javacard](https://github
 
 ### Get it now!
 * Download latest pre-built .JAR or .EXE from [release area](https://github.com/martinpaljak/GlobalPlatformPro/releases)
-* Or build it yourself (see [CONTRIBUTING](./CONTRIBUTING.md) for tips), it is really easy:
+* Or [build it yourself](https://github.com/martinpaljak/GlobalPlatformPro/wiki/Building), it is really easy:
 
 ```shell
 git clone https://github.com/martinpaljak/GlobalPlatformPro
 cd GlobalPlatformPro
+mvn package
 ant
 ```
 

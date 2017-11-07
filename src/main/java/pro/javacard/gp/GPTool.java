@@ -85,7 +85,6 @@ public final class GPTool {
     private final static String OPT_RENAME_ISD = "rename-isd";
     private final static String OPT_REPLAY = "replay";
     private final static String OPT_SC_MODE = "mode";
-    private final static String OPT_SCP = "scp";
     private final static String OPT_SDAID = "sdaid";
     private final static String OPT_SECURE_APDU = "secure-apdu";
     private final static String OPT_SECURED = "secured";
@@ -113,14 +112,14 @@ public final class GPTool {
 
         // Generic options
         parser.acceptsAll(Arrays.asList("V", OPT_VERSION), "Show information about the program");
-        parser.acceptsAll(Arrays.asList("h", "help"), "Shows this help string").forHelp();
+        parser.acceptsAll(Arrays.asList("h", "?", "help"), "Shows this help string").forHelp();
         parser.acceptsAll(Arrays.asList("d", OPT_DEBUG), "Show PC/SC and APDU trace");
         parser.acceptsAll(Arrays.asList("v", OPT_VERBOSE), "Be verbose about operations");
         parser.acceptsAll(Arrays.asList("r", OPT_READER), "Use specific reader").withRequiredArg();
         parser.acceptsAll(Arrays.asList("l", OPT_LIST), "List the contents of the card");
         parser.acceptsAll(Arrays.asList("i", OPT_INFO), "Show information");
-        parser.acceptsAll(Arrays.asList("a", OPT_APDU), "Send raw APDU (hex)").withRequiredArg().withValuesConvertedBy(ArgMatchers.hex()).describedAs("APDU");
-        parser.acceptsAll(Arrays.asList("s", OPT_SECURE_APDU), "Send raw APDU (hex) via SCP").withRequiredArg().withValuesConvertedBy(ArgMatchers.hex()).describedAs("APDU");
+        parser.acceptsAll(Arrays.asList("a", OPT_APDU), "Send raw APDU (hex)").withRequiredArg().describedAs("APDU");
+        parser.acceptsAll(Arrays.asList("s", OPT_SECURE_APDU), "Send raw APDU (hex) via SCP").withRequiredArg().describedAs("APDU");
         parser.acceptsAll(Arrays.asList("f", OPT_FORCE), "Force operation");
         parser.accepts(OPT_DUMP, "Dump APDU communication to <File>").withRequiredArg().ofType(File.class);
         parser.accepts(OPT_REPLAY, "Replay APDU responses from <File>").withRequiredArg().ofType(File.class);
@@ -133,39 +132,39 @@ public final class GPTool {
         parser.accepts(OPT_LOAD, "Load a CAP file").withRequiredArg().ofType(File.class);
 
         parser.accepts(OPT_INSTALL, "Install applet(s) from CAP").withOptionalArg().ofType(File.class);
-        parser.accepts(OPT_PARAMS, "Installation parameters").withRequiredArg().withValuesConvertedBy(ArgMatchers.hex());
+        parser.accepts(OPT_PARAMS, "Installation parameters").withRequiredArg().describedAs("HEX");
         parser.accepts(OPT_PRIVS, "Specify privileges for installation").withRequiredArg();
         parser.accepts(OPT_LIST_PRIVS, "List known privileges");
 
         parser.accepts(OPT_UNINSTALL, "Uninstall applet/package").withRequiredArg().ofType(File.class);
         parser.accepts(OPT_DEFAULT, "Indicate Default Selected privilege");
         parser.accepts(OPT_TERMINATE, "Indicate Card Lock+Terminate privilege");
-        parser.accepts(OPT_DOMAIN, "Create supplementary security domain").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
-        parser.accepts(OPT_LOCK_APPLET, "Lock applet").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
-        parser.accepts(OPT_UNLOCK_APPLET, "Unlock applet").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
+        parser.accepts(OPT_DOMAIN, "Create supplementary security domain").withRequiredArg().describedAs("AID");
+        parser.accepts(OPT_LOCK_APPLET, "Lock applet").withRequiredArg().describedAs("AID");
+        parser.accepts(OPT_UNLOCK_APPLET, "Unlock applet").withRequiredArg().describedAs("AID");
         parser.accepts(OPT_LOCK_CARD, "Lock card");
         parser.accepts(OPT_UNLOCK_CARD, "Unlock card");
         parser.accepts(OPT_SECURED, "Transition ISD to SECURED state");
         parser.accepts(OPT_INITIALIZED, "Transition ISD to INITIALIZED state");
-        parser.accepts(OPT_STORE_DATA, "STORE DATA to applet").withRequiredArg().withValuesConvertedBy(ArgMatchers.hex());
+        parser.accepts(OPT_STORE_DATA, "STORE DATA to applet").withRequiredArg().describedAs("data");
 
-        parser.accepts(OPT_MAKE_DEFAULT, "Make AID the default").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
-        parser.accepts(OPT_RENAME_ISD, "Rename ISD").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
+        parser.accepts(OPT_MAKE_DEFAULT, "Make AID the default").withRequiredArg().describedAs("AID");
+        parser.accepts(OPT_RENAME_ISD, "Rename ISD").withRequiredArg().describedAs("new AID");
 
-        parser.accepts(OPT_DELETE, "Delete applet/package").withOptionalArg().withValuesConvertedBy(ArgMatchers.aid());
+        parser.accepts(OPT_DELETE, "Delete applet/package").withOptionalArg().describedAs("AID");
         parser.accepts(OPT_DELETE_KEY, "Delete key with version").withRequiredArg().ofType(Integer.class);
 
-        parser.accepts(OPT_CREATE, "Create new instance of an applet").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
-        parser.accepts(OPT_APPLET, "Applet AID").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
-        parser.acceptsAll(Arrays.asList(OPT_PACKAGE, "pkg"), "Package AID").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
+        parser.accepts(OPT_CREATE, "Create new instance of an applet").withRequiredArg().describedAs("AID");
+        parser.accepts(OPT_APPLET, "Applet AID").withRequiredArg().describedAs("AID");
+        parser.acceptsAll(Arrays.asList(OPT_PACKAGE, "pkg"), "Package AID").withRequiredArg().describedAs("AID");
 
         // Key options
-        parser.accepts(OPT_KEY, "Specify master key").withRequiredArg().withValuesConvertedBy(ArgMatchers.key());
-        parser.accepts(OPT_KCV, "Specify master key check value").withRequiredArg().withValuesConvertedBy(ArgMatchers.hex());
+        parser.accepts(OPT_KEY, "Specify master key").withRequiredArg().describedAs("key");
+        parser.accepts(OPT_KCV, "Specify master key check value").withRequiredArg().describedAs("KCV");
 
-        parser.accepts(OPT_KEY_MAC, "Specify card MAC key").withRequiredArg().withValuesConvertedBy(ArgMatchers.key());
-        parser.accepts(OPT_KEY_ENC, "Specify card ENC key").withRequiredArg().withValuesConvertedBy(ArgMatchers.key());
-        parser.accepts(OPT_KEY_DEC, "Specify card DEK key").withRequiredArg().withValuesConvertedBy(ArgMatchers.key());
+        parser.accepts(OPT_KEY_MAC, "Specify card MAC key").withRequiredArg().describedAs("key");
+        parser.accepts(OPT_KEY_ENC, "Specify card ENC key").withRequiredArg().describedAs("key");
+        parser.accepts(OPT_KEY_DEC, "Specify card DEK key").withRequiredArg().describedAs("key");
 
         parser.accepts(OPT_EMV, "Use EMV diversification");
         parser.accepts(OPT_VISA2, "Use VISA2 diversification");
@@ -175,30 +174,27 @@ public final class GPTool {
         parser.accepts(OPT_KEY_ID, "Specify key ID").withRequiredArg().ofType(Integer.class);
         parser.accepts(OPT_KEY_VERSION, "Specify key version").withRequiredArg().ofType(Integer.class);
 
-        parser.accepts(OPT_LOCK, "Set new key").withRequiredArg().withValuesConvertedBy(ArgMatchers.hex());
+        parser.accepts(OPT_LOCK, "Set new key").withRequiredArg().describedAs("key");
         parser.accepts(OPT_UNLOCK, "Set default key for card key");
-        parser.accepts(OPT_SCP, "Force the use of SCP0X").withRequiredArg().ofType(Integer.class).describedAs("X");
         parser.accepts(OPT_NEW_KEY_VERSION, "Key version for the new key").withRequiredArg().ofType(Integer.class);
 
         // access rules
         parser.accepts(OPT_ACR_LIST, "List access rules");
         parser.accepts(OPT_ACR_ADD, "Add an access rule");
         parser.accepts(OPT_ACR_DELETE, "Delete an access rule");
-        parser.accepts(OPT_ACR_RULE, "Access control rule (can be 0x00(NEVER),0x01(ALWAYS) or an apdu filter").withRequiredArg().withValuesConvertedBy(ArgMatchers.hex());
-        parser.accepts(OPT_ACR_CERT_HASH, "Certicate hash (sha1)").withRequiredArg().withValuesConvertedBy(ArgMatchers.hex());
+        parser.accepts(OPT_ACR_RULE, "Access control rule (can be 0x00(NEVER),0x01(ALWAYS) or an apdu filter").withRequiredArg();
+        parser.accepts(OPT_ACR_CERT_HASH, "Certificate hash (sha1)").withRequiredArg();
 
         // General GP options
-        parser.accepts(OPT_SC_MODE, "Secure channel to use (mac/enc/clr)").withRequiredArg().withValuesConvertedBy(ArgMatchers.mode());
+        parser.accepts(OPT_SC_MODE, "Secure channel to use (mac/enc/clr)").withRequiredArg();
         parser.accepts(OPT_BS, "maximum APDU payload size").withRequiredArg().ofType(Integer.class);
         parser.accepts(OPT_OP201, "Enable OpenPlatform 2.0.1 mode");
 
-        parser.accepts(OPT_SDAID, "ISD AID").withRequiredArg().withValuesConvertedBy(ArgMatchers.aid());
+        parser.accepts(OPT_SDAID, "ISD AID").withRequiredArg().describedAs("AID");
 
         // Parse arguments
         try {
             args = parser.parse(argv);
-            // Try to fetch all values so that format is checked before usage
-            // for (String s: parser.recognizedOptions().keySet()) {args.valuesOf(s);} // FIXME: screws up logging hack
         } catch (OptionException e) {
             if (e.getCause() != null) {
                 System.err.println(e.getMessage() + ": " + e.getCause().getMessage());
@@ -210,7 +206,6 @@ public final class GPTool {
             System.exit(1);
         }
 
-        // Do the work, based on arguments
         if (args.has("help")) {
             parser.printHelpOn(System.out);
             System.exit(0);
@@ -250,59 +245,6 @@ public final class GPTool {
                 System.out.println("Unlimited crypto policy is NOT installed!");
             }
         }
-
-
-		/*
-        if (args.has(OPT_KEY) || args.has(OPT_KEY_MAC) || args.has(OPT_KEY_ENC) || args.has(OPT_KEY_DEC)) {
-			if (args.has(OPT_KEY)) {
-				// Specified master key
-				GPKey k = (GPKey)args.valueOf(OPT_KEY);
-				if (args.has(OPT_KCV)) {
-					final byte [] expected;
-					byte [] given = (byte[])args.valueOf(OPT_KCV);
-					if (k.getType() == Type.DES3) {
-						expected = GPCrypto.kcv_3des(k);
-					} else if (k.getType() == Type.AES) {
-						expected = GPCrypto.scp03_key_check_value(k);
-					} else {
-						fail("Don't know how to compute KCV for " + k.getType());
-						return; // static analyzer sugar
-					}
-					// Check KCV
-					if (!Arrays.equals(given, expected)) {
-						fail("KCV does not match, expected " + HexUtils.bin2hex(expected) + " but given " + HexUtils.bin2hex(given));
-					}
-				}
-				keys = PlaintextKeys.fromMasterKey(k);
-			} else {
-				System.out.println("ATTENTION: Overriding default keys ...");
-				// Override some keys
-				ks = new GPKeySet(GPData.defaultKey);
-				if (args.has(OPT_KEY_MAC)) {
-					ks.setKey(GPSessionKeys.KeyPurpose.MAC, (GPKey) args.valueOf(OPT_KEY_MAC));
-				}
-				if (args.has(OPT_KEY_ENC)) {
-					ks.setKey(GPSessionKeys.KeyPurpose.ENC, (GPKey) args.valueOf(OPT_KEY_ENC));
-				}
-				if (args.has(OPT_KEY_DEC)) {
-					ks.setKey(GPSessionKeys.KeyPurpose.DEK, (GPKey) args.valueOf(OPT_KEY_DEC));
-				}
-			}
-			// Key ID and Version
-			if (args.has(OPT_KEY_ID)) {
-				keys.setID((int) args.valueOf(OPT_KEY_ID));
-			}
-			if (args.has(OPT_KEY_VERSION)) {
-				keys.setVersion((int) args.valueOf(OPT_KEY_VERSION));
-			}
-			keys = PlaintextKeys.fromKeySet(ks);
-		} else {
-			// Use default test key with optional diversification.
-			keys = PlaintextKeys.derivedFromMasterKey(GPData.defaultKey, div);
-		}
-
-
-*/
 
         // Load a CAP file, if specified
         CAPFile cap = null;
@@ -409,7 +351,7 @@ public final class GPTool {
                     // GlobalPlatform specific
                     final GlobalPlatform gp;
                     if (args.has(OPT_SDAID)) {
-                        gp = GlobalPlatform.connect(card.getBasicChannel(), (AID) args.valueOf(OPT_SDAID));
+                        gp = GlobalPlatform.connect(card.getBasicChannel(), AID.fromString(args.valueOf(OPT_SDAID)));
                     } else {
                         // Oracle only applies if no other arguments given
                         gp = GlobalPlatform.discover(card.getBasicChannel());
@@ -428,9 +370,9 @@ public final class GPTool {
                     } else {
                         PlaintextKeys keyz;
                         if (args.has(OPT_KEY)) {
-                            GPKey k = (GPKey) args.valueOf(OPT_KEY);
+                            GPKey k = new GPKey(HexUtils.stringToBin((String) args.valueOf(OPT_KEY)));
                             if (args.has(OPT_KCV)) {
-                                byte[] given = (byte[]) args.valueOf(OPT_KCV);
+                                byte[] given = HexUtils.stringToBin((String) args.valueOf(OPT_KCV));
                                 byte[] expected = k.getKCV();
                                 if (expected.length == 0) {
                                     fail("Don't know how to calculate KCV for the key"); // FIXME: all keys are RAW currently
@@ -444,7 +386,10 @@ public final class GPTool {
                         } else {
                             // XXX: better checks for exclusive key options
                             if (args.has(OPT_KEY_MAC) && args.has(OPT_KEY_ENC) && args.has(OPT_KEY_DEC)) {
-                                keyz = PlaintextKeys.fromKeys((GPKey) args.valueOf(OPT_KEY_ENC), (GPKey) args.valueOf(OPT_KEY_MAC), (GPKey) args.valueOf(OPT_KEY_DEC));
+                                GPKey enc = new GPKey(HexUtils.stringToBin((String) args.valueOf(OPT_KEY_ENC)));
+                                GPKey mac = new GPKey(HexUtils.stringToBin((String) args.valueOf(OPT_KEY_MAC)));
+                                GPKey dek = new GPKey(HexUtils.stringToBin((String) args.valueOf(OPT_KEY_DEC)));
+                                keyz = PlaintextKeys.fromKeys(enc, mac, dek);
                             } else {
                                 System.out.println("Warning: no keys given, using default test key " + HexUtils.bin2hex(GPData.defaultKeyBytes));
                                 keyz = PlaintextKeys.fromMasterKey(GPData.defaultKey);
@@ -481,7 +426,6 @@ public final class GPTool {
                         SEAccessControlUtility.acrList(gp, card);
                     }
 
-
                     // Fetch some possibly interesting data
                     if (args.has(OPT_INFO)) {
                         System.out.println("***** Card info:");
@@ -494,22 +438,16 @@ public final class GPTool {
                         // Override default mode if needed.
                         if (args.has(OPT_SC_MODE)) {
                             mode.clear();
-                            mode.add((GlobalPlatform.APDUMode) args.valueOf(OPT_SC_MODE));
-                        }
-
-                        // Override SCP version
-                        int scp_version = 0;
-                        if (args.has(OPT_SCP)) {
-                            scp_version = (int) args.valueOf(OPT_SCP);
+                            mode.add(APDUMode.fromString((String) args.valueOf(OPT_SC_MODE)));
                         }
 
                         // Possibly brick the card now, if keys don't match.
-                        gp.openSecureChannel(keys, null, scp_version, mode);
+                        gp.openSecureChannel(keys, null, 0, mode);
 
                         // --secure-apdu or -s
                         if (args.has(OPT_SECURE_APDU)) {
                             for (Object s : args.valuesOf(OPT_SECURE_APDU)) {
-                                CommandAPDU c = new CommandAPDU((byte[]) s);
+                                CommandAPDU c = new CommandAPDU(HexUtils.stringToBin((String) s));
                                 gp.transmit(c);
                             }
                         }
@@ -527,9 +465,10 @@ public final class GPTool {
                                 }
                             }
                             @SuppressWarnings("unchecked")
-                            List<AID> aids = (List<AID>) args.valuesOf(OPT_DELETE);
+                            List<String> aids = (List<String>) args.valuesOf(OPT_DELETE);
 
-                            for (AID aid : aids) {
+                            for (String s : aids) {
+                                AID aid = AID.fromString(s);
                                 try {
                                     // If the AID represents a package or otherwise force is enabled.
                                     gp.deleteAID(aid, reg.allPackageAIDs().contains(aid) || args.has(OPT_FORCE));
@@ -601,7 +540,7 @@ public final class GPTool {
                             final AID instanceaid;
                             if (instcap.getAppletAIDs().size() > 1) {
                                 if (args.has(OPT_APPLET)) {
-                                    appaid = (AID) args.valueOf(OPT_APPLET);
+                                    appaid = AID.fromString(args.valueOf(OPT_APPLET));
                                 } else {
                                     fail("CAP contains more than one applet, specify the right one with --" + OPT_APPLET);
                                     return;
@@ -612,7 +551,7 @@ public final class GPTool {
 
                             // override
                             if (args.has(OPT_CREATE)) {
-                                instanceaid = (AID) args.valueOf(OPT_CREATE);
+                                instanceaid = AID.fromString(args.valueOf(OPT_CREATE));
                             } else {
                                 instanceaid = appaid;
                             }
@@ -663,10 +602,10 @@ public final class GPTool {
 
                             // override
                             if (args.has(OPT_PACKAGE)) {
-                                packageAID = (AID) args.valueOf(OPT_PACKAGE);
+                                packageAID = AID.fromString(args.valueOf(OPT_PACKAGE));
                             }
                             if (args.has(OPT_APPLET)) {
-                                appletAID = (AID) args.valueOf(OPT_APPLET);
+                                appletAID = AID.fromString(args.valueOf(OPT_APPLET));
                             }
 
                             // check
@@ -679,7 +618,7 @@ public final class GPTool {
                             }
 
                             // shoot
-                            AID instanceAID = (AID) args.valueOf(OPT_CREATE);
+                            AID instanceAID = AID.fromString(args.valueOf(OPT_CREATE));
                             gp.installAndMakeSelectable(packageAID, appletAID, instanceAID, getInstPrivs(args), getInstParams(args), null);
                         }
 
@@ -691,12 +630,12 @@ public final class GPTool {
 
                             // Override if necessary
                             if (args.has(OPT_PACKAGE) && args.has(OPT_APPLET)) {
-                                packageAID = (AID) args.valueOf(OPT_PACKAGE);
-                                appletAID = (AID) args.valueOf(OPT_APPLET);
+                                packageAID = AID.fromString(args.valueOf(OPT_PACKAGE));
+                                appletAID = AID.fromString(args.valueOf(OPT_APPLET));
                             } else {
                                 System.out.println("Note: using default AID-s for SSD: " + appletAID + " from " + packageAID);
                             }
-                            AID instanceAID = (AID) args.valueOf(OPT_DOMAIN);
+                            AID instanceAID = AID.fromString(args.valueOf(OPT_DOMAIN));
 
                             // Extra privileges
                             Privileges privs = getInstPrivs(args);
@@ -709,7 +648,7 @@ public final class GPTool {
                         // --store-data <XX>
                         if (args.has(OPT_STORE_DATA)) {
                             if (args.has(OPT_APPLET)) {
-                                gp.storeData((AID) args.valueOf(OPT_APPLET), (byte[]) args.valueOf(OPT_STORE_DATA));
+                                gp.storeData(AID.fromString(args.valueOf(OPT_APPLET)), HexUtils.stringToBin((String) args.valueOf(OPT_STORE_DATA)));
                             } else {
                                 System.err.println("Must specify target application with -" + OPT_APPLET);
                             }
@@ -722,8 +661,8 @@ public final class GPTool {
                                 System.err.println("Must specify target application id with -" + OPT_APPLET);
                             } else if (!args.has(OPT_ACR_RULE)) {
                                 System.err.println("Must specify an access rule with -" + OPT_ACR_RULE + " (00, 01 or an apdu filter)");
-                            } else if (((byte[]) args.valueOf(OPT_ACR_CERT_HASH)).length == 20) {
-                                SEAccessControlUtility.acrAdd(gp, (AID) args.valueOf(OPT_APPLET), (byte[]) args.valueOf(OPT_ACR_CERT_HASH), (byte[]) args.valueOf(OPT_ACR_RULE));
+                            } else if (HexUtils.stringToBin((String) args.valueOf(OPT_ACR_CERT_HASH)).length == 20) {
+                                SEAccessControlUtility.acrAdd(gp, AID.fromString(args.valueOf(OPT_APPLET)), HexUtils.stringToBin((String) args.valueOf(OPT_ACR_CERT_HASH)), HexUtils.stringToBin((String) args.valueOf(OPT_ACR_RULE)));
                             } else {
                                 System.err.println("certificate hash must be 20 bytes");
                             }
@@ -734,12 +673,12 @@ public final class GPTool {
                                 System.err.println("Must specify target application id with -" + OPT_APPLET);
                             } else if (args.has(OPT_ACR_CERT_HASH)) {
                                 if (((byte[]) args.valueOf(OPT_ACR_CERT_HASH)).length == 20) {
-                                    SEAccessControlUtility.acrDelete(gp, (AID) args.valueOf(OPT_APPLET), (byte[]) args.valueOf(OPT_ACR_CERT_HASH));
+                                    SEAccessControlUtility.acrDelete(gp, AID.fromString(args.valueOf(OPT_APPLET)), HexUtils.stringToBin((String) args.valueOf(OPT_ACR_CERT_HASH)));
                                 } else {
                                     System.err.println("certificate hash must be 20 bytes");
                                 }
                             } else {
-                                SEAccessControlUtility.acrDelete(gp, (AID) args.valueOf(OPT_APPLET), null);
+                                SEAccessControlUtility.acrDelete(gp, AID.fromString(args.valueOf(OPT_APPLET)), null);
                             }
                         }
 
@@ -773,12 +712,12 @@ public final class GPTool {
 
                         // --lock-applet <aid>
                         if (args.has(OPT_LOCK_APPLET)) {
-                            gp.lockUnlockApplet((AID) args.valueOf(OPT_LOCK_APPLET), true);
+                            gp.lockUnlockApplet(AID.fromString(args.valueOf(OPT_LOCK_APPLET)), true);
                         }
 
                         // --unlock-applet <AID>
                         if (args.has(OPT_UNLOCK_APPLET)) {
-                            gp.lockUnlockApplet((AID) args.valueOf(OPT_UNLOCK_APPLET), false);
+                            gp.lockUnlockApplet(AID.fromString(args.valueOf(OPT_UNLOCK_APPLET)), false);
                         }
 
                         // --list
@@ -823,16 +762,6 @@ public final class GPTool {
 
                         // --lock
                         if (args.has(OPT_LOCK)) {
-                            /*
-                            PlaintextKeys newkey = (PlaintextKeys) args.valueOf(OPT_LOCK);
-
-							GPKeySet newkeys = new GPKeySet(newkey.master);
-
-							// Diversify if requested.
-							if (newkey.diversifier != GPSessionKeys.Diversification.NONE) {
-								newkeys = GPSessionKeys.diversify(newkeys, gp.getDiversificationData(), newkey.diversifier, gp.getSCPVersion());
-							}
-*/
                             boolean replace = true;
                             List<GPKey> current = gp.getKeyInfoTemplate();
                             if (current.size() > 0 && current.get(0).getVersion() == 255) {
@@ -840,7 +769,7 @@ public final class GPTool {
                             }
 
                             // Get key value
-                            GPKey nk = new GPKey((byte[]) args.valueOf(OPT_LOCK));
+                            GPKey nk = new GPKey(HexUtils.stringToBin((String) args.valueOf(OPT_LOCK)));
                             // XXX: this is uggely
                             if (gp.getSCPVersion() == 3)
                                 nk.become(Type.AES);
@@ -857,9 +786,6 @@ public final class GPTool {
                             // Add into a list
                             List<GPKey> updatekeys = new ArrayList<>();
                             // We currently use the same key, diversification is missing
-                            //updatekeys.add(new GPKey(new_version, 01, newkeys.getKey(GPSessionKeys.KeyPurpose.ENC)));
-                            //updatekeys.add(new GPKey(new_version, 02, newkeys.getKey(GPSessionKeys.KeyPurpose.MAC)));
-                            //updatekeys.add(new GPKey(new_version, 03, newkeys.getKey(GPSessionKeys.KeyPurpose.DEK)));
                             updatekeys.add(new GPKey(new_version, 1, nk));
                             updatekeys.add(new GPKey(new_version, 2, nk));
                             updatekeys.add(new GPKey(new_version, 3, nk));
@@ -867,20 +793,17 @@ public final class GPTool {
                             gp.putKeys(updatekeys, replace);
 
                             System.out.println("Card locked with: " + nk.toString());
-                            //if (newkey.diversifier!= GPSessionKeys.Diversification.NONE) {
-                            //	System.out.println("Remember to use " + newkey.diversifier.name() + " diversification!");
-                            //}
                             System.out.println("Write this down, DO NOT FORGET/LOSE IT!");
                         }
 
                         // --make-default <aid>
                         if (args.has(OPT_MAKE_DEFAULT)) {
-                            gp.makeDefaultSelected((AID) args.valueOf(OPT_MAKE_DEFAULT));
+                            gp.makeDefaultSelected(AID.fromString(args.valueOf(OPT_MAKE_DEFAULT)));
                         }
 
                         // --rename-isd
                         if (args.has(OPT_RENAME_ISD)) {
-                            gp.renameISD((AID) args.valueOf(OPT_RENAME_ISD));
+                            gp.renameISD(AID.fromString(args.valueOf(OPT_RENAME_ISD)));
                         }
                     }
                 } catch (GPException e) {
@@ -892,6 +815,7 @@ public final class GPTool {
                         fail(e.getMessage());
                     }
                 } catch (CardException e) {
+                    System.out.println("Failed to communicate with card in " + reader + ": " + e.getMessage());
                     // Card exceptions skip to the next reader, if available and allowed FIXME broken logic
                     continue;
                 } finally {
@@ -949,7 +873,7 @@ public final class GPTool {
     private static byte[] getInstParams(OptionSet args) {
         byte[] params = null;
         if (args.has(OPT_PARAMS)) {
-            params = (byte[]) args.valueOf(OPT_PARAMS);
+            params = HexUtils.stringToBin((String) args.valueOf(OPT_PARAMS));
             if (params == null || params.length == 0)
                 return params;
             // Simple use: only application parameters without tag, prepend 0xC9

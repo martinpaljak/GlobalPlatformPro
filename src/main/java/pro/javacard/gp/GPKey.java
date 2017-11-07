@@ -31,7 +31,7 @@ public final class GPKey {
     private int version = 0;
     private int id = 0;
     private int length = -1;
-    private byte[] bytes = null;
+    private transient byte[] bytes = null;
 
     // Create a key of given type and given bytes bytes
     public GPKey(byte[] v, Type type) {

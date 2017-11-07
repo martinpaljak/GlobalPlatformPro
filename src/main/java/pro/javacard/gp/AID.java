@@ -22,74 +22,74 @@
 
 package pro.javacard.gp;
 
-import java.util.Arrays;
-
 import apdu4j.HexUtils;
+
+import java.util.Arrays;
 
 public final class AID {
 
-	private byte[] aidBytes = null;
+    private byte[] aidBytes = null;
 
-	/**
-	 * Construct an application identifier from a complete byte array.
-	 *
-	 * @param bytes
-	 *            complete application identifier
-	 * @throws IllegalArgumentException
-	 *             if the length is outside the permitted range (5-16)
-	 *
-	 */
-	public AID(byte[] bytes) {
-		this(bytes, 0, bytes.length);
-	}
+    /**
+     * Construct an application identifier from a complete byte array.
+     *
+     * @param bytes complete application identifier
+     * @throws IllegalArgumentException if the length is outside the permitted range (5-16)
+     */
+    public AID(byte[] bytes) {
+        this(bytes, 0, bytes.length);
+    }
 
-	public AID(String str) {
-		this(HexUtils.hex2bin(str));
-	}
+    public AID(String str) {
+        this(HexUtils.hex2bin(str));
+    }
 
-	/**
-	 * Construct an application identifier from a complete byte array, possibly
-	 * ignoring length checking.
-	 *
-	 * @param bytes
-	 * @param offset
-	 *            start index of the application identifier
-	 * @param length
-	 *            length
-	 * @throws IllegalArgumentException
-	 *             if the length is outside the permitted range (5-16); if
-	 *             checkLength is false no check is performed and no exception
-	 *             thrown
-	 *
-	 */
-	public AID(byte[] bytes, int offset, int length) throws IllegalArgumentException {
-		if ((length < 5) || (length > 16)) {
-			throw new IllegalArgumentException("AID's are between 5 and 16 bytes, not " + Integer.toHexString(length));
-		}
-		aidBytes = new byte[length];
-		System.arraycopy(bytes, offset, aidBytes, 0, length);
-	}
+    /**
+     * Construct an application identifier from a complete byte array, possibly
+     * ignoring length checking.
+     *
+     * @param bytes
+     * @param offset start index of the application identifier
+     * @param length length
+     * @throws IllegalArgumentException if the length is outside the permitted range (5-16); if
+     *                                  checkLength is false no check is performed and no exception
+     *                                  thrown
+     */
+    public AID(byte[] bytes, int offset, int length) throws IllegalArgumentException {
+        if ((length < 5) || (length > 16)) {
+            throw new IllegalArgumentException("AID's are between 5 and 16 bytes, not " + Integer.toHexString(length));
+        }
+        aidBytes = new byte[length];
+        System.arraycopy(bytes, offset, aidBytes, 0, length);
+    }
 
-	public byte[] getBytes() {
-		return aidBytes.clone();
-	}
+    public static AID fromString(Object s) {
+        if (s instanceof String) {
+            return new AID(HexUtils.stringToBin((String) s));
+        }
+        throw new IllegalArgumentException("Should be string");
+    }
 
-	public int getLength() {
-		return aidBytes.length;
-	}
+    public byte[] getBytes() {
+        return aidBytes.clone();
+    }
 
-	public String toString() {
-		return "[AID: " + HexUtils.bin2hex(aidBytes) + "]";
-	}
+    public int getLength() {
+        return aidBytes.length;
+    }
 
-	public int hashCode() {
-		return Arrays.hashCode(aidBytes);
-	}
+    public String toString() {
+        return "[AID: " + HexUtils.bin2hex(aidBytes) + "]";
+    }
 
-	public boolean equals(Object o) {
-		if (o instanceof AID) {
-			return Arrays.equals(((AID) o).aidBytes, aidBytes);
-		}
-		return false;
-	}
+    public int hashCode() {
+        return Arrays.hashCode(aidBytes);
+    }
+
+    public boolean equals(Object o) {
+        if (o instanceof AID) {
+            return Arrays.equals(((AID) o).aidBytes, aidBytes);
+        }
+        return false;
+    }
 }

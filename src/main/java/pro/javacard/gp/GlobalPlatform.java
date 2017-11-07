@@ -90,6 +90,9 @@ public class GlobalPlatform implements AutoCloseable {
 			}
 			return v;
 		}
+		public static APDUMode fromString(String s) {
+			return valueOf(s.toUpperCase());
+		}
 	};
 
 	public static final EnumSet<APDUMode> defaultMode = EnumSet.of(APDUMode.MAC);
@@ -510,7 +513,7 @@ public class GlobalPlatform implements AutoCloseable {
 			throw new GPException("Key version mismatch: " + keys.getVersion() + " != " + keyVersion);
 		}
 
-		logger.debug("Card reports SCP0" + scpMajorVersion + " with version " + keyVersion + " keys " + scpVersion);
+		logger.debug("Card reports SCP0" + scpMajorVersion + " i=" + String.format("%02x", scp_i) + " keys " + scpVersion);
 
 		// FIXME: the whole SCP vs variants thing is broken in API and implementation
 		// Set default SCP version based on major version, if not explicitly known.

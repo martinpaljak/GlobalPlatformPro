@@ -66,7 +66,7 @@ public final class GPTool {
     private final static String OPT_KEYS = "keys";
     private final static String OPT_KEY_ENC = "key-enc";
     private final static String OPT_KEY_ID = "key-id";
-    private final static String OPT_KEY_DEC = "key-dec";
+    private final static String OPT_KEY_DEK = "key-dek";
     private final static String OPT_KEY_MAC = "key-mac";
     private final static String OPT_KEY_VERSION = "key-ver";
     private final static String OPT_LIST = "list";
@@ -164,7 +164,7 @@ public final class GPTool {
 
         parser.accepts(OPT_KEY_MAC, "Specify card MAC key").withRequiredArg().describedAs("key");
         parser.accepts(OPT_KEY_ENC, "Specify card ENC key").withRequiredArg().describedAs("key");
-        parser.accepts(OPT_KEY_DEC, "Specify card DEK key").withRequiredArg().describedAs("key");
+        parser.accepts(OPT_KEY_DEK, "Specify card DEK key").withRequiredArg().describedAs("key");
 
         parser.accepts(OPT_EMV, "Use EMV diversification");
         parser.accepts(OPT_VISA2, "Use VISA2 diversification");
@@ -385,10 +385,10 @@ public final class GPTool {
                             keyz = PlaintextKeys.fromMasterKey(k);
                         } else {
                             // XXX: better checks for exclusive key options
-                            if (args.has(OPT_KEY_MAC) && args.has(OPT_KEY_ENC) && args.has(OPT_KEY_DEC)) {
+                            if (args.has(OPT_KEY_MAC) && args.has(OPT_KEY_ENC) && args.has(OPT_KEY_DEK)) {
                                 GPKey enc = new GPKey(HexUtils.stringToBin((String) args.valueOf(OPT_KEY_ENC)));
                                 GPKey mac = new GPKey(HexUtils.stringToBin((String) args.valueOf(OPT_KEY_MAC)));
-                                GPKey dek = new GPKey(HexUtils.stringToBin((String) args.valueOf(OPT_KEY_DEC)));
+                                GPKey dek = new GPKey(HexUtils.stringToBin((String) args.valueOf(OPT_KEY_DEK)));
                                 keyz = PlaintextKeys.fromKeys(enc, mac, dek);
                             } else {
                                 System.out.println("Warning: no keys given, using default test key " + HexUtils.bin2hex(GPData.defaultKeyBytes));

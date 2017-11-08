@@ -201,6 +201,7 @@ final class GPCrypto {
 		return cgram;
 	}
 
+	// GPC 2.2.1 Amendment D 7.2.2
 	public static byte[] scp03_key_check_value(GPKey key) {
 		try {
 			Cipher c = Cipher.getInstance(AES_CBC_CIPHER);

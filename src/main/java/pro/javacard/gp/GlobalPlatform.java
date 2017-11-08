@@ -882,18 +882,18 @@ public class GlobalPlatform implements AutoCloseable {
 		GPException.check(response, "Rename failed");
 	}
 	// FIXME: remove the withCheck parameter, as always true?
-	private byte[] encodeKey(GPKey key, GPKey kek, boolean withCheck) {
+	private byte[] encodeKey(GPKey key, GPKey dek, boolean withCheck) {
 		try {
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			if (key.getType()== Type.DES3) {
-				baos.write(0x80); // 3DES
-				// Length
-				baos.write(16);
 				// Encrypt key with DEK
 				Cipher cipher;
 				cipher = Cipher.getInstance(GPCrypto.DES3_ECB_CIPHER);
-				cipher.init(Cipher.ENCRYPT_MODE, kek.getKeyAs(Type.DES3));
-				baos.write(cipher.doFinal(key.getBytes(), 0, 16));
+				cipher.init(Cipher.ENCRYPT_MODE, dek.getKeyAs(Type.DES3));
+				byte [] cgram = cipher.doFinal(key.getBytes(), 0, 16);
+				baos.write(0x80); // 3DES
+				baos.write(cgram.length); // Length
+				baos.write(cgram);
 				if (withCheck) {
 					byte[] kcv = GPCrypto.kcv_3des(key);
 					baos.write(kcv.length);
@@ -903,16 +903,16 @@ public class GlobalPlatform implements AutoCloseable {
 				}
 			} else if (key.getType() == Type.AES) {
 				//	baos.write(0xFF);
-				baos.write(0x88); // AES
-				baos.write(0x11); // FIXME 128b keys only currently
-				byte [] cgram = GPCrypto.scp03_encrypt_key(kek, key);
-				baos.write(cgram.length);
-				baos.write(cgram);
+				byte [] cgram = GPCrypto.scp03_encrypt_key(dek, key);
 				byte [] check = GPCrypto.scp03_key_check_value(key);
+				baos.write(0x88); // AES
+				baos.write(cgram.length + 1);
+				baos.write(key.getLength());
+				baos.write(cgram);
 				baos.write(check.length);
 				baos.write(check);
 			} else {
-				throw new UnsupportedOperationException("Don't know how to handle " + key.getType());
+				throw new IllegalArgumentException("Don't know how to handle " + key.getType());
 			}
 			return baos.toByteArray();
 		} catch (IOException | GeneralSecurityException e) {
@@ -929,7 +929,7 @@ public class GlobalPlatform implements AutoCloseable {
 		// Debug
 		logger.debug("Replace: " + replace);
 		for (GPKey k: keys) {
-			logger.debug("PUT KEY:" + k);
+			logger.trace("PUT KEY:" + k);
 		}
 
 		// Check for sanity.

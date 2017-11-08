@@ -100,7 +100,7 @@ public class PlaintextKeys extends GPSessionKeyProvider {
             final byte[] kv;
             // shift around and fill initialize update data as required.
             if (method == Diversification.VISA2) {
-                kv = fillVisa(kdd, usage);
+                kv = fillVisa2(kdd, usage);
             } else if (method == Diversification.EMV) {
                 kv = fillEmv(kdd, usage);
             } else

@@ -452,8 +452,7 @@ public class GlobalPlatform implements AutoCloseable {
 		// DWIM: Generate host challenge
 		if (host_challenge == null) {
 			host_challenge = new byte[8];
-			SecureRandom sr = new SecureRandom();
-			sr.nextBytes(host_challenge);
+			GPCrypto.random.nextBytes(host_challenge);
 			logger.trace("Generated host challenge: " + HexUtils.bin2hex(host_challenge));
 		}
 

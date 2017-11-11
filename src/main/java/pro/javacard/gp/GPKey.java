@@ -61,7 +61,8 @@ public final class GPKey {
         this.length = length;
         // FIXME: these values should be encapsulated somewhere
         // FIXME: 0x81 is actually reserved according to GP
-        if (type == 0x80 || type == 0x81) {
+        // GP 2.2.1 11.1.8 Key Type Coding
+        if (type == 0x80 || type == 0x81 || type == 0x82) {
             this.type = Type.DES3;
         } else if (type == 0x88) {
             this.type = Type.AES;

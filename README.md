@@ -1,7 +1,7 @@
-# GlobalPlatformPro from [javacard.pro](http://javacard.pro)
 
 &nbsp; [![Build Status](https://travis-ci.org/martinpaljak/GlobalPlatformPro.svg?branch=master)](https://travis-ci.org/martinpaljak/GlobalPlatformPro) [![Coverity status](https://scan.coverity.com/projects/4020/badge.svg?flat=1)](https://scan.coverity.com/projects/4020/) [![Latest release](https://img.shields.io/github/release/martinpaljak/GlobalPlatformPro.svg)](https://github.com/martinpaljak/GlobalPlatformPro/releases/latest) [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.martinpaljak/globalplatformpro/badge.svg)](https://mvnrepository.com/artifact/com.github.martinpaljak/globalplatformpro) [![LGPL-3.0 licensed](https://img.shields.io/badge/license-LGPL-blue.svg)](https://github.com/martinpaljak/globalplatformpro/blob/master/LICENSE)
-----
+# GlobalPlatformPro
+_&nbsp;&nbsp; from [JavaCard.pro](https://javacard.pro)_
 
 Load and manage applets on compatible JavaCards from command line or from your Java project with a [Do What I Mean](http://en.wikipedia.org/wiki/DWIM) approach ([testimonials](./docs/Testimonials.md)).
 
@@ -281,18 +281,19 @@ The promise of GlobalPlatformPro is similar to OpenSSL:
 
 In regard to GlobalPlatform, the goal is to make simple operations like installing and removing applets and locking the card with new keys as easy as next-next-done - you don't have to know the whole Global Platform specification by heart for that or buy a piece of proprietary software for a few hundred euros! For all those features that are not described in the GlobalPlatform specification that actually make your card work... you still have to use those proprietary commands, but OpenKMS GlobalPlatformPro toolkit's flexibility (and its license) should allow you to do that as well.
 
-### License
+## License
 
- * [LGPL 3.0](http://www.gnu.org/licenses/lgpl-3.0.html) for derived code and MIT/LGPL3 for original code.
+ * [LGPL-3.0](https://github.com/martinpaljak/GlobalPlatformPro/blob/master/LICENSE) for derived code and MIT/LGPL3 for original code.
 
-### Included/used open source projects
+#### Included/used open source projects
 
  * [BouncyCastle](http://pholser.github.io/jopt-simple/) for OID parsing and NIST SP 800-108/NIST SP 800-38B (MIT)
  * [JOpt Simple](http://pholser.github.io/jopt-simple/) for parsing command line (MIT)
  * [Launch4j](http://launch4j.sourceforge.net/) for generating the .exe (BSD/MIT)
- * [apdu4j](https://github.com/martinpaljak/apdu4j) for APDU access/logging/replaying (MIT)
+ * [apdu4j](https://github.com/martinpaljak/apdu4j) for APDU level PC/SC access/logging/replaying (MIT)
+ * [ber-tlv](https://github.com/evsinev/ber-tlv) for tag parsing (Apache)
 
-### Contact 
+## Contact 
 
 * Generic enquiries: martin@martinpaljak.net
 * **For technical support:**
@@ -304,7 +305,7 @@ In regard to GlobalPlatform, the goal is to make simple operations like installi
 * Want to **donate**? E-mail or paypal to martin@martinpaljak.net
 
 #### Legal disclaimer
- The casual: trademarks to their owners, copyrights to authors, software patents to hell, legal letters to ~~/dev/null~~ PGP key 0x307E3452. Everything is provided AS-IS AND THERE IS A CONSTANT RISK OF DEATH FROM SUDDEN LIGHTNING. Writing in all caps made it look like serious, didn't it?
+ The casual: trademarks to their owners, copyrights to authors, software patents to hell, legal letters to ~~/dev/null~~ PGP key 0x1d86f74c7b9dd593. Everything is provided AS-IS AND THERE IS A CONSTANT RISK OF DEATH FROM SUDDEN LIGHTNING. Writing in all caps made it look like serious, didn't it?
 
 ----
 [JavaCard.pro](http://javacard.pro)

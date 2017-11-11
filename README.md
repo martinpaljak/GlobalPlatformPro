@@ -1,6 +1,7 @@
-# GlobalPlatformPro &nbsp; [![Build Status](https://travis-ci.org/martinpaljak/GlobalPlatformPro.svg?branch=master)](https://travis-ci.org/martinpaljak/GlobalPlatformPro) [![Coverity status](https://scan.coverity.com/projects/4020/badge.svg?flat=1)](https://scan.coverity.com/projects/4020/) [![Latest release](https://img.shields.io/github/release/martinpaljak/GlobalPlatformPro.svg)](https://github.com/martinpaljak/GlobalPlatformPro/releases/latest) [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.martinpaljak/globalplatformpro/badge.svg)](https://mvnrepository.com/artifact/com.github.martinpaljak/globalplatformpro) [![LGPL-3.0 licensed](https://img.shields.io/badge/license-LGPL-blue.svg)](https://github.com/martinpaljak/globalplatformpro/blob/master/LICENSE)
+# GlobalPlatformPro from [javacard.pro](http://javacard.pro)
 
-*&nbsp;&nbsp;from [javacard.pro](http://javacard.pro)*
+&nbsp; [![Build Status](https://travis-ci.org/martinpaljak/GlobalPlatformPro.svg?branch=master)](https://travis-ci.org/martinpaljak/GlobalPlatformPro) [![Coverity status](https://scan.coverity.com/projects/4020/badge.svg?flat=1)](https://scan.coverity.com/projects/4020/) [![Latest release](https://img.shields.io/github/release/martinpaljak/GlobalPlatformPro.svg)](https://github.com/martinpaljak/GlobalPlatformPro/releases/latest) [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.martinpaljak/globalplatformpro/badge.svg)](https://mvnrepository.com/artifact/com.github.martinpaljak/globalplatformpro) [![LGPL-3.0 licensed](https://img.shields.io/badge/license-LGPL-blue.svg)](https://github.com/martinpaljak/globalplatformpro/blob/master/LICENSE)
+----
 
 Load and manage applets on compatible JavaCards from command line or from your Java project with a [Do What I Mean](http://en.wikipedia.org/wiki/DWIM) approach ([testimonials](./docs/Testimonials.md)).
 

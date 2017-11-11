@@ -7,3 +7,6 @@
 /javadoc
 /gp.exe
 /ext/launch4j
+/target
+/.idea
+*.iml

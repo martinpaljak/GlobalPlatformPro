@@ -7,6 +7,7 @@
     <packaging>jar</packaging>
     <version>0.3.10-rc6</version>
     <name>GlobalPlatformPro</name>
+    <url>https://github.com/martinpaljak/GlobalPlatformPro</url>
     <description>Manage applets and keys on JavaCard-s like a pro</description>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

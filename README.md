@@ -1,4 +1,5 @@
-# GlobalPlatformPro &nbsp; [![Build Status](https://travis-ci.org/martinpaljak/GlobalPlatformPro.svg?branch=master)](https://travis-ci.org/martinpaljak/GlobalPlatformPro) [![Coverity status](https://scan.coverity.com/projects/4020/badge.svg?flat=1)](https://scan.coverity.com/projects/4020/) [![Latest release](https://img.shields.io/github/release/martinpaljak/GlobalPlatformPro.svg)](https://github.com/martinpaljak/GlobalPlatformPro/releases/latest) [![Gitter](https://badges.gitter.im/martinpaljak/GlobalPlatformPro.svg)](https://gitter.im/martinpaljak/GlobalPlatformPro)
+# GlobalPlatformPro &nbsp; [![Build Status](https://travis-ci.org/martinpaljak/GlobalPlatformPro.svg?branch=master)](https://travis-ci.org/martinpaljak/GlobalPlatformPro) [![Coverity status](https://scan.coverity.com/projects/4020/badge.svg?flat=1)](https://scan.coverity.com/projects/4020/) [![Latest release](https://img.shields.io/github/release/martinpaljak/GlobalPlatformPro.svg)](https://github.com/martinpaljak/GlobalPlatformPro/releases/latest) [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.martinpaljak/globalplatformpro/badge.svg)](https://mvnrepository.com/artifact/com.github.martinpaljak/globalplatformpro) [![LGPL-3.0 licensed](https://img.shields.io/badge/license-LGPL-blue.svg)](https://github.com/martinpaljak/globalplatformpro/blob/master/LICENSE)
+
 *&nbsp;&nbsp;from [javacard.pro](http://javacard.pro)*
 
 Load and manage applets on compatible JavaCards from command line or from your Java project with a [Do What I Mean](http://en.wikipedia.org/wiki/DWIM) approach ([testimonials](./docs/Testimonials.md)).
@@ -167,7 +168,19 @@ The following command `-acr-add` & `-acr-delete` require authentication (install
 
    add ```-help``` or ```-h``` or ```--help``` to your ```gp``` command
 
-### Usage from Java
+### Usage from Java &nbsp; [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.martinpaljak/globalplatformpro/badge.svg)](https://mvnrepository.com/artifact/com.github.martinpaljak/globalplatformpro)
+
+Include the dependency:
+
+```xml
+<!-- https://mvnrepository.com/artifact/com.github.martinpaljak/globalplatformpro -->
+<dependency>
+    <groupId>com.github.martinpaljak</groupId>
+    <artifactId>globalplatformpro</artifactId>
+    <version>0.3.10-rc6</version>
+</dependency>
+```
+
  * For now consult the [command line utility source code](https://github.com/martinpaljak/GlobalPlatformPro/blob/master/src/pro/javacard/gp/GPTool.java)
  * Rudimentary [Javadoc](http://martinpaljak.github.io/GlobalPlatformPro/)
  * General rules:

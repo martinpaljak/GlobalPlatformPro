@@ -672,8 +672,9 @@ public final class GPTool {
                             if (!args.has(OPT_APPLET)) {
                                 System.err.println("Must specify target application id with -" + OPT_APPLET);
                             } else if (args.has(OPT_ACR_CERT_HASH)) {
-                                if (((byte[]) args.valueOf(OPT_ACR_CERT_HASH)).length == 20) {
-                                    SEAccessControlUtility.acrDelete(gp, AID.fromString(args.valueOf(OPT_APPLET)), HexUtils.stringToBin((String) args.valueOf(OPT_ACR_CERT_HASH)));
+                                byte[] hash = HexUtils.stringToBin((String) args.valueOf(OPT_ACR_CERT_HASH));
+                                if (hash.length == 20) {
+                                    SEAccessControlUtility.acrDelete(gp, AID.fromString(args.valueOf(OPT_APPLET)), hash);
                                 } else {
                                     System.err.println("certificate hash must be 20 bytes");
                                 }

@@ -23,6 +23,9 @@
  */
 package pro.javacard.gp;
 
+import com.payneteasy.tlv.BerTlv;
+import com.payneteasy.tlv.BerTlvBuilder;
+
 import javax.smartcardio.Card;
 import javax.smartcardio.CardException;
 import javax.smartcardio.CommandAPDU;
@@ -95,7 +98,7 @@ public final class SEAccessControlUtility {
 	public static void acrAdd(final GlobalPlatform gp, AID aid, final byte[] hash, final byte[] rules) throws CardException, GPException {
 		SEAccessControl.RefArDo refArDo = new SEAccessControl.RefArDo(aid, hash, rules);
 		SEAccessControl.StoreArDo storeArDo = new SEAccessControl.StoreArDo(refArDo);
-		acrStore(gp, storeArDo);
+		acrStore(gp, storeArDo.toTlv());
 	}
 
 	/**
@@ -105,10 +108,10 @@ public final class SEAccessControlUtility {
 	 * @throws CardException
 	 * @throws GPException
 	 */
-	public static void acrStore(final GlobalPlatform gp, final SEAccessControl.TLV data) throws CardException, GPException {
+	public static void acrStore(final GlobalPlatform gp, final BerTlv data) throws CardException, GPException {
 		try {
 			//0x90 is for getting BER-TLV data (Secure Element Access Control v1.0 p36)
-			gp.storeData(SEAccessControl.ACR_AID, data.getBytes(), (byte) 0x90);
+			gp.storeData(SEAccessControl.ACR_AID, new BerTlvBuilder().addBerTlv(data).buildArray(), (byte) 0x90);
 		} catch (GPException e) {
 			if (SEAccessControl.ACR_STORE_DATA_ERROR.containsKey(e.sw)) {
 				System.out.println("[SW] " + SEAccessControl.ACR_STORE_DATA_ERROR.get(e.sw));
@@ -127,14 +130,14 @@ public final class SEAccessControlUtility {
 	 * @throws GPException
 	 */
 	public static void acrDelete(final GlobalPlatform gp, final AID aid, final byte[] hash) throws CardException, GPException {
-		SEAccessControl.TLV request;
+		BerTlv request;
 
 		if (hash != null) {
-			SEAccessControl.RefArDo refArDo = new SEAccessControl.RefArDo(aid, hash);
-			request = new SEAccessControl.DeleteArDo(refArDo);
+			SEAccessControl.RefArDo refArDo = new SEAccessControl.RefArDo(aid, hash,null);
+			request = new SEAccessControl.DeleteArDo(refArDo).toTlv();
 		} else {
 			SEAccessControl.AidRefDo aidRefDo = new SEAccessControl.AidRefDo(aid.getBytes());
-			request = new SEAccessControl.DeleteAidDo(aidRefDo);
+			request = new SEAccessControl.DeleteAidDo(aidRefDo).toTlv();
 		}
 		acrStore(gp, request);
 	}

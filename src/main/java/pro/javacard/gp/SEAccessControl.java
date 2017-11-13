@@ -229,7 +229,7 @@ public class SEAccessControl {
 		byte[] aid;
 
 		public AidRefDo(byte[] data){
-			aid = data;
+			aid = Arrays.copyOf(data, data.length);
 		}
 
 		public String toString(){
@@ -251,7 +251,7 @@ public class SEAccessControl {
 		byte[] hash;
 
 		public HashRefDo(byte[] data){
-			hash = data;
+			hash = Arrays.copyOf(data, data.length);
 		}
 
 		public String toString(){
@@ -325,7 +325,7 @@ public class SEAccessControl {
 
 		public ApduArDo(EventAccessRules rule, byte[] filter){
             this.rule = rule;
-			this.filter = filter;
+			this.filter = Arrays.copyOf(filter, filter.length);
 		}
 
 		public ApduArDo(byte[] data){
@@ -422,7 +422,7 @@ public class SEAccessControl {
 		private int currentIndex;
 
 		public BerTlvData(byte[] data, int length, int index){
-			this.data = data;
+			this.data = Arrays.copyOf(data, data.length);
 			this.length = length;
 			this.currentIndex = index;
 		}
@@ -432,7 +432,7 @@ public class SEAccessControl {
 		}
 
 		public byte[] getData(){
-			return data;
+			return Arrays.copyOf(data,data.length);
 		}
 
 		public int getLength(){

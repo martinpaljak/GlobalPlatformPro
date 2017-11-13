@@ -873,7 +873,11 @@ public final class GPTool {
     private static byte[] getInstParams(OptionSet args) {
         byte[] params = null;
         if (args.has(OPT_PARAMS)) {
-            params = HexUtils.stringToBin((String) args.valueOf(OPT_PARAMS));
+            String arg = (String) args.valueOf(OPT_PARAMS);
+            // XXX: keep Coverity happy, even though args.has() shoud guard this
+            if (arg == null)
+                return params;
+            params = HexUtils.stringToBin(arg);
             if (params == null || params.length == 0)
                 return params;
             // Simple use: only application parameters without tag, prepend 0xC9

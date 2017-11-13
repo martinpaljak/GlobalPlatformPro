@@ -36,11 +36,6 @@ import java.util.stream.Collectors;
 // Various constants from GP specification and other sources
 // Methods to pretty-print those structures and constants.
 public final class GPData {
-    // Default test key TODO: provide getters for arrays, this class should be kept public
-    static final byte[] defaultKeyBytes = {0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F};
-    static final GPKey defaultKey = new GPKey(defaultKeyBytes, Type.DES3);
-    // Default ISD AID-s
-    static final byte[] defaultISDBytes = HexUtils.hex2bin("A000000151000000");
     // SD states
     public static final byte readyStatus = 0x1;
     public static final byte initializedStatus = 0x7;
@@ -56,6 +51,11 @@ public final class GPData {
     public static final byte cardTerminatePriv = 0x08;
     @Deprecated
     public static final byte securityDomainPriv = (byte) 0x80;
+    // Default test key TODO: provide getters for arrays, this class should be kept public
+    static final byte[] defaultKeyBytes = {0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F};
+    static final GPKey defaultKey = new GPKey(defaultKeyBytes, Type.DES3);
+    // Default ISD AID-s
+    static final byte[] defaultISDBytes = HexUtils.hex2bin("A000000151000000");
     final static Logger logger = LoggerFactory.getLogger(GPData.class);
     static final Map<Integer, String> sw = new HashMap<>();
 
@@ -275,10 +275,13 @@ public final class GPData {
     public static String oid2string(byte[] oid) {
         try {
             // Prepend 0x06 tag, if not present
+            // XXX: if ber-tlv allows to fetch constructed data, this is not needed
             if (oid[0] != 0x06) {
                 oid = GPUtils.concatenate(new byte[]{0x06, (byte) oid.length}, oid);
             }
             ASN1ObjectIdentifier realoid = (ASN1ObjectIdentifier) ASN1ObjectIdentifier.fromByteArray(oid);
+            if (realoid == null)
+                throw new IllegalArgumentException("Could not parse OID from " + HexUtils.bin2hex(oid));
             return realoid.toString();
         } catch (IOException e) {
             throw new IllegalArgumentException("Could not handle " + HexUtils.bin2hex(oid));
@@ -303,6 +306,7 @@ public final class GPData {
         private HashMap<Field, byte[]> values = null;
 
         ;
+
         private CPLC(byte[] data) {
             // prepended by tag 0x9F7F
             short offset = 3;

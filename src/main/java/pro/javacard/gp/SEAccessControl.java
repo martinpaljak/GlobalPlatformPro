@@ -105,9 +105,9 @@ public class SEAccessControl {
 	 */
 	public static class DeleteAidDo implements ITLV {
 
-		AidRefDo aidRefDo;
+		final AidRefDo aidRefDo;
 
-		public DeleteAidDo(AidRefDo aidRefDo){
+		public DeleteAidDo(final AidRefDo aidRefDo){
 			this.aidRefDo = aidRefDo;
 		}
 
@@ -124,9 +124,9 @@ public class SEAccessControl {
 	 */
 	public static class DeleteArDo implements ITLV {
 
-		RefArDo refArDo;
+		final RefArDo refArDo;
 
-		public DeleteArDo(RefArDo refArDo) {
+		public DeleteArDo(final RefArDo refArDo) {
 			this.refArDo = refArDo;
 		}
 
@@ -143,9 +143,9 @@ public class SEAccessControl {
 	 */
 	public static class StoreArDo implements ITLV {
 
-		RefArDo refArDo;
+		final RefArDo refArDo;
 
-		public StoreArDo(RefArDo refArDo){
+		public StoreArDo(final RefArDo refArDo){
 			this.refArDo = refArDo;
 		}
 
@@ -162,20 +162,20 @@ public class SEAccessControl {
 	 */
 	public static class RefArDo implements ITLV {
 
-		RefDo refDo;
-		ArDo arDo;
+		final RefDo refDo;
+		final ArDo arDo;
 
-		public RefArDo(RefDo refDo, ArDo arDo){
+		public RefArDo(final RefDo refDo, final ArDo arDo){
 			this.refDo = refDo;
 			this.arDo = arDo;
 		}
 
-		public RefArDo(AID aid, byte[] hash){
+		public RefArDo(final AID aid, final byte[] hash){
 			this.refDo = new RefDo(new AidRefDo(aid.getBytes()), new HashRefDo(hash));
 			this.arDo = new ArDo(new ApduArDo(EventAccessRules.ALWAYS, new byte[]{}), null);
 		}
 
-        public RefArDo(AID aid, byte[] hash, byte[] rules){
+        public RefArDo(final AID aid, final byte[] hash, final byte[] rules){
 			this.refDo = new RefDo(new AidRefDo(aid.getBytes()), new HashRefDo(hash));
 			this.arDo = new ArDo(new ApduArDo(rules), null);
 		}
@@ -201,10 +201,10 @@ public class SEAccessControl {
 	 * REF-DO (p46) composed of AID-REF-DO | Hash-REF-DO
 	 */
 	public static class RefDo implements ITLV {
-		AidRefDo aidRefDo;
-		HashRefDo hashRefDo;
+		final AidRefDo aidRefDo;
+		final HashRefDo hashRefDo;
 
-		public RefDo(AidRefDo aidRefDo, HashRefDo hashRefDo){
+		public RefDo(final AidRefDo aidRefDo, final HashRefDo hashRefDo){
 			this.aidRefDo = aidRefDo;
 			this.hashRefDo = hashRefDo;
 		}
@@ -226,9 +226,9 @@ public class SEAccessControl {
 	 * AID-REF-DO data object (p45)
 	 */
 	public static class AidRefDo implements ITLV {
-		byte[] aid;
+		final byte[] aid;
 
-		public AidRefDo(byte[] data){
+		public AidRefDo(final byte[] data){
 			aid = Arrays.copyOf(data, data.length);
 		}
 
@@ -248,9 +248,9 @@ public class SEAccessControl {
 	 * Hash-REF-DO (p46)
 	 */
 	public static class HashRefDo implements ITLV {
-		byte[] hash;
+		final byte[] hash;
 
-		public HashRefDo(byte[] data){
+		public HashRefDo(final byte[] data){
 			hash = Arrays.copyOf(data, data.length);
 		}
 
@@ -266,7 +266,7 @@ public class SEAccessControl {
 		}
 	}
 
-	private static BerTlv buildArDoData(ApduArDo apduArDo, NfcArDo nfcArDo){
+	private static BerTlv buildArDoData(final ApduArDo apduArDo, final NfcArDo nfcArDo){
         if (apduArDo != null && nfcArDo == null){
             return apduArDo.toTlv();
         }
@@ -284,10 +284,10 @@ public class SEAccessControl {
 	 */
 	public static class ArDo implements ITLV {
 
-		ApduArDo apduArDo;
-		NfcArDo nfcArDo;
+		final ApduArDo apduArDo;
+		final NfcArDo nfcArDo;
 
-		public ArDo(ApduArDo apduArDo, NfcArDo nfcArDo){
+		public ArDo(final ApduArDo apduArDo, final NfcArDo nfcArDo){
             this.apduArDo = apduArDo;
 			this.nfcArDo = nfcArDo;
 		}
@@ -304,7 +304,7 @@ public class SEAccessControl {
 		}
 	}
 
-	private static byte[] buildApduArDoData(EventAccessRules rule, byte[] filter){
+	private static byte[] buildApduArDoData(final EventAccessRules rule, final byte[] filter){
         if (rule == EventAccessRules.CUSTOM){
             return filter;
         }
@@ -320,15 +320,15 @@ public class SEAccessControl {
 	 */
 	public static class ApduArDo implements ITLV {
 
-		EventAccessRules rule;
-		byte[] filter;
+		final EventAccessRules rule;
+		final byte[] filter;
 
-		public ApduArDo(EventAccessRules rule, byte[] filter){
+		public ApduArDo(final EventAccessRules rule, final byte[] filter){
             this.rule = rule;
 			this.filter = Arrays.copyOf(filter, filter.length);
 		}
 
-		public ApduArDo(byte[] data){
+		public ApduArDo(final byte[] data){
 			if (data != null && data.length == 1){
 				switch(data[0]){
 					case 0x00:
@@ -338,8 +338,10 @@ public class SEAccessControl {
 						this.rule = EventAccessRules.ALWAYS;
 						break;
 					default:
+						this.rule = EventAccessRules.CUSTOM;
 						break;
 				}
+				this.filter = new byte[data.length];
 			}
 			else if (data != null){
 				this.rule = EventAccessRules.CUSTOM;
@@ -347,6 +349,7 @@ public class SEAccessControl {
 			}
 			else{
                 this.rule = EventAccessRules.NONE;
+				this.filter = new byte[]{};
             }
 		}
 
@@ -367,9 +370,9 @@ public class SEAccessControl {
 	 */
 	public static class NfcArDo implements ITLV {
 
-		EventAccessRules rule;
+		final EventAccessRules rule;
 
-		public NfcArDo(EventAccessRules rule){
+		public NfcArDo(final EventAccessRules rule){
             this.rule = rule;
 		}
 
@@ -396,7 +399,7 @@ public class SEAccessControl {
 
 		private byte value;
 
-		EventAccessRules(byte value) {
+		EventAccessRules(final byte value) {
 			this.value = value;
 		}
 
@@ -409,19 +412,19 @@ public class SEAccessControl {
 		/**
 		 * data aggregated from the first get data request.
 		 */
-		private byte[] data;
+		private final byte[] data;
 
 		/**
 		 * full data length .
 		 */
-		private int length;
+		private final int length;
 
 		/**
 		 * current processing index.
 		 */
 		private int currentIndex;
 
-		public BerTlvData(byte[] data, int length, int index){
+		public BerTlvData(final byte[] data, final int length, final int index){
 			this.data = Arrays.copyOf(data, data.length);
 			this.length = length;
 			this.currentIndex = index;
@@ -449,13 +452,13 @@ public class SEAccessControl {
 	 */
 	public static class AcrListResponse {
 
-		public List<RefArDo> acrList;
+		public final List<RefArDo> acrList;
 
-		public AcrListResponse(List<RefArDo> acrList) {
+		public AcrListResponse(final List<RefArDo> acrList) {
 			this.acrList = acrList;
 		}
 
-		public static BerTlvData getAcrListData(BerTlvData previousData, byte[] data) throws GPDataException {
+		public static BerTlvData getAcrListData(final BerTlvData previousData, final byte[] data) throws GPDataException {
 
 			if (previousData == null &&
 					data.length > 2 &&
@@ -501,7 +504,7 @@ public class SEAccessControl {
 			}
 		}
 
-		public static AcrListResponse fromBytes(int length, byte[] data) throws GPDataException {
+		public static AcrListResponse fromBytes(final int length, final byte[] data) throws GPDataException {
 			BerTlvParser parser = new BerTlvParser();
 
 			List<RefArDo> acrList = new ArrayList<>();
@@ -528,7 +531,7 @@ public class SEAccessControl {
 	 * @return
 	 * @throws GPDataException
 	 */
-	public static RefArDo parseRefArDo(BerTlv refArDo) throws GPDataException {
+	public static RefArDo parseRefArDo(final BerTlv refArDo) throws GPDataException {
 		RefDo refDo = parseRefDo(refArDo.find(new BerTag(REF_DO)));
 		ArDo arDo = parseArDo(refArDo.find(new BerTag(AR_DO)));
 		return new RefArDo(refDo, arDo);
@@ -545,7 +548,7 @@ public class SEAccessControl {
 	 * @return
 	 * @throws GPDataException
 	 */
-	public static RefDo parseRefDo(BerTlv refDo) throws GPDataException {
+	public static RefDo parseRefDo(final BerTlv refDo) throws GPDataException {
         AidRefDo aidRefDo = parseAidRefDo(refDo.find(new BerTag(AID_REF_DO)));
         HashRefDo hashRefDo = parseHashRefDo(refDo.find(new BerTag(HASH_REF_DO)));
         return new RefDo(aidRefDo,hashRefDo);
@@ -560,7 +563,7 @@ public class SEAccessControl {
 	 * @return
 	 * @throws GPDataException
 	 */
-	public static AidRefDo parseAidRefDo(BerTlv aidRefDo) throws GPDataException{
+	public static AidRefDo parseAidRefDo(final BerTlv aidRefDo) throws GPDataException{
         return new AidRefDo(aidRefDo != null ? aidRefDo.getBytesValue() : new byte[]{});
 	}
 
@@ -573,7 +576,7 @@ public class SEAccessControl {
 	 * @return
 	 * @throws GPDataException
 	 */
-	public static HashRefDo parseHashRefDo(BerTlv hashRefDo) throws GPDataException{
+	public static HashRefDo parseHashRefDo(final BerTlv hashRefDo) throws GPDataException{
         return new HashRefDo(hashRefDo != null ? hashRefDo.getBytesValue() : new byte[]{});
 	}
 
@@ -594,7 +597,7 @@ public class SEAccessControl {
 	 * @return
 	 * @throws GPDataException
 	 */
-	public static ArDo parseArDo(BerTlv arDo) throws GPDataException {
+	public static ArDo parseArDo(final BerTlv arDo) throws GPDataException {
 		ApduArDo apduArDo = parseApduArDo(arDo.find(new BerTag(APDU_AR_DO)));
 		NfcArDo nfcArDo = parseNfcArDo(arDo.find(new BerTag(NFC_AR_DO)));
         return new ArDo(apduArDo, nfcArDo);
@@ -609,7 +612,7 @@ public class SEAccessControl {
 	 * @return
 	 * @throws GPDataException
 	 */
-	public static ApduArDo parseApduArDo(BerTlv apduArDo) throws GPDataException {
+	public static ApduArDo parseApduArDo(final BerTlv apduArDo) throws GPDataException {
 		if (apduArDo!=null) {
 			byte[] data = apduArDo.getBytesValue();
 			if (data.length == 1) {
@@ -635,7 +638,7 @@ public class SEAccessControl {
 	 * @return
 	 * @throws GPDataException
 	 */
-	public static NfcArDo parseNfcArDo(BerTlv nfcArDo) throws GPDataException{
+	public static NfcArDo parseNfcArDo(final BerTlv nfcArDo) throws GPDataException{
 		if (nfcArDo!=null) {
 			switch (nfcArDo.getBytesValue()[0]) {
 				case 0x01:
@@ -652,7 +655,7 @@ public class SEAccessControl {
 	 *
 	 * @param acrList list of REF-AR-DO
 	 */
-	public static void printList(List<RefArDo> acrList){
+	public static void printList(final List<RefArDo> acrList){
 		if (acrList.size() == 0){
 			System.out.println("No Rule found");
 			return;

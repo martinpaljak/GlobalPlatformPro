@@ -343,7 +343,7 @@ public final class GPTool {
                     // Send all raw APDU-s to the default-selected application of the card
                     if (args.has(OPT_APDU)) {
                         for (Object s : args.valuesOf(OPT_APDU)) {
-                            CommandAPDU c = new CommandAPDU((byte[]) s);
+                            CommandAPDU c = new CommandAPDU(HexUtils.stringToBin((String) s));
                             card.getBasicChannel().transmit(c);
                         }
                     }

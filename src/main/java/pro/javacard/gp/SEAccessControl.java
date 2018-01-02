@@ -23,12 +23,12 @@
  */
 package pro.javacard.gp;
 
-import java.util.*;
-
+import apdu4j.HexUtils;
 import apdu4j.ISO7816;
+import com.payneteasy.tlv.*;
 import org.bouncycastle.util.Arrays;
 
-import apdu4j.HexUtils;
+import java.util.*;
 
 /**
  * Access control Rules implementation (reference document : Secure Element Access Control Version 1.0).
@@ -101,151 +101,110 @@ public class SEAccessControl {
 	}
 
 	/**
-	 * Interface for Tag Length value object
-	 */
-	interface ITLV {
-		byte getTag();
-		byte[] getData();
-	}
-
-	/**
-	 * Common class for All TLV object reference in Secure Element Access Control spec
-	 */
-	public static abstract class TLV implements ITLV {
-
-		/**
-		 * All field are enabled by default.
-		 */
-		protected boolean enabled = true;
-
-		/**
-		 * Used to build the TLV object
-		 */
-		public byte[] getBytes(){
-			byte[] tlvData = getData();
-			byte[] data = new byte[tlvData.length + 2];
-			data[0] = getTag();
-			data[1] = (byte) tlvData.length;
-			System.arraycopy(tlvData, 0, data, 2, tlvData.length);
-			return data;
-		}
-
-		public void setEnable(boolean status){
-			enabled = status;
-		}
-	}
-
-	/**
 	 * Command-Delete-AR-DO (p39) for deleting AID-REF-DO
 	 */
-	public static class DeleteAidDo extends TLV {
-		AidRefDo aidRefDo;
+	public static class DeleteAidDo implements ITLV {
 
-		public DeleteAidDo(AidRefDo aidRefDo){
+		final AidRefDo aidRefDo;
+
+		public DeleteAidDo(final AidRefDo aidRefDo){
 			this.aidRefDo = aidRefDo;
 		}
 
-		public byte getTag(){
-			return DELETE_AR_DO;
-		}
-
-		public byte[] getData(){
-			return aidRefDo.getBytes();
+		@Override
+		public BerTlv toTlv(){
+			return new BerTlvBuilder(new BerTag(DELETE_AR_DO))
+					.addBerTlv(aidRefDo.toTlv())
+					.buildTlv();
 		}
 	}
 
 	/**
 	 * Command-Delete-AR-DO (p39) for deleting AR-DO
 	 */
-	public static class DeleteArDo extends TLV {
-		RefArDo refArDo;
+	public static class DeleteArDo implements ITLV {
 
-		public DeleteArDo(RefArDo refArDo){
+		final RefArDo refArDo;
+
+		public DeleteArDo(final RefArDo refArDo) {
 			this.refArDo = refArDo;
-			if (this.refArDo.arDo.apduArDo != null)
-				this.refArDo.arDo.apduArDo.setEnable(false);
-			if (this.refArDo.arDo.nfcArDo != null)
-				this.refArDo.arDo.nfcArDo.setEnable(false);
 		}
 
-		public byte getTag(){
-			return DELETE_AR_DO;
-		}
-
-		public byte[] getData(){
-			return refArDo.getBytes();
+		@Override
+		public BerTlv toTlv(){
+			return new BerTlvBuilder(new BerTag(DELETE_AR_DO))
+				.addBerTlv(refArDo.toTlv())
+				.buildTlv();
 		}
 	}
 
 	/**
 	 * Command-Store-AR-DO (p38)
 	 */
-	public static class StoreArDo extends TLV {
-		RefArDo refArDo;
+	public static class StoreArDo implements ITLV {
 
-		public StoreArDo(RefArDo refArDo){
+		final RefArDo refArDo;
+
+		public StoreArDo(final RefArDo refArDo){
 			this.refArDo = refArDo;
 		}
 
-		public byte getTag(){
-			return STORE_AR_DO;
-		}
-
-		public byte[] getData(){
-			return refArDo.getBytes();
+		@Override
+		public BerTlv toTlv(){
+			return new BerTlvBuilder(new BerTag(STORE_AR_DO))
+				.addBerTlv(refArDo.toTlv())
+				.buildTlv();
 		}
 	}
 
 	/**
 	 * REF-AR-DO (p46) composed of REF-DO | AR-DO
 	 */
-	public static class RefArDo extends TLV {
+	public static class RefArDo implements ITLV {
 
-		RefDo refDo;
-		ArDo arDo;
+		final RefDo refDo;
+		final ArDo arDo;
 
-		public RefArDo(RefDo refDo, ArDo arDo){
+		public RefArDo(final RefDo refDo, final ArDo arDo){
 			this.refDo = refDo;
 			this.arDo = arDo;
 		}
 
-		public RefArDo(AID aid, byte[] hash){
+		public RefArDo(final AID aid, final byte[] hash){
 			this.refDo = new RefDo(new AidRefDo(aid.getBytes()), new HashRefDo(hash));
 			this.arDo = new ArDo(new ApduArDo(EventAccessRules.ALWAYS, new byte[]{}), null);
 		}
 
-		public RefArDo(AID aid, byte[] hash, byte[] rules){
+        public RefArDo(final AID aid, final byte[] hash, final byte[] rules){
 			this.refDo = new RefDo(new AidRefDo(aid.getBytes()), new HashRefDo(hash));
 			this.arDo = new ArDo(new ApduArDo(rules), null);
+		}
+
+		@Override
+		public BerTlv toTlv(){
+			BerTlvBuilder aggregate =  new BerTlvBuilder()
+				.addBerTlv(refDo.toTlv())
+				.addBerTlv(arDo.toTlv());
+			return new BerTlvBuilder(new BerTag(REF_AR_DO)).add(aggregate).buildTlv();
 		}
 
 		public String toString(){
 			return refDo + " | " + arDo;
 		}
+	}
 
-		public byte getTag(){
-			return REF_AR_DO;
-		}
-
-		public byte[] getData(){
-			byte[] refDoBytes = refDo.getBytes();
-			byte[] arDoBytes = arDo.getBytes();
-
-			byte[] data = new byte[refDoBytes.length + arDoBytes.length];
-			System.arraycopy(refDoBytes, 0, data, 0, refDoBytes.length);
-			System.arraycopy(arDoBytes, 0, data, refDoBytes.length, arDoBytes.length);
-			return data;
-		}
+	interface ITLV {
+		BerTlv toTlv();
 	}
 
 	/**
 	 * REF-DO (p46) composed of AID-REF-DO | Hash-REF-DO
 	 */
-	public static class RefDo extends TLV {
-		AidRefDo aidRefDo;
-		HashRefDo hashRefDo;
+	public static class RefDo implements ITLV {
+		final AidRefDo aidRefDo;
+		final HashRefDo hashRefDo;
 
-		public RefDo(AidRefDo aidRefDo, HashRefDo hashRefDo){
+		public RefDo(final AidRefDo aidRefDo, final HashRefDo hashRefDo){
 			this.aidRefDo = aidRefDo;
 			this.hashRefDo = hashRefDo;
 		}
@@ -254,77 +213,82 @@ public class SEAccessControl {
 			return aidRefDo + " | " + hashRefDo;
 		}
 
-		public byte getTag(){
-			return REF_DO;
-		}
-
-		public byte[] getData(){
-			byte[] aidRefBytes = aidRefDo.getBytes();
-			byte[] hashRefBytes = hashRefDo.getBytes();
-
-			byte[] data = new byte[aidRefBytes.length + hashRefBytes.length];
-			System.arraycopy(aidRefBytes, 0, data, 0, aidRefBytes.length);
-			System.arraycopy(hashRefBytes, 0, data, aidRefBytes.length, hashRefBytes.length);
-			return data;
+		@Override
+		public BerTlv toTlv(){
+			BerTlvBuilder aggregate = new BerTlvBuilder().addBerTlv(aidRefDo.toTlv()).addBerTlv(hashRefDo.toTlv());
+			return new BerTlvBuilder(new BerTag(REF_DO))
+				.add(aggregate)
+				.buildTlv();
 		}
 	}
 
 	/**
 	 * AID-REF-DO data object (p45)
 	 */
-	public static class AidRefDo extends TLV {
-		byte[] aid;
+	public static class AidRefDo implements ITLV {
+		final byte[] aid;
 
-		public AidRefDo(byte[] data){
-			aid = data;
+		public AidRefDo(final byte[] data){
+			aid = Arrays.copyOf(data, data.length);
 		}
 
 		public String toString(){
 			return HexUtils.bin2hex(aid);
 		}
 
-		public byte getTag(){
-			return AID_REF_DO;
-		}
-
-		public byte[] getData(){
-			return aid;
+		@Override
+		public BerTlv toTlv(){
+			return new BerTlvBuilder()
+                .addBytes(new BerTag(AID_REF_DO), aid)
+                .buildTlv();
 		}
 	}
 
 	/**
 	 * Hash-REF-DO (p46)
 	 */
-	public static class HashRefDo extends TLV {
-		byte[] hash;
+	public static class HashRefDo implements ITLV {
+		final byte[] hash;
 
-		public HashRefDo(byte[] data){
-			hash = data;
+		public HashRefDo(final byte[] data){
+			hash = Arrays.copyOf(data, data.length);
 		}
 
 		public String toString(){
 			return HexUtils.bin2hex(hash);
 		}
 
-		public byte getTag(){
-			return HASH_REF_DO;
-		}
-
-		public byte[] getData(){
-			return hash;
+		@Override
+		public BerTlv toTlv(){
+			return new BerTlvBuilder()
+                .addBytes(new BerTag(HASH_REF_DO), hash)
+                .buildTlv();
 		}
 	}
+
+	private static BerTlv buildArDoData(final ApduArDo apduArDo, final NfcArDo nfcArDo){
+        if (apduArDo != null && nfcArDo == null){
+            return apduArDo.toTlv();
+        }
+        if (apduArDo == null && nfcArDo != null){
+            return nfcArDo.toTlv();
+        }
+        if (apduArDo != null && nfcArDo != null) {
+            return new BerTlvBuilder().addBerTlv(apduArDo.toTlv()).addBerTlv(nfcArDo.toTlv()).buildTlv();
+        }
+        return null;
+    }
 
 	/**
 	 * AR-DO access rule data object (p47) composed of APDU-AR-DO or NFC-AR-DO or APDU-AR-DO | NFC-AR-DO
 	 */
-	public static class ArDo extends TLV {
+	public static class ArDo implements ITLV {
 
-		ApduArDo apduArDo;
-		NfcArDo nfcArDo;
+		final ApduArDo apduArDo;
+		final NfcArDo nfcArDo;
 
-		public ArDo(ApduArDo apduArDo, NfcArDo nfcArDo){
-			this.apduArDo = apduArDo;
+		public ArDo(final ApduArDo apduArDo, final NfcArDo nfcArDo){
+            this.apduArDo = apduArDo;
 			this.nfcArDo = nfcArDo;
 		}
 
@@ -332,45 +296,40 @@ public class SEAccessControl {
 			return "apdu : " + apduArDo + " | nfc : " + nfcArDo;
 		}
 
-		public byte getTag(){
-			return AR_DO;
-		}
-
-		public byte[] getData(){
-			if (apduArDo != null && nfcArDo == null){
-				return apduArDo.getBytes();
-			}
-			if (apduArDo == null && nfcArDo != null){
-				return nfcArDo.getBytes();
-			}
-			if (apduArDo != null && nfcArDo != null) {
-				byte[] apduBytes = apduArDo.getBytes();
-				byte[] nfcBytes = nfcArDo.getBytes();
-
-				byte[] data = new byte[apduBytes.length + nfcBytes.length];
-				System.arraycopy(apduBytes, 0, data, 0, apduBytes.length);
-				System.arraycopy(nfcBytes, 0, data, apduBytes.length, nfcBytes.length);
-				return data;
-			}
-			return new byte[]{};
+		@Override
+		public BerTlv toTlv(){
+			return new BerTlvBuilder(new BerTag(AR_DO))
+					.addBerTlv(buildArDoData(apduArDo, nfcArDo))
+					.buildTlv();
 		}
 	}
 
+	private static byte[] buildApduArDoData(final EventAccessRules rule, final byte[] filter){
+        if (rule == EventAccessRules.CUSTOM){
+            return filter;
+        }
+        else if (rule == EventAccessRules.NONE) {
+            return new byte[]{};
+        }
+        else {
+            return new byte[]{rule.getValue()};
+        }
+    }
 	/**
 	 * APDU-AR-DO access rule data object (p48).
 	 */
-	public static class ApduArDo extends TLV {
+	public static class ApduArDo implements ITLV {
 
-		EventAccessRules rule;
-		byte[] filter;
+		final EventAccessRules rule;
+		final byte[] filter;
 
-		public ApduArDo(EventAccessRules rule, byte[] filter){
-			this.rule = rule;
-			this.filter = filter;
+		public ApduArDo(final EventAccessRules rule, final byte[] filter){
+            this.rule = rule;
+			this.filter = Arrays.copyOf(filter, filter.length);
 		}
 
-		public ApduArDo(byte[] data){
-			if (data.length == 0){
+		public ApduArDo(final byte[] data){
+			if (data != null && data.length == 1){
 				switch(data[0]){
 					case 0x00:
 						this.rule = EventAccessRules.NEVER;
@@ -379,67 +338,53 @@ public class SEAccessControl {
 						this.rule = EventAccessRules.ALWAYS;
 						break;
 					default:
+						this.rule = EventAccessRules.CUSTOM;
 						break;
 				}
+				this.filter = new byte[data.length];
 			}
-			else {
+			else if (data != null){
 				this.rule = EventAccessRules.CUSTOM;
 				this.filter = new byte[data.length];
-				System.arraycopy(data, 0, this.filter, 0, data.length);
 			}
+			else{
+                this.rule = EventAccessRules.NONE;
+				this.filter = new byte[]{};
+            }
+		}
+
+		@Override
+		public BerTlv toTlv(){
+			return new BerTlvBuilder()
+					.addBytes(new BerTag(APDU_AR_DO), buildApduArDoData(rule, filter))
+					.buildTlv();
 		}
 
 		public String toString(){
 			return "rule : " + rule + " | filter : " + HexUtils.bin2hex(filter);
-		}
-
-		public byte getTag(){
-			return APDU_AR_DO;
-		}
-
-		public byte[] getData(){
-			if (enabled){
-				if (rule == EventAccessRules.CUSTOM){
-					return filter;
-				}
-				else{
-					return new byte[]{rule.getValue()};
-				}
-			}
-			else{
-				//for delete data when disabling apdu & nfc is needed
-				return new byte[]{};
-			}
 		}
 	}
 
 	/**
 	 * NFC-AR-DO access rule data object.
 	 */
-	public static class NfcArDo extends TLV {
+	public static class NfcArDo implements ITLV {
 
-		EventAccessRules rule;
+		final EventAccessRules rule;
 
-		public NfcArDo(EventAccessRules rule){
-			this.rule = rule;
+		public NfcArDo(final EventAccessRules rule){
+            this.rule = rule;
+		}
+
+		@Override
+		public BerTlv toTlv(){
+			return new BerTlvBuilder()
+					.addBytes(new BerTag(NFC_AR_DO), new byte[]{rule.getValue()})
+					.buildTlv();
 		}
 
 		public String toString(){
 			return "rule : " + rule;
-		}
-
-		public byte getTag(){
-			return NFC_AR_DO;
-		}
-
-		public byte[] getData(){
-			if (enabled){
-				return new byte[]{rule.getValue()};
-			}
-			else{
-				//for delete data when disabling apdu & nfc is needed
-				return new byte[]{};
-			}
 		}
 	}
 
@@ -449,11 +394,12 @@ public class SEAccessControl {
 	enum EventAccessRules {
 		NEVER((byte) 0x00),
 		ALWAYS((byte) 0x01),
-		CUSTOM((byte) 0x02);
+		CUSTOM((byte) 0x02),
+        NONE((byte) 0x03);
 
 		private byte value;
 
-		private EventAccessRules(byte value) {
+		EventAccessRules(final byte value) {
 			this.value = value;
 		}
 
@@ -466,20 +412,20 @@ public class SEAccessControl {
 		/**
 		 * data aggregated from the first get data request.
 		 */
-		private byte[] data;
+		private final byte[] data;
 
 		/**
 		 * full data length .
 		 */
-		private int length;
+		private final int length;
 
 		/**
 		 * current processing index.
 		 */
 		private int currentIndex;
 
-		public BerTlvData(byte[] data, int length, int index){
-			this.data = data;
+		public BerTlvData(final byte[] data, final int length, final int index){
+			this.data = Arrays.copyOf(data, data.length);
 			this.length = length;
 			this.currentIndex = index;
 		}
@@ -489,7 +435,7 @@ public class SEAccessControl {
 		}
 
 		public byte[] getData(){
-			return data;
+			return Arrays.copyOf(data,data.length);
 		}
 
 		public int getLength(){
@@ -506,13 +452,13 @@ public class SEAccessControl {
 	 */
 	public static class AcrListResponse {
 
-		public List<RefArDo> acrList;
+		public final List<RefArDo> acrList;
 
-		public AcrListResponse(List<RefArDo> acrList) {
+		public AcrListResponse(final List<RefArDo> acrList) {
 			this.acrList = acrList;
 		}
 
-		public static BerTlvData getAcrListData(BerTlvData previousData, byte[] data) throws GPDataException {
+		public static BerTlvData getAcrListData(final BerTlvData previousData, final byte[] data) throws GPDataException {
 
 			if (previousData == null &&
 					data.length > 2 &&
@@ -558,13 +504,16 @@ public class SEAccessControl {
 			}
 		}
 
-		public static AcrListResponse fromBytes(int length, byte[] data) throws GPDataException {
+		public static AcrListResponse fromBytes(final int length, final byte[] data) throws GPDataException {
+			BerTlvParser parser = new BerTlvParser();
+
 			List<RefArDo> acrList = new ArrayList<>();
 
 			int offset = 0;
-
 			while (length > offset){
-				acrList.add(parseRefArDo(Arrays.copyOfRange(data, offset, data.length)));
+				BerTlvs tlvs = parser.parse(Arrays.copyOfRange(data, offset, data.length));
+				BerTlv refArDoTag = tlvs.find(new BerTag(REF_AR_DO));
+				acrList.add(parseRefArDo(refArDoTag));
 				offset += ((data[1 + offset] & 0xFF) + 2);
 			}
 			return new AcrListResponse(acrList);
@@ -578,23 +527,14 @@ public class SEAccessControl {
 	 * 0xE2 | length | REF-DO | AR-DO
 	 * </p>
 	 *
-	 * @param data REF_AR_DO data
+	 * @param refArDo REF_AR_DO data
 	 * @return
 	 * @throws GPDataException
 	 */
-	public static RefArDo parseRefArDo(byte[] data) throws GPDataException {
-		if (data.length > 2 &&
-				(data[0] == REF_AR_DO) &&
-				((data[1] & 0xFF) <= (data.length-2))) {
-
-			RefDo refDo = parseRefDo(Arrays.copyOfRange(data, 2, data.length));
-			ArDo arDo = parseArDo(Arrays.copyOfRange(data, 2 + (2 + (data[3] & 0xFF)), data.length));
-
-			return new RefArDo(refDo, arDo);
-		}
-		else {
-			throw new GPDataException("ACR get data : bad response format (REF_AR_DO)");
-		}
+	public static RefArDo parseRefArDo(final BerTlv refArDo) throws GPDataException {
+		RefDo refDo = parseRefDo(refArDo.find(new BerTag(REF_DO)));
+		ArDo arDo = parseArDo(refArDo.find(new BerTag(AR_DO)));
+		return new RefArDo(refDo, arDo);
 	}
 
 	/**
@@ -604,23 +544,14 @@ public class SEAccessControl {
 	 *	0xE1 | length | AID-REF-DO | Hash-REF-DO
 	 * </p>
 	 *
-	 * @param data
+	 * @param refDo
 	 * @return
 	 * @throws GPDataException
 	 */
-	public static RefDo parseRefDo(byte[] data) throws GPDataException {
-		if (data.length > 2 &&
-				(data[0] == REF_DO) &&
-				((data[1] & 0xFF) <= (data.length-2))) {
-
-			AidRefDo aidRefDo = parseAidRefDo(Arrays.copyOfRange(data, 2, data.length));
-			HashRefDo hashRefDo = parseHashRefDo(Arrays.copyOfRange(data, 2 + (2 + (data[3] & 0xFF)), data.length));
-
-			return new RefDo(aidRefDo,hashRefDo);
-		}
-		else {
-			throw new GPDataException("ACR get data : bad response format (REF_DO)");
-		}
+	public static RefDo parseRefDo(final BerTlv refDo) throws GPDataException {
+        AidRefDo aidRefDo = parseAidRefDo(refDo.find(new BerTag(AID_REF_DO)));
+        HashRefDo hashRefDo = parseHashRefDo(refDo.find(new BerTag(HASH_REF_DO)));
+        return new RefDo(aidRefDo,hashRefDo);
 	}
 
 	/**
@@ -628,19 +559,12 @@ public class SEAccessControl {
 	 *
 	 * 4F | length | AID
 	 *
-	 * @param data
+	 * @param aidRefDo
 	 * @return
 	 * @throws GPDataException
 	 */
-	public static AidRefDo parseAidRefDo(byte[] data) throws GPDataException{
-		if (data.length > 2 &&
-				(data[0] == AID_REF_DO) &&
-				((data[1] & 0xFF) <= (data.length-2))) {
-			return new AidRefDo(Arrays.copyOfRange(data, 2, (data[1]&0xFF)+2));
-		}
-		else {
-			throw new GPDataException("ACR get data : bad response format (AID_REF_DO)");
-		}
+	public static AidRefDo parseAidRefDo(final BerTlv aidRefDo) throws GPDataException{
+        return new AidRefDo(aidRefDo != null ? aidRefDo.getBytesValue() : new byte[]{});
 	}
 
 	/**
@@ -648,20 +572,12 @@ public class SEAccessControl {
 	 *
 	 * C1 | length | hash
 	 *
-	 * @param data
+	 * @param hashRefDo
 	 * @return
 	 * @throws GPDataException
 	 */
-	public static HashRefDo parseHashRefDo(byte[] data) throws GPDataException{
-		if (data.length > 2 &&
-				(data[0] == HASH_REF_DO) &&
-				((data[1] & 0xFF) <= (data.length-2)) &&
-				((data[1] & 0xFF) == HASH_MAX_LENGTH || (data[1] & 0xFF) == HASH_MIN_LENGTH)) {
-			return new HashRefDo(Arrays.copyOfRange(data, 2, (data[1]&0xFF)+2));
-		}
-		else {
-			throw new GPDataException("ACR get data : bad response format (HASH_REF_DO)");
-		}
+	public static HashRefDo parseHashRefDo(final BerTlv hashRefDo) throws GPDataException{
+        return new HashRefDo(hashRefDo != null ? hashRefDo.getBytesValue() : new byte[]{});
 	}
 
 	/**
@@ -677,37 +593,14 @@ public class SEAccessControl {
 	 *
 	 * E3 | length | APDU-AR-DO | NFC-AR-DO
 	 *
-	 * @param data
+	 * @param arDo
 	 * @return
 	 * @throws GPDataException
 	 */
-	public static ArDo parseArDo(byte[] data) throws GPDataException {
-		if (data.length > 2 &&
-				(data[0] == AR_DO) &&
-				((data[1] & 0xFF) <= (data.length-2))) {
-
-			ApduArDo apduArDo = null;
-			NfcArDo nfcArDo = null;
-
-			switch (data[2]){
-				case APDU_AR_DO:
-					apduArDo = parseApduArDo(Arrays.copyOfRange(data, 2, data.length));
-
-					if ((data[1] & 0xFF) != ((data[3]&0xFF) + 2)){
-						nfcArDo = parseNfcArDo(Arrays.copyOfRange(data, 2 + (2 + (data[3] & 0xFF)), data.length));
-					}
-					break;
-				case NFC_AR_DO:
-					nfcArDo = parseNfcArDo(Arrays.copyOfRange(data, 2, data.length));
-					break;
-				default:
-					break;
-			}
-			return new ArDo(apduArDo,nfcArDo);
-		}
-		else {
-			throw new GPDataException("ACR get data : bad response format (AR_DO)");
-		}
+	public static ArDo parseArDo(final BerTlv arDo) throws GPDataException {
+		ApduArDo apduArDo = parseApduArDo(arDo.find(new BerTag(APDU_AR_DO)));
+		NfcArDo nfcArDo = parseNfcArDo(arDo.find(new BerTag(NFC_AR_DO)));
+        return new ArDo(apduArDo, nfcArDo);
 	}
 
 	/**
@@ -715,30 +608,23 @@ public class SEAccessControl {
 	 *
 	 * D0 | length | 0x00 or 0x01 or APDU filter 1 | APDU filter n
 	 *
-	 * @param data
+	 * @param apduArDo
 	 * @return
 	 * @throws GPDataException
 	 */
-	public static ApduArDo parseApduArDo(byte[] data) throws GPDataException {
-		if (data.length > 2 &&
-				(data[0] == APDU_AR_DO) &&
-				((data[1] & 0xFF) <= (data.length-2)) &&
-				((data[1] & 0xFF) == 1 || (data[1] & 0xFF) % 8 == 0)) {
-
-			if ((data[1] & 0xFF) == 1){
-				switch (data[2] & 0xFF){
+	public static ApduArDo parseApduArDo(final BerTlv apduArDo) throws GPDataException {
+		if (apduArDo!=null) {
+			byte[] data = apduArDo.getBytesValue();
+			if (data.length == 1) {
+				switch (data[0] & 0xFF) {
 					case 0x01:
 						return new ApduArDo(EventAccessRules.ALWAYS, new byte[]{});
 					case 0x00:
 						return new ApduArDo(EventAccessRules.NEVER, new byte[]{});
 				}
+			} else {
+				return new ApduArDo(EventAccessRules.CUSTOM, data);
 			}
-			else {
-				return new ApduArDo(EventAccessRules.CUSTOM,Arrays.copyOfRange(data, 2, 2 + (data[1] & 0xFF)));
-			}
-		}
-		else {
-			throw new GPDataException("ACR get data : bad response format (APDU_AR_DO)");
 		}
 		return null;
 	}
@@ -748,25 +634,18 @@ public class SEAccessControl {
 	 *
 	 * D1 | 01 | 0x00 or 0x01
 	 *
-	 * @param data
+	 * @param nfcArDo
 	 * @return
 	 * @throws GPDataException
 	 */
-	public static NfcArDo parseNfcArDo(byte[] data) throws GPDataException{
-		if (data.length > 2 &&
-				(data[0] == NFC_AR_DO) &&
-				((data[1] & 0xFF) <= (data.length-2)) &&
-				((data[1] & 0xFF) == 1)) {
-
-			switch (data[2] & 0xFF){
+	public static NfcArDo parseNfcArDo(final BerTlv nfcArDo) throws GPDataException{
+		if (nfcArDo!=null) {
+			switch (nfcArDo.getBytesValue()[0]) {
 				case 0x01:
 					return new NfcArDo(EventAccessRules.ALWAYS);
 				case 0x00:
 					return new NfcArDo(EventAccessRules.NEVER);
 			}
-		}
-		else {
-			throw new GPDataException("ACR get data : bad response format (NFC_AR_DO)");
 		}
 		return null;
 	}
@@ -776,7 +655,7 @@ public class SEAccessControl {
 	 *
 	 * @param acrList list of REF-AR-DO
 	 */
-	public static void printList(List<RefArDo> acrList){
+	public static void printList(final List<RefArDo> acrList){
 		if (acrList.size() == 0){
 			System.out.println("No Rule found");
 			return;

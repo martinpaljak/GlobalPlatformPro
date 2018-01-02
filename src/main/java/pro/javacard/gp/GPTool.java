@@ -875,7 +875,7 @@ public final class GPTool {
         byte[] params = null;
         if (args.has(OPT_PARAMS)) {
             String arg = (String) args.valueOf(OPT_PARAMS);
-            // XXX: keep Coverity happy, even though args.has() shoud guard this
+            // XXX: keep Coverity happy, even though args.has() should guard this
             if (arg == null)
                 return params;
             params = HexUtils.stringToBin(arg);

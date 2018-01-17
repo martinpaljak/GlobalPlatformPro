@@ -241,10 +241,10 @@ The ancestor of this code is GPJ (Global Platform for SmartCardIO) which is (sti
  * gpcomm - https://code.google.com/p/gpcomm/
    * written in Java
    * incomplete and abandoned
- * globalplatform.net - https://github.com/sepulo/globalplatform.net
-   * written in c#
-   * unclear license (missing)
-   * only supports SCP01 and SCP02
+ * GlobalPlatform.NET - https://github.com/jamesharling/GlobalPlatform.NET
+   * C# library compiled against .NET Standard
+   * fluent syntax for command generation and secure channel management
+   * supports v2.3 of the GlobalPlatform Specification
  * asterix - https://github.com/suma12/asterix (LGPL 2.1)
    * written in Python
    * SCP02, SCP03

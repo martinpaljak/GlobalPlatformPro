@@ -171,12 +171,12 @@ public final class GPTool {
 
         parser.accepts(OPT_ORACLE, "Use an oracle for keying information").withOptionalArg().describedAs("URL");
 
-        parser.accepts(OPT_KEY_ID, "Specify key ID").withRequiredArg().ofType(Integer.class);
-        parser.accepts(OPT_KEY_VERSION, "Specify key version").withRequiredArg().ofType(Integer.class);
+        parser.accepts(OPT_KEY_ID, "Specify key ID").withRequiredArg();
+        parser.accepts(OPT_KEY_VERSION, "Specify key version").withRequiredArg();
 
         parser.accepts(OPT_LOCK, "Set new key").withRequiredArg().describedAs("key");
         parser.accepts(OPT_UNLOCK, "Set default key for card key");
-        parser.accepts(OPT_NEW_KEY_VERSION, "Key version for the new key").withRequiredArg().ofType(Integer.class);
+        parser.accepts(OPT_NEW_KEY_VERSION, "Key version for the new key").withRequiredArg();
 
         // access rules
         parser.accepts(OPT_ACR_LIST, "List access rules");
@@ -404,7 +404,7 @@ public final class GPTool {
                         }
 
                         if (args.has(OPT_KEY_VERSION)) {
-                            keyz.setVersion((Integer) args.valueOf(OPT_KEY_VERSION));
+                            keyz.setVersion(GPUtils.intValue((String) args.valueOf(OPT_KEY_VERSION)));
                         }
                         keys = keyz;
                     }
@@ -763,10 +763,21 @@ public final class GPTool {
 
                         // --lock
                         if (args.has(OPT_LOCK)) {
+                            // By default we try to change an existing key
                             boolean replace = true;
                             List<GPKey> current = gp.getKeyInfoTemplate();
-                            if (current.size() > 0 && current.get(0).getVersion() == 255) {
-                                replace = false;
+
+                            // By default use key version 1
+                            int new_version = 1;
+                            // If there are keys present, check the existing version
+                            if (current.size() > 0) {
+                                if (current.get(0).getVersion() == 255) {
+                                    // Factory keys, add keyset with version one.
+                                    replace = false;
+                                } else {
+                                    // Existing keys, change the present version
+                                    new_version = current.get(0).getVersion();
+                                }
                             }
 
                             // Get key value
@@ -776,14 +787,13 @@ public final class GPTool {
                                 nk.become(Type.AES);
                             else
                                 nk.become(Type.DES3);
-                            // FIXME: Check that
-                            int new_version = 1;
 
+                            // If a specific new key version is specified, use that instead.
                             if (args.has(OPT_NEW_KEY_VERSION)) {
-                                new_version = (int) args.valueOf(OPT_NEW_KEY_VERSION);
+                                new_version = GPUtils.intValue((String) args.valueOf(OPT_NEW_KEY_VERSION));
                                 System.out.println("New version: " + new_version);
-                                replace = false; // FIXME: only if current key is factory
                             }
+
                             // Add into a list
                             List<GPKey> updatekeys = new ArrayList<>();
                             // We currently use the same key, diversification is missing

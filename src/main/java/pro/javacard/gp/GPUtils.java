@@ -27,6 +27,13 @@ import java.util.List;
 
 public class GPUtils {
 
+	public static int intValue(String s) {
+		if (s.trim().toLowerCase().startsWith("0x")) {
+			return Integer.parseInt(s, 16);
+		}
+		return Integer.parseInt(s);
+	}
+
 	public static String byteArrayToReadableString(byte[] array) {
 		if (array == null) {
 			return "(null)";

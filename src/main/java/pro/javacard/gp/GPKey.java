@@ -120,8 +120,8 @@ public final class GPKey {
 
     public String toString() {
         StringBuffer s = new StringBuffer();
-        s.append("version=" + version);
-        s.append(" id=" + id);
+        s.append("version=" + String.format("%d (0x%02X)", version, version));
+        s.append(" id=" + String.format("%d (0x%02X)", id, id));
         s.append(" type=" + type);
         if (bytes != null)
             s.append(" bytes=" + HexUtils.bin2hex(bytes));

@@ -211,7 +211,7 @@ The ancestor of this code is GPJ (Global Platform for SmartCardIO) which is (sti
 ### Similar projects
  * gpj (the grandparent) - http://gpj.sf.net (LGPL)
    * written in Java 
-   * not maintained
+   * continued as GlobalPlatformPro
    * harder to use from the command line
    * no new features or standards
  * GPShell + globalplatform library - http://sourceforge.net/projects/globalplatform/ (LGPL)
@@ -245,11 +245,16 @@ The ancestor of this code is GPJ (Global Platform for SmartCardIO) which is (sti
    * written in c#
    * unclear license (missing)
    * only supports SCP01 and SCP02
+ * GlobalPlatform.NET - https://github.com/jamesharling/GlobalPlatform.NET (GPLv3)
+   * wirtten in c#
+   * only supports SCP02
+   * fluent interface
  * asterix - https://github.com/suma12/asterix (LGPL 2.1)
    * written in Python
    * SCP02, SCP03
  * LuaGP - https://github.com/bondhan/LuaGP
-   * written in Lua  
+   * written in Lua
+   * unclear license (missing)
  * JCOP tools, RADIII, JCardManager4, JLoad, PyApduTool etc
    * not publicly available cross-platform open source projects and thus not suitable for this comparision
 

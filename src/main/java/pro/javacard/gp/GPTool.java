@@ -152,7 +152,7 @@ public final class GPTool {
         parser.accepts(OPT_RENAME_ISD, "Rename ISD").withRequiredArg().describedAs("new AID");
 
         parser.accepts(OPT_DELETE, "Delete applet/package").withOptionalArg().describedAs("AID");
-        parser.accepts(OPT_DELETE_KEY, "Delete key with version").withRequiredArg().ofType(Integer.class);
+        parser.accepts(OPT_DELETE_KEY, "Delete key with version").withRequiredArg();
 
         parser.accepts(OPT_CREATE, "Create new instance of an applet").withRequiredArg().describedAs("AID");
         parser.accepts(OPT_APPLET, "Applet AID").withRequiredArg().describedAs("AID");
@@ -703,7 +703,7 @@ public final class GPTool {
                                 GPCommands.listRegistry(gp.getRegistry(), System.out, true);
                                 fail("ISD is null");
                             }
-                            if (isd.getLifeCycle() != 0x7) {
+                            if (isd.getLifeCycle() != GPData.initializedStatus) {
                                 if (args.has(OPT_FORCE)) {
                                     gp.setCardStatus(GPData.initializedStatus);
                                 }
@@ -728,7 +728,7 @@ public final class GPTool {
 
                         // --delete-key
                         if (args.has(OPT_DELETE_KEY)) {
-                            int keyver = (Integer) args.valueOf(OPT_DELETE_KEY);
+                            int keyver = GPUtils.intValue((String) args.valueOf(OPT_DELETE_KEY));
                             System.out.println("Deleting key " + keyver);
                             gp.deleteKey(keyver);
                         }
@@ -738,26 +738,28 @@ public final class GPTool {
                         if (args.has(OPT_UNLOCK)) {
                             // Write default keys
                             List<GPKey> newkeys = new ArrayList<>();
-
-                            // Fetch the current key information to get the used ID-s.
-                            List<GPKey> current = gp.getKeyInfoTemplate();
-                            if (current.size() != 3) {
-                                throw new GPException("Template has bad length!"); // XXX: move to GlobalPlatform
+                            final boolean replace;
+                            final int kv;
+                            // Factory keys
+                            if (gp.getScpKeyVersion() == 255) {
+                                replace = false;
+                                kv = 1;
+                            } else {
+                                // Replace current key
+                                kv = gp.getScpKeyVersion();
+                                replace = true;
                             }
+
                             // FIXME: new key must adhere to currently used SCP version.
                             GPKey new_key = new GPKey(GPData.defaultKeyBytes, gp.getSCPVersion() == 3 ? Type.AES : Type.DES3);
 
-                            // FIXME: this looks ugly
-                            newkeys.add(new GPKey(01, current.get(0).getID(), new_key));
-                            newkeys.add(new GPKey(01, current.get(1).getID(), new_key));
-                            newkeys.add(new GPKey(01, current.get(2).getID(), new_key));
+                            // XXX: ID handling ?
+                            newkeys.add(new GPKey(kv, 1, new_key));
+                            newkeys.add(new GPKey(kv, 2, new_key));
+                            newkeys.add(new GPKey(kv, 3, new_key));
 
-                            boolean replace = true;
-                            // If factory keys, add keys, as 255 can not be addressed
-                            if (current.get(0).getVersion() == 255) {
-                                replace = false;
-                            }
                             gp.putKeys(newkeys, replace);
+
                             System.out.println("Default " + new_key.toString() + " set as master key.");
                         }
 
@@ -803,7 +805,7 @@ public final class GPTool {
 
                             gp.putKeys(updatekeys, replace);
 
-                            System.out.println("Card locked with: " + nk.toString());
+                            System.out.println("Card locked with: " + HexUtils.bin2hex(nk.getBytes()));
                             System.out.println("Write this down, DO NOT FORGET/LOSE IT!");
                         }
 

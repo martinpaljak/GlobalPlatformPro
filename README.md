@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/martinpaljak/GlobalPlatformPro.svg?branch=master)](https://travis-ci.org/martinpaljak/GlobalPlatformPro) [![Coverity status](https://scan.coverity.com/projects/4020/badge.svg?flat=1)](https://scan.coverity.com/projects/4020/) [![Latest release](https://img.shields.io/github/release/martinpaljak/GlobalPlatformPro.svg)](https://github.com/martinpaljak/GlobalPlatformPro/releases/latest) [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.martinpaljak/globalplatformpro/badge.svg)](https://mvnrepository.com/artifact/com.github.martinpaljak/globalplatformpro) [![LGPL-3.0 licensed](https://img.shields.io/badge/license-LGPL-blue.svg)](https://github.com/martinpaljak/GlobalPlatformPro/blob/master/LICENSE)
+[![Build Status](https://travis-ci.org/martinpaljak/GlobalPlatformPro.svg?branch=master)](https://travis-ci.org/martinpaljak/GlobalPlatformPro) [![Coverity status](https://scan.coverity.com/projects/4020/badge.svg?flat=1)](https://scan.coverity.com/projects/4020/) [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.martinpaljak/globalplatformpro/badge.svg)](https://mvnrepository.com/artifact/com.github.martinpaljak/globalplatformpro) [![Latest release](https://img.shields.io/github/release/martinpaljak/GlobalPlatformPro.svg)](https://github.com/martinpaljak/GlobalPlatformPro/releases/latest) [![LGPL-3.0 licensed](https://img.shields.io/badge/license-LGPL-blue.svg)](https://github.com/martinpaljak/GlobalPlatformPro/blob/master/LICENSE)
 # GlobalPlatformPro
 _&nbsp;&nbsp; from [JavaCard.pro](https://javacard.pro)_
 
@@ -23,14 +23,12 @@ Building JavaCard applets is equally pleasing with [ant-javacard](https://github
 ```shell
 git clone https://github.com/martinpaljak/GlobalPlatformPro
 cd GlobalPlatformPro
-mvn package
-ant
+mvn package && ant
 ```
 
 ## NEWS
  * SCP03 support in [latest version](https://github.com/martinpaljak/GlobalPlatformPro/releases)
- * Tentative [milestones](https://github.com/martinpaljak/GlobalPlatformPro/milestones)
- * [JavaCard Buyer's Guide of 2016](https://github.com/martinpaljak/GlobalPlatformPro/tree/master/docs/JavaCardBuyersGuide)
+ * [JavaCard Buyer's Guide of 2018](https://github.com/martinpaljak/GlobalPlatformPro/tree/master/docs/JavaCardBuyersGuide)
 
 ### Usage
 
@@ -44,24 +42,24 @@ Command line samples assume default test keys of `40..4F`. If you need a custom 
 
  * Show some basic information about a card (failsafe):
 
-        java -jar gp.jar -info
-        
+       java -jar gp.jar -info
+
    * On Windows just replace `java -jar gp.jar` with `gp.exe` like this:
 
-            gp.exe -info
+         gp.exe -info
 
    * On Linux it is easier to add an alias to the shell like this:
 
-            alias gp="java -jar $PWD/gp.jar"
-            # Now you can avoid typing `java -jar` and `gp` works from any folder
-            gp -h
+         alias gp="java -jar $PWD/gp.jar"
+         # Now you can avoid typing `java -jar` and `gp` works from any folder
+         gp -h
 
 #### List / install / delete applets
 > Please consult the help output for options that are not described here
 
  * List applets (this and following commands open the secure channel and thus can brick your card with wrong keys!):
 
-        gp -list # or gp -l
+       gp -list # or gp -l
 
    How to interpret the output:
     * All AID-s of on-card objects are listed, starting with Issuer Security Domain (`ISD`)
@@ -72,35 +70,35 @@ Command line samples assume default test keys of `40..4F`. If you need a custom 
 
  * Delete current default applet's package and all instances:
 
-        gp -delete -default
+       gp -delete -default
 
- * Delete package ```D27600012401``` and all applets from it:
+ * Delete package `D27600012401` and all applets from it:
 
-        gp -delete D27600012401
+       gp -delete D27600012401
 
  * Install `applet.cap` as default applet (with AID information from the CAP):
 
-        gp -install applet.cap -default
+       gp -install applet.cap -default
 
  * Install `applet.cap` (with AID information from the CAP):
 
-        gp -install applet.cap
+       gp -install applet.cap
 
  * Unistall `applet.cap` (with AID information from the CAP):
 
-        gp -uninstall applet.cap
+       gp -uninstall applet.cap
 
  * Force installation of `applet.cap`, deleting anything that's necessary, with AID information from the CAP:
 
-        gp -f -install applet.cap
+       gp -f -install applet.cap
 
  * Create new instance of applet `D2760001240102000000000000000000` from package `D27600012401` with AID `D2760001240102000000000272950000`:
 
-        gp -package D27600012401 -applet D2760001240102000000000000000000 -create D2760001240102000000000272950000
+       gp -package D27600012401 -applet D2760001240102000000000000000000 -create D2760001240102000000000272950000
 
  * Same as previous, but takes the package/applet AID-s from CAP file and makes the new instance default selected:
 
-        gp -cap OpenPGPApplet.cap -create D2760001240102000000000272950000 -default
+       gp -cap OpenPGPApplet.cap -create D2760001240102000000000272950000 -default
 
 ##### Installation options
  * `-default` - makes the applet default selected
@@ -110,23 +108,23 @@ Command line samples assume default test keys of `40..4F`. If you need a custom 
 
 #### Lock / unlock usage
 
- * Set ```010B0371D78377B801F2D62AFC671D95``` key to a card with default ```40..4F``` keys:
+ * Set `010B0371D78377B801F2D62AFC671D95` key to a card with default `40..4F` keys:
 
-        gp -lock 010B0371D78377B801F2D62AFC671D95
+       gp -lock 010B0371D78377B801F2D62AFC671D95
 
- * Set default ```40..4F``` keys to card that was previously locked with key ```010B0371D78377B801F2D62AFC671D95```:
+ * Set default `40..4F` keys to card that was previously locked with key `010B0371D78377B801F2D62AFC671D95`:
 
-        gp -key 010B0371D78377B801F2D62AFC671D95 -unlock
- 
- * Set the default ```40..4F``` keys to a card that uses EMV diversification (like G&D):
+       gp -key 010B0371D78377B801F2D62AFC671D95 -unlock
 
-        gp -emv -unlock
- 
-    \* note that you will have to use ```--relax``` option after this operation to get rid of the warning about probably needed diversification, which is not true any more.
+ * Set the default `40..4F` keys to a card that uses EMV diversification (like G&D):
 
- * Set the default ```40..4F``` keys to a card that uses VISA2 diversification with the well-known mother key on a Gemalto card:
+       gp -emv -unlock
 
-        gp -visa2 -key 47454D5850524553534F53414D504C45 -unlock -mode clr
+    \* note that you will have to use `--relax` option after this operation to get rid of the warning about probably needed diversification, which is not true any more.
+
+ * Set the default `40..4F` keys to a card that uses VISA2 diversification with the well-known mother key on a Gemalto card:
+
+       gp -visa2 -key 47454D5850524553534F53414D504C45 -unlock -mode clr
 
 #### Access Control
 
@@ -134,39 +132,39 @@ SE Access Control commands used to list, add & delete access rules.
 
  * list access control rules
 
-        gp -acr-list
+       gp -acr-list
 
 The following command `-acr-add` & `-acr-delete` require authentication (install for personalization) : 
 
  * add an access control rule to **authorize** (`-acr-rule 01`) apdu access for application signed with certificate hash `53AC1FC8DB794570D0CF2565DBFBE98C266AE07F` for applet with AID `D2760001240102000000000000000000` 
 
-        gp -acr-add -acr-rule 01 -app D2760001240102000000000000000000 -acr-hash 53AC1FC8DB794570D0CF2565DBFBE98C266AE07F
+       gp -acr-add -acr-rule 01 -app D2760001240102000000000000000000 -acr-hash 53AC1FC8DB794570D0CF2565DBFBE98C266AE07F
 
  * add an access control rule to **deny** (`-acr-rule 00`) apdu access for application signed with certificate hash `53AC1FC8DB794570D0CF2565DBFBE98C266AE07F` for applet with AID `D2760001240102000000000000000000` 
 
-        gp -acr-add -acr-rule 00 -app D2760001240102000000000000000000 -acr-hash 53AC1FC8DB794570D0CF2565DBFBE98C266AE07F
+       gp -acr-add -acr-rule 00 -app D2760001240102000000000000000000 -acr-hash 53AC1FC8DB794570D0CF2565DBFBE98C266AE07F
 
  * delete all access control rule for applet with AID `D2760001240102000000000000000000` 
 
-        gp -acr-delete -app D2760001240102000000000000000000
+       gp -acr-delete -app D2760001240102000000000000000000
 
 #### Debugging options
 
  * Show APDU-s sent to the card:
-   
-   add ```-debug``` or ```-d``` to your command
+
+   add `-debug` or `-d` to your command
 
  * Be more verbose about decisions and conditions:
-   
-   add ```-verbose``` or ```-v``` to your command
+
+   add `-verbose` or `-v` to your command
 
  * Don't use MAC on commands (plain GlobalPlatform syntax):
 
-   add ```-mode clr``` to your command (not supported on all cards)
+   add `-mode clr` to your command (not supported on all cards)
 
- * Show all options recognized by ```gp``` utility:
+ * Show all options recognized by `gp` utility:
 
-   add ```-help``` or ```-h``` or ```--help``` to your ```gp``` command
+   add `-help` or `-h` or `--help` to your `gp` command
 
 ### Usage from Java &nbsp; [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.martinpaljak/globalplatformpro/badge.svg)](https://mvnrepository.com/artifact/com.github.martinpaljak/globalplatformpro)
 
@@ -184,12 +182,12 @@ Include the dependency:
  * For now consult the [command line utility source code](https://github.com/martinpaljak/GlobalPlatformPro/blob/master/src/pro/javacard/gp/GPTool.java)
  * Rudimentary [Javadoc](http://martinpaljak.github.io/GlobalPlatformPro/)
  * General rules:
-   * Expect ```RuntimeException```-s when things go unexpectedly wrong
-   * ```CardException```-s when link layer fails
-   * ```GPException```-s when protocol layer fails
+   * Expect `RuntimeException`-s when things go unexpectedly wrong
+   * `CardException`-s when link layer fails
+   * `GPException`-s when protocol layer fails
 
 ### Supported cards
- * **NEW!** [JavaCard Buyer's Guide of 2016](https://github.com/martinpaljak/GlobalPlatformPro/tree/master/docs/JavaCardBuyersGuide)
+ * **NEW!** [JavaCard Buyer's Guide of 2018](https://github.com/martinpaljak/GlobalPlatformPro/tree/master/docs/JavaCardBuyersGuide)
  * See [TestedCards](https://github.com/martinpaljak/GlobalPlatformPro/tree/master/docs/TestedCards)
  * Generally speaking any modern JavaCard that speaks GlobalPlatform 2.1.1+
  * Available cards from all major vendors have been tested for basic compatibility: [Athena](http://www.athena-scs.com/), [Gemalto](http://www.gemalto.com/), [Giesecke & Devrient](http://www.gi-de.com/), [Infineon](http://www.infineon.com/), [NXP (JCOP)](http://www.nxp.com/), [Morpho](http://www.morpho.com/), [Oberthur](http://www.oberthur.com/)
@@ -210,7 +208,7 @@ The ancestor of this code is GPJ (Global Platform for SmartCardIO) which is (sti
 
 ### Similar projects
  * gpj (the grandparent) - http://gpj.sf.net (LGPL)
-   * written in Java 
+   * written in Java
    * continued as GlobalPlatformPro
    * harder to use from the command line
    * no new features or standards
@@ -220,7 +218,7 @@ The ancestor of this code is GPJ (Global Platform for SmartCardIO) which is (sti
    * several components need to be compiled and installed before usage
    * requires more complex "script files" and does not provide a direct command line utility
  * jcManager - http://www.brokenmill.com/2010/03/java-secure-card-manager/ (LGPL)
-   * written in Java  
+   * written in Java
    * has a basic GUI
    * old and not maintained
  * gpjNG - https://github.com/SimplyTapp/gpjNG (LGPL)
@@ -258,19 +256,6 @@ The ancestor of this code is GPJ (Global Platform for SmartCardIO) which is (sti
  * JCOP tools, RADIII, JCardManager4, JLoad, PyApduTool etc
    * not publicly available cross-platform open source projects and thus not suitable for this comparision
 
-## Upcoming releases and major new features
- * **NEW!** Have a look at [milestones](https://github.com/martinpaljak/GlobalPlatformPro/milestones)
- * T+1 (v0.2.5)
-   * ~~Re-written command line utility~~
-   * ~~Windows .exe for ease of use~~
-   * ~~-lock and -unlock commands for changing secure channel keys~~
- * T+2 (v0.3.0)
-   * ~~SCP03 v1.1.1 and GP2.2.1~~
- * T+X (wishlist)
-   * ~~Support for storing card management keys in PKCS#11 tokens (HSM)~~
-   * GPShell-style scripts (instead of Java)
-   * Simple GUI for basic operations/browsing
-
 ## Design principles
  * focus on real life and practical daily use cases
  * KISS, YAGNI, DWIM, no-NIH
@@ -280,7 +265,7 @@ The ancestor of this code is GPJ (Global Platform for SmartCardIO) which is (sti
 
 ## About
 The promise of GlobalPlatformPro is similar to OpenSSL:
-    
+
 > Why buy a smart card **software kit as a black box** when you can get an **open one for free**?
 
 In regard to GlobalPlatform, the goal is to make simple operations like installing and removing applets and locking the card with new keys as easy as next-next-done - you don't have to know the whole Global Platform specification by heart for that or buy a piece of proprietary software for a few hundred euros! For all those features that are not described in the GlobalPlatform specification that actually make your card work... you still have to use those proprietary commands, but OpenKMS GlobalPlatformPro toolkit's flexibility (and its license) should allow you to do that as well.
@@ -297,11 +282,11 @@ In regard to GlobalPlatform, the goal is to make simple operations like installi
  * [apdu4j](https://github.com/martinpaljak/apdu4j) for APDU level PC/SC access/logging/replaying (MIT)
  * [ber-tlv](https://github.com/evsinev/ber-tlv) for tag parsing (Apache)
 
-## Contact 
+## Contact
 
 * Generic enquiries: martin@martinpaljak.net
 * **For technical support:**
-  * re-run your failing command with ```-d -v -i``` switches and send the output, information about your card and applet/CAP
+  * re-run your failing command with `-d -v -i` switches and send the output, information about your card and applet/CAP
   * **Only plaintext** logs. **NO** screenshots, pictures, word documents. **NO** generic questions about java/linux/windows/globalplatform. Questions about jcshell/gpshell/gpj/something else **shall be ignored**.
   * If unsure, first read about [asking questions](http://www.catb.org/esr/faqs/smart-questions.html)
   * If you want to have a chat-like experience, try to [![Gitter](https://badges.gitter.im/martinpaljak/GlobalPlatformPro.svg)](https://gitter.im/martinpaljak/GlobalPlatformPro)

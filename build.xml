@@ -5,7 +5,7 @@
   <target name="fetch">
     <mkdir dir="lib"/>
     <get src="http://central.maven.org/maven2/net/sf/proguard/proguard-base/5.3.3/proguard-base-5.3.3.jar" dest="lib" verbose="true" skipexisting="true"/>
-    <checksum algorithm="SHA-256" file="lib/proguard-base-5.3.jar" property="6ddbbcbd3ef979a588ee2732920b00c335649dcb72f464eaaf0ce9685a539572" verifyProperty="proguardOK"/>
+    <checksum algorithm="SHA-256" file="lib/proguard-base-5.3.3.jar" property="1d2e883717b8ab7d3fcc9fa01034d165809a9c94daa6303a838f11e4d36adc86" verifyProperty="proguardOK"/>
     <fail message="Checksum failure">
       <condition>
         <or>

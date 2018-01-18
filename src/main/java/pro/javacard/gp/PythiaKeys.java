@@ -58,6 +58,7 @@ public class PythiaKeys {
                 r.setDiversifier(PlaintextKeys.Diversification.valueOf(hint.div));
 
             // TODO: version, id
+            System.out.println("Using aid=" + hint.aid + " div=" + hint.div + " algo=" + hint.algo + " key=" + hint.key);
             return r;
         } catch (Exception e) {
             e.printStackTrace();

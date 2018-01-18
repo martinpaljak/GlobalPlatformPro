@@ -85,12 +85,14 @@ public class GlobalPlatform implements AutoCloseable {
     private static Logger logger = LoggerFactory.getLogger(GlobalPlatform.class);
     protected boolean strict = true;
     GPSpec spec = GPSpec.GP211;
+
     // (I)SD AID of the card successfully selected or null
     private AID sdAID = null;
     // Either 1 or 2 or 3
     private int scpMajorVersion = 0;
 
-    ;
+    private int scpKeyVersion = 0;
+
     private int blockSize = 255;
     private GPSessionKeyProvider sessionKeys = null;
     private SCPWrapper wrapper = null;
@@ -188,7 +190,7 @@ public class GlobalPlatform implements AutoCloseable {
 
     @Override
     public void close() throws Exception {
-        // TODO Closes SecureChannel, if connect.
+        // TODO Closes SecureChannel, if connected.
     }
 
     public void setStrict(boolean strict) {
@@ -207,13 +209,6 @@ public class GlobalPlatform implements AutoCloseable {
         return new AID(sdAID.getBytes());
     }
 
-    @Deprecated
-    public void imFeelingLucky() throws CardException, GPException {
-        //select(null); // auto-detect ISD AID
-        //SessionKeyProvider keys = PlaintextKeys.fromMasterKey(GPData.defaultKey, Diversification.NONE);
-        //openSecureChannel(keys, null, 0, EnumSet.of(APDUMode.MAC));
-    }
-
     protected void giveStrictWarning(String message) throws GPException {
         message = "STRICT WARNING: " + message;
         if (strict) {
@@ -221,6 +216,10 @@ public class GlobalPlatform implements AutoCloseable {
         } else {
             logger.warn(message);
         }
+    }
+
+    public int getScpKeyVersion() {
+        return scpKeyVersion;
     }
 
     void select(AID sdAID) throws GPException, CardException {
@@ -452,7 +451,7 @@ public class GlobalPlatform implements AutoCloseable {
         byte[] diversification_data = Arrays.copyOfRange(update_response, 0, 10);
         offset += diversification_data.length;
         // Get used key version from response
-        int keyVersion = update_response[offset] & 0xFF;
+        scpKeyVersion = update_response[offset] & 0xFF;
         offset++;
         // Get major SCP version from Key Information field in response
         scpMajorVersion = update_response[offset];
@@ -478,8 +477,8 @@ public class GlobalPlatform implements AutoCloseable {
 
         // Verify response
         // If using explicit key version, it must match.
-        if ((keys.getVersion() > 0) && (keyVersion != keys.getVersion())) {
-            throw new GPException("Key version mismatch: " + keys.getVersion() + " != " + keyVersion);
+        if ((keys.getVersion() > 0) && (scpKeyVersion != keys.getVersion())) {
+            throw new GPException("Key version mismatch: " + keys.getVersion() + " != " + scpKeyVersion);
         }
 
         logger.debug("Card reports SCP0" + scpMajorVersion + " i=" + String.format("%02x", scp_i) + " keys " + scpVersion);

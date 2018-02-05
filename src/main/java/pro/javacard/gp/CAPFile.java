@@ -38,7 +38,7 @@ import java.util.zip.ZipInputStream;
  * Parses a CAP file as specified in JavaCard 2.2 VM Specification, chapter 6.
  */
 public final class CAPFile {
-    static final String[] componentNames = {"Header", "Directory", "Import", "Applet", "Class", "Method", "StaticField", "Export",
+    private static final String[] componentNames = {"Header", "Directory", "Import", "Applet", "Class", "Method", "StaticField", "Export",
             "ConstantPool", "RefLocation", "Descriptor", "Debug"};
     private final HashMap<String, byte[]> capComponents = new HashMap<>();
     private final List<AID> appletAIDs = new ArrayList<>();
@@ -85,8 +85,8 @@ public final class CAPFile {
         if (packageName == null) {
             throw new RuntimeException("Could not figure out the package name of the applet!");
         }
-
         this.packageName = packageName.substring(0, packageName.lastIndexOf("/javacard/")).replace('/', '.');
+
         for (String name : componentNames) {
             String fullName = packageName + name + ".cap";
             byte[] contents = entries.get(fullName);
@@ -347,6 +347,8 @@ public final class CAPFile {
                     return "3.0.1";
                 } else if (p.minor == 5) {
                     return "3.0.4";
+                } else if (p.minor == 6) {
+                    return "3.0.5";
                 } else {
                     return String.format("unknown: %d.%d", p.major, p.minor);
                 }

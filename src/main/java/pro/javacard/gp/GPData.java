@@ -160,7 +160,7 @@ public final class GPData {
         boolean factory_keys = false;
         out.flush();
         for (GPKey k : list) {
-            out.println("VER:" + k.getVersion() + " ID:" + k.getID() + " TYPE:" + k.getType() + " LEN:" + k.getLength());
+            out.println(String.format("Version: %d (0x%02X) ID: %d (0x%02X) type: %s length: %d", k.getVersion(), k.getVersion(), k.getID(), k.getID(), k.getType(), k.getLength()));
             if (k.getVersion() == 0x00 || k.getVersion() == 0xFF)
                 factory_keys = true;
         }

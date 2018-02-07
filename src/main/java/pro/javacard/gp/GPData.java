@@ -257,7 +257,7 @@ public final class GPData {
         out.println(cplc);
     }
 
-    // TODO public for debuggin purposes
+    // TODO public for debugging purposes
     public static void print_card_info(GlobalPlatform gp) throws CardException, GPException {
         // Print CPLC
         pretty_print_cplc(gp.fetchCPLC(), System.out);

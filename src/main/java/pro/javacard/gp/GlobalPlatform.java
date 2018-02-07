@@ -481,7 +481,7 @@ public class GlobalPlatform implements AutoCloseable {
             throw new GPException("Key version mismatch: " + keys.getVersion() + " != " + scpKeyVersion);
         }
 
-        logger.debug("Card reports SCP0" + scpMajorVersion + " i=" + String.format("%02x", scp_i) + " keys " + scpVersion);
+        logger.debug("Card reports SCP0" + scpMajorVersion + (scpMajorVersion == 3 ? " i=" + String.format("%02x", scp_i) : "") + " keys " + scpVersion);
 
         // FIXME: the whole SCP vs variants thing is broken in API and implementation
         // Set default SCP version based on major version, if not explicitly known.

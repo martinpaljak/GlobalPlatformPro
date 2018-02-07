@@ -53,7 +53,7 @@ public final class GPData {
     public static final byte securityDomainPriv = (byte) 0x80;
     // Default test key TODO: provide getters for arrays, this class should be kept public
     static final byte[] defaultKeyBytes = {0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F};
-    static final GPKey defaultKey = new GPKey(defaultKeyBytes, Type.DES3);
+
     // Default ISD AID-s
     static final byte[] defaultISDBytes = HexUtils.hex2bin("A000000151000000");
     final static Logger logger = LoggerFactory.getLogger(GPData.class);
@@ -151,6 +151,10 @@ public final class GPData {
         return "UNKNOWN";
     }
 
+    public static GPKey getDefaultKey() {
+        return new GPKey(defaultKeyBytes, Type.DES3);
+    }
+
     // Print the key template
     public static void pretty_print_key_template(List<GPKey> list, PrintStream out) {
         boolean factory_keys = false;
@@ -179,6 +183,10 @@ public final class GPData {
         if (keys != null && keys.isConstructed()) {
             for (BerTlv key : keys.findAll(new BerTag(0xC0))) {
                 byte[] tmpl = key.getBytesValue();
+                if (tmpl.length == 0) {
+                    logger.info("Key template has zero length (empty)");
+                    continue;
+                }
                 if (tmpl.length < 4) {
                     throw new GPDataException("Key info template shorter than 4 bytes", tmpl);
                 }

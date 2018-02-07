@@ -43,6 +43,9 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static pro.javacard.gp.PlaintextKeys.Diversification.EMV;
+import static pro.javacard.gp.PlaintextKeys.Diversification.VISA2;
+
 public final class GPTool {
     private final static String OPT_APDU = "apdu";
     private final static String OPT_APPLET = "applet"; // can always be shortened, so -app is valid
@@ -81,6 +84,8 @@ public final class GPTool {
     private final static String OPT_PACKAGE = "package";
     private final static String OPT_PARAMS = "params";
     private final static String OPT_PRIVS = "privs";
+    private final static String OPT_PUT_KEY = "put-key";
+
     private final static String OPT_READER = "reader";
     private final static String OPT_RENAME_ISD = "rename-isd";
     private final static String OPT_REPLAY = "replay";
@@ -173,6 +178,7 @@ public final class GPTool {
 
         parser.accepts(OPT_KEY_ID, "Specify key ID").withRequiredArg();
         parser.accepts(OPT_KEY_VERSION, "Specify key version").withRequiredArg();
+        parser.accepts(OPT_PUT_KEY, "Put a new key").withRequiredArg();
 
         parser.accepts(OPT_LOCK, "Set new key").withRequiredArg().describedAs("key");
         parser.accepts(OPT_UNLOCK, "Set default key for card key");
@@ -364,7 +370,7 @@ public final class GPTool {
                     if (args.has(OPT_KEYS)) {
                         // keys come from custom provider
                         fail("Not yet implemented");
-                        keys = PlaintextKeys.fromMasterKey(GPData.defaultKey);
+                        keys = PlaintextKeys.fromMasterKey(GPData.getDefaultKey());
                     } else if (args.has(OPT_ORACLE)) {
                         keys = PythiaKeys.ask(card.getATR().getBytes(), gp.fetchCPLC(), gp.getKeyInfoTemplateBytes());
                     } else {
@@ -392,15 +398,15 @@ public final class GPTool {
                                 keyz = PlaintextKeys.fromKeys(enc, mac, dek);
                             } else {
                                 System.out.println("Warning: no keys given, using default test key " + HexUtils.bin2hex(GPData.defaultKeyBytes));
-                                keyz = PlaintextKeys.fromMasterKey(GPData.defaultKey);
+                                keyz = PlaintextKeys.fromMasterKey(GPData.getDefaultKey());
                             }
                         }
 
                         // "gp -l -emv" should still work
                         if (args.has(OPT_VISA2)) {
-                            keyz.setDiversifier(PlaintextKeys.Diversification.VISA2.VISA2);
+                            keyz.setDiversifier(VISA2);
                         } else if (args.has(OPT_EMV)) {
-                            keyz.setDiversifier(PlaintextKeys.Diversification.EMV.EMV);
+                            keyz.setDiversifier(EMV);
                         }
 
                         if (args.has(OPT_KEY_VERSION)) {
@@ -727,6 +733,7 @@ public final class GPTool {
                         }
 
                         // --delete-key
+                        // TODO: make --delete smart enough
                         if (args.has(OPT_DELETE_KEY)) {
                             int keyver = GPUtils.intValue((String) args.valueOf(OPT_DELETE_KEY));
                             System.out.println("Deleting key " + keyver);

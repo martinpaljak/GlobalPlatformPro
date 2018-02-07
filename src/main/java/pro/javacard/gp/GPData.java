@@ -184,7 +184,8 @@ public final class GPData {
             for (BerTlv key : keys.findAll(new BerTag(0xC0))) {
                 byte[] tmpl = key.getBytesValue();
                 if (tmpl.length == 0) {
-                    logger.info("Key template has zero length (empty)");
+                    // Fresh SSD with an empty template.
+                    logger.info("Key template has zero length (empty). Skipping.");
                     continue;
                 }
                 if (tmpl.length < 4) {

@@ -27,6 +27,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 
+import apdu4j.HexUtils;
 import com.payneteasy.tlv.BerTag;
 import com.payneteasy.tlv.BerTlv;
 import com.payneteasy.tlv.BerTlvParser;
@@ -295,10 +296,18 @@ public class GPRegistry implements Iterable<GPRegistryEntry> {
 
 	// FIXME: this is ugly
 	public void parse(int p1, byte[] data, Kind type, GPSpec spec) throws GPDataException {
+		data = StupidFixes.fix_get_status(data);
 		if (tags) {
 			populate_tags(data, type);
 		} else {
 			populate_legacy(p1, data, type, spec);
 		}
+	}
+
+	public static void main(String[] args) throws Exception {
+		byte[] r = HexUtils.decodeHexString_imp("E3124F07A00000015100009F700107C5EA028000");
+		GPRegistry g = new GPRegistry();
+		g.parse(0x80, r, Kind.IssuerSecurityDomain, GPSpec.GP22);
+		GPCommands.listRegistry(g, System.out, true);
 	}
 }

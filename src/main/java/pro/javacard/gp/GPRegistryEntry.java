@@ -19,6 +19,8 @@
  */
 package pro.javacard.gp;
 
+import apdu4j.HexUtils;
+
 import java.util.EnumSet;
 import java.util.stream.Collectors;
 
@@ -211,7 +213,7 @@ public class GPRegistryEntry {
         // See GP 2.1.1 Table 9-7 (matches 2.2 Table 11-7)
         public static Privileges fromBytes(byte[] data) throws GPDataException {
             if (data.length != 1 && data.length != 3) {
-                throw new IllegalArgumentException("Privileges must be encoded on 1 or 3 bytes");
+                throw new IllegalArgumentException("Privileges must be encoded on 1 or 3 bytes: " + HexUtils.bin2hex(data));
             }
             Privileges p = new Privileges();
             // Process first byte

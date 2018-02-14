@@ -2,10 +2,9 @@ import apdu4j.HexUtils;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pro.javacard.gp.GPData;
-import pro.javacard.gp.GPRegistry;
-import pro.javacard.gp.GPRegistryEntry;
-import pro.javacard.gp.GlobalPlatform;
+import pro.javacard.gp.*;
+
+import java.util.List;
 
 public class TestParseTags {
     final static Logger logger = LoggerFactory.getLogger(TestParseTags.class);
@@ -34,5 +33,10 @@ public class TestParseTags {
         //CardOracle.ask("https://javacard.pro/pythia", atr, cplc, kinfo, new AID("A000000151000000"));
     }
 
-
+    @Test
+    public void testRSAKeyTemplate() throws Exception {
+        byte[] t = HexUtils.hex2bin("E020C00401018820C00402018820C00403018820C0060170A180A003C00401718010");
+        List<GPKey> kl = GPData.get_key_template_list(t);
+        GPData.pretty_print_key_template(kl, System.out);
+    }
 }

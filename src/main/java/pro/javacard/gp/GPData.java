@@ -199,6 +199,7 @@ public final class GPData {
                     // TODO
                     throw new GPDataException("Extended key template not yet supported", tmpl);
                 }
+                // XXX: RSA keys have two components A1 and A0, gets called with A1 and A0 (exponent) discarded
                 r.add(new GPKey(version, id, length, type));
             }
         }

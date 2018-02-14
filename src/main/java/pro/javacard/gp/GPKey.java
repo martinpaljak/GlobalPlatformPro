@@ -66,8 +66,10 @@ public final class GPKey {
             this.type = Type.DES3;
         } else if (type == 0x88) {
             this.type = Type.AES;
+        } else if (type == 0xA1 || type == 0xA0) {
+            this.type = Type.RSA;
         } else {
-            throw new UnsupportedOperationException("Only AES and 3DES are supported currently");
+            throw new UnsupportedOperationException(String.format("Only AES, 3DES and RSA are supported currently: 0x%02X", type));
         }
     }
 
@@ -152,6 +154,6 @@ public final class GPKey {
     }
 
     public enum Type {
-        RAW, DES, DES3, AES
+        RAW, DES, DES3, AES, RSA
     }
 }

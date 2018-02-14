@@ -292,7 +292,7 @@ public class GlobalPlatform implements AutoCloseable {
                 logger.warn("No mandatory proprietary info present in FCI");
             }
         } else {
-            logger.error("No FCI returned to SELECT");
+            logger.warn("No FCI returned to SELECT");
         }
     }
 

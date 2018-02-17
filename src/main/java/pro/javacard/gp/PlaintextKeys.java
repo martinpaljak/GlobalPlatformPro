@@ -19,6 +19,7 @@
  */
 package pro.javacard.gp;
 
+import apdu4j.HexUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pro.javacard.gp.GPKey.Type;
@@ -37,11 +38,11 @@ import java.util.Map;
 // Handles plaintext card keys.
 // Supports diversification of card keys with some known algorithms.
 public class PlaintextKeys extends GPSessionKeyProvider {
-    private static final Logger logger = LoggerFactory.getLogger(PlaintextKeys.class);
-
     // Derivation constants
     public static final Map<KeyPurpose, byte[]> SCP02_CONSTANTS;
     public static final Map<KeyPurpose, Byte> SCP03_CONSTANTS;
+    public static final Map<KeyPurpose, byte[]> SCP03_KDF_CONSTANTS;
+    private static final Logger logger = LoggerFactory.getLogger(PlaintextKeys.class);
 
     static {
         HashMap<KeyPurpose, byte[]> scp2 = new HashMap<>();
@@ -56,6 +57,12 @@ public class PlaintextKeys extends GPSessionKeyProvider {
         scp3.put(KeyPurpose.MAC, (byte) 0x06);
         scp3.put(KeyPurpose.RMAC, (byte) 0x07);
         SCP03_CONSTANTS = Collections.unmodifiableMap(scp3);
+
+        HashMap<KeyPurpose, byte[]> scp3kdf = new HashMap<>();
+        scp3kdf.put(KeyPurpose.ENC, HexUtils.hex2bin("0000000100"));
+        scp3kdf.put(KeyPurpose.MAC, HexUtils.hex2bin("0000000200"));
+        scp3kdf.put(KeyPurpose.DEK, HexUtils.hex2bin("0000000300"));
+        SCP03_KDF_CONSTANTS = Collections.unmodifiableMap(scp3kdf);
     }
 
     // If diverisification is to be used, which method
@@ -98,18 +105,25 @@ public class PlaintextKeys extends GPSessionKeyProvider {
     public static GPKey diversify(GPKey k, KeyPurpose usage, byte[] kdd, Diversification method) throws GPException {
         try {
             final byte[] kv;
-            // shift around and fill initialize update data as required.
-            if (method == Diversification.VISA2) {
-                kv = fillVisa2(kdd, usage);
-            } else if (method == Diversification.EMV) {
-                kv = fillEmv(kdd, usage);
-            } else
-                throw new IllegalStateException("Unknown diversification method");
-            Cipher cipher = Cipher.getInstance(GPCrypto.DES3_ECB_CIPHER);
-            cipher.init(Cipher.ENCRYPT_MODE, k.getKeyAs(Type.DES3));
-            // The resulting key can be interpreted as AES key (SCE 6.0) thus return as a RAW
-            // Caller can cast to whatever needed
-            return new GPKey(cipher.doFinal(kv));
+
+            if (method == Diversification.KDF3) {
+                kv = GPCrypto.scp03_kdf(k.getBytes(), new byte[]{}, GPUtils.concatenate(SCP03_KDF_CONSTANTS.get(usage), kdd), k.getLength());
+                return new GPKey(kv, Type.AES);
+            } else {
+                // shift around and fill initialize update data as required.
+                if (method == Diversification.VISA2) {
+                    kv = fillVisa2(kdd, usage);
+                } else if (method == Diversification.EMV) {
+                    kv = fillEmv(kdd, usage);
+                } else
+                    throw new IllegalStateException("Unknown diversification method");
+
+                Cipher cipher = Cipher.getInstance(GPCrypto.DES3_ECB_CIPHER);
+                cipher.init(Cipher.ENCRYPT_MODE, k.getKeyAs(Type.DES3));
+                // The resulting key can be interpreted as AES key (SCE 6.0) thus return as a RAW
+                // Caller can cast to whatever needed
+                return new GPKey(cipher.doFinal(kv));
+            }
         } catch (BadPaddingException | InvalidKeyException | IllegalBlockSizeException e) {
             throw new GPException("Diversification failed.", e);
         } catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
@@ -160,6 +174,10 @@ public class PlaintextKeys extends GPSessionKeyProvider {
     @Override
     public int getVersion() {
         return version;
+    }
+
+    public void setVersion(int version) {
+        this.version = version;
     }
 
     private GPKey deriveSessionKeySCP01(GPKey cardKey, KeyPurpose p, byte[] host_challenge, byte[] card_challenge) {
@@ -239,14 +257,14 @@ public class PlaintextKeys extends GPSessionKeyProvider {
 
         // Calculate per-card keys from master key(s), if needed
         if (diversifier != null) {
-            for (Map.Entry<KeyPurpose, GPKey> e: cardKeys.entrySet()) {
+            for (Map.Entry<KeyPurpose, GPKey> e : cardKeys.entrySet()) {
                 cardKeys.put(e.getKey(), diversify(e.getValue(), e.getKey(), kdd, diversifier));
             }
             logger.debug("Derived per-card keys: {}", cardKeys.toString());
         }
 
         // Calculate session keys
-        for (Map.Entry<KeyPurpose, GPKey> e: cardKeys.entrySet()) {
+        for (Map.Entry<KeyPurpose, GPKey> e : cardKeys.entrySet()) {
             if (scp == 1) {
                 sessionKeys.put(e.getKey(), deriveSessionKeySCP01(e.getValue(), e.getKey(), host_challenge, card_challenge));
             } else if (scp == 2) {
@@ -273,11 +291,8 @@ public class PlaintextKeys extends GPSessionKeyProvider {
         this.diversifier = diversifier;
     }
 
-    public void setVersion(int version) {
-        this.version = version;
-    }
     // diversification methods
     public enum Diversification {
-        VISA2, EMV
+        VISA2, EMV, KDF3
     }
 }

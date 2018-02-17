@@ -44,6 +44,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static pro.javacard.gp.PlaintextKeys.Diversification.EMV;
+import static pro.javacard.gp.PlaintextKeys.Diversification.KDF3;
 import static pro.javacard.gp.PlaintextKeys.Diversification.VISA2;
 
 public final class GPTool {
@@ -65,6 +66,7 @@ public final class GPTool {
     private final static String OPT_INITIALIZED = "initialized";
     private final static String OPT_INSTALL = "install";
     private final static String OPT_KCV = "kcv";
+    private final static String OPT_KDF3 = "kdf3";
     private final static String OPT_KEY = "key";
     private final static String OPT_KEYS = "keys";
     private final static String OPT_KEY_ENC = "key-enc";
@@ -173,6 +175,7 @@ public final class GPTool {
 
         parser.accepts(OPT_EMV, "Use EMV diversification");
         parser.accepts(OPT_VISA2, "Use VISA2 diversification");
+        parser.accepts(OPT_KDF3, "Use SCP03 KDF diversification");
 
         parser.accepts(OPT_ORACLE, "Use an oracle for keying information").withOptionalArg().describedAs("URL");
 
@@ -407,6 +410,8 @@ public final class GPTool {
                             keyz.setDiversifier(VISA2);
                         } else if (args.has(OPT_EMV)) {
                             keyz.setDiversifier(EMV);
+                        } else if (args.has(OPT_KDF3)) {
+                            keyz.setDiversifier(KDF3);
                         }
 
                         if (args.has(OPT_KEY_VERSION)) {

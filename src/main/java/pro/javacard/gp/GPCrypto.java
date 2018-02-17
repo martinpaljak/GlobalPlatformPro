@@ -38,7 +38,7 @@ import java.security.*;
 import java.util.Arrays;
 
 // Various cryptographic primitives used for secure channel or plaintext keys
-final class GPCrypto {
+public final class GPCrypto {
     static final byte[] null_bytes_8 = new byte[]{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
     static final byte[] null_bytes_16 = new byte[]{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
     static final byte[] one_bytes_16 = new byte[]{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01};
@@ -193,16 +193,20 @@ final class GPCrypto {
         }
         byte[] blocka = bo.toByteArray();
         byte[] blockb = context;
+        return scp03_kdf(key, blocka, blockb, blocklen_bits/8);
+    }
 
+    // Generic KDF in counter mode with one byte counter.
+    public static byte[] scp03_kdf(byte[] key, byte[] a, byte[] b, int bytes) {
         BlockCipher cipher = new AESEngine();
         CMac cmac = new CMac(cipher);
         KDFCounterBytesGenerator kdf = new KDFCounterBytesGenerator(cmac);
-        kdf.init(new KDFCounterParameters(key, blocka, blockb, 8)); // counter size in bits
-
-        byte[] cgram = new byte[blocklen_bits / 8];
+        kdf.init(new KDFCounterParameters(key, a, b, 8)); // counter size is in bits
+        byte[] cgram = new byte[bytes];
         kdf.generateBytes(cgram, 0, cgram.length);
         return cgram;
     }
+
 
     // GPC 2.2.1 Amendment D 7.2.2
     public static byte[] scp03_key_check_value(GPKey key) {

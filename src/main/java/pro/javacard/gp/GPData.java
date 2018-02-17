@@ -172,6 +172,7 @@ public final class GPData {
 
     // GP 2.1.1 9.3.3.1
     // GP 2.2.1 11.1.8
+    // TODO: move to GPKey
     public static List<GPKey> get_key_template_list(byte[] data) throws GPException {
         List<GPKey> r = new ArrayList<>();
 

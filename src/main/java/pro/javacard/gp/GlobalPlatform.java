@@ -998,7 +998,7 @@ public class GlobalPlatform implements AutoCloseable {
         ByteArrayOutputStream bo = new ByteArrayOutputStream();
         try {
             bo.write(response.getData());
-            while (response.getSW() == 0x6310) {
+            while (response.getSW() == 0x6310 && response.getData().length > 0) {
                 cmd = new CommandAPDU(CLA_GP, INS_GET_STATUS, p1, p2 | 0x01, data, 256);
                 response = transmit(cmd);
                 GPException.check(response, "GET STATUS failed for " + HexUtils.bin2hex(cmd.getBytes()), 0x6310);

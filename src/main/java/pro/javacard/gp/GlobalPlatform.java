@@ -148,7 +148,8 @@ public class GlobalPlatform implements AutoCloseable {
         BerTlv fcitag = tlvs.find(new BerTag(0x6F));
         if (fcitag != null) {
             BerTlv isdaid = fcitag.find(new BerTag(0x84));
-            if (isdaid != null) {
+            // XXX: exists a card that returns a zero length AID in template
+            if (isdaid != null && isdaid.getBytesValue().length > 0) {
                 AID detectedAID = new AID(isdaid.getBytesValue());
                 logger.debug("Auto-detected ISD: " + detectedAID);
                 return new GlobalPlatform(channel, detectedAID);

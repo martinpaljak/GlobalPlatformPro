@@ -28,6 +28,7 @@ import apdu4j.ISO7816;
 import com.payneteasy.tlv.*;
 import org.bouncycastle.util.Arrays;
 
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**
@@ -50,6 +51,7 @@ public class SEAccessControl {
      */
     public final static Map<Integer, String> ACR_GET_DATA_ERROR;
     private final static byte[] ACR_GET_DATA_RESP = new byte[]{(byte) 0xFF, (byte) 0x40};
+
     //Access Rule reference data object (p45 Secure Element Access control spec v1.0)
     private final static byte REF_AR_DO = (byte) 0xE2;
     private final static byte REF_DO = (byte) 0xE1;
@@ -58,9 +60,9 @@ public class SEAccessControl {
     private final static byte AR_DO = (byte) 0xE3;
     private final static byte APDU_AR_DO = (byte) 0xD0;
     private final static byte NFC_AR_DO = (byte) 0xD1;
-    //from Secure Element Access control spec p46, hash length can be 20 (sha1) or 0
-    private final static byte HASH_MAX_LENGTH = (byte) 0x14;
-    private final static byte HASH_MIN_LENGTH = (byte) 0x00;
+    // Google extensions
+    private final static byte GOOGLE_PKG_DO = (byte) 0xCA;
+
     //command message data object (p38 Secure Element Access control spec v1.0)
     private final static byte STORE_AR_DO = (byte) 0xF0;
     private final static byte DELETE_AR_DO = (byte) 0xF1;
@@ -196,9 +198,12 @@ public class SEAccessControl {
      * @throws GPDataException
      */
     public static ArDo parseArDo(final BerTlv arDo) throws GPDataException {
-        ApduArDo apduArDo = parseApduArDo(arDo.find(new BerTag(APDU_AR_DO)));
-        NfcArDo nfcArDo = parseNfcArDo(arDo.find(new BerTag(NFC_AR_DO)));
-        return new ArDo(apduArDo, nfcArDo);
+        if (arDo != null) {
+            ApduArDo apduArDo = parseApduArDo(arDo.find(new BerTag(APDU_AR_DO)));
+            NfcArDo nfcArDo = parseNfcArDo(arDo.find(new BerTag(NFC_AR_DO)));
+            return new ArDo(apduArDo, nfcArDo);
+        }
+        return null;
     }
 
     /**
@@ -260,15 +265,20 @@ public class SEAccessControl {
         }
 
         for (int i = 0; i < acrList.size(); i++) {
+            RefArDo r = acrList.get(i);
             System.out.println("RULE #" + i + " :");
-            System.out.println("       AID  : " + acrList.get(i).refDo.aidRefDo);
-            System.out.println("       HASH : " + acrList.get(i).refDo.hashRefDo);
-            if (acrList.get(i).arDo.apduArDo != null) {
-                System.out.println("       APDU rule   : " + acrList.get(i).arDo.apduArDo.rule + "(" + String.format("0x%02X", acrList.get(i).arDo.apduArDo.rule.getValue()) + ")");
-                System.out.println("       APDU filter : " + HexUtils.bin2hex(acrList.get(i).arDo.apduArDo.filter));
-            }
-            if (acrList.get(i).arDo.nfcArDo != null) {
-                System.out.println("       NFC  rule   : " + acrList.get(i).arDo.nfcArDo.rule + "(" + String.format("0x%02X", acrList.get(i).arDo.nfcArDo.rule.getValue()) + ")");
+            // Google extension works without AID-s.
+            if (r.refDo.aidRefDo.aid.length != 0)
+                System.out.println("       AID  : " + r.refDo.aidRefDo);
+            System.out.println("       HASH : " + r.refDo.hashRefDo);
+            if (r.arDo != null) {
+                if (r.arDo.apduArDo != null) {
+                    System.out.println("       APDU rule   : " + r.arDo.apduArDo.rule + "(" + String.format("0x%02X", r.arDo.apduArDo.rule.getValue()) + ")");
+                    System.out.println("       APDU filter : " + HexUtils.bin2hex(r.arDo.apduArDo.filter));
+                }
+                if (r.arDo.nfcArDo != null) {
+                    System.out.println("       NFC  rule   : " + r.arDo.nfcArDo.rule + "(" + String.format("0x%02X", r.arDo.nfcArDo.rule.getValue()) + ")");
+                }
             }
         }
     }
@@ -455,6 +465,28 @@ public class SEAccessControl {
         public BerTlv toTlv() {
             return new BerTlvBuilder()
                     .addBytes(new BerTag(HASH_REF_DO), hash)
+                    .buildTlv();
+        }
+    }
+
+    /**
+     * PKG-REF-DO (CA) (Android extension)
+     */
+    public static class PkgRefDo implements ITLV {
+        final String pkg;
+
+        public PkgRefDo(final byte[] data) {
+            pkg = new String(data, StandardCharsets.US_ASCII);
+        }
+
+        public String toString() {
+            return pkg;
+        }
+
+        @Override
+        public BerTlv toTlv() {
+            return new BerTlvBuilder()
+                    .addBytes(new BerTag(GOOGLE_PKG_DO), pkg.getBytes(StandardCharsets.US_ASCII))
                     .buildTlv();
         }
     }

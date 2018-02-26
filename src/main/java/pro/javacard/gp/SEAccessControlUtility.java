@@ -135,10 +135,12 @@ public final class SEAccessControlUtility {
 		if (hash != null) {
 			SEAccessControl.RefArDo refArDo = new SEAccessControl.RefArDo(aid, hash,null);
 			request = new SEAccessControl.DeleteArDo(refArDo).toTlv();
-		} else {
+		} else if (aid != null) {
 			SEAccessControl.AidRefDo aidRefDo = new SEAccessControl.AidRefDo(aid.getBytes());
 			request = new SEAccessControl.DeleteAidDo(aidRefDo).toTlv();
-		}
+		} else {
+			request = new SEAccessControl.DeleteAll().toTlv();
+        }
 		acrStore(gp, request);
 	}
 }

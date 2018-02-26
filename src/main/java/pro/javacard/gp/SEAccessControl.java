@@ -346,6 +346,21 @@ public class SEAccessControl {
     }
 
     /**
+     * Command-Delete-AR-DO (p39) for deleting AR-DO
+     */
+    public static class DeleteAll implements ITLV {
+
+        public DeleteAll() {
+        }
+
+        @Override
+        public BerTlv toTlv() {
+            return new BerTlvBuilder(new BerTag(DELETE_AR_DO))
+                    .buildTlv();
+        }
+    }
+
+    /**
      * Command-Store-AR-DO (p38)
      */
     public static class StoreArDo implements ITLV {
@@ -383,7 +398,7 @@ public class SEAccessControl {
         }
 
         public RefArDo(final AID aid, final byte[] hash, final byte[] rules) {
-            this.refDo = new RefDo(new AidRefDo(aid.getBytes()), new HashRefDo(hash));
+            this.refDo = new RefDo(aid == null ? null : new AidRefDo(aid.getBytes()), hash == null ? null : new HashRefDo(hash));
             this.arDo = new ArDo(new ApduArDo(rules), null);
         }
 
@@ -418,7 +433,10 @@ public class SEAccessControl {
 
         @Override
         public BerTlv toTlv() {
-            BerTlvBuilder aggregate = new BerTlvBuilder().addBerTlv(aidRefDo.toTlv()).addBerTlv(hashRefDo.toTlv());
+            BerTlv aidRefDoTlv = aidRefDo == null ? new BerTlvBuilder(new BerTag(AID_REF_DO)).buildTlv() : aidRefDo.toTlv();
+            BerTlv hashRefDoTlv = hashRefDo == null ? new BerTlvBuilder(new BerTag(HASH_REF_DO)).buildTlv() : hashRefDo.toTlv();
+
+            BerTlvBuilder aggregate = new BerTlvBuilder().addBerTlv(aidRefDoTlv).addBerTlv(hashRefDoTlv);
             return new BerTlvBuilder(new BerTag(REF_DO))
                     .add(aggregate)
                     .buildTlv();

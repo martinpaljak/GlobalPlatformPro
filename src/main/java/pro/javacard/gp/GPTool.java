@@ -666,31 +666,24 @@ public final class GPTool {
                         }
 
                         if (args.has(OPT_ACR_ADD)) {
-                            if (!args.has(OPT_ACR_CERT_HASH)) {
-                                System.err.println("Must specify certificate hash with -" + OPT_ACR_CERT_HASH);
-                            } else if (!args.has(OPT_APPLET)) {
-                                System.err.println("Must specify target application id with -" + OPT_APPLET);
-                            } else if (!args.has(OPT_ACR_RULE)) {
+                            AID aid = args.has(OPT_APPLET) ? AID.fromString(args.valueOf(OPT_APPLET)) : null;
+                            byte[] hash = args.has(OPT_ACR_CERT_HASH) ? HexUtils.stringToBin((String) args.valueOf(OPT_ACR_CERT_HASH)) : null;
+                            if (!args.has(OPT_ACR_RULE)) {
                                 System.err.println("Must specify an access rule with -" + OPT_ACR_RULE + " (00, 01 or an apdu filter)");
-                            } else if (HexUtils.stringToBin((String) args.valueOf(OPT_ACR_CERT_HASH)).length == 20) {
-                                SEAccessControlUtility.acrAdd(gp, AID.fromString(args.valueOf(OPT_APPLET)), HexUtils.stringToBin((String) args.valueOf(OPT_ACR_CERT_HASH)), HexUtils.stringToBin((String) args.valueOf(OPT_ACR_RULE)));
+                            } else if (hash == null || hash.length == 20) {
+                                SEAccessControlUtility.acrAdd(gp, aid, hash, HexUtils.stringToBin((String) args.valueOf(OPT_ACR_RULE)));
                             } else {
-                                System.err.println("certificate hash must be 20 bytes");
+                                System.err.println("certificate hash must be 20 bytes or absent");
                             }
                         }
 
                         if (args.has(OPT_ACR_DELETE)) {
-                            if (!args.has(OPT_APPLET)) {
-                                System.err.println("Must specify target application id with -" + OPT_APPLET);
-                            } else if (args.has(OPT_ACR_CERT_HASH)) {
-                                byte[] hash = HexUtils.stringToBin((String) args.valueOf(OPT_ACR_CERT_HASH));
-                                if (hash.length == 20) {
-                                    SEAccessControlUtility.acrDelete(gp, AID.fromString(args.valueOf(OPT_APPLET)), hash);
-                                } else {
-                                    System.err.println("certificate hash must be 20 bytes");
-                                }
+                            AID aid = args.has(OPT_APPLET) ? AID.fromString(args.valueOf(OPT_APPLET)) : null;
+                            byte[] hash = args.has(OPT_ACR_CERT_HASH) ? HexUtils.stringToBin((String) args.valueOf(OPT_ACR_CERT_HASH)) : null;
+                            if (hash == null || hash.length == 20) {
+                                SEAccessControlUtility.acrDelete(gp, aid, hash);
                             } else {
-                                SEAccessControlUtility.acrDelete(gp, AID.fromString(args.valueOf(OPT_APPLET)), null);
+                                System.err.println("certificate hash must be 20 bytes or absent");
                             }
                         }
 

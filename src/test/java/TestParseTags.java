@@ -1,4 +1,5 @@
 import apdu4j.HexUtils;
+import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,4 +40,17 @@ public class TestParseTags {
         List<GPKey> kl = GPData.get_key_template_list(t);
         GPData.pretty_print_key_template(kl, System.out);
     }
+
+    @Test
+    public void testCPLCDateParse() throws Exception {
+        byte[] b = HexUtils.hex2bin("1210");
+        Assert.assertEquals(GPData.CPLC.toDate(b), "2011-07-29");
+    }
+
+    @Test(expected = GPDataException.class)
+    public void testCPLCDateParseInvalid() throws Exception {
+        byte[] b = HexUtils.hex2bin("1410");
+        GPData.CPLC.toDate(b);
+    }
+
 }

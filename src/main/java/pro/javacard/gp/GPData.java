@@ -26,7 +26,6 @@ import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pro.javacard.gp.GPKey.Type;
-import static pro.javacard.gp.GlobalPlatform.CLA_GP;
 
 import javax.smartcardio.CardChannel;
 import javax.smartcardio.CardException;
@@ -35,8 +34,11 @@ import javax.smartcardio.ResponseAPDU;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.math.BigInteger;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static pro.javacard.gp.GlobalPlatform.CLA_GP;
 
 // Various constants from GP specification and other sources
 // Methods to pretty-print those structures and constants.
@@ -422,7 +424,7 @@ public final class GPData {
         }
 
         public String toPrettyString() {
-            return Arrays.asList(Field.values()).stream().map(i -> i.toString() + "=" + HexUtils.bin2hex(values.get(i))).collect(Collectors.joining("\n      ", "CPLC: ", "\n"));
+            return Arrays.asList(Field.values()).stream().map(i -> i.toString() + "=" + HexUtils.bin2hex(values.get(i)) + (i.toString().endsWith("Date") ?  " (" + toDateFailsafe(values.get(i)) + ")": "")).collect(Collectors.joining("\n      ", "CPLC: ", "\n"));
         }
 
         public enum Field {
@@ -445,5 +447,33 @@ public final class GPData {
             ICPersonalizationDate,
             ICPersonalizationEquipmentID
         }
+
+        public static String toDate(byte[] v) throws GPDataException {
+            String sv = HexUtils.bin2hex(v);
+            try {
+                int y = Integer.valueOf(sv.substring(0, 1));
+                int d = Integer.valueOf(sv.substring(1, 4));
+                if (d > 366)
+                    throw new GPDataException("Invalid CPLC date format: " + sv);
+                GregorianCalendar gc = new GregorianCalendar();
+                // FIXME: 2010 is hardcoded.
+                gc.set(GregorianCalendar.YEAR, 2010 + y);
+                gc.set(GregorianCalendar.DAY_OF_YEAR, d);
+                SimpleDateFormat f = new SimpleDateFormat("yyyy-MM-dd");
+                return f.format(gc.getTime());
+            } catch (NumberFormatException e) {
+                throw new GPDataException("Invalid CPLC date: " + sv, e);
+            }
+        }
+
+        public static String toDateFailsafe(byte[] v) {
+            try {
+                return toDate(v);
+            } catch (GPDataException e) {
+                logger.warn("Invalid CPLC date: " + HexUtils.bin2hex(v));
+                return "invalid date format";
+            }
+        }
+
     }
 }

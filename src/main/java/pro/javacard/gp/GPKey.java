@@ -28,8 +28,8 @@ import java.util.Arrays;
 // Encapsulates a plaintext symmetric key used with GlobalPlatform
 public final class GPKey {
     private Type type;
-    private int version = 0;
-    private int id = 0;
+    private int version = 0; // 1..7f
+    private int id = -1; // 0..7f
     private int length = -1;
     private transient byte[] bytes = null;
 
@@ -122,9 +122,11 @@ public final class GPKey {
 
     public String toString() {
         StringBuffer s = new StringBuffer();
-        s.append("version=" + String.format("%d (0x%02X)", version, version));
-        s.append(" id=" + String.format("%d (0x%02X)", id, id));
-        s.append(" type=" + type);
+        s.append("type=" + type);
+        if (version >= 1 && version <= 0x7f)
+            s.append(" version=" + String.format("%d (0x%02X)", version, version));
+        if (id >= 0 && id <= 0x7F)
+            s.append(" id=" + String.format("%d (0x%02X)", id, id));
         if (bytes != null)
             s.append(" bytes=" + HexUtils.bin2hex(bytes));
         else

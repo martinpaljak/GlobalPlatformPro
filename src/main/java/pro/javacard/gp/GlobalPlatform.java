@@ -119,11 +119,9 @@ public class GlobalPlatform implements AutoCloseable {
         if (channel == null)
             throw new IllegalArgumentException("channel is null");
 
-        // Try to detect
+        // Try the default
         final CommandAPDU command = new CommandAPDU(ISO7816.CLA_ISO7816, ISO7816.INS_SELECT, 0x04, 0x00, 256);
         ResponseAPDU response = channel.transmit(command);
-
-        GPException.check(response, "Could not SELECT default selected", 0x6283, 0x6A82);
 
         // Unfused JCOP replies with 0x6A82 to everything
         if (response.getSW() == 0x6A82) {
@@ -140,7 +138,17 @@ public class GlobalPlatform implements AutoCloseable {
             }
         }
 
-        // Detect security domain
+        // SmartJac UICC
+        if (response.getSW() == 0x6A87) {
+            // Try the default
+            logger.debug("Trying default ISD AID ...");
+            return connect(channel, new AID(GPData.defaultISDBytes));
+        }
+
+        // 6283 - locked. Pass through locked.
+        GPException.check(response, "Could not SELECT default selected", 0x6283);
+
+        // Detect security domain based on default select
         BerTlvParser parser = new BerTlvParser();
         BerTlvs tlvs = parser.parse(response.getData());
         BerTlvLogger.log("    ", tlvs, GPData.getLoggerInstance());
@@ -230,7 +238,7 @@ public class GlobalPlatform implements AutoCloseable {
 
         // If the ISD is locked, log it, but do not stop
         if (resp.getSW() == 0x6283) {
-            logger.warn("SELECT FILE ISD returned 6283 - CARD_LOCKED");
+            logger.warn("SELECT ISD returned 6283 - CARD_LOCKED");
         }
 
         GPException.check(resp, "Could not SELECT Security Domain", 0x6283);
@@ -878,17 +886,10 @@ public class GlobalPlatform implements AutoCloseable {
     }
 
     public void putKeys(List<GPKey> keys, boolean replace) throws GPException, CardException {
+        // Check for sanity and usability
         if (keys.size() < 1 || keys.size() > 3) {
             throw new IllegalArgumentException("Can add 1 or up to 3 keys at a time");
         }
-
-        // Debug
-        logger.debug("Replace: " + replace);
-        for (GPKey k : keys) {
-            logger.trace("PUT KEY:" + k);
-        }
-
-        // Check for sanity.
         if (keys.size() > 1) {
             for (int i = 1; i < keys.size(); i++) {
                 if (keys.get(i - 1).getID() != keys.get(i).getID() - 1) {
@@ -897,6 +898,11 @@ public class GlobalPlatform implements AutoCloseable {
             }
         }
 
+        // Log and trace
+        logger.debug("PUT KEY version {}", keys.get(0).getVersion());
+        for (GPKey k : keys) {
+            logger.trace("PUT KEY:" + k);
+        }
         // Check consistency, if template is available.
         List<GPKey> tmpl = getKeyInfoTemplate();
 

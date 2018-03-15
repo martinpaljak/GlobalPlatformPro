@@ -400,7 +400,9 @@ public final class GPTool {
                                 GPKey dek = new GPKey(HexUtils.stringToBin((String) args.valueOf(OPT_KEY_DEK)));
                                 keyz = PlaintextKeys.fromKeys(enc, mac, dek);
                             } else {
-                                System.out.println("Warning: no keys given, using default test key " + HexUtils.bin2hex(GPData.defaultKeyBytes));
+                                if (needsAuthentication(args)) {
+                                    System.out.println("Warning: no keys given, using default test key " + HexUtils.bin2hex(GPData.defaultKeyBytes));
+                                }
                                 keyz = PlaintextKeys.fromMasterKey(GPData.getDefaultKey());
                             }
                         }
@@ -439,7 +441,6 @@ public final class GPTool {
 
                     // Fetch some possibly interesting data
                     if (args.has(OPT_INFO)) {
-                        System.out.println("***** Card info:");
                         GPData.print_card_info(gp);
                     }
 

@@ -20,13 +20,18 @@
 package pro.javacard.gp;
 
 import apdu4j.HexUtils;
+import apdu4j.ISO7816;
 import com.payneteasy.tlv.*;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pro.javacard.gp.GPKey.Type;
+import static pro.javacard.gp.GlobalPlatform.CLA_GP;
 
+import javax.smartcardio.CardChannel;
 import javax.smartcardio.CardException;
+import javax.smartcardio.CommandAPDU;
+import javax.smartcardio.ResponseAPDU;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.math.BigInteger;
@@ -36,6 +41,8 @@ import java.util.stream.Collectors;
 // Various constants from GP specification and other sources
 // Methods to pretty-print those structures and constants.
 public final class GPData {
+    private static final Logger logger = LoggerFactory.getLogger(GPData.class);
+
     // SD states
     public static final byte readyStatus = 0x1;
     public static final byte initializedStatus = 0x7;
@@ -52,11 +59,9 @@ public final class GPData {
     @Deprecated
     public static final byte securityDomainPriv = (byte) 0x80;
     // Default test key TODO: provide getters for arrays, this class should be kept public
-    static final byte[] defaultKeyBytes = {0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F};
-
+    static final byte[] defaultKeyBytes = HexUtils.hex2bin("404142434445464748494A4B4C4D4E4F");
     // Default ISD AID-s
     static final byte[] defaultISDBytes = HexUtils.hex2bin("A000000151000000");
-    final static Logger logger = LoggerFactory.getLogger(GPData.class);
     static final Map<Integer, String> sw = new HashMap<>();
 
     static {
@@ -160,7 +165,7 @@ public final class GPData {
         boolean factory_keys = false;
         out.flush();
         for (GPKey k : list) {
-            out.println(String.format("Version: %d (0x%02X) ID: %d (0x%02X) type: %s length: %d", k.getVersion(), k.getVersion(), k.getID(), k.getID(), k.getType(), k.getLength()));
+            out.println(String.format("Version: %2d (0x%02X) ID: %2d (0x%02X) type: %s length: %d", k.getVersion(), k.getVersion(), k.getID(), k.getID(), k.getType(), k.getLength()));
             if (k.getVersion() == 0x00 || k.getVersion() == 0xFF)
                 factory_keys = true;
         }
@@ -252,12 +257,12 @@ public final class GPData {
     }
 
     public static void pretty_print_cplc(byte[] data, PrintStream out) {
-        if (data == null) {
+        if (data == null || data.length == 0) {
             out.println("NO CPLC");
             return;
         }
         CPLC cplc = CPLC.fromBytes(data);
-        out.println(cplc);
+        out.println(cplc.toPrettyString());
     }
 
     // TODO public for debugging purposes
@@ -265,16 +270,61 @@ public final class GPData {
         // Print CPLC
         pretty_print_cplc(gp.fetchCPLC(), System.out);
 
-        //
-        gp.dumpCardProperties(System.out);
+        print_card_properties(gp.getCardChannel(), System.out);
+
         // Print CardData
         System.out.println("***** CARD DATA");
-        byte[] card_data = gp.fetchCardData();
-        pretty_print_card_data(card_data);
+        pretty_print_card_data(gp.fetchCardData());
+
         // Print Key Info Template
         System.out.println("***** KEY INFO");
         pretty_print_key_template(gp.getKeyInfoTemplate(), System.out);
     }
+
+    private static void print_card_properties(CardChannel channel, PrintStream out) throws CardException {
+        out.println("***** GET DATA:");
+
+        // Issuer Identification Number (IIN)
+        CommandAPDU command = new CommandAPDU(CLA_GP, ISO7816.INS_GET_DATA, 0x00, 0x42, 256);
+        ResponseAPDU resp = channel.transmit(command);
+        out.print("GET DATA(IIN): ");
+        if (resp.getSW() == ISO7816.SW_NO_ERROR) {
+            out.println(HexUtils.bin2hex(resp.getData()));
+        } else {
+            out.println("not supported: " + GPData.sw2str(resp.getSW()));
+        }
+
+        // Card Image Number (CIN)
+        command = new CommandAPDU(CLA_GP, ISO7816.INS_GET_DATA, 0x00, 0x45, 256);
+        resp = channel.transmit(command);
+        out.print("GET DATA(CIN): ");
+        if (resp.getSW() == ISO7816.SW_NO_ERROR) {
+            out.println(HexUtils.bin2hex(resp.getData()));
+        } else {
+            out.println("not supported: " + GPData.sw2str(resp.getSW()));
+        }
+
+        // Sequence Counter of the default Key Version Number (tag 0xC1)
+        command = new CommandAPDU(CLA_GP, ISO7816.INS_GET_DATA, 0x00, 0xC1, 256);
+        resp = channel.transmit(command);
+        out.print("GET DATA(SSC): ");
+
+        if (resp.getSW() == ISO7816.SW_NO_ERROR) {
+
+            BerTlvParser parser = new BerTlvParser();
+            BerTlvs tlvs = parser.parse(resp.getData());
+            BerTlvLogger.log("    ", tlvs, GPData.getLoggerInstance());
+            if (tlvs != null) {
+                BerTlv ssc = tlvs.find(new BerTag(0xC1));
+                if (ssc != null) {
+                    out.println(HexUtils.bin2hex(ssc.getBytesValue()));
+                }
+            }
+        } else {
+            out.println("not supported: " + GPData.sw2str(resp.getSW()));
+        }
+    }
+
 
     public static String sw2str(int sw) {
         String msg = GPData.sw.get(sw);
@@ -314,14 +364,11 @@ public final class GPData {
 
     public static final class CPLC {
 
-        private HashMap<Field, byte[]> values = null;
-
-        ;
+        private HashMap<Field, byte[]> values = new HashMap<>();
 
         private CPLC(byte[] data) {
             // prepended by tag 0x9F7F
             short offset = 3;
-            values = new HashMap<>();
             values.put(Field.ICFabricator, Arrays.copyOfRange(data, offset, offset + 2));
             offset += 2;
             values.put(Field.ICType, Arrays.copyOfRange(data, offset, offset + 2));
@@ -361,7 +408,7 @@ public final class GPData {
         }
 
         public static CPLC fromBytes(byte[] data) {
-            if (data == null || data.length < 3 || data[2] != 0x2A)
+            if (data == null || data.length < 3 + 0x2A || data[2] != 0x2A)
                 throw new IllegalArgumentException("CPLC MUST be 0x2A bytes long");
             return new CPLC(data);
         }
@@ -371,7 +418,11 @@ public final class GPData {
         }
 
         public String toString() {
-            return Arrays.asList(Field.values()).stream().map(i -> i.toString() + "=" + HexUtils.bin2hex(values.get(i))).collect(Collectors.joining(", ", "[CPLC ", "]"));
+            return Arrays.asList(Field.values()).stream().map(i -> i.toString() + "=" + HexUtils.bin2hex(values.get(i))).collect(Collectors.joining(", ", "[CPLC: ", "]"));
+        }
+
+        public String toPrettyString() {
+            return Arrays.asList(Field.values()).stream().map(i -> i.toString() + "=" + HexUtils.bin2hex(values.get(i))).collect(Collectors.joining("\n      ", "CPLC: ", "\n"));
         }
 
         public enum Field {

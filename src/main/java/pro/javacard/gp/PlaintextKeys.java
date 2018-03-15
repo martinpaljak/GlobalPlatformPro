@@ -273,7 +273,7 @@ public class PlaintextKeys extends GPSessionKeyProvider {
                 sessionKeys.put(e.getKey(), deriveSessionKeySCP03(e.getValue(), e.getKey(), host_challenge, card_challenge));
             }
         }
-        logger.debug("session keys: {}", sessionKeys.toString());
+        logger.debug("Session keys: {}", sessionKeys.toString());
     }
 
     // Returns the key for the purpose for this session

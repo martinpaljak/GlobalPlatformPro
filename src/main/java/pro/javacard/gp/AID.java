@@ -79,7 +79,7 @@ public final class AID {
     }
 
     public String toString() {
-        return "[AID: " + HexUtils.bin2hex(aidBytes) + "]";
+        return HexUtils.bin2hex(aidBytes);
     }
 
     public int hashCode() {

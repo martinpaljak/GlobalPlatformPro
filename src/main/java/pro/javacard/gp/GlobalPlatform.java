@@ -56,6 +56,8 @@ import java.util.List;
  * NOT thread-safe
  */
 public class GlobalPlatform implements AutoCloseable {
+    private static final Logger logger = LoggerFactory.getLogger(GlobalPlatform.class);
+
     public static final int SCP_ANY = 0;
     public static final int SCP_01_05 = 1;
     public static final int SCP_01_15 = 2;
@@ -72,7 +74,6 @@ public class GlobalPlatform implements AutoCloseable {
     public static final byte CLA_GP = (byte) 0x80;
     public static final byte CLA_MAC = (byte) 0x84;
 
-    ;
     public static final byte INS_INITIALIZE_UPDATE = (byte) 0x50;
     public static final byte INS_INSTALL = (byte) 0xE6;
     public static final byte INS_LOAD = (byte) 0xE8;
@@ -82,21 +83,19 @@ public class GlobalPlatform implements AutoCloseable {
     public static final byte INS_PUT_KEY = (byte) 0xD8;
     public static final byte INS_STORE_DATA = (byte) 0xE2;
     public static final byte INS_GET_DATA = (byte) 0xCA;
-    private static Logger logger = LoggerFactory.getLogger(GlobalPlatform.class);
     protected boolean strict = true;
     GPSpec spec = GPSpec.GP211;
 
-    // (I)SD AID of the card successfully selected or null
+    // (I)SD AID successfully selected or null
     private AID sdAID = null;
     // Either 1 or 2 or 3
     private int scpMajorVersion = 0;
-
     private int scpKeyVersion = 0;
 
     private int blockSize = 255;
     private GPSessionKeyProvider sessionKeys = null;
     private SCPWrapper wrapper = null;
-    private CardChannel channel = null;
+    private CardChannel channel;
     private GPRegistry registry = null;
     private boolean dirty = true; // True if registry is dirty.
 
@@ -175,6 +174,7 @@ public class GlobalPlatform implements AutoCloseable {
             throw new IllegalArgumentException("Security Domain AID is required");
         }
 
+        logger.debug("(I)SD AID: " + sdAID);
         GlobalPlatform gp = new GlobalPlatform(channel, sdAID);
         gp.select(sdAID);
         return gp;
@@ -199,7 +199,7 @@ public class GlobalPlatform implements AutoCloseable {
 
     @Override
     public void close() throws Exception {
-        // TODO Closes SecureChannel, if connected.
+        // TODO explicitly closes SecureChannel, if connected.
     }
 
     public void setStrict(boolean strict) {
@@ -217,6 +217,7 @@ public class GlobalPlatform implements AutoCloseable {
     public AID getAID() {
         return new AID(sdAID.getBytes());
     }
+    public CardChannel getCardChannel() { return channel; }
 
     protected void giveStrictWarning(String message) throws GPException {
         message = "STRICT WARNING: " + message;
@@ -357,53 +358,6 @@ public class GlobalPlatform implements AutoCloseable {
         return new byte[0];
     }
 
-    public void dumpCardProperties(PrintStream out) throws CardException, GPException {
-        // Key Information Template
-        List<GPKey> key_templates = getKeyInfoTemplate();
-        if (key_templates != null && key_templates.size() > 0) {
-            GPData.pretty_print_key_template(key_templates, out);
-        }
-
-        out.println("***** GET DATA:");
-
-        // Issuer Identification Number (IIN)
-        CommandAPDU command = new CommandAPDU(CLA_GP, ISO7816.INS_GET_DATA, 0x00, 0x42, 256);
-        ResponseAPDU resp = channel.transmit(command);
-        if (resp.getSW() == ISO7816.SW_NO_ERROR) {
-            out.println("IIN " + HexUtils.bin2hex(resp.getData()));
-        } else {
-            out.println("GET DATA(IIN) not supported" + GPData.sw2str(resp.getSW()));
-        }
-
-        // Card Image Number (CIN)
-        command = new CommandAPDU(CLA_GP, ISO7816.INS_GET_DATA, 0x00, 0x45, 256);
-        resp = channel.transmit(command);
-        if (resp.getSW() == ISO7816.SW_NO_ERROR) {
-            out.println("CIN " + HexUtils.bin2hex(resp.getData()));
-        } else {
-            out.println("GET DATA(CIN) not supported: " + GPData.sw2str(resp.getSW()));
-        }
-
-        // Sequence Counter of the default Key Version Number (tag 0xC1)
-        command = new CommandAPDU(CLA_GP, ISO7816.INS_GET_DATA, 0x00, 0xC1, 256);
-        resp = channel.transmit(command);
-        if (resp.getSW() == ISO7816.SW_NO_ERROR) {
-
-            BerTlvParser parser = new BerTlvParser();
-            BerTlvs tlvs = parser.parse(resp.getData());
-            BerTlvLogger.log("    ", tlvs, GPData.getLoggerInstance());
-            if (tlvs != null) {
-                BerTlv ssc = tlvs.find(new BerTag(0xC1));
-                if (ssc != null) {
-                    out.println("SSC " + HexUtils.bin2hex(ssc.getBytesValue()));
-                }
-            }
-        } else {
-            out.println("GET DATA(SSC) not supported: " + GPData.sw2str(resp.getSW()));
-        }
-        out.println("*****");
-    }
-
     public byte[] fetchCPLC() throws CardException, GPException {
         CommandAPDU command = new CommandAPDU(CLA_GP, INS_GET_DATA, 0x9F, 0x7F, 256);
         ResponseAPDU resp = channel.transmit(command);
@@ -413,7 +367,7 @@ public class GlobalPlatform implements AutoCloseable {
         } else {
             logger.warn("GET DATA(CPLC) failed: " + GPData.sw2str(resp.getSW()));
         }
-        return null;
+        return new byte[0];
     }
 
     /**
@@ -483,7 +437,7 @@ public class GlobalPlatform implements AutoCloseable {
 
         logger.debug("Host challenge: " + HexUtils.bin2hex(host_challenge));
         logger.debug("Card challenge: " + HexUtils.bin2hex(card_challenge));
-        logger.debug("Card reports SCP0{}{} keys with key version {}", scpMajorVersion, (scpMajorVersion == 3 ? " i=" + String.format("%02x", scp_i) : ""), scpKeyVersion);
+        logger.debug("Card reports SCP0{}{} with key version {}", scpMajorVersion, (scpMajorVersion == 3 ? " i=" + String.format("%02x", scp_i) : ""), String.format("%d (0x%02X)", scpKeyVersion, scpKeyVersion));
 
         // Verify response
         // If using explicit key version, it must match.

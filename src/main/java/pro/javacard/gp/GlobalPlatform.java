@@ -742,6 +742,7 @@ public class GlobalPlatform implements AutoCloseable {
     }
 
     public void setCardStatus(byte status) throws CardException, GPException {
+        logger.debug("Setting status to {}", GPRegistryEntry.getLifeCycleString(Kind.IssuerSecurityDomain, status));
         CommandAPDU cmd = new CommandAPDU(CLA_GP, INS_SET_STATUS, 0x80, status);
         ResponseAPDU response = transmit(cmd);
         GPException.check(response, "SET STATUS failed");

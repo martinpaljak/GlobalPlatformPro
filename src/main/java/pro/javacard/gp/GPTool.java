@@ -43,9 +43,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static pro.javacard.gp.PlaintextKeys.Diversification.EMV;
-import static pro.javacard.gp.PlaintextKeys.Diversification.KDF3;
-import static pro.javacard.gp.PlaintextKeys.Diversification.VISA2;
+import static pro.javacard.gp.PlaintextKeys.Diversification.*;
 
 public final class GPTool {
     private final static String OPT_APDU = "apdu";
@@ -63,7 +61,7 @@ public final class GPTool {
     private final static String OPT_EMV = "emv";
     private final static String OPT_FORCE = "force";
     private final static String OPT_INFO = "info";
-    private final static String OPT_INITIALIZED = "initialized";
+    private final static String OPT_INITIALIZE_CARD = "initialize-card";
     private final static String OPT_INSTALL = "install";
     private final static String OPT_KCV = "kcv";
     private final static String OPT_KDF3 = "kdf3";
@@ -94,7 +92,10 @@ public final class GPTool {
     private final static String OPT_SC_MODE = "mode";
     private final static String OPT_SDAID = "sdaid";
     private final static String OPT_SECURE_APDU = "secure-apdu";
-    private final static String OPT_SECURED = "secured";
+    private final static String OPT_SECURE_CARD = "secure-card";
+    private final static String OPT_SET_PRE_PERSO = "set-pre-perso";
+    private final static String OPT_SET_PERSO = "set-perso";
+
     private final static String OPT_STORE_DATA = "store-data";
     private final static String OPT_TERMINALS = "terminals";
     private final static String OPT_TERMINATE = "terminate";
@@ -151,8 +152,12 @@ public final class GPTool {
         parser.accepts(OPT_UNLOCK_APPLET, "Unlock applet").withRequiredArg().describedAs("AID");
         parser.accepts(OPT_LOCK_CARD, "Lock card");
         parser.accepts(OPT_UNLOCK_CARD, "Unlock card");
-        parser.accepts(OPT_SECURED, "Transition ISD to SECURED state");
-        parser.accepts(OPT_INITIALIZED, "Transition ISD to INITIALIZED state");
+        parser.accepts(OPT_SECURE_CARD, "Transition ISD to SECURED state");
+        parser.accepts(OPT_INITIALIZE_CARD, "Transition ISD to INITIALIZED state");
+
+        parser.accepts(OPT_SET_PRE_PERSO, "Set PrePerso data in CPLC").withRequiredArg().describedAs("data");
+        parser.accepts(OPT_SET_PERSO, "Set Perso data in CPLC").withRequiredArg().describedAs("data");
+
         parser.accepts(OPT_STORE_DATA, "STORE DATA to applet").withRequiredArg().describedAs("data");
 
         parser.accepts(OPT_MAKE_DEFAULT, "Make AID the default").withRequiredArg().describedAs("AID");
@@ -703,12 +708,12 @@ public final class GPTool {
                         if (args.has(OPT_UNLOCK_CARD)) {
                             gp.setCardStatus(GPData.securedStatus);
                         }
-                        // --initialized
-                        if (args.has(OPT_INITIALIZED)) {
+                        // --initialize-card
+                        if (args.has(OPT_INITIALIZE_CARD)) {
                             gp.setCardStatus(GPData.initializedStatus);
                         }
-                        // --secured
-                        if (args.has(OPT_SECURED)) {
+                        // --secure-card
+                        if (args.has(OPT_SECURE_CARD)) {
                             // Skip INITIALIZED
                             GPRegistryEntryApp isd = gp.getRegistry().getISD();
                             if (isd == null) {
@@ -717,6 +722,7 @@ public final class GPTool {
                             }
                             if (isd.getLifeCycle() != GPData.initializedStatus) {
                                 if (args.has(OPT_FORCE)) {
+                                    System.out.println("Note: forcing status to INITIALIZED");
                                     gp.setCardStatus(GPData.initializedStatus);
                                 }
                             }
@@ -831,6 +837,14 @@ public final class GPTool {
                         if (args.has(OPT_RENAME_ISD)) {
                             gp.renameISD(AID.fromString(args.valueOf(OPT_RENAME_ISD)));
                         }
+                        // --set-pre-perso
+                        if (args.has(OPT_SET_PRE_PERSO)) {
+                            GPCommands.setPrePerso(gp, HexUtils.stringToBin((String) args.valueOf(OPT_SET_PRE_PERSO)));
+                        }
+                        // --set-perso
+                        if (args.has(OPT_SET_PERSO)) {
+                            GPCommands.setPerso(gp, HexUtils.stringToBin((String) args.valueOf(OPT_SET_PERSO)));
+                        }
                     }
                 } catch (GPException e) {
                     //if (args.has(OPT_DEBUG)) {
@@ -931,7 +945,9 @@ public final class GPTool {
             return true;
         if (args.has(OPT_LOCK_CARD) || args.has(OPT_UNLOCK_CARD) || args.has(OPT_LOCK_APPLET) || args.has(OPT_UNLOCK_APPLET))
             return true;
-        if (args.has(OPT_STORE_DATA) || args.has(OPT_INITIALIZED) || args.has(OPT_SECURED) || args.has(OPT_RENAME_ISD))
+        if (args.has(OPT_STORE_DATA) || args.has(OPT_INITIALIZE_CARD) || args.has(OPT_SECURE_CARD) || args.has(OPT_RENAME_ISD))
+            return true;
+        if (args.has(OPT_SET_PRE_PERSO) || args.has(OPT_SET_PERSO))
             return true;
         return false;
     }

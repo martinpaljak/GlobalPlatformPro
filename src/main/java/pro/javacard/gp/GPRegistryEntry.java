@@ -31,7 +31,7 @@ public class GPRegistryEntry {
     protected Kind kind;
     protected AID domain; // Associated security domain
 
-    private static String getLifeCycleString(Kind kind, int lifeCycleState) {
+    static String getLifeCycleString(Kind kind, int lifeCycleState) {
         switch (kind) {
             case IssuerSecurityDomain:
                 switch (lifeCycleState) {

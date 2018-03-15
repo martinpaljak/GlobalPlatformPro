@@ -21,10 +21,34 @@ package pro.javacard.gp;
 
 import apdu4j.HexUtils;
 
+import javax.smartcardio.CardException;
+import javax.smartcardio.CommandAPDU;
+import javax.smartcardio.ResponseAPDU;
 import java.io.PrintStream;
 
 // Middle layer between GPTool (CLI) and GlobalPlatform (session)
 public class GPCommands {
+
+    private static void storeDGI(GlobalPlatform gp, byte[] payload) throws GPException, CardException {
+        // Single DGI. 0x90 should work as well but 0x80 is actually respected by cards.
+        CommandAPDU cmd = new CommandAPDU(GlobalPlatform.CLA_GP, GlobalPlatform.INS_STORE_DATA, 0x80, 0x00, payload);
+        ResponseAPDU response = gp.transmit(cmd);
+        GPException.check(response, "STORE DATA failed");
+    }
+
+    public static void setPrePerso(GlobalPlatform gp, byte[] data) throws GPException, CardException {
+        if (data == null || data.length != 8)
+            throw new IllegalArgumentException("PrePerso data must be 8 bytes");
+        byte[] payload = GPUtils.concatenate(new byte[]{(byte) 0x9f, 0x67, (byte) data.length}, data);
+        storeDGI(gp, payload);
+    }
+
+    public static void setPerso(GlobalPlatform gp, byte[] data) throws GPException, CardException {
+        if (data == null || data.length != 8)
+            throw new IllegalArgumentException("Perso data must be 8 bytes");
+        byte[] payload = GPUtils.concatenate(new byte[]{(byte) 0x9f, 0x66, (byte) data.length}, data);
+        storeDGI(gp, payload);
+    }
 
     public static void listRegistry(GPRegistry reg, PrintStream out, boolean verbose) {
         String tab = "     ";

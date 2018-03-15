@@ -248,7 +248,7 @@ public class GlobalPlatform implements AutoCloseable {
             if (isdaid != null) {
                 AID detectedAID = new AID(isdaid.getBytesValue());
                 if (!detectedAID.equals(sdAID)) {
-                    giveStrictWarning("SD AID in FCI does not match the requested AID!");
+                    giveStrictWarning(String.format("SD AID in FCI (%s) does not match the requested AID (%s)!", detectedAID, sdAID));
                 }
             }
 

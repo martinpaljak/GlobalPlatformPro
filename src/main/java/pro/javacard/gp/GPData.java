@@ -266,7 +266,9 @@ public final class GPData {
                         // HELP: this *seems* to correlate to JC major version
                         if (oid.startsWith("1.3.6.1.4.1.42.2.110.1")) {
                             String p = oid.substring("1.3.6.1.4.1.42.2.110.1.".length());
-                            System.out.println("-> JavaCard v" + p + "?");
+                            if (p.length() == 1 ) {
+                                System.out.println("-> JavaCard v" + p + "?");
+                            }
                         }
                     }
                 }
@@ -498,5 +500,12 @@ public final class GPData {
             }
         }
 
+        public static byte[] today() {
+            return fromDate(new GregorianCalendar());
+        }
+
+        public static byte[] fromDate(GregorianCalendar d) {
+            return HexUtils.hex2bin(String.format("%d%03d", d.get(GregorianCalendar.YEAR) - 2010, d.get(GregorianCalendar.DAY_OF_YEAR)));
+        }
     }
 }

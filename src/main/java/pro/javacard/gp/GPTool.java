@@ -99,6 +99,7 @@ public final class GPTool {
     private final static String OPT_STORE_DATA = "store-data";
     private final static String OPT_TERMINALS = "terminals";
     private final static String OPT_TERMINATE = "terminate";
+    private final static String OPT_TODAY = "today";
     private final static String OPT_UNINSTALL = "uninstall";
     private final static String OPT_UNLOCK = "unlock";
     private final static String OPT_UNLOCK_APPLET = "unlock-applet";
@@ -157,6 +158,7 @@ public final class GPTool {
 
         parser.accepts(OPT_SET_PRE_PERSO, "Set PrePerso data in CPLC").withRequiredArg().describedAs("data");
         parser.accepts(OPT_SET_PERSO, "Set Perso data in CPLC").withRequiredArg().describedAs("data");
+        parser.accepts(OPT_TODAY, "Set date to today when updating CPLC");
 
         parser.accepts(OPT_STORE_DATA, "STORE DATA to applet").withRequiredArg().describedAs("data");
 
@@ -839,11 +841,19 @@ public final class GPTool {
                         }
                         // --set-pre-perso
                         if (args.has(OPT_SET_PRE_PERSO)) {
-                            GPCommands.setPrePerso(gp, HexUtils.stringToBin((String) args.valueOf(OPT_SET_PRE_PERSO)));
+                            byte [] payload = HexUtils.stringToBin((String) args.valueOf(OPT_SET_PRE_PERSO));
+                            if (args.has(OPT_TODAY)) {
+                                System.arraycopy(GPData.CPLC.today(), 0, payload, 2, 2);
+                            }
+                            GPCommands.setPrePerso(gp, payload);
                         }
                         // --set-perso
                         if (args.has(OPT_SET_PERSO)) {
-                            GPCommands.setPerso(gp, HexUtils.stringToBin((String) args.valueOf(OPT_SET_PERSO)));
+                            byte [] payload = HexUtils.stringToBin((String) args.valueOf(OPT_SET_PERSO));
+                            if (args.has(OPT_TODAY)) {
+                                System.arraycopy(GPData.CPLC.today(), 0, payload, 2, 2);
+                            }
+                            GPCommands.setPerso(gp, payload);
                         }
                     }
                 } catch (GPException e) {

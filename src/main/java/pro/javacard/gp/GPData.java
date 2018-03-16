@@ -263,6 +263,11 @@ public final class GPData {
                                 }
                             }
                         }
+                        // HELP: this *seems* to correlate to JC major version
+                        if (oid.startsWith("1.3.6.1.4.1.42.2.110.1")) {
+                            String p = oid.substring("1.3.6.1.4.1.42.2.110.1.".length());
+                            System.out.println("-> JavaCard v" + p + "?");
+                        }
                     }
                 }
             }

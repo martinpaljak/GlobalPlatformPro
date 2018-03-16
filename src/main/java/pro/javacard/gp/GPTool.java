@@ -120,7 +120,7 @@ public final class GPTool {
 
         // Generic options
         parser.acceptsAll(Arrays.asList("V", OPT_VERSION), "Show information about the program");
-        parser.acceptsAll(Arrays.asList("h", "?", "help"), "Shows this help string").forHelp();
+        parser.acceptsAll(Arrays.asList("h", "?", "help"), "Shows this help").forHelp();
         parser.acceptsAll(Arrays.asList("d", OPT_DEBUG), "Show PC/SC and APDU trace");
         parser.acceptsAll(Arrays.asList("v", OPT_VERBOSE), "Be verbose about operations");
         parser.acceptsAll(Arrays.asList("r", OPT_READER), "Use specific reader").withRequiredArg();

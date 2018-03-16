@@ -44,7 +44,10 @@ public class TestParseTags {
     @Test
     public void testCPLCDateParse() throws Exception {
         byte[] b = HexUtils.hex2bin("1210");
-        Assert.assertEquals(GPData.CPLC.toDate(b), "2011-07-29");
+        Assert.assertEquals("2011-07-29", GPData.CPLC.toDate(b));
+        b = HexUtils.hex2bin("0000");
+        Assert.assertEquals("2010-01-01", GPData.CPLC.toDate(b));
+
     }
 
     @Test(expected = GPDataException.class)

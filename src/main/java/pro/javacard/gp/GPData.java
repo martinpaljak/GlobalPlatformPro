@@ -167,9 +167,22 @@ public final class GPData {
         boolean factory_keys = false;
         out.flush();
         for (GPKey k : list) {
-            out.println(String.format("Version: %2d (0x%02X) ID: %2d (0x%02X) type: %s length: %d", k.getVersion(), k.getVersion(), k.getID(), k.getID(), k.getType(), k.getLength()));
+            // Descriptive text about the key
+            final String nice;
+            if (k.getType() == Type.RSA) {
+                nice = "(RSA-" + k.getLength() * 8 + ")";
+            } else if (k.getType() == Type.AES) {
+                nice = "(AES-" + k.getLength() * 8 + ")";
+            } else {
+                nice = "";
+            }
+
+            // Detect unaddressable factory keys
             if (k.getVersion() == 0x00 || k.getVersion() == 0xFF)
                 factory_keys = true;
+
+            // print
+            out.println(String.format("Version: %3d (0x%02X) ID: %3d (0x%02X) type: %-4s length: %3d %s", k.getVersion(), k.getVersion(), k.getID(), k.getID(), k.getType(), k.getLength(), nice));
         }
         if (factory_keys) {
             out.println("Key version suggests factory keys");
@@ -453,9 +466,14 @@ public final class GPData {
             try {
                 int y = Integer.valueOf(sv.substring(0, 1));
                 int d = Integer.valueOf(sv.substring(1, 4));
-                if (d > 366)
+                if (d > 366) {
                     throw new GPDataException("Invalid CPLC date format: " + sv);
-                GregorianCalendar gc = new GregorianCalendar();
+                }
+                // Make 0000 show something meaningful
+                if (d == 0) {
+                    d = 1;
+                }
+                GregorianCalendar gc = new GregorianCalendar(TimeZone.getTimeZone("UTC"));
                 // FIXME: 2010 is hardcoded.
                 gc.set(GregorianCalendar.YEAR, 2010 + y);
                 gc.set(GregorianCalendar.DAY_OF_YEAR, d);

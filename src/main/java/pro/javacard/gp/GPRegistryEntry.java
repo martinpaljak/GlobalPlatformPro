@@ -392,5 +392,9 @@ public class GPRegistryEntry {
         public boolean isEmpty() {
             return privs.size() == 0;
         }
+
+        public int size() {
+            return privs.size();
+        }
     }
 }

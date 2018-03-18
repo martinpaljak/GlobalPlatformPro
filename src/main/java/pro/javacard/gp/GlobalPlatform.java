@@ -458,7 +458,6 @@ public class GlobalPlatform implements AutoCloseable {
         } else if (scpMajorVersion == 2) {
             scpVersion = SCP_02_15;
         } else if (scpMajorVersion == 3) {
-            logger.debug("SCP03 i=" + scp_i);
             scpVersion = 3; // FIXME: the symbolic numbering of versions needs to be fixed.
         }
         logger.debug("Will do SCP0{} ({})", scpMajorVersion, scpVersion);

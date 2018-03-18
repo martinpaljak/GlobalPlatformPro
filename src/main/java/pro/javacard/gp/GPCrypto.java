@@ -87,6 +87,19 @@ public final class GPCrypto {
         return pad80(text, 0, text.length, blocksize);
     }
 
+    public static byte[] unpad80(byte[] text) throws BadPaddingException {
+        if (text.length < 1)
+            throw new BadPaddingException("Invalid ISO 7816-4 padding");
+        int offset = text.length - 1;
+        while (offset > 0 && text[offset] == 0) {
+            offset--;
+        }
+        if (text[offset] != (byte) 0x80) {
+            throw new BadPaddingException("Invalid ISO 7816-4 padding");
+        }
+        return Arrays.copyOf(text, offset);
+    }
+
     private static void buffer_increment(byte[] buffer, int offset, int len) {
         if (len < 1)
             return;

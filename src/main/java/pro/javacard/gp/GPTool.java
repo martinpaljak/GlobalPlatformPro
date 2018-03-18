@@ -457,7 +457,9 @@ public final class GPTool {
                         // Override default mode if needed.
                         if (args.has(OPT_SC_MODE)) {
                             mode.clear();
-                            mode.add(APDUMode.fromString((String) args.valueOf(OPT_SC_MODE)));
+                            for (Object s : args.valuesOf(OPT_SC_MODE)) {
+                                mode.add(APDUMode.fromString((String) s));
+                            }
                         }
 
                         // Possibly brick the card now, if keys don't match.

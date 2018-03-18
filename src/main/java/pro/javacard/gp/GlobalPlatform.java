@@ -999,7 +999,7 @@ public class GlobalPlatform implements AutoCloseable {
 
     public enum APDUMode {
         // bit values as expected by EXTERNAL AUTHENTICATE
-        CLR(0x00), MAC(0x01), ENC(0x02), RMAC(0x10);
+        CLR(0x00), MAC(0x01), ENC(0x02), RMAC(0x10), RENC(0x20);
 
         private final int value;
 
@@ -1016,7 +1016,7 @@ public class GlobalPlatform implements AutoCloseable {
         }
 
         public static APDUMode fromString(String s) {
-            return valueOf(s.toUpperCase());
+            return valueOf(s.trim().toUpperCase());
         }
     }
 
@@ -1233,6 +1233,7 @@ public class GlobalPlatform implements AutoCloseable {
         }
     }
 
+    // FIXME - extract classes
     static class SCP03Wrapper extends SCPWrapper {
         // Both are block size length
         byte[] chaining_value = new byte[16];
@@ -1245,7 +1246,6 @@ public class GlobalPlatform implements AutoCloseable {
             System.arraycopy(GPCrypto.null_bytes_16, 0, chaining_value, 0, GPCrypto.null_bytes_16.length);
             // initialize encryption counter.
             System.arraycopy(GPCrypto.null_bytes_16, 0, encryption_counter, 0, GPCrypto.null_bytes_16.length);
-
             setSecurityLevel(securityLevel);
         }
 
@@ -1305,6 +1305,9 @@ public class GlobalPlatform implements AutoCloseable {
                 na.write(data);
                 if (mac)
                     na.write(cmd_mac);
+                if (command.getNe() > 0) {
+                    na.write(command.getNe());
+                }
                 byte[] new_apdu = na.toByteArray();
                 return new CommandAPDU(new_apdu);
             } catch (IOException e) {
@@ -1318,7 +1321,63 @@ public class GlobalPlatform implements AutoCloseable {
 
         @Override
         protected ResponseAPDU unwrap(ResponseAPDU response) throws GPException {
-            return response;
+            try {
+                if (rmac) {
+                    if (response.getData().length < 8) {
+                        throw new RuntimeException("Wrong response length (too short)."); // FIXME: bad exception
+                    }
+                    int respLen = response.getData().length - 8;
+
+                    byte[] actualMac = new byte[8];
+                    System.arraycopy(response.getData(), respLen, actualMac, 0, 8);
+
+                    ByteArrayOutputStream bo = new ByteArrayOutputStream();
+                    bo.write(chaining_value);
+                    bo.write(response.getData(), 0, respLen);
+                    bo.write(response.getSW1());
+                    bo.write(response.getSW2());
+
+                    byte[] cmac_input = bo.toByteArray();
+
+                    byte[] cmac = GPCrypto.scp03_mac(sessionKeys.getKeyFor(GPSessionKeyProvider.KeyPurpose.RMAC), cmac_input, 128);
+
+                    // 8 bytes for actual mac
+                    byte[] resp_mac = Arrays.copyOf(cmac, 8);
+
+                    if (!Arrays.equals(resp_mac, actualMac)) {
+                        throw new GPException("RMAC invalid: " + HexUtils.bin2hex(actualMac) + " vs " + HexUtils.bin2hex(resp_mac));
+                    }
+
+                    ByteArrayOutputStream o = new ByteArrayOutputStream();
+                    o.write(response.getBytes(), 0, respLen);
+                    o.write(response.getSW1());
+                    o.write(response.getSW2());
+                    response = new ResponseAPDU(o.toByteArray());
+                }
+                if (renc) {
+                    // Encrypt with S-ENC, after changing the first byte of the counter
+                    byte [] response_encryption_counter = Arrays.copyOf(encryption_counter, encryption_counter.length);
+                    response_encryption_counter[0] = (byte) 0x80;
+                    Cipher c = Cipher.getInstance(GPCrypto.AES_CBC_CIPHER);
+                    c.init(Cipher.ENCRYPT_MODE, sessionKeys.getKeyFor(GPSessionKeyProvider.KeyPurpose.ENC).getKeyAs(Type.AES), GPCrypto.iv_null_16);
+                    byte[] iv = c.doFinal(response_encryption_counter);
+                    // Now decrypt the data with S-ENC, with the new IV
+                    c.init(Cipher.DECRYPT_MODE, sessionKeys.getKeyFor(GPSessionKeyProvider.KeyPurpose.ENC).getKeyAs(Type.AES), new IvParameterSpec(iv));
+                    byte[] data = c.doFinal(response.getData());
+                    ByteArrayOutputStream o = new ByteArrayOutputStream();
+                    o.write(GPCrypto.unpad80(data));
+                    o.write(response.getSW1());
+                    o.write(response.getSW2());
+                    response = new ResponseAPDU(o.toByteArray());
+                }
+                return response;
+            } catch (IOException e) {
+                throw new RuntimeException("APDU unwrapping failed", e);
+            } catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
+                throw new IllegalStateException("APDU unwrapping failed", e);
+            } catch (GeneralSecurityException e) {
+                throw new GPException("APDU unwrapping failed", e);
+            }
         }
     }
 
@@ -1328,11 +1387,14 @@ public class GlobalPlatform implements AutoCloseable {
         protected boolean mac = false;
         protected boolean enc = false;
         protected boolean rmac = false;
+        protected boolean renc = false;
+
 
         public void setSecurityLevel(EnumSet<APDUMode> securityLevel) {
             mac = securityLevel.contains(APDUMode.MAC);
             enc = securityLevel.contains(APDUMode.ENC);
             rmac = securityLevel.contains(APDUMode.RMAC);
+            renc = securityLevel.contains(APDUMode.RENC);
         }
 
         protected int getBlockSize() {

@@ -76,6 +76,9 @@ public final class GPTool {
     private final static String OPT_LIST_PRIVS = "list-privs";
     private final static String OPT_LOAD = "load";
     private final static String OPT_LOCK = "lock";
+    private final static String OPT_LOCK_ENC = "lock-enc";
+    private final static String OPT_LOCK_MAC = "lock-mac";
+    private final static String OPT_LOCK_DEK = "lock-dek";
     private final static String OPT_LOCK_APPLET = "lock-applet";
     private final static String OPT_LOCK_CARD = "lock-card";
     private final static String OPT_MAKE_DEFAULT = "make-default";
@@ -191,6 +194,9 @@ public final class GPTool {
         parser.accepts(OPT_PUT_KEY, "Put a new key").withRequiredArg();
 
         parser.accepts(OPT_LOCK, "Set new key").withRequiredArg().describedAs("key");
+        parser.accepts(OPT_LOCK_ENC, "Set new ENC key").withRequiredArg().describedAs("key");
+        parser.accepts(OPT_LOCK_MAC, "Set new MAC key").withRequiredArg().describedAs("key");
+        parser.accepts(OPT_LOCK_DEK, "Set new DEK key").withRequiredArg().describedAs("key");
         parser.accepts(OPT_UNLOCK, "Set default key for card key");
         parser.accepts(OPT_NEW_KEY_VERSION, "Key version for the new key").withRequiredArg();
 
@@ -785,7 +791,8 @@ public final class GPTool {
                         }
 
                         // --lock
-                        if (args.has(OPT_LOCK)) {
+                        if (args.has(OPT_LOCK) || (args.has(OPT_LOCK_ENC) && args.has(OPT_LOCK_MAC) && args.has(OPT_LOCK_DEK))) {
+
                             // By default we try to change an existing key
                             boolean replace = true;
                             List<GPKey> current = gp.getKeyInfoTemplate();
@@ -802,32 +809,59 @@ public final class GPTool {
                                     new_version = current.get(0).getVersion();
                                 }
                             }
+                            // Add into a list
+                            List<GPKey> updatekeys = new ArrayList<>();
 
-                            // Get key value
-                            GPKey nk = new GPKey(HexUtils.stringToBin((String) args.valueOf(OPT_LOCK)));
-                            // XXX: this is uggely
-                            if (gp.getSCPVersion() == 3)
-                                nk.become(Type.AES);
-                            else
-                                nk.become(Type.DES3);
+
 
                             // If a specific new key version is specified, use that instead.
                             if (args.has(OPT_NEW_KEY_VERSION)) {
                                 new_version = GPUtils.intValue((String) args.valueOf(OPT_NEW_KEY_VERSION));
                                 System.out.println("New version: " + new_version);
                             }
+                            if(args.has(OPT_LOCK)){
+                                // Get key value
+                                GPKey nk = new GPKey(HexUtils.stringToBin((String) args.valueOf(OPT_LOCK)));
+                                // XXX: this is uggely
+                                if (gp.getSCPVersion() == 3)
+                                    nk.become(Type.AES);
+                                else
+                                    nk.become(Type.DES3);
 
-                            // Add into a list
-                            List<GPKey> updatekeys = new ArrayList<>();
-                            // We currently use the same key, diversification is missing
-                            updatekeys.add(new GPKey(new_version, 1, nk));
-                            updatekeys.add(new GPKey(new_version, 2, nk));
-                            updatekeys.add(new GPKey(new_version, 3, nk));
+                                // We currently use the same key, diversification is missing
+                                updatekeys.add(new GPKey(new_version, 1, nk));
+                                updatekeys.add(new GPKey(new_version, 2, nk));
+                                updatekeys.add(new GPKey(new_version, 3, nk));
+                                gp.putKeys(updatekeys, replace);
+                                System.out.println("Card locked with: " + HexUtils.bin2hex(nk.getBytes()));
+                            }else{
+                                GPKey nk1 = new GPKey(HexUtils.stringToBin((String) args.valueOf(OPT_LOCK_ENC)));
+                                GPKey nk2 = new GPKey(HexUtils.stringToBin((String) args.valueOf(OPT_LOCK_MAC)));
+                                GPKey nk3 = new GPKey(HexUtils.stringToBin((String) args.valueOf(OPT_LOCK_DEK)));
+                                // XXX: this is uggely
+                                if (gp.getSCPVersion() == 3){
+                                    nk1.become(Type.AES);
+                                    nk2.become(Type.AES);
+                                    nk3.become(Type.AES);
+                                }else{
+                                    nk1.become(Type.DES3);
+                                    nk2.become(Type.DES3);
+                                    nk3.become(Type.DES3);
+                                }
 
-                            gp.putKeys(updatekeys, replace);
+                                // We currently use the same key, diversification is missing
+                                updatekeys.add(new GPKey(new_version, 1, nk1));
+                                updatekeys.add(new GPKey(new_version, 2, nk2));
+                                updatekeys.add(new GPKey(new_version, 3, nk3));
+                                gp.putKeys(updatekeys, replace);
+                                System.out.println("Card locked with ENC: " + HexUtils.bin2hex(nk1.getBytes()));
+                                System.out.println("Card locked with MAC: " + HexUtils.bin2hex(nk2.getBytes()));
+                                System.out.println("Card locked with DEK: " + HexUtils.bin2hex(nk3.getBytes()));
 
-                            System.out.println("Card locked with: " + HexUtils.bin2hex(nk.getBytes()));
-                            System.out.println("Write this down, DO NOT FORGET/LOSE IT!");
+                            }
+
+
+                            System.out.println("DO NOT FORGET/LOSE the key/s!");
                         }
 
                         // --make-default <aid>
@@ -949,7 +983,7 @@ public final class GPTool {
             return true;
         if (args.has(OPT_ACR_ADD) || args.has(OPT_ACR_DELETE))
             return true;
-        if (args.has(OPT_LOCK) || args.has(OPT_UNLOCK) || args.has(OPT_MAKE_DEFAULT))
+        if (args.has(OPT_LOCK) || (args.has(OPT_LOCK_ENC) && args.has(OPT_LOCK_MAC) && args.has(OPT_LOCK_DEK))|| args.has(OPT_UNLOCK) || args.has(OPT_MAKE_DEFAULT))
             return true;
         if (args.has(OPT_UNINSTALL) || args.has(OPT_SECURE_APDU) || args.has(OPT_DOMAIN))
             return true;

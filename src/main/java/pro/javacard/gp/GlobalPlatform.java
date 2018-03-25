@@ -900,9 +900,10 @@ public class GlobalPlatform implements AutoCloseable {
             // New key version
             bo.write(keys.get(0).getVersion());
             // Key data
-            for (GPKey k : keys) {
-                bo.write(encodeKey(k, sessionKeys.getKeyFor(GPSessionKeyProvider.KeyPurpose.DEK), true));
-            }
+
+            bo.write(encodeKey(keys.get(0), sessionKeys.getKeyFor(GPSessionKeyProvider.KeyPurpose.DEK), true));
+            bo.write(encodeKey(keys.get(1), sessionKeys.getKeyFor(GPSessionKeyProvider.KeyPurpose.DEK), true));
+            bo.write(encodeKey(keys.get(2), sessionKeys.getKeyFor(GPSessionKeyProvider.KeyPurpose.DEK), true));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

@@ -1,0 +1,2078 @@
+apdu4j.APDUReplayProvider
+apdu4j.APDUReplayProvider: java.lang.String PROVIDER_NAME
+apdu4j.APDUReplayProvider: java.lang.String TERMINAL_NAME
+apdu4j.APDUReplayProvider: APDUReplayProvider()
+apdu4j.PinPadTerminal$FEATURE: apdu4j.PinPadTerminal$FEATURE VERIFY_PIN_START
+apdu4j.PinPadTerminal$FEATURE: apdu4j.PinPadTerminal$FEATURE VERIFY_PIN_FINISH
+apdu4j.PinPadTerminal$FEATURE: apdu4j.PinPadTerminal$FEATURE MODIFY_PIN_START
+apdu4j.PinPadTerminal$FEATURE: apdu4j.PinPadTerminal$FEATURE MODIFY_PIN_FINISH
+apdu4j.PinPadTerminal$FEATURE: apdu4j.PinPadTerminal$FEATURE GET_KEY_PRESSED
+apdu4j.PinPadTerminal$FEATURE: apdu4j.PinPadTerminal$FEATURE VERIFY_PIN_DIRECT
+apdu4j.PinPadTerminal$FEATURE: apdu4j.PinPadTerminal$FEATURE MODIFY_PIN_DIRECT
+apdu4j.PinPadTerminal$FEATURE: apdu4j.PinPadTerminal$FEATURE MCT_READERDIRECT
+apdu4j.PinPadTerminal$FEATURE: apdu4j.PinPadTerminal$FEATURE MCT_UNIVERSAL
+apdu4j.PinPadTerminal$FEATURE: apdu4j.PinPadTerminal$FEATURE IFD_PIN_PROPERTIES
+apdu4j.PinPadTerminal$FEATURE: apdu4j.PinPadTerminal$FEATURE ABORT
+apdu4j.PinPadTerminal$FEATURE: apdu4j.PinPadTerminal$FEATURE SET_SPE_MESSAGE
+apdu4j.PinPadTerminal$FEATURE: apdu4j.PinPadTerminal$FEATURE VERIFY_PIN_DIRECT_APP_ID
+apdu4j.PinPadTerminal$FEATURE: apdu4j.PinPadTerminal$FEATURE MODIFY_PIN_DIRECT_APP_ID
+apdu4j.PinPadTerminal$FEATURE: apdu4j.PinPadTerminal$FEATURE WRITE_DISPLAY
+apdu4j.PinPadTerminal$FEATURE: apdu4j.PinPadTerminal$FEATURE GET_KEY
+apdu4j.PinPadTerminal$FEATURE: apdu4j.PinPadTerminal$FEATURE IFD_DISPLAY_PROPERTIES
+apdu4j.PinPadTerminal$FEATURE: apdu4j.PinPadTerminal$FEATURE GET_TLV_PROPERTIES
+apdu4j.PinPadTerminal$FEATURE: apdu4j.PinPadTerminal$FEATURE CCID_ESC_COMMAND
+apdu4j.PinPadTerminal$FEATURE: apdu4j.PinPadTerminal$FEATURE EXECUTE_PACE
+apdu4j.PinPadTerminal$FEATURE: int value
+apdu4j.PinPadTerminal$FEATURE: apdu4j.PinPadTerminal$FEATURE[] $VALUES
+apdu4j.PinPadTerminal$FEATURE: apdu4j.PinPadTerminal$FEATURE[] values()
+apdu4j.PinPadTerminal$FEATURE: apdu4j.PinPadTerminal$FEATURE valueOf(java.lang.String)
+apdu4j.remote.RemoteTerminal$Button: apdu4j.remote.RemoteTerminal$Button RED
+apdu4j.remote.RemoteTerminal$Button: apdu4j.remote.RemoteTerminal$Button GREEN
+apdu4j.remote.RemoteTerminal$Button: apdu4j.remote.RemoteTerminal$Button YELLOW
+apdu4j.remote.RemoteTerminal$Button: apdu4j.remote.RemoteTerminal$Button[] $VALUES
+apdu4j.remote.RemoteTerminal$Button: apdu4j.remote.RemoteTerminal$Button[] values()
+apdu4j.remote.RemoteTerminal$Button: apdu4j.remote.RemoteTerminal$Button valueOf(java.lang.String)
+com.google.gson.FieldNamingPolicy: com.google.gson.FieldNamingPolicy IDENTITY
+com.google.gson.FieldNamingPolicy: com.google.gson.FieldNamingPolicy UPPER_CAMEL_CASE
+com.google.gson.FieldNamingPolicy: com.google.gson.FieldNamingPolicy UPPER_CAMEL_CASE_WITH_SPACES
+com.google.gson.FieldNamingPolicy: com.google.gson.FieldNamingPolicy LOWER_CASE_WITH_UNDERSCORES
+com.google.gson.FieldNamingPolicy: com.google.gson.FieldNamingPolicy LOWER_CASE_WITH_DASHES
+com.google.gson.FieldNamingPolicy: com.google.gson.FieldNamingPolicy[] $VALUES
+com.google.gson.FieldNamingPolicy: com.google.gson.FieldNamingPolicy[] values()
+com.google.gson.FieldNamingPolicy: com.google.gson.FieldNamingPolicy valueOf(java.lang.String)
+com.google.gson.LongSerializationPolicy: com.google.gson.LongSerializationPolicy DEFAULT
+com.google.gson.LongSerializationPolicy: com.google.gson.LongSerializationPolicy STRING
+com.google.gson.LongSerializationPolicy: com.google.gson.LongSerializationPolicy[] $VALUES
+com.google.gson.LongSerializationPolicy: com.google.gson.LongSerializationPolicy[] values()
+com.google.gson.LongSerializationPolicy: com.google.gson.LongSerializationPolicy valueOf(java.lang.String)
+com.google.gson.stream.JsonToken: com.google.gson.stream.JsonToken BEGIN_ARRAY
+com.google.gson.stream.JsonToken: com.google.gson.stream.JsonToken END_ARRAY
+com.google.gson.stream.JsonToken: com.google.gson.stream.JsonToken BEGIN_OBJECT
+com.google.gson.stream.JsonToken: com.google.gson.stream.JsonToken END_OBJECT
+com.google.gson.stream.JsonToken: com.google.gson.stream.JsonToken NAME
+com.google.gson.stream.JsonToken: com.google.gson.stream.JsonToken STRING
+com.google.gson.stream.JsonToken: com.google.gson.stream.JsonToken NUMBER
+com.google.gson.stream.JsonToken: com.google.gson.stream.JsonToken BOOLEAN
+com.google.gson.stream.JsonToken: com.google.gson.stream.JsonToken NULL
+com.google.gson.stream.JsonToken: com.google.gson.stream.JsonToken END_DOCUMENT
+com.google.gson.stream.JsonToken: com.google.gson.stream.JsonToken[] $VALUES
+com.google.gson.stream.JsonToken: com.google.gson.stream.JsonToken[] values()
+com.google.gson.stream.JsonToken: com.google.gson.stream.JsonToken valueOf(java.lang.String)
+com.sun.jna.AltCallingConvention
+com.sun.jna.Callback
+com.sun.jna.Callback: java.lang.String METHOD_NAME
+com.sun.jna.Callback: java.util.Collection FORBIDDEN_NAMES
+com.sun.jna.Callback: void <clinit>()
+com.sun.jna.Callback$UncaughtExceptionHandler
+com.sun.jna.Callback$UncaughtExceptionHandler: void uncaughtException(com.sun.jna.Callback,java.lang.Throwable)
+com.sun.jna.CallbackParameterContext
+com.sun.jna.CallbackParameterContext: java.lang.reflect.Method method
+com.sun.jna.CallbackParameterContext: java.lang.Object[] args
+com.sun.jna.CallbackParameterContext: int index
+com.sun.jna.CallbackParameterContext: CallbackParameterContext(java.lang.Class,java.lang.reflect.Method,java.lang.Object[],int)
+com.sun.jna.CallbackParameterContext: java.lang.reflect.Method getMethod()
+com.sun.jna.CallbackParameterContext: java.lang.Object[] getArguments()
+com.sun.jna.CallbackParameterContext: int getIndex()
+com.sun.jna.CallbackProxy
+com.sun.jna.CallbackProxy: java.lang.Object callback(java.lang.Object[])
+com.sun.jna.CallbackProxy: java.lang.Class[] getParameterTypes()
+com.sun.jna.CallbackProxy: java.lang.Class getReturnType()
+com.sun.jna.CallbackReference
+com.sun.jna.CallbackReference: java.util.Map callbackMap
+com.sun.jna.CallbackReference: java.util.Map directCallbackMap
+com.sun.jna.CallbackReference: java.util.Map pointerCallbackMap
+com.sun.jna.CallbackReference: java.util.Map allocations
+com.sun.jna.CallbackReference: java.lang.reflect.Method PROXY_CALLBACK_METHOD
+com.sun.jna.CallbackReference: java.util.Map initializers
+com.sun.jna.CallbackReference: com.sun.jna.Pointer cbstruct
+com.sun.jna.CallbackReference: com.sun.jna.Pointer trampoline
+com.sun.jna.CallbackReference: com.sun.jna.CallbackProxy proxy
+com.sun.jna.CallbackReference: java.lang.reflect.Method method
+com.sun.jna.CallbackReference: void setCallbackThreadInitializer(com.sun.jna.Callback,com.sun.jna.CallbackThreadInitializer)
+com.sun.jna.CallbackReference: java.lang.ThreadGroup initializeThread(com.sun.jna.Callback,com.sun.jna.CallbackReference$AttachOptions)
+com.sun.jna.CallbackReference: com.sun.jna.Callback getCallback(java.lang.Class,com.sun.jna.Pointer)
+com.sun.jna.CallbackReference: com.sun.jna.Callback getCallback(java.lang.Class,com.sun.jna.Pointer,boolean)
+com.sun.jna.CallbackReference: CallbackReference(com.sun.jna.Callback,int,boolean)
+com.sun.jna.CallbackReference: java.lang.Class getNativeType(java.lang.Class)
+com.sun.jna.CallbackReference: java.lang.reflect.Method checkMethod(java.lang.reflect.Method)
+com.sun.jna.CallbackReference: java.lang.Class findCallbackClass(java.lang.Class)
+com.sun.jna.CallbackReference: java.lang.reflect.Method getCallbackMethod(com.sun.jna.Callback)
+com.sun.jna.CallbackReference: java.lang.reflect.Method getCallbackMethod(java.lang.Class)
+com.sun.jna.CallbackReference: void setCallbackOptions(int)
+com.sun.jna.CallbackReference: com.sun.jna.Pointer getTrampoline()
+com.sun.jna.CallbackReference: void finalize()
+com.sun.jna.CallbackReference: void dispose()
+com.sun.jna.CallbackReference: com.sun.jna.Callback getCallback()
+com.sun.jna.CallbackReference: com.sun.jna.Pointer getNativeFunctionPointer(com.sun.jna.Callback)
+com.sun.jna.CallbackReference: com.sun.jna.Pointer getFunctionPointer(com.sun.jna.Callback)
+com.sun.jna.CallbackReference: com.sun.jna.Pointer getFunctionPointer(com.sun.jna.Callback,boolean)
+com.sun.jna.CallbackReference: boolean isAllowableNativeType(java.lang.Class)
+com.sun.jna.CallbackReference: com.sun.jna.Pointer getNativeString(java.lang.Object,boolean)
+com.sun.jna.CallbackReference: com.sun.jna.Callback access$000(com.sun.jna.CallbackReference)
+com.sun.jna.CallbackReference: com.sun.jna.Pointer access$100(java.lang.Object,boolean)
+com.sun.jna.CallbackReference: void <clinit>()
+com.sun.jna.CallbackReference$AttachOptions
+com.sun.jna.CallbackReference$AttachOptions: boolean daemon
+com.sun.jna.CallbackReference$AttachOptions: boolean detach
+com.sun.jna.CallbackReference$AttachOptions: java.lang.String name
+com.sun.jna.CallbackReference$AttachOptions: CallbackReference$AttachOptions()
+com.sun.jna.CallbackReference$AttachOptions: java.util.List getFieldOrder()
+com.sun.jna.CallbackReference$DefaultCallbackProxy
+com.sun.jna.CallbackReference$DefaultCallbackProxy: java.lang.reflect.Method callbackMethod
+com.sun.jna.CallbackReference$DefaultCallbackProxy: com.sun.jna.ToNativeConverter toNative
+com.sun.jna.CallbackReference$DefaultCallbackProxy: com.sun.jna.FromNativeConverter[] fromNative
+com.sun.jna.CallbackReference$DefaultCallbackProxy: java.lang.String encoding
+com.sun.jna.CallbackReference$DefaultCallbackProxy: com.sun.jna.CallbackReference this$0
+com.sun.jna.CallbackReference$DefaultCallbackProxy: CallbackReference$DefaultCallbackProxy(com.sun.jna.CallbackReference,java.lang.reflect.Method,com.sun.jna.TypeMapper,java.lang.String)
+com.sun.jna.CallbackReference$DefaultCallbackProxy: com.sun.jna.Callback getCallback()
+com.sun.jna.CallbackReference$DefaultCallbackProxy: java.lang.Object invokeCallback(java.lang.Object[])
+com.sun.jna.CallbackReference$DefaultCallbackProxy: java.lang.Object callback(java.lang.Object[])
+com.sun.jna.CallbackReference$DefaultCallbackProxy: java.lang.Object convertArgument(java.lang.Object,java.lang.Class)
+com.sun.jna.CallbackReference$DefaultCallbackProxy: java.lang.Object convertResult(java.lang.Object)
+com.sun.jna.CallbackReference$DefaultCallbackProxy: java.lang.Class[] getParameterTypes()
+com.sun.jna.CallbackReference$DefaultCallbackProxy: java.lang.Class getReturnType()
+com.sun.jna.CallbackReference$NativeFunctionHandler
+com.sun.jna.CallbackReference$NativeFunctionHandler: com.sun.jna.Function function
+com.sun.jna.CallbackReference$NativeFunctionHandler: java.util.Map options
+com.sun.jna.CallbackReference$NativeFunctionHandler: CallbackReference$NativeFunctionHandler(com.sun.jna.Pointer,int,java.util.Map)
+com.sun.jna.CallbackReference$NativeFunctionHandler: java.lang.Object invoke(java.lang.Object,java.lang.reflect.Method,java.lang.Object[])
+com.sun.jna.CallbackReference$NativeFunctionHandler: com.sun.jna.Pointer getPointer()
+com.sun.jna.CallbackResultContext
+com.sun.jna.CallbackResultContext: java.lang.reflect.Method method
+com.sun.jna.CallbackResultContext: CallbackResultContext(java.lang.reflect.Method)
+com.sun.jna.CallbackResultContext: java.lang.reflect.Method getMethod()
+com.sun.jna.CallbackThreadInitializer
+com.sun.jna.CallbackThreadInitializer: boolean daemon
+com.sun.jna.CallbackThreadInitializer: boolean detach
+com.sun.jna.CallbackThreadInitializer: java.lang.String name
+com.sun.jna.CallbackThreadInitializer: java.lang.ThreadGroup group
+com.sun.jna.CallbackThreadInitializer: CallbackThreadInitializer()
+com.sun.jna.CallbackThreadInitializer: CallbackThreadInitializer(boolean)
+com.sun.jna.CallbackThreadInitializer: CallbackThreadInitializer(boolean,boolean)
+com.sun.jna.CallbackThreadInitializer: CallbackThreadInitializer(boolean,boolean,java.lang.String)
+com.sun.jna.CallbackThreadInitializer: CallbackThreadInitializer(boolean,boolean,java.lang.String,java.lang.ThreadGroup)
+com.sun.jna.CallbackThreadInitializer: java.lang.String getName(com.sun.jna.Callback)
+com.sun.jna.CallbackThreadInitializer: java.lang.ThreadGroup getThreadGroup(com.sun.jna.Callback)
+com.sun.jna.CallbackThreadInitializer: boolean isDaemon(com.sun.jna.Callback)
+com.sun.jna.CallbackThreadInitializer: boolean detach(com.sun.jna.Callback)
+com.sun.jna.DefaultTypeMapper
+com.sun.jna.DefaultTypeMapper: java.util.List toNativeConverters
+com.sun.jna.DefaultTypeMapper: java.util.List fromNativeConverters
+com.sun.jna.DefaultTypeMapper: DefaultTypeMapper()
+com.sun.jna.DefaultTypeMapper: java.lang.Class getAltClass(java.lang.Class)
+com.sun.jna.DefaultTypeMapper: void addToNativeConverter(java.lang.Class,com.sun.jna.ToNativeConverter)
+com.sun.jna.DefaultTypeMapper: void addFromNativeConverter(java.lang.Class,com.sun.jna.FromNativeConverter)
+com.sun.jna.DefaultTypeMapper: void addTypeConverter(java.lang.Class,com.sun.jna.TypeConverter)
+com.sun.jna.DefaultTypeMapper: java.lang.Object lookupConverter(java.lang.Class,java.util.List)
+com.sun.jna.DefaultTypeMapper: com.sun.jna.FromNativeConverter getFromNativeConverter(java.lang.Class)
+com.sun.jna.DefaultTypeMapper: com.sun.jna.ToNativeConverter getToNativeConverter(java.lang.Class)
+com.sun.jna.DefaultTypeMapper$Entry
+com.sun.jna.DefaultTypeMapper$Entry: java.lang.Class type
+com.sun.jna.DefaultTypeMapper$Entry: java.lang.Object converter
+com.sun.jna.DefaultTypeMapper$Entry: DefaultTypeMapper$Entry(java.lang.Class,java.lang.Object)
+com.sun.jna.FromNativeContext
+com.sun.jna.FromNativeContext: java.lang.Class type
+com.sun.jna.FromNativeContext: FromNativeContext(java.lang.Class)
+com.sun.jna.FromNativeContext: java.lang.Class getTargetType()
+com.sun.jna.FromNativeConverter
+com.sun.jna.FromNativeConverter: java.lang.Object fromNative(java.lang.Object,com.sun.jna.FromNativeContext)
+com.sun.jna.FromNativeConverter: java.lang.Class nativeType()
+com.sun.jna.Function
+com.sun.jna.Function: int MAX_NARGS
+com.sun.jna.Function: int C_CONVENTION
+com.sun.jna.Function: int ALT_CONVENTION
+com.sun.jna.Function: int MASK_CC
+com.sun.jna.Function: int THROW_LAST_ERROR
+com.sun.jna.Function: java.lang.Integer INTEGER_TRUE
+com.sun.jna.Function: java.lang.Integer INTEGER_FALSE
+com.sun.jna.Function: com.sun.jna.NativeLibrary library
+com.sun.jna.Function: java.lang.String functionName
+com.sun.jna.Function: java.lang.String encoding
+com.sun.jna.Function: int callFlags
+com.sun.jna.Function: java.util.Map options
+com.sun.jna.Function: java.lang.String OPTION_INVOKING_METHOD
+com.sun.jna.Function: com.sun.jna.Function getFunction(java.lang.String,java.lang.String)
+com.sun.jna.Function: com.sun.jna.Function getFunction(java.lang.String,java.lang.String,int)
+com.sun.jna.Function: com.sun.jna.Function getFunction(java.lang.String,java.lang.String,int,java.lang.String)
+com.sun.jna.Function: com.sun.jna.Function getFunction(com.sun.jna.Pointer)
+com.sun.jna.Function: com.sun.jna.Function getFunction(com.sun.jna.Pointer,int)
+com.sun.jna.Function: Function(com.sun.jna.NativeLibrary,java.lang.String,int,java.lang.String)
+com.sun.jna.Function: Function(com.sun.jna.Pointer,int,java.lang.String)
+com.sun.jna.Function: void checkCallingConvention(int)
+com.sun.jna.Function: java.lang.String getName()
+com.sun.jna.Function: int getCallingConvention()
+com.sun.jna.Function: java.lang.Object invoke(java.lang.Class,java.lang.Object[])
+com.sun.jna.Function: java.lang.Object invoke(java.lang.Class,java.lang.Object[],java.util.Map)
+com.sun.jna.Function: java.lang.Object invoke(java.lang.Object[],java.lang.Class,boolean)
+com.sun.jna.Function: com.sun.jna.Pointer invokePointer(int,java.lang.Object[])
+com.sun.jna.Function: java.lang.Object convertArgument(java.lang.Object[],int,java.lang.reflect.Method,com.sun.jna.TypeMapper,boolean,java.lang.Class)
+com.sun.jna.Function: boolean isPrimitiveArray(java.lang.Class)
+com.sun.jna.Function: void invoke(java.lang.Object[])
+com.sun.jna.Function: java.lang.String invokeString(int,java.lang.Object[],boolean)
+com.sun.jna.Function: java.lang.String toString()
+com.sun.jna.Function: java.lang.Object invokeObject(java.lang.Object[])
+com.sun.jna.Function: com.sun.jna.Pointer invokePointer(java.lang.Object[])
+com.sun.jna.Function: java.lang.String invokeString(java.lang.Object[],boolean)
+com.sun.jna.Function: int invokeInt(java.lang.Object[])
+com.sun.jna.Function: long invokeLong(java.lang.Object[])
+com.sun.jna.Function: float invokeFloat(java.lang.Object[])
+com.sun.jna.Function: double invokeDouble(java.lang.Object[])
+com.sun.jna.Function: void invokeVoid(java.lang.Object[])
+com.sun.jna.Function: boolean equals(java.lang.Object)
+com.sun.jna.Function: int hashCode()
+com.sun.jna.Function: java.lang.Object[] concatenateVarArgs(java.lang.Object[])
+com.sun.jna.Function: boolean isVarArgs(java.lang.reflect.Method)
+com.sun.jna.Function: java.lang.Boolean valueOf(boolean)
+com.sun.jna.Function: void <clinit>()
+com.sun.jna.Function$NativeMappedArray
+com.sun.jna.Function$NativeMappedArray: com.sun.jna.NativeMapped[] original
+com.sun.jna.Function$NativeMappedArray: Function$NativeMappedArray(com.sun.jna.NativeMapped[])
+com.sun.jna.Function$NativeMappedArray: void read()
+com.sun.jna.Function$PointerArray
+com.sun.jna.Function$PointerArray: com.sun.jna.Pointer[] original
+com.sun.jna.Function$PointerArray: Function$PointerArray(com.sun.jna.Pointer[])
+com.sun.jna.Function$PointerArray: void read()
+com.sun.jna.Function$PostCallRead
+com.sun.jna.Function$PostCallRead: void read()
+com.sun.jna.FunctionMapper
+com.sun.jna.FunctionMapper: java.lang.String getFunctionName(com.sun.jna.NativeLibrary,java.lang.reflect.Method)
+com.sun.jna.FunctionParameterContext
+com.sun.jna.FunctionParameterContext: com.sun.jna.Function function
+com.sun.jna.FunctionParameterContext: java.lang.Object[] args
+com.sun.jna.FunctionParameterContext: int index
+com.sun.jna.FunctionParameterContext: FunctionParameterContext(com.sun.jna.Function,java.lang.Object[],int)
+com.sun.jna.FunctionParameterContext: com.sun.jna.Function getFunction()
+com.sun.jna.FunctionParameterContext: java.lang.Object[] getParameters()
+com.sun.jna.FunctionParameterContext: int getParameterIndex()
+com.sun.jna.FunctionResultContext
+com.sun.jna.FunctionResultContext: com.sun.jna.Function function
+com.sun.jna.FunctionResultContext: java.lang.Object[] args
+com.sun.jna.FunctionResultContext: FunctionResultContext(java.lang.Class,com.sun.jna.Function,java.lang.Object[])
+com.sun.jna.FunctionResultContext: com.sun.jna.Function getFunction()
+com.sun.jna.FunctionResultContext: java.lang.Object[] getArguments()
+com.sun.jna.IntegerType
+com.sun.jna.IntegerType: int size
+com.sun.jna.IntegerType: java.lang.Number number
+com.sun.jna.IntegerType: boolean unsigned
+com.sun.jna.IntegerType: long value
+com.sun.jna.IntegerType: IntegerType(int)
+com.sun.jna.IntegerType: IntegerType(int,boolean)
+com.sun.jna.IntegerType: IntegerType(int,long)
+com.sun.jna.IntegerType: IntegerType(int,long,boolean)
+com.sun.jna.IntegerType: void setValue(long)
+com.sun.jna.IntegerType: java.lang.Object toNative()
+com.sun.jna.IntegerType: java.lang.Object fromNative(java.lang.Object,com.sun.jna.FromNativeContext)
+com.sun.jna.IntegerType: java.lang.Class nativeType()
+com.sun.jna.IntegerType: int intValue()
+com.sun.jna.IntegerType: long longValue()
+com.sun.jna.IntegerType: float floatValue()
+com.sun.jna.IntegerType: double doubleValue()
+com.sun.jna.IntegerType: boolean equals(java.lang.Object)
+com.sun.jna.IntegerType: java.lang.String toString()
+com.sun.jna.IntegerType: int hashCode()
+com.sun.jna.InvocationMapper
+com.sun.jna.InvocationMapper: java.lang.reflect.InvocationHandler getInvocationHandler(com.sun.jna.NativeLibrary,java.lang.reflect.Method)
+com.sun.jna.LastErrorException
+com.sun.jna.LastErrorException: int errorCode
+com.sun.jna.LastErrorException: java.lang.String formatMessage(int)
+com.sun.jna.LastErrorException: java.lang.String parseMessage(java.lang.String)
+com.sun.jna.LastErrorException: LastErrorException(java.lang.String)
+com.sun.jna.LastErrorException: int getErrorCode()
+com.sun.jna.LastErrorException: LastErrorException(int)
+com.sun.jna.Library
+com.sun.jna.Library: java.lang.String OPTION_TYPE_MAPPER
+com.sun.jna.Library: java.lang.String OPTION_FUNCTION_MAPPER
+com.sun.jna.Library: java.lang.String OPTION_INVOCATION_MAPPER
+com.sun.jna.Library: java.lang.String OPTION_STRUCTURE_ALIGNMENT
+com.sun.jna.Library: java.lang.String OPTION_STRING_ENCODING
+com.sun.jna.Library: java.lang.String OPTION_ALLOW_OBJECTS
+com.sun.jna.Library: java.lang.String OPTION_CALLING_CONVENTION
+com.sun.jna.Library: java.lang.String OPTION_OPEN_FLAGS
+com.sun.jna.Library: java.lang.String OPTION_CLASSLOADER
+com.sun.jna.Library$1
+com.sun.jna.Library$Handler
+com.sun.jna.Library$Handler: java.lang.reflect.Method OBJECT_TOSTRING
+com.sun.jna.Library$Handler: java.lang.reflect.Method OBJECT_HASHCODE
+com.sun.jna.Library$Handler: java.lang.reflect.Method OBJECT_EQUALS
+com.sun.jna.Library$Handler: com.sun.jna.NativeLibrary nativeLibrary
+com.sun.jna.Library$Handler: java.lang.Class interfaceClass
+com.sun.jna.Library$Handler: java.util.Map options
+com.sun.jna.Library$Handler: com.sun.jna.InvocationMapper invocationMapper
+com.sun.jna.Library$Handler: java.util.Map functions
+com.sun.jna.Library$Handler: Library$Handler(java.lang.String,java.lang.Class,java.util.Map)
+com.sun.jna.Library$Handler: com.sun.jna.NativeLibrary getNativeLibrary()
+com.sun.jna.Library$Handler: java.lang.String getLibraryName()
+com.sun.jna.Library$Handler: java.lang.Class getInterfaceClass()
+com.sun.jna.Library$Handler: java.lang.Object invoke(java.lang.Object,java.lang.reflect.Method,java.lang.Object[])
+com.sun.jna.Library$Handler: void <clinit>()
+com.sun.jna.Library$Handler$FunctionInfo
+com.sun.jna.Library$Handler$FunctionInfo: java.lang.reflect.InvocationHandler handler
+com.sun.jna.Library$Handler$FunctionInfo: com.sun.jna.Function function
+com.sun.jna.Library$Handler$FunctionInfo: boolean isVarArgs
+com.sun.jna.Library$Handler$FunctionInfo: java.util.Map options
+com.sun.jna.Library$Handler$FunctionInfo: Library$Handler$FunctionInfo()
+com.sun.jna.Library$Handler$FunctionInfo: Library$Handler$FunctionInfo(com.sun.jna.Library$1)
+com.sun.jna.Memory
+com.sun.jna.Memory: java.util.Map buffers
+com.sun.jna.Memory: long size
+com.sun.jna.Memory: void purge()
+com.sun.jna.Memory: Memory(long)
+com.sun.jna.Memory: Memory()
+com.sun.jna.Memory: com.sun.jna.Pointer share(long)
+com.sun.jna.Memory: com.sun.jna.Pointer share(long,long)
+com.sun.jna.Memory: com.sun.jna.Memory align(int)
+com.sun.jna.Memory: void finalize()
+com.sun.jna.Memory: void dispose()
+com.sun.jna.Memory: void clear()
+com.sun.jna.Memory: boolean valid()
+com.sun.jna.Memory: long size()
+com.sun.jna.Memory: void boundsCheck(long,long)
+com.sun.jna.Memory: void read(long,byte[],int,int)
+com.sun.jna.Memory: void read(long,short[],int,int)
+com.sun.jna.Memory: void read(long,char[],int,int)
+com.sun.jna.Memory: void read(long,int[],int,int)
+com.sun.jna.Memory: void read(long,long[],int,int)
+com.sun.jna.Memory: void read(long,float[],int,int)
+com.sun.jna.Memory: void read(long,double[],int,int)
+com.sun.jna.Memory: void write(long,byte[],int,int)
+com.sun.jna.Memory: void write(long,short[],int,int)
+com.sun.jna.Memory: void write(long,char[],int,int)
+com.sun.jna.Memory: void write(long,int[],int,int)
+com.sun.jna.Memory: void write(long,long[],int,int)
+com.sun.jna.Memory: void write(long,float[],int,int)
+com.sun.jna.Memory: void write(long,double[],int,int)
+com.sun.jna.Memory: byte getByte(long)
+com.sun.jna.Memory: char getChar(long)
+com.sun.jna.Memory: short getShort(long)
+com.sun.jna.Memory: int getInt(long)
+com.sun.jna.Memory: long getLong(long)
+com.sun.jna.Memory: float getFloat(long)
+com.sun.jna.Memory: double getDouble(long)
+com.sun.jna.Memory: com.sun.jna.Pointer getPointer(long)
+com.sun.jna.Memory: java.nio.ByteBuffer getByteBuffer(long,long)
+com.sun.jna.Memory: java.lang.String getString(long,java.lang.String)
+com.sun.jna.Memory: java.lang.String getWideString(long)
+com.sun.jna.Memory: void setByte(long,byte)
+com.sun.jna.Memory: void setChar(long,char)
+com.sun.jna.Memory: void setShort(long,short)
+com.sun.jna.Memory: void setInt(long,int)
+com.sun.jna.Memory: void setLong(long,long)
+com.sun.jna.Memory: void setFloat(long,float)
+com.sun.jna.Memory: void setDouble(long,double)
+com.sun.jna.Memory: void setPointer(long,com.sun.jna.Pointer)
+com.sun.jna.Memory: void setString(long,java.lang.String,java.lang.String)
+com.sun.jna.Memory: void setWideString(long,java.lang.String)
+com.sun.jna.Memory: java.lang.String toString()
+com.sun.jna.Memory: void free(long)
+com.sun.jna.Memory: long malloc(long)
+com.sun.jna.Memory: java.lang.String dump()
+com.sun.jna.Memory: void <clinit>()
+com.sun.jna.Memory$SharedMemory
+com.sun.jna.Memory$SharedMemory: com.sun.jna.Memory this$0
+com.sun.jna.Memory$SharedMemory: Memory$SharedMemory(com.sun.jna.Memory,long,long)
+com.sun.jna.Memory$SharedMemory: void dispose()
+com.sun.jna.Memory$SharedMemory: void boundsCheck(long,long)
+com.sun.jna.Memory$SharedMemory: java.lang.String toString()
+com.sun.jna.MethodParameterContext
+com.sun.jna.MethodParameterContext: java.lang.reflect.Method method
+com.sun.jna.MethodParameterContext: MethodParameterContext(com.sun.jna.Function,java.lang.Object[],int,java.lang.reflect.Method)
+com.sun.jna.MethodParameterContext: java.lang.reflect.Method getMethod()
+com.sun.jna.MethodResultContext
+com.sun.jna.MethodResultContext: java.lang.reflect.Method method
+com.sun.jna.MethodResultContext: MethodResultContext(java.lang.Class,com.sun.jna.Function,java.lang.Object[],java.lang.reflect.Method)
+com.sun.jna.MethodResultContext: java.lang.reflect.Method getMethod()
+com.sun.jna.Native
+com.sun.jna.Native: java.lang.String DEFAULT_ENCODING
+com.sun.jna.Native: boolean DEBUG_LOAD
+com.sun.jna.Native: boolean DEBUG_JNA_LOAD
+com.sun.jna.Native: java.lang.String jnidispatchPath
+com.sun.jna.Native: java.util.Map options
+com.sun.jna.Native: java.util.Map libraries
+com.sun.jna.Native: com.sun.jna.Callback$UncaughtExceptionHandler DEFAULT_HANDLER
+com.sun.jna.Native: com.sun.jna.Callback$UncaughtExceptionHandler callbackExceptionHandler
+com.sun.jna.Native: int POINTER_SIZE
+com.sun.jna.Native: int LONG_SIZE
+com.sun.jna.Native: int WCHAR_SIZE
+com.sun.jna.Native: int SIZE_T_SIZE
+com.sun.jna.Native: int TYPE_VOIDP
+com.sun.jna.Native: int TYPE_LONG
+com.sun.jna.Native: int TYPE_WCHAR_T
+com.sun.jna.Native: int TYPE_SIZE_T
+com.sun.jna.Native: int MAX_ALIGNMENT
+com.sun.jna.Native: int MAX_PADDING
+com.sun.jna.Native: java.lang.Object finalizer
+com.sun.jna.Native: java.lang.String JNA_TMPLIB_PREFIX
+com.sun.jna.Native: java.util.Map registeredClasses
+com.sun.jna.Native: java.util.Map registeredLibraries
+com.sun.jna.Native: java.lang.Object unloader
+com.sun.jna.Native: int CB_HAS_INITIALIZER
+com.sun.jna.Native: int CVT_UNSUPPORTED
+com.sun.jna.Native: int CVT_DEFAULT
+com.sun.jna.Native: int CVT_POINTER
+com.sun.jna.Native: int CVT_STRING
+com.sun.jna.Native: int CVT_STRUCTURE
+com.sun.jna.Native: int CVT_STRUCTURE_BYVAL
+com.sun.jna.Native: int CVT_BUFFER
+com.sun.jna.Native: int CVT_ARRAY_BYTE
+com.sun.jna.Native: int CVT_ARRAY_SHORT
+com.sun.jna.Native: int CVT_ARRAY_CHAR
+com.sun.jna.Native: int CVT_ARRAY_INT
+com.sun.jna.Native: int CVT_ARRAY_LONG
+com.sun.jna.Native: int CVT_ARRAY_FLOAT
+com.sun.jna.Native: int CVT_ARRAY_DOUBLE
+com.sun.jna.Native: int CVT_ARRAY_BOOLEAN
+com.sun.jna.Native: int CVT_BOOLEAN
+com.sun.jna.Native: int CVT_CALLBACK
+com.sun.jna.Native: int CVT_FLOAT
+com.sun.jna.Native: int CVT_NATIVE_MAPPED
+com.sun.jna.Native: int CVT_WSTRING
+com.sun.jna.Native: int CVT_INTEGER_TYPE
+com.sun.jna.Native: int CVT_POINTER_TYPE
+com.sun.jna.Native: int CVT_TYPE_MAPPER
+com.sun.jna.Native: int CB_OPTION_DIRECT
+com.sun.jna.Native: int CB_OPTION_IN_DLL
+com.sun.jna.Native: java.util.Map nativeThreads
+com.sun.jna.Native: java.lang.ThreadLocal nativeThreadTerminationFlag
+com.sun.jna.Native: void dispose()
+com.sun.jna.Native: boolean deleteLibrary(java.io.File)
+com.sun.jna.Native: Native()
+com.sun.jna.Native: void initIDs()
+com.sun.jna.Native: void setProtected(boolean)
+com.sun.jna.Native: boolean isProtected()
+com.sun.jna.Native: void setPreserveLastError(boolean)
+com.sun.jna.Native: boolean getPreserveLastError()
+com.sun.jna.Native: long getWindowID(java.awt.Window)
+com.sun.jna.Native: long getComponentID(java.awt.Component)
+com.sun.jna.Native: com.sun.jna.Pointer getWindowPointer(java.awt.Window)
+com.sun.jna.Native: com.sun.jna.Pointer getComponentPointer(java.awt.Component)
+com.sun.jna.Native: long getWindowHandle0(java.awt.Component)
+com.sun.jna.Native: com.sun.jna.Pointer getDirectBufferPointer(java.nio.Buffer)
+com.sun.jna.Native: long _getDirectBufferPointer(java.nio.Buffer)
+com.sun.jna.Native: java.lang.String toString(byte[])
+com.sun.jna.Native: java.lang.String toString(byte[],java.lang.String)
+com.sun.jna.Native: java.lang.String toString(char[])
+com.sun.jna.Native: java.lang.Object loadLibrary(java.lang.Class)
+com.sun.jna.Native: java.lang.Object loadLibrary(java.lang.Class,java.util.Map)
+com.sun.jna.Native: java.lang.Object loadLibrary(java.lang.String,java.lang.Class)
+com.sun.jna.Native: java.lang.Object loadLibrary(java.lang.String,java.lang.Class,java.util.Map)
+com.sun.jna.Native: void loadLibraryInstance(java.lang.Class)
+com.sun.jna.Native: java.lang.Class findEnclosingLibraryClass(java.lang.Class)
+com.sun.jna.Native: java.util.Map getLibraryOptions(java.lang.Class)
+com.sun.jna.Native: java.lang.Object lookupField(java.lang.Class,java.lang.String,java.lang.Class)
+com.sun.jna.Native: com.sun.jna.TypeMapper getTypeMapper(java.lang.Class)
+com.sun.jna.Native: java.lang.String getStringEncoding(java.lang.Class)
+com.sun.jna.Native: java.lang.String getDefaultStringEncoding()
+com.sun.jna.Native: int getStructureAlignment(java.lang.Class)
+com.sun.jna.Native: byte[] getBytes(java.lang.String)
+com.sun.jna.Native: byte[] getBytes(java.lang.String,java.lang.String)
+com.sun.jna.Native: byte[] toByteArray(java.lang.String)
+com.sun.jna.Native: byte[] toByteArray(java.lang.String,java.lang.String)
+com.sun.jna.Native: char[] toCharArray(java.lang.String)
+com.sun.jna.Native: void loadNativeDispatchLibrary()
+com.sun.jna.Native: void loadNativeDispatchLibraryFromClasspath()
+com.sun.jna.Native: boolean isUnpacked(java.io.File)
+com.sun.jna.Native: java.io.File extractFromResourcePath(java.lang.String)
+com.sun.jna.Native: java.io.File extractFromResourcePath(java.lang.String,java.lang.ClassLoader)
+com.sun.jna.Native: int sizeof(int)
+com.sun.jna.Native: java.lang.String getNativeVersion()
+com.sun.jna.Native: java.lang.String getAPIChecksum()
+com.sun.jna.Native: int getLastError()
+com.sun.jna.Native: void setLastError(int)
+com.sun.jna.Native: com.sun.jna.Library synchronizedLibrary(com.sun.jna.Library)
+com.sun.jna.Native: java.lang.String getWebStartLibraryPath(java.lang.String)
+com.sun.jna.Native: void markTemporaryFile(java.io.File)
+com.sun.jna.Native: java.io.File getTempDir()
+com.sun.jna.Native: void removeTemporaryFiles()
+com.sun.jna.Native: int getNativeSize(java.lang.Class,java.lang.Object)
+com.sun.jna.Native: int getNativeSize(java.lang.Class)
+com.sun.jna.Native: boolean isSupportedNativeType(java.lang.Class)
+com.sun.jna.Native: void setCallbackExceptionHandler(com.sun.jna.Callback$UncaughtExceptionHandler)
+com.sun.jna.Native: com.sun.jna.Callback$UncaughtExceptionHandler getCallbackExceptionHandler()
+com.sun.jna.Native: void register(java.lang.String)
+com.sun.jna.Native: void register(com.sun.jna.NativeLibrary)
+com.sun.jna.Native: java.lang.Class findDirectMappedClass(java.lang.Class)
+com.sun.jna.Native: java.lang.Class getCallingClass()
+com.sun.jna.Native: void setCallbackThreadInitializer(com.sun.jna.Callback,com.sun.jna.CallbackThreadInitializer)
+com.sun.jna.Native: void unregister()
+com.sun.jna.Native: void unregister(java.lang.Class)
+com.sun.jna.Native: void unregister(java.lang.Class,long[])
+com.sun.jna.Native: java.lang.String getSignature(java.lang.Class)
+com.sun.jna.Native: java.lang.String replace(java.lang.String,java.lang.String,java.lang.String)
+com.sun.jna.Native: int getConversion(java.lang.Class,com.sun.jna.TypeMapper)
+com.sun.jna.Native: void register(java.lang.Class,java.lang.String)
+com.sun.jna.Native: void register(java.lang.Class,com.sun.jna.NativeLibrary)
+com.sun.jna.Native: void cacheOptions(java.lang.Class,java.util.Map,java.lang.Object)
+com.sun.jna.Native: long registerMethod(java.lang.Class,java.lang.String,java.lang.String,int[],long[],long[],int,long,long,java.lang.Class,long,int,boolean,com.sun.jna.ToNativeConverter[],com.sun.jna.FromNativeConverter,java.lang.String)
+com.sun.jna.Native: com.sun.jna.NativeMapped fromNative(java.lang.Class,java.lang.Object)
+com.sun.jna.Native: java.lang.Class nativeType(java.lang.Class)
+com.sun.jna.Native: java.lang.Object toNative(com.sun.jna.ToNativeConverter,java.lang.Object)
+com.sun.jna.Native: java.lang.Object fromNative(com.sun.jna.FromNativeConverter,java.lang.Object,java.lang.Class)
+com.sun.jna.Native: long ffi_prep_cif(int,int,long,long)
+com.sun.jna.Native: void ffi_call(long,long,long,long)
+com.sun.jna.Native: long ffi_prep_closure(long,com.sun.jna.Native$ffi_callback)
+com.sun.jna.Native: void ffi_free_closure(long)
+com.sun.jna.Native: int initialize_ffi_type(long)
+com.sun.jna.Native: void main(java.lang.String[])
+com.sun.jna.Native: void freeNativeCallback(long)
+com.sun.jna.Native: long createNativeCallback(com.sun.jna.Callback,java.lang.reflect.Method,java.lang.Class[],java.lang.Class,int,int,java.lang.String)
+com.sun.jna.Native: int invokeInt(long,int,java.lang.Object[])
+com.sun.jna.Native: long invokeLong(long,int,java.lang.Object[])
+com.sun.jna.Native: void invokeVoid(long,int,java.lang.Object[])
+com.sun.jna.Native: float invokeFloat(long,int,java.lang.Object[])
+com.sun.jna.Native: double invokeDouble(long,int,java.lang.Object[])
+com.sun.jna.Native: long invokePointer(long,int,java.lang.Object[])
+com.sun.jna.Native: void invokeStructure(long,int,java.lang.Object[],long,long)
+com.sun.jna.Native: com.sun.jna.Structure invokeStructure(long,int,java.lang.Object[],com.sun.jna.Structure)
+com.sun.jna.Native: java.lang.Object invokeObject(long,int,java.lang.Object[])
+com.sun.jna.Native: long open(java.lang.String)
+com.sun.jna.Native: long open(java.lang.String,int)
+com.sun.jna.Native: void close(long)
+com.sun.jna.Native: long findSymbol(long,java.lang.String)
+com.sun.jna.Native: long indexOf(long,byte)
+com.sun.jna.Native: void read(long,byte[],int,int)
+com.sun.jna.Native: void read(long,short[],int,int)
+com.sun.jna.Native: void read(long,char[],int,int)
+com.sun.jna.Native: void read(long,int[],int,int)
+com.sun.jna.Native: void read(long,long[],int,int)
+com.sun.jna.Native: void read(long,float[],int,int)
+com.sun.jna.Native: void read(long,double[],int,int)
+com.sun.jna.Native: void write(long,byte[],int,int)
+com.sun.jna.Native: void write(long,short[],int,int)
+com.sun.jna.Native: void write(long,char[],int,int)
+com.sun.jna.Native: void write(long,int[],int,int)
+com.sun.jna.Native: void write(long,long[],int,int)
+com.sun.jna.Native: void write(long,float[],int,int)
+com.sun.jna.Native: void write(long,double[],int,int)
+com.sun.jna.Native: byte getByte(long)
+com.sun.jna.Native: char getChar(long)
+com.sun.jna.Native: short getShort(long)
+com.sun.jna.Native: int getInt(long)
+com.sun.jna.Native: long getLong(long)
+com.sun.jna.Native: float getFloat(long)
+com.sun.jna.Native: double getDouble(long)
+com.sun.jna.Native: com.sun.jna.Pointer getPointer(long)
+com.sun.jna.Native: long _getPointer(long)
+com.sun.jna.Native: java.lang.String getWideString(long)
+com.sun.jna.Native: java.lang.String getString(long)
+com.sun.jna.Native: java.lang.String getString(long,java.lang.String)
+com.sun.jna.Native: byte[] getStringBytes(long)
+com.sun.jna.Native: void setMemory(long,long,byte)
+com.sun.jna.Native: void setByte(long,byte)
+com.sun.jna.Native: void setShort(long,short)
+com.sun.jna.Native: void setChar(long,char)
+com.sun.jna.Native: void setInt(long,int)
+com.sun.jna.Native: void setLong(long,long)
+com.sun.jna.Native: void setFloat(long,float)
+com.sun.jna.Native: void setDouble(long,double)
+com.sun.jna.Native: void setPointer(long,long)
+com.sun.jna.Native: void setWideString(long,java.lang.String)
+com.sun.jna.Native: long malloc(long)
+com.sun.jna.Native: void free(long)
+com.sun.jna.Native: java.nio.ByteBuffer getDirectByteBuffer(long,long)
+com.sun.jna.Native: void detach(boolean)
+com.sun.jna.Native: com.sun.jna.Pointer getTerminationFlag(java.lang.Thread)
+com.sun.jna.Native: void setDetachState(boolean,long)
+com.sun.jna.Native: void access$000()
+com.sun.jna.Native: java.util.Map access$100()
+com.sun.jna.Native: void access$200(java.lang.Class,long[])
+com.sun.jna.Native: void <clinit>()
+com.sun.jna.Native$1
+com.sun.jna.Native$1: Native$1()
+com.sun.jna.Native$1: void uncaughtException(com.sun.jna.Callback,java.lang.Throwable)
+com.sun.jna.Native$2
+com.sun.jna.Native$2: Native$2()
+com.sun.jna.Native$2: void finalize()
+com.sun.jna.Native$3
+com.sun.jna.Native$3: com.sun.jna.Library$Handler val$handler
+com.sun.jna.Native$3: com.sun.jna.Library val$library
+com.sun.jna.Native$3: Native$3(com.sun.jna.Library$Handler,com.sun.jna.Library)
+com.sun.jna.Native$3: java.lang.Object invoke(java.lang.Object,java.lang.reflect.Method,java.lang.Object[])
+com.sun.jna.Native$4
+com.sun.jna.Native$4: Native$4()
+com.sun.jna.Native$4: java.lang.Object run()
+com.sun.jna.Native$5
+com.sun.jna.Native$5: Native$5()
+com.sun.jna.Native$5: boolean accept(java.io.File,java.lang.String)
+com.sun.jna.Native$6
+com.sun.jna.Native$6: Native$6()
+com.sun.jna.Native$6: java.lang.Class[] getClassContext()
+com.sun.jna.Native$7
+com.sun.jna.Native$7: Native$7()
+com.sun.jna.Native$7: void finalize()
+com.sun.jna.Native$8
+com.sun.jna.Native$8: Native$8()
+com.sun.jna.Native$8: java.lang.Object initialValue()
+com.sun.jna.Native$AWT
+com.sun.jna.Native$AWT: Native$AWT()
+com.sun.jna.Native$AWT: long getWindowID(java.awt.Window)
+com.sun.jna.Native$AWT: long getComponentID(java.lang.Object)
+com.sun.jna.Native$Buffers
+com.sun.jna.Native$Buffers: Native$Buffers()
+com.sun.jna.Native$Buffers: boolean isBuffer(java.lang.Class)
+com.sun.jna.Native$ffi_callback
+com.sun.jna.Native$ffi_callback: void invoke(long,long,long)
+com.sun.jna.NativeLibrary
+com.sun.jna.NativeLibrary: long handle
+com.sun.jna.NativeLibrary: java.lang.String libraryName
+com.sun.jna.NativeLibrary: java.lang.String libraryPath
+com.sun.jna.NativeLibrary: java.util.Map functions
+com.sun.jna.NativeLibrary: int callFlags
+com.sun.jna.NativeLibrary: java.lang.String encoding
+com.sun.jna.NativeLibrary: java.util.Map options
+com.sun.jna.NativeLibrary: java.util.Map libraries
+com.sun.jna.NativeLibrary: java.util.Map searchPaths
+com.sun.jna.NativeLibrary: java.util.List librarySearchPath
+com.sun.jna.NativeLibrary: int DEFAULT_OPEN_OPTIONS
+com.sun.jna.NativeLibrary: java.lang.String functionKey(java.lang.String,int,java.lang.String)
+com.sun.jna.NativeLibrary: NativeLibrary(java.lang.String,java.lang.String,long,java.util.Map)
+com.sun.jna.NativeLibrary: int openFlags(java.util.Map)
+com.sun.jna.NativeLibrary: com.sun.jna.NativeLibrary loadLibrary(java.lang.String,java.util.Map)
+com.sun.jna.NativeLibrary: java.lang.String matchFramework(java.lang.String)
+com.sun.jna.NativeLibrary: java.lang.String getLibraryName(java.lang.String)
+com.sun.jna.NativeLibrary: com.sun.jna.NativeLibrary getInstance(java.lang.String)
+com.sun.jna.NativeLibrary: com.sun.jna.NativeLibrary getInstance(java.lang.String,java.lang.ClassLoader)
+com.sun.jna.NativeLibrary: com.sun.jna.NativeLibrary getInstance(java.lang.String,java.util.Map)
+com.sun.jna.NativeLibrary: com.sun.jna.NativeLibrary getProcess()
+com.sun.jna.NativeLibrary: com.sun.jna.NativeLibrary getProcess(java.util.Map)
+com.sun.jna.NativeLibrary: void addSearchPath(java.lang.String,java.lang.String)
+com.sun.jna.NativeLibrary: com.sun.jna.Function getFunction(java.lang.String)
+com.sun.jna.NativeLibrary: com.sun.jna.Function getFunction(java.lang.String,java.lang.reflect.Method)
+com.sun.jna.NativeLibrary: com.sun.jna.Function getFunction(java.lang.String,int)
+com.sun.jna.NativeLibrary: com.sun.jna.Function getFunction(java.lang.String,int,java.lang.String)
+com.sun.jna.NativeLibrary: java.util.Map getOptions()
+com.sun.jna.NativeLibrary: com.sun.jna.Pointer getGlobalVariableAddress(java.lang.String)
+com.sun.jna.NativeLibrary: long getSymbolAddress(java.lang.String)
+com.sun.jna.NativeLibrary: java.lang.String toString()
+com.sun.jna.NativeLibrary: java.lang.String getName()
+com.sun.jna.NativeLibrary: java.io.File getFile()
+com.sun.jna.NativeLibrary: void finalize()
+com.sun.jna.NativeLibrary: void disposeAll()
+com.sun.jna.NativeLibrary: void dispose()
+com.sun.jna.NativeLibrary: java.util.List initPaths(java.lang.String)
+com.sun.jna.NativeLibrary: java.lang.String findLibraryPath(java.lang.String,java.util.List)
+com.sun.jna.NativeLibrary: java.lang.String mapSharedLibraryName(java.lang.String)
+com.sun.jna.NativeLibrary: boolean isVersionedName(java.lang.String)
+com.sun.jna.NativeLibrary: java.lang.String matchLibrary(java.lang.String,java.util.List)
+com.sun.jna.NativeLibrary: double parseVersion(java.lang.String)
+com.sun.jna.NativeLibrary: java.lang.String getMultiArchPath()
+com.sun.jna.NativeLibrary: boolean access$000(java.lang.String)
+com.sun.jna.NativeLibrary: void <clinit>()
+com.sun.jna.NativeLibrary$1
+com.sun.jna.NativeLibrary$1: com.sun.jna.NativeLibrary this$0
+com.sun.jna.NativeLibrary$1: NativeLibrary$1(com.sun.jna.NativeLibrary,com.sun.jna.NativeLibrary,java.lang.String,int,java.lang.String)
+com.sun.jna.NativeLibrary$1: java.lang.Object invoke(java.lang.Object[],java.lang.Class,boolean)
+com.sun.jna.NativeLibrary$2
+com.sun.jna.NativeLibrary$2: java.lang.String val$libName
+com.sun.jna.NativeLibrary$2: NativeLibrary$2(java.lang.String)
+com.sun.jna.NativeLibrary$2: boolean accept(java.io.File,java.lang.String)
+com.sun.jna.NativeLong
+com.sun.jna.NativeLong: int SIZE
+com.sun.jna.NativeLong: NativeLong()
+com.sun.jna.NativeLong: NativeLong(long)
+com.sun.jna.NativeLong: void <clinit>()
+com.sun.jna.NativeMapped
+com.sun.jna.NativeMapped: java.lang.Object fromNative(java.lang.Object,com.sun.jna.FromNativeContext)
+com.sun.jna.NativeMapped: java.lang.Object toNative()
+com.sun.jna.NativeMapped: java.lang.Class nativeType()
+com.sun.jna.NativeMappedConverter
+com.sun.jna.NativeMappedConverter: java.util.Map converters
+com.sun.jna.NativeMappedConverter: java.lang.Class type
+com.sun.jna.NativeMappedConverter: java.lang.Class nativeType
+com.sun.jna.NativeMappedConverter: com.sun.jna.NativeMapped instance
+com.sun.jna.NativeMappedConverter: com.sun.jna.NativeMappedConverter getInstance(java.lang.Class)
+com.sun.jna.NativeMappedConverter: NativeMappedConverter(java.lang.Class)
+com.sun.jna.NativeMappedConverter: com.sun.jna.NativeMapped defaultValue()
+com.sun.jna.NativeMappedConverter: java.lang.Object fromNative(java.lang.Object,com.sun.jna.FromNativeContext)
+com.sun.jna.NativeMappedConverter: java.lang.Class nativeType()
+com.sun.jna.NativeMappedConverter: java.lang.Object toNative(java.lang.Object,com.sun.jna.ToNativeContext)
+com.sun.jna.NativeMappedConverter: void <clinit>()
+com.sun.jna.NativeString
+com.sun.jna.NativeString: java.lang.String WIDE_STRING
+com.sun.jna.NativeString: com.sun.jna.Pointer pointer
+com.sun.jna.NativeString: java.lang.String encoding
+com.sun.jna.NativeString: NativeString(java.lang.String)
+com.sun.jna.NativeString: NativeString(java.lang.String,boolean)
+com.sun.jna.NativeString: NativeString(com.sun.jna.WString)
+com.sun.jna.NativeString: NativeString(java.lang.String,java.lang.String)
+com.sun.jna.NativeString: int hashCode()
+com.sun.jna.NativeString: boolean equals(java.lang.Object)
+com.sun.jna.NativeString: java.lang.String toString()
+com.sun.jna.NativeString: com.sun.jna.Pointer getPointer()
+com.sun.jna.NativeString: char charAt(int)
+com.sun.jna.NativeString: int length()
+com.sun.jna.NativeString: java.lang.CharSequence subSequence(int,int)
+com.sun.jna.NativeString: int compareTo(java.lang.Object)
+com.sun.jna.Platform
+com.sun.jna.Platform: int UNSPECIFIED
+com.sun.jna.Platform: int MAC
+com.sun.jna.Platform: int LINUX
+com.sun.jna.Platform: int WINDOWS
+com.sun.jna.Platform: int SOLARIS
+com.sun.jna.Platform: int FREEBSD
+com.sun.jna.Platform: int OPENBSD
+com.sun.jna.Platform: int WINDOWSCE
+com.sun.jna.Platform: int AIX
+com.sun.jna.Platform: int ANDROID
+com.sun.jna.Platform: int GNU
+com.sun.jna.Platform: int KFREEBSD
+com.sun.jna.Platform: int NETBSD
+com.sun.jna.Platform: boolean RO_FIELDS
+com.sun.jna.Platform: boolean HAS_BUFFERS
+com.sun.jna.Platform: boolean HAS_AWT
+com.sun.jna.Platform: java.lang.String MATH_LIBRARY_NAME
+com.sun.jna.Platform: java.lang.String C_LIBRARY_NAME
+com.sun.jna.Platform: boolean HAS_DLL_CALLBACKS
+com.sun.jna.Platform: java.lang.String RESOURCE_PREFIX
+com.sun.jna.Platform: int osType
+com.sun.jna.Platform: java.lang.String ARCH
+com.sun.jna.Platform: Platform()
+com.sun.jna.Platform: int getOSType()
+com.sun.jna.Platform: boolean isMac()
+com.sun.jna.Platform: boolean isAndroid()
+com.sun.jna.Platform: boolean isLinux()
+com.sun.jna.Platform: boolean isAIX()
+com.sun.jna.Platform: boolean isAix()
+com.sun.jna.Platform: boolean isWindowsCE()
+com.sun.jna.Platform: boolean isWindows()
+com.sun.jna.Platform: boolean isSolaris()
+com.sun.jna.Platform: boolean isFreeBSD()
+com.sun.jna.Platform: boolean isOpenBSD()
+com.sun.jna.Platform: boolean isNetBSD()
+com.sun.jna.Platform: boolean isGNU()
+com.sun.jna.Platform: boolean iskFreeBSD()
+com.sun.jna.Platform: boolean isX11()
+com.sun.jna.Platform: boolean hasRuntimeExec()
+com.sun.jna.Platform: boolean is64Bit()
+com.sun.jna.Platform: boolean isIntel()
+com.sun.jna.Platform: boolean isPPC()
+com.sun.jna.Platform: boolean isARM()
+com.sun.jna.Platform: boolean isSPARC()
+com.sun.jna.Platform: java.lang.String getNativeLibraryResourcePrefix()
+com.sun.jna.Platform: java.lang.String getNativeLibraryResourcePrefix(int,java.lang.String,java.lang.String)
+com.sun.jna.Platform: void <clinit>()
+com.sun.jna.Pointer
+com.sun.jna.Pointer: int SIZE
+com.sun.jna.Pointer: com.sun.jna.Pointer NULL
+com.sun.jna.Pointer: long peer
+com.sun.jna.Pointer: com.sun.jna.Pointer createConstant(long)
+com.sun.jna.Pointer: com.sun.jna.Pointer createConstant(int)
+com.sun.jna.Pointer: Pointer()
+com.sun.jna.Pointer: Pointer(long)
+com.sun.jna.Pointer: com.sun.jna.Pointer share(long)
+com.sun.jna.Pointer: com.sun.jna.Pointer share(long,long)
+com.sun.jna.Pointer: void clear(long)
+com.sun.jna.Pointer: boolean equals(java.lang.Object)
+com.sun.jna.Pointer: int hashCode()
+com.sun.jna.Pointer: long indexOf(long,byte)
+com.sun.jna.Pointer: void read(long,byte[],int,int)
+com.sun.jna.Pointer: void read(long,short[],int,int)
+com.sun.jna.Pointer: void read(long,char[],int,int)
+com.sun.jna.Pointer: void read(long,int[],int,int)
+com.sun.jna.Pointer: void read(long,long[],int,int)
+com.sun.jna.Pointer: void read(long,float[],int,int)
+com.sun.jna.Pointer: void read(long,double[],int,int)
+com.sun.jna.Pointer: void read(long,com.sun.jna.Pointer[],int,int)
+com.sun.jna.Pointer: void write(long,byte[],int,int)
+com.sun.jna.Pointer: void write(long,short[],int,int)
+com.sun.jna.Pointer: void write(long,char[],int,int)
+com.sun.jna.Pointer: void write(long,int[],int,int)
+com.sun.jna.Pointer: void write(long,long[],int,int)
+com.sun.jna.Pointer: void write(long,float[],int,int)
+com.sun.jna.Pointer: void write(long,double[],int,int)
+com.sun.jna.Pointer: void write(long,com.sun.jna.Pointer[],int,int)
+com.sun.jna.Pointer: java.lang.Object getValue(long,java.lang.Class,java.lang.Object)
+com.sun.jna.Pointer: void readArray(long,java.lang.Object,java.lang.Class)
+com.sun.jna.Pointer: byte getByte(long)
+com.sun.jna.Pointer: char getChar(long)
+com.sun.jna.Pointer: short getShort(long)
+com.sun.jna.Pointer: int getInt(long)
+com.sun.jna.Pointer: long getLong(long)
+com.sun.jna.Pointer: com.sun.jna.NativeLong getNativeLong(long)
+com.sun.jna.Pointer: float getFloat(long)
+com.sun.jna.Pointer: double getDouble(long)
+com.sun.jna.Pointer: com.sun.jna.Pointer getPointer(long)
+com.sun.jna.Pointer: java.nio.ByteBuffer getByteBuffer(long,long)
+com.sun.jna.Pointer: java.lang.String getString(long,boolean)
+com.sun.jna.Pointer: java.lang.String getWideString(long)
+com.sun.jna.Pointer: java.lang.String getString(long)
+com.sun.jna.Pointer: java.lang.String getString(long,java.lang.String)
+com.sun.jna.Pointer: byte[] getByteArray(long,int)
+com.sun.jna.Pointer: char[] getCharArray(long,int)
+com.sun.jna.Pointer: short[] getShortArray(long,int)
+com.sun.jna.Pointer: int[] getIntArray(long,int)
+com.sun.jna.Pointer: long[] getLongArray(long,int)
+com.sun.jna.Pointer: float[] getFloatArray(long,int)
+com.sun.jna.Pointer: double[] getDoubleArray(long,int)
+com.sun.jna.Pointer: com.sun.jna.Pointer[] getPointerArray(long)
+com.sun.jna.Pointer: com.sun.jna.Pointer[] getPointerArray(long,int)
+com.sun.jna.Pointer: java.lang.String[] getStringArray(long)
+com.sun.jna.Pointer: java.lang.String[] getStringArray(long,java.lang.String)
+com.sun.jna.Pointer: java.lang.String[] getStringArray(long,int)
+com.sun.jna.Pointer: java.lang.String[] getStringArray(long,boolean)
+com.sun.jna.Pointer: java.lang.String[] getWideStringArray(long)
+com.sun.jna.Pointer: java.lang.String[] getWideStringArray(long,int)
+com.sun.jna.Pointer: java.lang.String[] getStringArray(long,int,boolean)
+com.sun.jna.Pointer: java.lang.String[] getStringArray(long,int,java.lang.String)
+com.sun.jna.Pointer: void setValue(long,java.lang.Object,java.lang.Class)
+com.sun.jna.Pointer: void writeArray(long,java.lang.Object,java.lang.Class)
+com.sun.jna.Pointer: void setMemory(long,long,byte)
+com.sun.jna.Pointer: void setByte(long,byte)
+com.sun.jna.Pointer: void setShort(long,short)
+com.sun.jna.Pointer: void setChar(long,char)
+com.sun.jna.Pointer: void setInt(long,int)
+com.sun.jna.Pointer: void setLong(long,long)
+com.sun.jna.Pointer: void setNativeLong(long,com.sun.jna.NativeLong)
+com.sun.jna.Pointer: void setFloat(long,float)
+com.sun.jna.Pointer: void setDouble(long,double)
+com.sun.jna.Pointer: void setPointer(long,com.sun.jna.Pointer)
+com.sun.jna.Pointer: void setString(long,java.lang.String,boolean)
+com.sun.jna.Pointer: void setWideString(long,java.lang.String)
+com.sun.jna.Pointer: void setString(long,com.sun.jna.WString)
+com.sun.jna.Pointer: void setString(long,java.lang.String)
+com.sun.jna.Pointer: void setString(long,java.lang.String,java.lang.String)
+com.sun.jna.Pointer: java.lang.String dump(long,int)
+com.sun.jna.Pointer: java.lang.String toString()
+com.sun.jna.Pointer: long nativeValue(com.sun.jna.Pointer)
+com.sun.jna.Pointer: void nativeValue(com.sun.jna.Pointer,long)
+com.sun.jna.Pointer: void <clinit>()
+com.sun.jna.Pointer$1
+com.sun.jna.Pointer$Opaque
+com.sun.jna.Pointer$Opaque: java.lang.String MSG
+com.sun.jna.Pointer$Opaque: Pointer$Opaque(long)
+com.sun.jna.Pointer$Opaque: com.sun.jna.Pointer share(long,long)
+com.sun.jna.Pointer$Opaque: void clear(long)
+com.sun.jna.Pointer$Opaque: long indexOf(long,byte)
+com.sun.jna.Pointer$Opaque: void read(long,byte[],int,int)
+com.sun.jna.Pointer$Opaque: void read(long,char[],int,int)
+com.sun.jna.Pointer$Opaque: void read(long,short[],int,int)
+com.sun.jna.Pointer$Opaque: void read(long,int[],int,int)
+com.sun.jna.Pointer$Opaque: void read(long,long[],int,int)
+com.sun.jna.Pointer$Opaque: void read(long,float[],int,int)
+com.sun.jna.Pointer$Opaque: void read(long,double[],int,int)
+com.sun.jna.Pointer$Opaque: void read(long,com.sun.jna.Pointer[],int,int)
+com.sun.jna.Pointer$Opaque: void write(long,byte[],int,int)
+com.sun.jna.Pointer$Opaque: void write(long,char[],int,int)
+com.sun.jna.Pointer$Opaque: void write(long,short[],int,int)
+com.sun.jna.Pointer$Opaque: void write(long,int[],int,int)
+com.sun.jna.Pointer$Opaque: void write(long,long[],int,int)
+com.sun.jna.Pointer$Opaque: void write(long,float[],int,int)
+com.sun.jna.Pointer$Opaque: void write(long,double[],int,int)
+com.sun.jna.Pointer$Opaque: void write(long,com.sun.jna.Pointer[],int,int)
+com.sun.jna.Pointer$Opaque: java.nio.ByteBuffer getByteBuffer(long,long)
+com.sun.jna.Pointer$Opaque: byte getByte(long)
+com.sun.jna.Pointer$Opaque: char getChar(long)
+com.sun.jna.Pointer$Opaque: short getShort(long)
+com.sun.jna.Pointer$Opaque: int getInt(long)
+com.sun.jna.Pointer$Opaque: long getLong(long)
+com.sun.jna.Pointer$Opaque: float getFloat(long)
+com.sun.jna.Pointer$Opaque: double getDouble(long)
+com.sun.jna.Pointer$Opaque: com.sun.jna.Pointer getPointer(long)
+com.sun.jna.Pointer$Opaque: java.lang.String getString(long,java.lang.String)
+com.sun.jna.Pointer$Opaque: java.lang.String getWideString(long)
+com.sun.jna.Pointer$Opaque: void setByte(long,byte)
+com.sun.jna.Pointer$Opaque: void setChar(long,char)
+com.sun.jna.Pointer$Opaque: void setShort(long,short)
+com.sun.jna.Pointer$Opaque: void setInt(long,int)
+com.sun.jna.Pointer$Opaque: void setLong(long,long)
+com.sun.jna.Pointer$Opaque: void setFloat(long,float)
+com.sun.jna.Pointer$Opaque: void setDouble(long,double)
+com.sun.jna.Pointer$Opaque: void setPointer(long,com.sun.jna.Pointer)
+com.sun.jna.Pointer$Opaque: void setString(long,java.lang.String,java.lang.String)
+com.sun.jna.Pointer$Opaque: void setWideString(long,java.lang.String)
+com.sun.jna.Pointer$Opaque: void setMemory(long,long,byte)
+com.sun.jna.Pointer$Opaque: java.lang.String toString()
+com.sun.jna.Pointer$Opaque: Pointer$Opaque(long,com.sun.jna.Pointer$1)
+com.sun.jna.PointerType
+com.sun.jna.PointerType: com.sun.jna.Pointer pointer
+com.sun.jna.PointerType: PointerType()
+com.sun.jna.PointerType: PointerType(com.sun.jna.Pointer)
+com.sun.jna.PointerType: java.lang.Class nativeType()
+com.sun.jna.PointerType: java.lang.Object toNative()
+com.sun.jna.PointerType: com.sun.jna.Pointer getPointer()
+com.sun.jna.PointerType: void setPointer(com.sun.jna.Pointer)
+com.sun.jna.PointerType: java.lang.Object fromNative(java.lang.Object,com.sun.jna.FromNativeContext)
+com.sun.jna.PointerType: int hashCode()
+com.sun.jna.PointerType: boolean equals(java.lang.Object)
+com.sun.jna.PointerType: java.lang.String toString()
+com.sun.jna.StringArray
+com.sun.jna.StringArray: java.lang.String encoding
+com.sun.jna.StringArray: java.util.List natives
+com.sun.jna.StringArray: java.lang.Object[] original
+com.sun.jna.StringArray: StringArray(java.lang.String[])
+com.sun.jna.StringArray: StringArray(java.lang.String[],boolean)
+com.sun.jna.StringArray: StringArray(java.lang.String[],java.lang.String)
+com.sun.jna.StringArray: StringArray(com.sun.jna.WString[])
+com.sun.jna.StringArray: StringArray(java.lang.Object[],java.lang.String)
+com.sun.jna.StringArray: void read()
+com.sun.jna.StringArray: java.lang.String toString()
+com.sun.jna.Structure
+com.sun.jna.Structure: int ALIGN_DEFAULT
+com.sun.jna.Structure: int ALIGN_NONE
+com.sun.jna.Structure: int ALIGN_GNUC
+com.sun.jna.Structure: int ALIGN_MSVC
+com.sun.jna.Structure: int CALCULATE_SIZE
+com.sun.jna.Structure: java.util.Map layoutInfo
+com.sun.jna.Structure: java.util.Map fieldOrder
+com.sun.jna.Structure: com.sun.jna.Pointer memory
+com.sun.jna.Structure: int size
+com.sun.jna.Structure: int alignType
+com.sun.jna.Structure: java.lang.String encoding
+com.sun.jna.Structure: int actualAlignType
+com.sun.jna.Structure: int structAlignment
+com.sun.jna.Structure: java.util.Map structFields
+com.sun.jna.Structure: java.util.Map nativeStrings
+com.sun.jna.Structure: com.sun.jna.TypeMapper typeMapper
+com.sun.jna.Structure: long typeInfo
+com.sun.jna.Structure: boolean autoRead
+com.sun.jna.Structure: boolean autoWrite
+com.sun.jna.Structure: com.sun.jna.Structure[] array
+com.sun.jna.Structure: boolean readCalled
+com.sun.jna.Structure: java.lang.ThreadLocal reads
+com.sun.jna.Structure: java.lang.ThreadLocal busy
+com.sun.jna.Structure: com.sun.jna.Pointer PLACEHOLDER_MEMORY
+com.sun.jna.Structure: Structure()
+com.sun.jna.Structure: Structure(com.sun.jna.TypeMapper)
+com.sun.jna.Structure: Structure(int)
+com.sun.jna.Structure: Structure(int,com.sun.jna.TypeMapper)
+com.sun.jna.Structure: Structure(com.sun.jna.Pointer)
+com.sun.jna.Structure: Structure(com.sun.jna.Pointer,int)
+com.sun.jna.Structure: Structure(com.sun.jna.Pointer,int,com.sun.jna.TypeMapper)
+com.sun.jna.Structure: java.util.Map fields()
+com.sun.jna.Structure: com.sun.jna.TypeMapper getTypeMapper()
+com.sun.jna.Structure: void initializeTypeMapper(com.sun.jna.TypeMapper)
+com.sun.jna.Structure: void layoutChanged()
+com.sun.jna.Structure: void setStringEncoding(java.lang.String)
+com.sun.jna.Structure: java.lang.String getStringEncoding()
+com.sun.jna.Structure: void setAlignType(int)
+com.sun.jna.Structure: com.sun.jna.Memory autoAllocate(int)
+com.sun.jna.Structure: void useMemory(com.sun.jna.Pointer)
+com.sun.jna.Structure: void useMemory(com.sun.jna.Pointer,int)
+com.sun.jna.Structure: void ensureAllocated()
+com.sun.jna.Structure: void ensureAllocated(boolean)
+com.sun.jna.Structure: void allocateMemory()
+com.sun.jna.Structure: void allocateMemory(boolean)
+com.sun.jna.Structure: void allocateMemory(int)
+com.sun.jna.Structure: int size()
+com.sun.jna.Structure: void clear()
+com.sun.jna.Structure: com.sun.jna.Pointer getPointer()
+com.sun.jna.Structure: java.util.Set busy()
+com.sun.jna.Structure: java.util.Map reading()
+com.sun.jna.Structure: void conditionalAutoRead()
+com.sun.jna.Structure: void read()
+com.sun.jna.Structure: int fieldOffset(java.lang.String)
+com.sun.jna.Structure: java.lang.Object readField(java.lang.String)
+com.sun.jna.Structure: java.lang.Object getFieldValue(java.lang.reflect.Field)
+com.sun.jna.Structure: void setFieldValue(java.lang.reflect.Field,java.lang.Object)
+com.sun.jna.Structure: void setFieldValue(java.lang.reflect.Field,java.lang.Object,boolean)
+com.sun.jna.Structure: com.sun.jna.Structure updateStructureByReference(java.lang.Class,com.sun.jna.Structure,com.sun.jna.Pointer)
+com.sun.jna.Structure: java.lang.Object readField(com.sun.jna.Structure$StructField)
+com.sun.jna.Structure: void write()
+com.sun.jna.Structure: void writeField(java.lang.String)
+com.sun.jna.Structure: void writeField(java.lang.String,java.lang.Object)
+com.sun.jna.Structure: void writeField(com.sun.jna.Structure$StructField)
+com.sun.jna.Structure: java.util.List getFieldOrder()
+com.sun.jna.Structure: void setFieldOrder(java.lang.String[])
+com.sun.jna.Structure: void sortFields(java.util.List,java.util.List)
+com.sun.jna.Structure: java.util.List getFieldList()
+com.sun.jna.Structure: java.util.List fieldOrder()
+com.sun.jna.Structure: java.util.List sort(java.util.Collection)
+com.sun.jna.Structure: java.util.List getFields(boolean)
+com.sun.jna.Structure: int calculateSize(boolean)
+com.sun.jna.Structure: int size(java.lang.Class)
+com.sun.jna.Structure: int size(java.lang.Class,com.sun.jna.Structure)
+com.sun.jna.Structure: int calculateSize(boolean,boolean)
+com.sun.jna.Structure: void validateField(java.lang.String,java.lang.Class)
+com.sun.jna.Structure: void validateFields()
+com.sun.jna.Structure: com.sun.jna.Structure$LayoutInfo deriveLayout(boolean,boolean)
+com.sun.jna.Structure: void initializeFields()
+com.sun.jna.Structure: java.lang.Object initializeField(java.lang.reflect.Field,java.lang.Class)
+com.sun.jna.Structure: int addPadding(int)
+com.sun.jna.Structure: int addPadding(int,int)
+com.sun.jna.Structure: int getStructAlignment()
+com.sun.jna.Structure: int getNativeAlignment(java.lang.Class,java.lang.Object,boolean)
+com.sun.jna.Structure: java.lang.String toString()
+com.sun.jna.Structure: java.lang.String toString(boolean)
+com.sun.jna.Structure: java.lang.String format(java.lang.Class)
+com.sun.jna.Structure: java.lang.String toString(int,boolean,boolean)
+com.sun.jna.Structure: com.sun.jna.Structure[] toArray(com.sun.jna.Structure[])
+com.sun.jna.Structure: com.sun.jna.Structure[] toArray(int)
+com.sun.jna.Structure: java.lang.Class baseClass()
+com.sun.jna.Structure: boolean equals(java.lang.Object)
+com.sun.jna.Structure: int hashCode()
+com.sun.jna.Structure: void cacheTypeInfo(com.sun.jna.Pointer)
+com.sun.jna.Structure: com.sun.jna.Pointer getFieldTypeInfo(com.sun.jna.Structure$StructField)
+com.sun.jna.Structure: com.sun.jna.Pointer getTypeInfo()
+com.sun.jna.Structure: void setAutoSynch(boolean)
+com.sun.jna.Structure: void setAutoRead(boolean)
+com.sun.jna.Structure: boolean getAutoRead()
+com.sun.jna.Structure: void setAutoWrite(boolean)
+com.sun.jna.Structure: boolean getAutoWrite()
+com.sun.jna.Structure: com.sun.jna.Pointer getTypeInfo(java.lang.Object)
+com.sun.jna.Structure: com.sun.jna.Structure newInstance(java.lang.Class,long)
+com.sun.jna.Structure: com.sun.jna.Structure newInstance(java.lang.Class,com.sun.jna.Pointer)
+com.sun.jna.Structure: com.sun.jna.Structure newInstance(java.lang.Class)
+com.sun.jna.Structure: com.sun.jna.Structure$StructField typeInfoField()
+com.sun.jna.Structure: void structureArrayCheck(com.sun.jna.Structure[])
+com.sun.jna.Structure: void autoRead(com.sun.jna.Structure[])
+com.sun.jna.Structure: void autoRead()
+com.sun.jna.Structure: void autoWrite(com.sun.jna.Structure[])
+com.sun.jna.Structure: void autoWrite()
+com.sun.jna.Structure: int getNativeSize(java.lang.Class)
+com.sun.jna.Structure: int getNativeSize(java.lang.Class,java.lang.Object)
+com.sun.jna.Structure: void validate(java.lang.Class)
+com.sun.jna.Structure: void access$1900(com.sun.jna.Structure,boolean)
+com.sun.jna.Structure: com.sun.jna.Pointer access$2000()
+com.sun.jna.Structure: void <clinit>()
+com.sun.jna.Structure$1
+com.sun.jna.Structure$1: Structure$1()
+com.sun.jna.Structure$1: java.lang.Object initialValue()
+com.sun.jna.Structure$2
+com.sun.jna.Structure$2: Structure$2()
+com.sun.jna.Structure$2: java.lang.Object initialValue()
+com.sun.jna.Structure$2$StructureSet
+com.sun.jna.Structure$2$StructureSet: com.sun.jna.Structure[] elements
+com.sun.jna.Structure$2$StructureSet: int count
+com.sun.jna.Structure$2$StructureSet: com.sun.jna.Structure$2 this$0
+com.sun.jna.Structure$2$StructureSet: Structure$2$StructureSet(com.sun.jna.Structure$2)
+com.sun.jna.Structure$2$StructureSet: void ensureCapacity(int)
+com.sun.jna.Structure$2$StructureSet: int size()
+com.sun.jna.Structure$2$StructureSet: boolean contains(java.lang.Object)
+com.sun.jna.Structure$2$StructureSet: boolean add(java.lang.Object)
+com.sun.jna.Structure$2$StructureSet: int indexOf(java.lang.Object)
+com.sun.jna.Structure$2$StructureSet: boolean remove(java.lang.Object)
+com.sun.jna.Structure$2$StructureSet: java.util.Iterator iterator()
+com.sun.jna.Structure$3
+com.sun.jna.Structure$3: Structure$3(long)
+com.sun.jna.Structure$3: com.sun.jna.Pointer share(long,long)
+com.sun.jna.Structure$AutoAllocated
+com.sun.jna.Structure$AutoAllocated: Structure$AutoAllocated(int)
+com.sun.jna.Structure$AutoAllocated: java.lang.String toString()
+com.sun.jna.Structure$ByReference
+com.sun.jna.Structure$ByValue
+com.sun.jna.Structure$FFIType
+com.sun.jna.Structure$FFIType: java.util.Map typeInfoMap
+com.sun.jna.Structure$FFIType: int FFI_TYPE_STRUCT
+com.sun.jna.Structure$FFIType: com.sun.jna.Structure$FFIType$size_t size
+com.sun.jna.Structure$FFIType: short alignment
+com.sun.jna.Structure$FFIType: short type
+com.sun.jna.Structure$FFIType: com.sun.jna.Pointer elements
+com.sun.jna.Structure$FFIType: Structure$FFIType(com.sun.jna.Structure)
+com.sun.jna.Structure$FFIType: Structure$FFIType(java.lang.Object,java.lang.Class)
+com.sun.jna.Structure$FFIType: java.util.List getFieldOrder()
+com.sun.jna.Structure$FFIType: void init(com.sun.jna.Pointer[])
+com.sun.jna.Structure$FFIType: com.sun.jna.Pointer get(java.lang.Object)
+com.sun.jna.Structure$FFIType: com.sun.jna.Pointer get(java.lang.Object,java.lang.Class)
+com.sun.jna.Structure$FFIType: com.sun.jna.Pointer access$800(java.lang.Object,java.lang.Class)
+com.sun.jna.Structure$FFIType: void <clinit>()
+com.sun.jna.Structure$FFIType$FFITypes
+com.sun.jna.Structure$FFIType$FFITypes: com.sun.jna.Pointer ffi_type_void
+com.sun.jna.Structure$FFIType$FFITypes: com.sun.jna.Pointer ffi_type_float
+com.sun.jna.Structure$FFIType$FFITypes: com.sun.jna.Pointer ffi_type_double
+com.sun.jna.Structure$FFIType$FFITypes: com.sun.jna.Pointer ffi_type_longdouble
+com.sun.jna.Structure$FFIType$FFITypes: com.sun.jna.Pointer ffi_type_uint8
+com.sun.jna.Structure$FFIType$FFITypes: com.sun.jna.Pointer ffi_type_sint8
+com.sun.jna.Structure$FFIType$FFITypes: com.sun.jna.Pointer ffi_type_uint16
+com.sun.jna.Structure$FFIType$FFITypes: com.sun.jna.Pointer ffi_type_sint16
+com.sun.jna.Structure$FFIType$FFITypes: com.sun.jna.Pointer ffi_type_uint32
+com.sun.jna.Structure$FFIType$FFITypes: com.sun.jna.Pointer ffi_type_sint32
+com.sun.jna.Structure$FFIType$FFITypes: com.sun.jna.Pointer ffi_type_uint64
+com.sun.jna.Structure$FFIType$FFITypes: com.sun.jna.Pointer ffi_type_sint64
+com.sun.jna.Structure$FFIType$FFITypes: com.sun.jna.Pointer ffi_type_pointer
+com.sun.jna.Structure$FFIType$FFITypes: Structure$FFIType$FFITypes()
+com.sun.jna.Structure$FFIType$FFITypes: com.sun.jna.Pointer access$900()
+com.sun.jna.Structure$FFIType$FFITypes: com.sun.jna.Pointer access$1000()
+com.sun.jna.Structure$FFIType$FFITypes: com.sun.jna.Pointer access$1100()
+com.sun.jna.Structure$FFIType$FFITypes: com.sun.jna.Pointer access$1200()
+com.sun.jna.Structure$FFIType$FFITypes: com.sun.jna.Pointer access$1300()
+com.sun.jna.Structure$FFIType$FFITypes: com.sun.jna.Pointer access$1400()
+com.sun.jna.Structure$FFIType$FFITypes: com.sun.jna.Pointer access$1500()
+com.sun.jna.Structure$FFIType$FFITypes: com.sun.jna.Pointer access$1600()
+com.sun.jna.Structure$FFIType$FFITypes: com.sun.jna.Pointer access$1700()
+com.sun.jna.Structure$FFIType$FFITypes: com.sun.jna.Pointer access$1800()
+com.sun.jna.Structure$FFIType$size_t
+com.sun.jna.Structure$FFIType$size_t: Structure$FFIType$size_t()
+com.sun.jna.Structure$FFIType$size_t: Structure$FFIType$size_t(long)
+com.sun.jna.Structure$LayoutInfo
+com.sun.jna.Structure$LayoutInfo: int size
+com.sun.jna.Structure$LayoutInfo: int alignment
+com.sun.jna.Structure$LayoutInfo: java.util.Map fields
+com.sun.jna.Structure$LayoutInfo: int alignType
+com.sun.jna.Structure$LayoutInfo: com.sun.jna.TypeMapper typeMapper
+com.sun.jna.Structure$LayoutInfo: boolean variable
+com.sun.jna.Structure$LayoutInfo: com.sun.jna.Structure$StructField typeInfoField
+com.sun.jna.Structure$LayoutInfo: Structure$LayoutInfo()
+com.sun.jna.Structure$LayoutInfo: boolean access$000(com.sun.jna.Structure$LayoutInfo)
+com.sun.jna.Structure$LayoutInfo: int access$100(com.sun.jna.Structure$LayoutInfo)
+com.sun.jna.Structure$LayoutInfo: int access$200(com.sun.jna.Structure$LayoutInfo)
+com.sun.jna.Structure$LayoutInfo: com.sun.jna.TypeMapper access$300(com.sun.jna.Structure$LayoutInfo)
+com.sun.jna.Structure$LayoutInfo: int access$400(com.sun.jna.Structure$LayoutInfo)
+com.sun.jna.Structure$LayoutInfo: java.util.Map access$500(com.sun.jna.Structure$LayoutInfo)
+com.sun.jna.Structure$LayoutInfo: Structure$LayoutInfo(com.sun.jna.Structure$1)
+com.sun.jna.Structure$LayoutInfo: int access$202(com.sun.jna.Structure$LayoutInfo,int)
+com.sun.jna.Structure$LayoutInfo: com.sun.jna.TypeMapper access$302(com.sun.jna.Structure$LayoutInfo,com.sun.jna.TypeMapper)
+com.sun.jna.Structure$LayoutInfo: boolean access$002(com.sun.jna.Structure$LayoutInfo,boolean)
+com.sun.jna.Structure$LayoutInfo: int access$402(com.sun.jna.Structure$LayoutInfo,int)
+com.sun.jna.Structure$LayoutInfo: com.sun.jna.Structure$StructField access$700(com.sun.jna.Structure$LayoutInfo)
+com.sun.jna.Structure$LayoutInfo: com.sun.jna.Structure$StructField access$702(com.sun.jna.Structure$LayoutInfo,com.sun.jna.Structure$StructField)
+com.sun.jna.Structure$LayoutInfo: int access$102(com.sun.jna.Structure$LayoutInfo,int)
+com.sun.jna.Structure$StructField
+com.sun.jna.Structure$StructField: java.lang.String name
+com.sun.jna.Structure$StructField: java.lang.Class type
+com.sun.jna.Structure$StructField: java.lang.reflect.Field field
+com.sun.jna.Structure$StructField: int size
+com.sun.jna.Structure$StructField: int offset
+com.sun.jna.Structure$StructField: boolean isVolatile
+com.sun.jna.Structure$StructField: boolean isReadOnly
+com.sun.jna.Structure$StructField: com.sun.jna.FromNativeConverter readConverter
+com.sun.jna.Structure$StructField: com.sun.jna.ToNativeConverter writeConverter
+com.sun.jna.Structure$StructField: com.sun.jna.FromNativeContext context
+com.sun.jna.Structure$StructField: Structure$StructField()
+com.sun.jna.Structure$StructField: java.lang.String toString()
+com.sun.jna.StructureReadContext
+com.sun.jna.StructureReadContext: com.sun.jna.Structure structure
+com.sun.jna.StructureReadContext: java.lang.reflect.Field field
+com.sun.jna.StructureReadContext: StructureReadContext(com.sun.jna.Structure,java.lang.reflect.Field)
+com.sun.jna.StructureReadContext: com.sun.jna.Structure getStructure()
+com.sun.jna.StructureReadContext: java.lang.reflect.Field getField()
+com.sun.jna.StructureWriteContext
+com.sun.jna.StructureWriteContext: com.sun.jna.Structure struct
+com.sun.jna.StructureWriteContext: java.lang.reflect.Field field
+com.sun.jna.StructureWriteContext: StructureWriteContext(com.sun.jna.Structure,java.lang.reflect.Field)
+com.sun.jna.StructureWriteContext: com.sun.jna.Structure getStructure()
+com.sun.jna.StructureWriteContext: java.lang.reflect.Field getField()
+com.sun.jna.ToNativeContext
+com.sun.jna.ToNativeContext: ToNativeContext()
+com.sun.jna.ToNativeConverter
+com.sun.jna.ToNativeConverter: java.lang.Object toNative(java.lang.Object,com.sun.jna.ToNativeContext)
+com.sun.jna.ToNativeConverter: java.lang.Class nativeType()
+com.sun.jna.TypeConverter
+com.sun.jna.TypeMapper
+com.sun.jna.TypeMapper: com.sun.jna.FromNativeConverter getFromNativeConverter(java.lang.Class)
+com.sun.jna.TypeMapper: com.sun.jna.ToNativeConverter getToNativeConverter(java.lang.Class)
+com.sun.jna.Union
+com.sun.jna.Union: com.sun.jna.Structure$StructField activeField
+com.sun.jna.Union: Union()
+com.sun.jna.Union: Union(com.sun.jna.Pointer)
+com.sun.jna.Union: Union(com.sun.jna.Pointer,int)
+com.sun.jna.Union: Union(com.sun.jna.TypeMapper)
+com.sun.jna.Union: Union(com.sun.jna.Pointer,int,com.sun.jna.TypeMapper)
+com.sun.jna.Union: java.util.List getFieldOrder()
+com.sun.jna.Union: void setType(java.lang.Class)
+com.sun.jna.Union: void setType(java.lang.String)
+com.sun.jna.Union: java.lang.Object readField(java.lang.String)
+com.sun.jna.Union: void writeField(java.lang.String)
+com.sun.jna.Union: void writeField(java.lang.String,java.lang.Object)
+com.sun.jna.Union: java.lang.Object getTypedValue(java.lang.Class)
+com.sun.jna.Union: java.lang.Object setTypedValue(java.lang.Object)
+com.sun.jna.Union: com.sun.jna.Structure$StructField findField(java.lang.Class)
+com.sun.jna.Union: void writeField(com.sun.jna.Structure$StructField)
+com.sun.jna.Union: java.lang.Object readField(com.sun.jna.Structure$StructField)
+com.sun.jna.Union: int getNativeAlignment(java.lang.Class,java.lang.Object,boolean)
+com.sun.jna.Version
+com.sun.jna.Version: java.lang.String VERSION
+com.sun.jna.Version: java.lang.String VERSION_NATIVE
+com.sun.jna.WString
+com.sun.jna.WString: java.lang.String string
+com.sun.jna.WString: WString(java.lang.String)
+com.sun.jna.WString: java.lang.String toString()
+com.sun.jna.WString: boolean equals(java.lang.Object)
+com.sun.jna.WString: int hashCode()
+com.sun.jna.WString: int compareTo(java.lang.Object)
+com.sun.jna.WString: int length()
+com.sun.jna.WString: char charAt(int)
+com.sun.jna.WString: java.lang.CharSequence subSequence(int,int)
+com.sun.jna.WeakIdentityHashMap
+com.sun.jna.WeakIdentityHashMap: java.lang.ref.ReferenceQueue queue
+com.sun.jna.WeakIdentityHashMap: java.util.Map backingStore
+com.sun.jna.WeakIdentityHashMap: WeakIdentityHashMap()
+com.sun.jna.WeakIdentityHashMap: void clear()
+com.sun.jna.WeakIdentityHashMap: boolean containsKey(java.lang.Object)
+com.sun.jna.WeakIdentityHashMap: boolean containsValue(java.lang.Object)
+com.sun.jna.WeakIdentityHashMap: java.util.Set entrySet()
+com.sun.jna.WeakIdentityHashMap: java.util.Set keySet()
+com.sun.jna.WeakIdentityHashMap: boolean equals(java.lang.Object)
+com.sun.jna.WeakIdentityHashMap: java.lang.Object get(java.lang.Object)
+com.sun.jna.WeakIdentityHashMap: java.lang.Object put(java.lang.Object,java.lang.Object)
+com.sun.jna.WeakIdentityHashMap: int hashCode()
+com.sun.jna.WeakIdentityHashMap: boolean isEmpty()
+com.sun.jna.WeakIdentityHashMap: void putAll(java.util.Map)
+com.sun.jna.WeakIdentityHashMap: java.lang.Object remove(java.lang.Object)
+com.sun.jna.WeakIdentityHashMap: int size()
+com.sun.jna.WeakIdentityHashMap: java.util.Collection values()
+com.sun.jna.WeakIdentityHashMap: void reap()
+com.sun.jna.WeakIdentityHashMap: java.lang.ref.ReferenceQueue access$000(com.sun.jna.WeakIdentityHashMap)
+com.sun.jna.WeakIdentityHashMap$1
+com.sun.jna.WeakIdentityHashMap$1: java.lang.Object val$key
+com.sun.jna.WeakIdentityHashMap$1: java.lang.Object val$value
+com.sun.jna.WeakIdentityHashMap$1: com.sun.jna.WeakIdentityHashMap this$0
+com.sun.jna.WeakIdentityHashMap$1: WeakIdentityHashMap$1(com.sun.jna.WeakIdentityHashMap,java.lang.Object,java.lang.Object)
+com.sun.jna.WeakIdentityHashMap$1: java.lang.Object getKey()
+com.sun.jna.WeakIdentityHashMap$1: java.lang.Object getValue()
+com.sun.jna.WeakIdentityHashMap$1: java.lang.Object setValue(java.lang.Object)
+com.sun.jna.WeakIdentityHashMap$IdentityWeakReference
+com.sun.jna.WeakIdentityHashMap$IdentityWeakReference: int hash
+com.sun.jna.WeakIdentityHashMap$IdentityWeakReference: com.sun.jna.WeakIdentityHashMap this$0
+com.sun.jna.WeakIdentityHashMap$IdentityWeakReference: WeakIdentityHashMap$IdentityWeakReference(com.sun.jna.WeakIdentityHashMap,java.lang.Object)
+com.sun.jna.WeakIdentityHashMap$IdentityWeakReference: int hashCode()
+com.sun.jna.WeakIdentityHashMap$IdentityWeakReference: boolean equals(java.lang.Object)
+com.sun.jna.ptr.ByReference
+com.sun.jna.ptr.ByReference: ByReference(int)
+com.sun.jna.ptr.ByteByReference
+com.sun.jna.ptr.ByteByReference: ByteByReference()
+com.sun.jna.ptr.ByteByReference: ByteByReference(byte)
+com.sun.jna.ptr.ByteByReference: void setValue(byte)
+com.sun.jna.ptr.ByteByReference: byte getValue()
+com.sun.jna.ptr.DoubleByReference
+com.sun.jna.ptr.DoubleByReference: DoubleByReference()
+com.sun.jna.ptr.DoubleByReference: DoubleByReference(double)
+com.sun.jna.ptr.DoubleByReference: void setValue(double)
+com.sun.jna.ptr.DoubleByReference: double getValue()
+com.sun.jna.ptr.FloatByReference
+com.sun.jna.ptr.FloatByReference: FloatByReference()
+com.sun.jna.ptr.FloatByReference: FloatByReference(float)
+com.sun.jna.ptr.FloatByReference: void setValue(float)
+com.sun.jna.ptr.FloatByReference: float getValue()
+com.sun.jna.ptr.IntByReference
+com.sun.jna.ptr.IntByReference: IntByReference()
+com.sun.jna.ptr.IntByReference: IntByReference(int)
+com.sun.jna.ptr.IntByReference: void setValue(int)
+com.sun.jna.ptr.IntByReference: int getValue()
+com.sun.jna.ptr.LongByReference
+com.sun.jna.ptr.LongByReference: LongByReference()
+com.sun.jna.ptr.LongByReference: LongByReference(long)
+com.sun.jna.ptr.LongByReference: void setValue(long)
+com.sun.jna.ptr.LongByReference: long getValue()
+com.sun.jna.ptr.NativeLongByReference
+com.sun.jna.ptr.NativeLongByReference: NativeLongByReference()
+com.sun.jna.ptr.NativeLongByReference: NativeLongByReference(com.sun.jna.NativeLong)
+com.sun.jna.ptr.NativeLongByReference: void setValue(com.sun.jna.NativeLong)
+com.sun.jna.ptr.NativeLongByReference: com.sun.jna.NativeLong getValue()
+com.sun.jna.ptr.PointerByReference
+com.sun.jna.ptr.PointerByReference: PointerByReference()
+com.sun.jna.ptr.PointerByReference: PointerByReference(com.sun.jna.Pointer)
+com.sun.jna.ptr.PointerByReference: void setValue(com.sun.jna.Pointer)
+com.sun.jna.ptr.PointerByReference: com.sun.jna.Pointer getValue()
+com.sun.jna.ptr.ShortByReference
+com.sun.jna.ptr.ShortByReference: ShortByReference()
+com.sun.jna.ptr.ShortByReference: ShortByReference(short)
+com.sun.jna.ptr.ShortByReference: void setValue(short)
+com.sun.jna.ptr.ShortByReference: short getValue()
+com.sun.jna.win32.DLLCallback
+com.sun.jna.win32.DLLCallback: int DLL_FPTRS
+com.sun.jna.win32.StdCall
+com.sun.jna.win32.StdCallFunctionMapper
+com.sun.jna.win32.StdCallFunctionMapper: StdCallFunctionMapper()
+com.sun.jna.win32.StdCallFunctionMapper: int getArgumentNativeStackSize(java.lang.Class)
+com.sun.jna.win32.StdCallFunctionMapper: java.lang.String getFunctionName(com.sun.jna.NativeLibrary,java.lang.reflect.Method)
+com.sun.jna.win32.StdCallLibrary
+com.sun.jna.win32.StdCallLibrary: int STDCALL_CONVENTION
+com.sun.jna.win32.StdCallLibrary: com.sun.jna.FunctionMapper FUNCTION_MAPPER
+com.sun.jna.win32.StdCallLibrary: void <clinit>()
+com.sun.jna.win32.StdCallLibrary$StdCallCallback
+com.sun.jna.win32.W32APIFunctionMapper
+com.sun.jna.win32.W32APIFunctionMapper: com.sun.jna.FunctionMapper UNICODE
+com.sun.jna.win32.W32APIFunctionMapper: com.sun.jna.FunctionMapper ASCII
+com.sun.jna.win32.W32APIFunctionMapper: java.lang.String suffix
+com.sun.jna.win32.W32APIFunctionMapper: W32APIFunctionMapper(boolean)
+com.sun.jna.win32.W32APIFunctionMapper: java.lang.String getFunctionName(com.sun.jna.NativeLibrary,java.lang.reflect.Method)
+com.sun.jna.win32.W32APIFunctionMapper: void <clinit>()
+com.sun.jna.win32.W32APIOptions
+com.sun.jna.win32.W32APIOptions: java.util.Map UNICODE_OPTIONS
+com.sun.jna.win32.W32APIOptions: java.util.Map ASCII_OPTIONS
+com.sun.jna.win32.W32APIOptions: java.util.Map DEFAULT_OPTIONS
+com.sun.jna.win32.W32APIOptions: void <clinit>()
+com.sun.jna.win32.W32APIOptions$1
+com.sun.jna.win32.W32APIOptions$1: W32APIOptions$1()
+com.sun.jna.win32.W32APIOptions$2
+com.sun.jna.win32.W32APIOptions$2: W32APIOptions$2()
+com.sun.jna.win32.W32APITypeMapper
+com.sun.jna.win32.W32APITypeMapper: com.sun.jna.TypeMapper UNICODE
+com.sun.jna.win32.W32APITypeMapper: com.sun.jna.TypeMapper ASCII
+com.sun.jna.win32.W32APITypeMapper: W32APITypeMapper(boolean)
+com.sun.jna.win32.W32APITypeMapper: void <clinit>()
+com.sun.jna.win32.W32APITypeMapper$1
+com.sun.jna.win32.W32APITypeMapper$1: com.sun.jna.win32.W32APITypeMapper this$0
+com.sun.jna.win32.W32APITypeMapper$1: W32APITypeMapper$1(com.sun.jna.win32.W32APITypeMapper)
+com.sun.jna.win32.W32APITypeMapper$1: java.lang.Object toNative(java.lang.Object,com.sun.jna.ToNativeContext)
+com.sun.jna.win32.W32APITypeMapper$1: java.lang.Object fromNative(java.lang.Object,com.sun.jna.FromNativeContext)
+com.sun.jna.win32.W32APITypeMapper$1: java.lang.Class nativeType()
+com.sun.jna.win32.W32APITypeMapper$2
+com.sun.jna.win32.W32APITypeMapper$2: com.sun.jna.win32.W32APITypeMapper this$0
+com.sun.jna.win32.W32APITypeMapper$2: W32APITypeMapper$2(com.sun.jna.win32.W32APITypeMapper)
+com.sun.jna.win32.W32APITypeMapper$2: java.lang.Object toNative(java.lang.Object,com.sun.jna.ToNativeContext)
+com.sun.jna.win32.W32APITypeMapper$2: java.lang.Object fromNative(java.lang.Object,com.sun.jna.FromNativeContext)
+com.sun.jna.win32.W32APITypeMapper$2: java.lang.Class nativeType()
+jnasmartcardio.Smartcardio
+jnasmartcardio.Smartcardio: long serialVersionUID
+jnasmartcardio.Smartcardio: int MAX_ATR_SIZE
+jnasmartcardio.Smartcardio: java.lang.String PROVIDER_NAME
+jnasmartcardio.Smartcardio: int SCARD_S_SUCCESS
+jnasmartcardio.Smartcardio: int SCARD_E_NO_READERS_AVAILABLE
+jnasmartcardio.Smartcardio: int SCARD_E_READER_UNAVAILABLE
+jnasmartcardio.Smartcardio: int SCARD_E_NO_SMARTCARD
+jnasmartcardio.Smartcardio: Smartcardio()
+jnasmartcardio.Smartcardio: java.util.List pcsc_multi2jstring(byte[],java.nio.charset.Charset)
+jnasmartcardio.Smartcardio: java.util.List pcsc_multi2jstring(byte[])
+jnasmartcardio.Smartcardio: void check(java.lang.String,jnasmartcardio.Winscard$Dword)
+jnasmartcardio.Smartcardio: void check(java.lang.String,long)
+jnasmartcardio.Smartcardio: void access$000(java.lang.String,jnasmartcardio.Winscard$Dword)
+jnasmartcardio.Smartcardio: java.util.List access$100(byte[])
+jnasmartcardio.Smartcardio: void access$200(java.lang.String,long)
+jnasmartcardio.Smartcardio$EstablishContextException
+jnasmartcardio.Smartcardio$EstablishContextException: long serialVersionUID
+jnasmartcardio.Smartcardio$EstablishContextException: Smartcardio$EstablishContextException(jnasmartcardio.Smartcardio$JnaPCSCException)
+jnasmartcardio.Smartcardio$EstablishContextException: jnasmartcardio.Smartcardio$JnaPCSCException getCause()
+jnasmartcardio.Smartcardio$EstablishContextException: java.lang.Throwable getCause()
+jnasmartcardio.Smartcardio$JnaCard
+jnasmartcardio.Smartcardio$JnaCard: jnasmartcardio.Winscard$WinscardLibInfo libInfo
+jnasmartcardio.Smartcardio$JnaCard: javax.smartcardio.CardTerminal cardTerminal
+jnasmartcardio.Smartcardio$JnaCard: jnasmartcardio.Winscard$SCardHandle scardHandle
+jnasmartcardio.Smartcardio$JnaCard: javax.smartcardio.ATR atr
+jnasmartcardio.Smartcardio$JnaCard: int protocol
+jnasmartcardio.Smartcardio$JnaCard: int SCARD_LEAVE_CARD
+jnasmartcardio.Smartcardio$JnaCard: int SCARD_RESET_CARD
+jnasmartcardio.Smartcardio$JnaCard: int SCARD_UNPOWER_CARD
+jnasmartcardio.Smartcardio$JnaCard: int SCARD_EJECT_CARD
+jnasmartcardio.Smartcardio$JnaCard: Smartcardio$JnaCard(jnasmartcardio.Winscard$WinscardLibInfo,jnasmartcardio.Smartcardio$JnaCardTerminal,jnasmartcardio.Winscard$SCardHandle,javax.smartcardio.ATR,int)
+jnasmartcardio.Smartcardio$JnaCard: void beginExclusive()
+jnasmartcardio.Smartcardio$JnaCard: void endExclusive()
+jnasmartcardio.Smartcardio$JnaCard: void disconnect(boolean)
+jnasmartcardio.Smartcardio$JnaCard: javax.smartcardio.ATR getATR()
+jnasmartcardio.Smartcardio$JnaCard: java.lang.String getProtocol()
+jnasmartcardio.Smartcardio$JnaCard: jnasmartcardio.Smartcardio$JnaCardChannel getBasicChannel()
+jnasmartcardio.Smartcardio$JnaCard: javax.smartcardio.CardChannel openLogicalChannel()
+jnasmartcardio.Smartcardio$JnaCard: byte[] transmitControlCommand(int,byte[])
+jnasmartcardio.Smartcardio$JnaCard: java.lang.String toString()
+jnasmartcardio.Smartcardio$JnaCard: javax.smartcardio.CardChannel getBasicChannel()
+jnasmartcardio.Smartcardio$JnaCard: int access$400(jnasmartcardio.Smartcardio$JnaCard)
+jnasmartcardio.Smartcardio$JnaCard: jnasmartcardio.Winscard$SCardHandle access$500(jnasmartcardio.Smartcardio$JnaCard)
+jnasmartcardio.Smartcardio$JnaCard: jnasmartcardio.Winscard$WinscardLibInfo access$600(jnasmartcardio.Smartcardio$JnaCard)
+jnasmartcardio.Smartcardio$JnaCardChannel
+jnasmartcardio.Smartcardio$JnaCardChannel: jnasmartcardio.Smartcardio$JnaCard card
+jnasmartcardio.Smartcardio$JnaCardChannel: int channel
+jnasmartcardio.Smartcardio$JnaCardChannel: boolean isClosed
+jnasmartcardio.Smartcardio$JnaCardChannel: boolean $assertionsDisabled
+jnasmartcardio.Smartcardio$JnaCardChannel: Smartcardio$JnaCardChannel(jnasmartcardio.Smartcardio$JnaCard,int)
+jnasmartcardio.Smartcardio$JnaCardChannel: void close()
+jnasmartcardio.Smartcardio$JnaCardChannel: javax.smartcardio.Card getCard()
+jnasmartcardio.Smartcardio$JnaCardChannel: int getChannelNumber()
+jnasmartcardio.Smartcardio$JnaCardChannel: javax.smartcardio.ResponseAPDU transmit(javax.smartcardio.CommandAPDU)
+jnasmartcardio.Smartcardio$JnaCardChannel: int transmit(java.nio.ByteBuffer,java.nio.ByteBuffer)
+jnasmartcardio.Smartcardio$JnaCardChannel: boolean isExtendedApdu(byte[])
+jnasmartcardio.Smartcardio$JnaCardChannel: java.nio.ByteBuffer transmitImpl(byte[],java.nio.ByteBuffer)
+jnasmartcardio.Smartcardio$JnaCardChannel: byte getClassByte(byte,int)
+jnasmartcardio.Smartcardio$JnaCardChannel: javax.smartcardio.ResponseAPDU convertResponse(java.nio.ByteBuffer)
+jnasmartcardio.Smartcardio$JnaCardChannel: int transmitRaw(java.nio.ByteBuffer,java.nio.ByteBuffer)
+jnasmartcardio.Smartcardio$JnaCardChannel: java.lang.String toString()
+jnasmartcardio.Smartcardio$JnaCardChannel: void <clinit>()
+jnasmartcardio.Smartcardio$JnaCardException
+jnasmartcardio.Smartcardio$JnaCardException: long serialVersionUID
+jnasmartcardio.Smartcardio$JnaCardException: int sw
+jnasmartcardio.Smartcardio$JnaCardException: Smartcardio$JnaCardException(int,java.lang.String)
+jnasmartcardio.Smartcardio$JnaCardException: Smartcardio$JnaCardException(int,java.lang.String,java.lang.Throwable)
+jnasmartcardio.Smartcardio$JnaCardNotPresentException
+jnasmartcardio.Smartcardio$JnaCardNotPresentException: long serialVersionUID
+jnasmartcardio.Smartcardio$JnaCardNotPresentException: long code
+jnasmartcardio.Smartcardio$JnaCardNotPresentException: Smartcardio$JnaCardNotPresentException(long,java.lang.String)
+jnasmartcardio.Smartcardio$JnaCardTerminal
+jnasmartcardio.Smartcardio$JnaCardTerminal: jnasmartcardio.Winscard$WinscardLibInfo libInfo
+jnasmartcardio.Smartcardio$JnaCardTerminal: jnasmartcardio.Smartcardio$JnaCardTerminals cardTerminals
+jnasmartcardio.Smartcardio$JnaCardTerminal: java.lang.String name
+jnasmartcardio.Smartcardio$JnaCardTerminal: int SCARD_SHARE_EXCLUSIVE
+jnasmartcardio.Smartcardio$JnaCardTerminal: int SCARD_SHARE_SHARED
+jnasmartcardio.Smartcardio$JnaCardTerminal: int SCARD_SHARE_DIRECT
+jnasmartcardio.Smartcardio$JnaCardTerminal: int SCARD_PROTOCOL_T0
+jnasmartcardio.Smartcardio$JnaCardTerminal: int SCARD_PROTOCOL_T1
+jnasmartcardio.Smartcardio$JnaCardTerminal: int SCARD_PROTOCOL_ANY
+jnasmartcardio.Smartcardio$JnaCardTerminal: int SCARD_UNKNOWN
+jnasmartcardio.Smartcardio$JnaCardTerminal: int SCARD_ABSENT
+jnasmartcardio.Smartcardio$JnaCardTerminal: int SCARD_PRESENT
+jnasmartcardio.Smartcardio$JnaCardTerminal: int SCARD_SWALLOWED
+jnasmartcardio.Smartcardio$JnaCardTerminal: int SCARD_POWERED
+jnasmartcardio.Smartcardio$JnaCardTerminal: int SCARD_NEGOTIABLE
+jnasmartcardio.Smartcardio$JnaCardTerminal: int SCARD_SPECIFIC
+jnasmartcardio.Smartcardio$JnaCardTerminal: Smartcardio$JnaCardTerminal(jnasmartcardio.Winscard$WinscardLibInfo,jnasmartcardio.Smartcardio$JnaCardTerminals,java.lang.String)
+jnasmartcardio.Smartcardio$JnaCardTerminal: java.lang.String getName()
+jnasmartcardio.Smartcardio$JnaCardTerminal: javax.smartcardio.Card connect(java.lang.String)
+jnasmartcardio.Smartcardio$JnaCardTerminal: boolean isCardPresent()
+jnasmartcardio.Smartcardio$JnaCardTerminal: boolean waitHelper(long,boolean)
+jnasmartcardio.Smartcardio$JnaCardTerminal: boolean waitForCardAbsent(long)
+jnasmartcardio.Smartcardio$JnaCardTerminal: boolean waitForCardPresent(long)
+jnasmartcardio.Smartcardio$JnaCardTerminal: java.lang.String toString()
+jnasmartcardio.Smartcardio$JnaCardTerminals
+jnasmartcardio.Smartcardio$JnaCardTerminals: jnasmartcardio.Winscard$SCardContext scardContext
+jnasmartcardio.Smartcardio$JnaCardTerminals: jnasmartcardio.Winscard$WinscardLibInfo libInfo
+jnasmartcardio.Smartcardio$JnaCardTerminals: jnasmartcardio.Winscard$SCardReaderState[] knownReaders
+jnasmartcardio.Smartcardio$JnaCardTerminals: java.util.List zombieReaders
+jnasmartcardio.Smartcardio$JnaCardTerminals: boolean usePnp
+jnasmartcardio.Smartcardio$JnaCardTerminals: boolean isClosed
+jnasmartcardio.Smartcardio$JnaCardTerminals: Smartcardio$JnaCardTerminals(jnasmartcardio.Winscard$WinscardLibInfo,jnasmartcardio.Winscard$SCardContext)
+jnasmartcardio.Smartcardio$JnaCardTerminals: java.util.List list(javax.smartcardio.CardTerminals$State)
+jnasmartcardio.Smartcardio$JnaCardTerminals: java.util.List listReaderNames()
+jnasmartcardio.Smartcardio$JnaCardTerminals: jnasmartcardio.Winscard$SCardReaderState[] createScardReaderStates(java.util.List,boolean,jnasmartcardio.Winscard$SCardReaderState[])
+jnasmartcardio.Smartcardio$JnaCardTerminals: boolean updateKnownReaders()
+jnasmartcardio.Smartcardio$JnaCardTerminals: boolean waitForChange(long)
+jnasmartcardio.Smartcardio$JnaCardTerminals: java.lang.String toString()
+jnasmartcardio.Smartcardio$JnaCardTerminals: void close()
+jnasmartcardio.Smartcardio$JnaCardTerminals: void finalize()
+jnasmartcardio.Smartcardio$JnaCardTerminals: jnasmartcardio.Winscard$SCardContext access$300(jnasmartcardio.Smartcardio$JnaCardTerminals)
+jnasmartcardio.Smartcardio$JnaPCSCException
+jnasmartcardio.Smartcardio$JnaPCSCException: long serialVersionUID
+jnasmartcardio.Smartcardio$JnaPCSCException: long code
+jnasmartcardio.Smartcardio$JnaPCSCException: Smartcardio$JnaPCSCException(java.lang.String)
+jnasmartcardio.Smartcardio$JnaPCSCException: Smartcardio$JnaPCSCException(java.lang.Throwable)
+jnasmartcardio.Smartcardio$JnaPCSCException: Smartcardio$JnaPCSCException(long,java.lang.String)
+jnasmartcardio.Smartcardio$JnaPCSCException: Smartcardio$JnaPCSCException(long,java.lang.String,java.lang.Throwable)
+jnasmartcardio.Smartcardio$JnaTerminalFactorySpi
+jnasmartcardio.Smartcardio$JnaTerminalFactorySpi: int SCARD_SCOPE_USER
+jnasmartcardio.Smartcardio$JnaTerminalFactorySpi: int SCARD_SCOPE_TERMINAL
+jnasmartcardio.Smartcardio$JnaTerminalFactorySpi: int SCARD_SCOPE_SYSTEM
+jnasmartcardio.Smartcardio$JnaTerminalFactorySpi: jnasmartcardio.Winscard$WinscardLibInfo libInfo
+jnasmartcardio.Smartcardio$JnaTerminalFactorySpi: Smartcardio$JnaTerminalFactorySpi(java.lang.Object)
+jnasmartcardio.Smartcardio$JnaTerminalFactorySpi: Smartcardio$JnaTerminalFactorySpi(jnasmartcardio.Winscard$WinscardLibInfo)
+jnasmartcardio.Smartcardio$JnaTerminalFactorySpi: javax.smartcardio.CardTerminals engineTerminals()
+jnasmartcardio.Winscard
+jnasmartcardio.Winscard: java.lang.String WINDOWS_PATH
+jnasmartcardio.Winscard: java.lang.String MAC_PATH
+jnasmartcardio.Winscard: java.lang.String PCSC_PATH
+jnasmartcardio.Winscard: Winscard()
+jnasmartcardio.Winscard: jnasmartcardio.Winscard$WinscardLibInfo openLib()
+jnasmartcardio.Winscard$1
+jnasmartcardio.Winscard$Dword
+jnasmartcardio.Winscard$Dword: int SIZE
+jnasmartcardio.Winscard$Dword: long serialVersionUID
+jnasmartcardio.Winscard$Dword: Winscard$Dword()
+jnasmartcardio.Winscard$Dword: Winscard$Dword(long)
+jnasmartcardio.Winscard$Dword: java.lang.String toString()
+jnasmartcardio.Winscard$Dword: void <clinit>()
+jnasmartcardio.Winscard$DwordByReference
+jnasmartcardio.Winscard$DwordByReference: int SIZE
+jnasmartcardio.Winscard$DwordByReference: Winscard$DwordByReference()
+jnasmartcardio.Winscard$DwordByReference: Winscard$DwordByReference(jnasmartcardio.Winscard$Dword)
+jnasmartcardio.Winscard$DwordByReference: void setValue(jnasmartcardio.Winscard$Dword)
+jnasmartcardio.Winscard$DwordByReference: jnasmartcardio.Winscard$Dword getValue()
+jnasmartcardio.Winscard$DwordByReference: void <clinit>()
+jnasmartcardio.Winscard$Handle
+jnasmartcardio.Winscard$Handle: long serialVersionUID
+jnasmartcardio.Winscard$Handle: int SIZE
+jnasmartcardio.Winscard$Handle: Winscard$Handle(long)
+jnasmartcardio.Winscard$Handle: java.lang.String toString()
+jnasmartcardio.Winscard$Handle: void <clinit>()
+jnasmartcardio.Winscard$HandleByReference
+jnasmartcardio.Winscard$HandleByReference: Winscard$HandleByReference()
+jnasmartcardio.Winscard$HandleByReference: long getLong()
+jnasmartcardio.Winscard$HandleByReference: void setLong(long)
+jnasmartcardio.Winscard$MacFunctionMapper
+jnasmartcardio.Winscard$MacFunctionMapper: Winscard$MacFunctionMapper()
+jnasmartcardio.Winscard$MacFunctionMapper: java.lang.String getFunctionName(com.sun.jna.NativeLibrary,java.lang.reflect.Method)
+jnasmartcardio.Winscard$MacFunctionMapper: Winscard$MacFunctionMapper(jnasmartcardio.Winscard$1)
+jnasmartcardio.Winscard$SCardContext
+jnasmartcardio.Winscard$SCardContext: long serialVersionUID
+jnasmartcardio.Winscard$SCardContext: Winscard$SCardContext()
+jnasmartcardio.Winscard$SCardContext: Winscard$SCardContext(long)
+jnasmartcardio.Winscard$SCardContextByReference
+jnasmartcardio.Winscard$SCardContextByReference: Winscard$SCardContextByReference()
+jnasmartcardio.Winscard$SCardContextByReference: jnasmartcardio.Winscard$SCardContext getValue()
+jnasmartcardio.Winscard$SCardContextByReference: void setValue(jnasmartcardio.Winscard$SCardContext)
+jnasmartcardio.Winscard$SCardHandle
+jnasmartcardio.Winscard$SCardHandle: long serialVersionUID
+jnasmartcardio.Winscard$SCardHandle: Winscard$SCardHandle()
+jnasmartcardio.Winscard$SCardHandle: Winscard$SCardHandle(long)
+jnasmartcardio.Winscard$SCardHandleByReference
+jnasmartcardio.Winscard$SCardHandleByReference: Winscard$SCardHandleByReference()
+jnasmartcardio.Winscard$SCardHandleByReference: jnasmartcardio.Winscard$SCardHandle getValue()
+jnasmartcardio.Winscard$SCardHandleByReference: void setValue(jnasmartcardio.Winscard$SCardHandle)
+jnasmartcardio.Winscard$SCardReaderState
+jnasmartcardio.Winscard$SCardReaderState: int ALIGN
+jnasmartcardio.Winscard$SCardReaderState: java.lang.String szReader
+jnasmartcardio.Winscard$SCardReaderState: com.sun.jna.Pointer pvUserData
+jnasmartcardio.Winscard$SCardReaderState: jnasmartcardio.Winscard$Dword dwCurrentState
+jnasmartcardio.Winscard$SCardReaderState: jnasmartcardio.Winscard$Dword dwEventState
+jnasmartcardio.Winscard$SCardReaderState: jnasmartcardio.Winscard$Dword cbAtr
+jnasmartcardio.Winscard$SCardReaderState: byte[] rgbAtr
+jnasmartcardio.Winscard$SCardReaderState: Winscard$SCardReaderState()
+jnasmartcardio.Winscard$SCardReaderState: Winscard$SCardReaderState(java.lang.String)
+jnasmartcardio.Winscard$SCardReaderState: java.util.List getFieldOrder()
+jnasmartcardio.Winscard$SCardReaderState: void <clinit>()
+jnasmartcardio.Winscard$ScardIoRequest
+jnasmartcardio.Winscard$ScardIoRequest: jnasmartcardio.Winscard$Dword dwProtocol
+jnasmartcardio.Winscard$ScardIoRequest: jnasmartcardio.Winscard$Dword cbPciLength
+jnasmartcardio.Winscard$ScardIoRequest: Winscard$ScardIoRequest()
+jnasmartcardio.Winscard$ScardIoRequest: Winscard$ScardIoRequest(com.sun.jna.Pointer)
+jnasmartcardio.Winscard$ScardIoRequest: java.util.List getFieldOrder()
+jnasmartcardio.Winscard$ScardIoRequest: java.lang.String toString()
+jnasmartcardio.Winscard$WindowsFunctionMapper
+jnasmartcardio.Winscard$WindowsFunctionMapper: java.util.Set asciiSuffixNames
+jnasmartcardio.Winscard$WindowsFunctionMapper: Winscard$WindowsFunctionMapper()
+jnasmartcardio.Winscard$WindowsFunctionMapper: java.lang.String getFunctionName(com.sun.jna.NativeLibrary,java.lang.reflect.Method)
+jnasmartcardio.Winscard$WindowsFunctionMapper: Winscard$WindowsFunctionMapper(jnasmartcardio.Winscard$1)
+jnasmartcardio.Winscard$WindowsFunctionMapper: void <clinit>()
+jnasmartcardio.Winscard$WinscardLibInfo
+jnasmartcardio.Winscard$WinscardLibInfo: jnasmartcardio.Winscard$WinscardLibrary lib
+jnasmartcardio.Winscard$WinscardLibInfo: jnasmartcardio.Winscard$ScardIoRequest SCARD_PCI_T0
+jnasmartcardio.Winscard$WinscardLibInfo: jnasmartcardio.Winscard$ScardIoRequest SCARD_PCI_T1
+jnasmartcardio.Winscard$WinscardLibInfo: jnasmartcardio.Winscard$ScardIoRequest SCARD_PCI_RAW
+jnasmartcardio.Winscard$WinscardLibInfo: Winscard$WinscardLibInfo(jnasmartcardio.Winscard$WinscardLibrary,jnasmartcardio.Winscard$ScardIoRequest,jnasmartcardio.Winscard$ScardIoRequest,jnasmartcardio.Winscard$ScardIoRequest)
+jnasmartcardio.Winscard$WinscardLibrary
+jnasmartcardio.Winscard$WinscardLibrary: jnasmartcardio.Winscard$Dword SCardEstablishContext(jnasmartcardio.Winscard$Dword,com.sun.jna.Pointer,com.sun.jna.Pointer,jnasmartcardio.Winscard$SCardContextByReference)
+jnasmartcardio.Winscard$WinscardLibrary: jnasmartcardio.Winscard$Dword SCardReleaseContext(jnasmartcardio.Winscard$SCardContext)
+jnasmartcardio.Winscard$WinscardLibrary: jnasmartcardio.Winscard$Dword SCardConnect(jnasmartcardio.Winscard$SCardContext,java.lang.String,jnasmartcardio.Winscard$Dword,jnasmartcardio.Winscard$Dword,jnasmartcardio.Winscard$SCardHandleByReference,jnasmartcardio.Winscard$DwordByReference)
+jnasmartcardio.Winscard$WinscardLibrary: jnasmartcardio.Winscard$Dword SCardReconnect(jnasmartcardio.Winscard$SCardHandle,jnasmartcardio.Winscard$Dword,jnasmartcardio.Winscard$Dword,jnasmartcardio.Winscard$Dword,jnasmartcardio.Winscard$DwordByReference)
+jnasmartcardio.Winscard$WinscardLibrary: jnasmartcardio.Winscard$Dword SCardDisconnect(jnasmartcardio.Winscard$SCardHandle,jnasmartcardio.Winscard$Dword)
+jnasmartcardio.Winscard$WinscardLibrary: jnasmartcardio.Winscard$Dword SCardBeginTransaction(jnasmartcardio.Winscard$SCardHandle)
+jnasmartcardio.Winscard$WinscardLibrary: jnasmartcardio.Winscard$Dword SCardEndTransaction(jnasmartcardio.Winscard$SCardHandle,jnasmartcardio.Winscard$Dword)
+jnasmartcardio.Winscard$WinscardLibrary: jnasmartcardio.Winscard$Dword SCardStatus(jnasmartcardio.Winscard$SCardHandle,java.nio.ByteBuffer,jnasmartcardio.Winscard$DwordByReference,jnasmartcardio.Winscard$DwordByReference,jnasmartcardio.Winscard$DwordByReference,java.nio.ByteBuffer,jnasmartcardio.Winscard$DwordByReference)
+jnasmartcardio.Winscard$WinscardLibrary: jnasmartcardio.Winscard$Dword SCardGetStatusChange(jnasmartcardio.Winscard$SCardContext,jnasmartcardio.Winscard$Dword,jnasmartcardio.Winscard$SCardReaderState[],jnasmartcardio.Winscard$Dword)
+jnasmartcardio.Winscard$WinscardLibrary: jnasmartcardio.Winscard$Dword SCardControl(jnasmartcardio.Winscard$SCardHandle,jnasmartcardio.Winscard$Dword,java.nio.ByteBuffer,jnasmartcardio.Winscard$Dword,java.nio.ByteBuffer,jnasmartcardio.Winscard$Dword,jnasmartcardio.Winscard$DwordByReference)
+jnasmartcardio.Winscard$WinscardLibrary: jnasmartcardio.Winscard$Dword SCardGetAttrib(jnasmartcardio.Winscard$SCardHandle,jnasmartcardio.Winscard$Dword,java.nio.ByteBuffer,jnasmartcardio.Winscard$DwordByReference)
+jnasmartcardio.Winscard$WinscardLibrary: jnasmartcardio.Winscard$Dword SCardSetAttrib(jnasmartcardio.Winscard$SCardHandle,jnasmartcardio.Winscard$Dword,java.nio.ByteBuffer,jnasmartcardio.Winscard$Dword)
+jnasmartcardio.Winscard$WinscardLibrary: jnasmartcardio.Winscard$Dword SCardTransmit(jnasmartcardio.Winscard$SCardHandle,jnasmartcardio.Winscard$ScardIoRequest,java.nio.ByteBuffer,jnasmartcardio.Winscard$Dword,jnasmartcardio.Winscard$ScardIoRequest,java.nio.ByteBuffer,jnasmartcardio.Winscard$DwordByReference)
+jnasmartcardio.Winscard$WinscardLibrary: jnasmartcardio.Winscard$Dword SCardListReaders(jnasmartcardio.Winscard$SCardContext,java.nio.ByteBuffer,java.nio.ByteBuffer,jnasmartcardio.Winscard$DwordByReference)
+jnasmartcardio.Winscard$WinscardLibrary: jnasmartcardio.Winscard$Dword SCardFreeMemory(jnasmartcardio.Winscard$SCardContext,com.sun.jna.Pointer)
+jnasmartcardio.Winscard$WinscardLibrary: jnasmartcardio.Winscard$Dword SCardListReaderGroups(jnasmartcardio.Winscard$SCardContext,java.nio.ByteBuffer,jnasmartcardio.Winscard$DwordByReference)
+jnasmartcardio.Winscard$WinscardLibrary: jnasmartcardio.Winscard$Dword SCardCancel(jnasmartcardio.Winscard$SCardContext)
+jnasmartcardio.Winscard$WinscardLibrary: jnasmartcardio.Winscard$Dword SCardIsValidContext(jnasmartcardio.Winscard$SCardContext)
+jnasmartcardio.WinscardConstants
+jnasmartcardio.WinscardConstants: int SCARD_S_SUCCESS
+jnasmartcardio.WinscardConstants: int SCARD_F_INTERNAL_ERROR
+jnasmartcardio.WinscardConstants: int SCARD_E_CANCELLED
+jnasmartcardio.WinscardConstants: int SCARD_E_INVALID_HANDLE
+jnasmartcardio.WinscardConstants: int SCARD_E_INVALID_PARAMETER
+jnasmartcardio.WinscardConstants: int SCARD_E_INVALID_TARGET
+jnasmartcardio.WinscardConstants: int SCARD_E_NO_MEMORY
+jnasmartcardio.WinscardConstants: int SCARD_F_WAITED_TOO_LONG
+jnasmartcardio.WinscardConstants: int SCARD_E_INSUFFICIENT_BUFFER
+jnasmartcardio.WinscardConstants: int SCARD_E_UNKNOWN_READER
+jnasmartcardio.WinscardConstants: int SCARD_E_TIMEOUT
+jnasmartcardio.WinscardConstants: int SCARD_E_SHARING_VIOLATION
+jnasmartcardio.WinscardConstants: int SCARD_E_NO_SMARTCARD
+jnasmartcardio.WinscardConstants: int SCARD_E_UNKNOWN_CARD
+jnasmartcardio.WinscardConstants: int SCARD_E_CANT_DISPOSE
+jnasmartcardio.WinscardConstants: int SCARD_E_PROTO_MISMATCH
+jnasmartcardio.WinscardConstants: int SCARD_E_NOT_READY
+jnasmartcardio.WinscardConstants: int SCARD_E_INVALID_VALUE
+jnasmartcardio.WinscardConstants: int SCARD_E_SYSTEM_CANCELLED
+jnasmartcardio.WinscardConstants: int SCARD_F_COMM_ERROR
+jnasmartcardio.WinscardConstants: int SCARD_F_UNKNOWN_ERROR
+jnasmartcardio.WinscardConstants: int SCARD_E_INVALID_ATR
+jnasmartcardio.WinscardConstants: int SCARD_E_NOT_TRANSACTED
+jnasmartcardio.WinscardConstants: int SCARD_E_READER_UNAVAILABLE
+jnasmartcardio.WinscardConstants: int SCARD_P_SHUTDOWN
+jnasmartcardio.WinscardConstants: int SCARD_E_PCI_TOO_SMALL
+jnasmartcardio.WinscardConstants: int SCARD_E_READER_UNSUPPORTED
+jnasmartcardio.WinscardConstants: int SCARD_E_DUPLICATE_READER
+jnasmartcardio.WinscardConstants: int SCARD_E_CARD_UNSUPPORTED
+jnasmartcardio.WinscardConstants: int SCARD_E_NO_SERVICE
+jnasmartcardio.WinscardConstants: int SCARD_E_SERVICE_STOPPED
+jnasmartcardio.WinscardConstants: int SCARD_E_UNEXPECTED
+jnasmartcardio.WinscardConstants: int SCARD_E_UNSUPPORTED_FEATURE
+jnasmartcardio.WinscardConstants: int SCARD_E_ICC_INSTALLATION
+jnasmartcardio.WinscardConstants: int SCARD_E_ICC_CREATEORDER
+jnasmartcardio.WinscardConstants: int SCARD_E_DIR_NOT_FOUND
+jnasmartcardio.WinscardConstants: int SCARD_E_FILE_NOT_FOUND
+jnasmartcardio.WinscardConstants: int SCARD_E_NO_DIR
+jnasmartcardio.WinscardConstants: int SCARD_E_NO_FILE
+jnasmartcardio.WinscardConstants: int SCARD_E_NO_ACCESS
+jnasmartcardio.WinscardConstants: int SCARD_E_WRITE_TOO_MANY
+jnasmartcardio.WinscardConstants: int SCARD_E_BAD_SEEK
+jnasmartcardio.WinscardConstants: int SCARD_E_INVALID_CHV
+jnasmartcardio.WinscardConstants: int SCARD_E_UNKNOWN_RES_MNG
+jnasmartcardio.WinscardConstants: int SCARD_E_NO_SUCH_CERTIFICATE
+jnasmartcardio.WinscardConstants: int SCARD_E_CERTIFICATE_UNAVAILABLE
+jnasmartcardio.WinscardConstants: int SCARD_E_NO_READERS_AVAILABLE
+jnasmartcardio.WinscardConstants: int SCARD_E_COMM_DATA_LOST
+jnasmartcardio.WinscardConstants: int SCARD_E_NO_KEY_CONTAINER
+jnasmartcardio.WinscardConstants: int SCARD_E_SERVER_TOO_BUSY
+jnasmartcardio.WinscardConstants: int SCARD_W_UNSUPPORTED_CARD
+jnasmartcardio.WinscardConstants: int SCARD_W_UNRESPONSIVE_CARD
+jnasmartcardio.WinscardConstants: int SCARD_W_UNPOWERED_CARD
+jnasmartcardio.WinscardConstants: int SCARD_W_RESET_CARD
+jnasmartcardio.WinscardConstants: int SCARD_W_REMOVED_CARD
+jnasmartcardio.WinscardConstants: int SCARD_W_SECURITY_VIOLATION
+jnasmartcardio.WinscardConstants: int SCARD_W_WRONG_CHV
+jnasmartcardio.WinscardConstants: int SCARD_W_CHV_BLOCKED
+jnasmartcardio.WinscardConstants: int SCARD_W_EOF
+jnasmartcardio.WinscardConstants: int SCARD_W_CANCELLED_BY_USER
+jnasmartcardio.WinscardConstants: int SCARD_W_CARD_NOT_AUTHENTICATED
+jnasmartcardio.WinscardConstants: java.util.Map ERROR_TO_DESCRIPTION
+jnasmartcardio.WinscardConstants: java.util.Map ERROR_TO_VARIABLE_NAME
+jnasmartcardio.WinscardConstants: int SCARD_STATE_UNAWARE
+jnasmartcardio.WinscardConstants: int SCARD_STATE_IGNORE
+jnasmartcardio.WinscardConstants: int SCARD_STATE_CHANGED
+jnasmartcardio.WinscardConstants: int SCARD_STATE_UNKNOWN
+jnasmartcardio.WinscardConstants: int SCARD_STATE_UNAVAILABLE
+jnasmartcardio.WinscardConstants: int SCARD_STATE_EMPTY
+jnasmartcardio.WinscardConstants: int SCARD_STATE_PRESENT
+jnasmartcardio.WinscardConstants: int SCARD_STATE_ATRMATCH
+jnasmartcardio.WinscardConstants: int SCARD_STATE_EXCLUSIVE
+jnasmartcardio.WinscardConstants: int SCARD_STATE_INUSE
+jnasmartcardio.WinscardConstants: int SCARD_STATE_MUTE
+jnasmartcardio.WinscardConstants: int SCARD_STATE_UNPOWERED
+jnasmartcardio.WinscardConstants: int INFINITE
+jnasmartcardio.WinscardConstants: int MAX_ATR_SIZE
+jnasmartcardio.WinscardConstants: java.lang.String PNP_READER_ID
+jnasmartcardio.WinscardConstants: WinscardConstants()
+jnasmartcardio.WinscardConstants: java.util.List stateToStrings(int)
+jnasmartcardio.WinscardConstants: void <clinit>()
+jnasmartcardio.tools.WaitForChange
+jnasmartcardio.tools.WaitForChange: WaitForChange()
+jnasmartcardio.tools.WaitForChange: java.util.List terminalNames(java.util.List)
+jnasmartcardio.tools.WaitForChange: void main(java.lang.String[])
+joptsimple.util.PathProperties: joptsimple.util.PathProperties FILE_EXISTING
+joptsimple.util.PathProperties: joptsimple.util.PathProperties DIRECTORY_EXISTING
+joptsimple.util.PathProperties: joptsimple.util.PathProperties NOT_EXISTING
+joptsimple.util.PathProperties: joptsimple.util.PathProperties FILE_OVERWRITABLE
+joptsimple.util.PathProperties: joptsimple.util.PathProperties READABLE
+joptsimple.util.PathProperties: joptsimple.util.PathProperties WRITABLE
+joptsimple.util.PathProperties: java.lang.String messageKey
+joptsimple.util.PathProperties: joptsimple.util.PathProperties[] $VALUES
+joptsimple.util.PathProperties: joptsimple.util.PathProperties[] values()
+joptsimple.util.PathProperties: joptsimple.util.PathProperties valueOf(java.lang.String)
+org.apache.commons.codec.digest.HmacAlgorithms: org.apache.commons.codec.digest.HmacAlgorithms HMAC_MD5
+org.apache.commons.codec.digest.HmacAlgorithms: org.apache.commons.codec.digest.HmacAlgorithms HMAC_SHA_1
+org.apache.commons.codec.digest.HmacAlgorithms: org.apache.commons.codec.digest.HmacAlgorithms HMAC_SHA_256
+org.apache.commons.codec.digest.HmacAlgorithms: org.apache.commons.codec.digest.HmacAlgorithms HMAC_SHA_384
+org.apache.commons.codec.digest.HmacAlgorithms: org.apache.commons.codec.digest.HmacAlgorithms HMAC_SHA_512
+org.apache.commons.codec.digest.HmacAlgorithms: java.lang.String algorithm
+org.apache.commons.codec.digest.HmacAlgorithms: org.apache.commons.codec.digest.HmacAlgorithms[] $VALUES
+org.apache.commons.codec.digest.HmacAlgorithms: org.apache.commons.codec.digest.HmacAlgorithms[] values()
+org.apache.commons.codec.digest.HmacAlgorithms: org.apache.commons.codec.digest.HmacAlgorithms valueOf(java.lang.String)
+org.apache.commons.codec.language.bm.NameType: org.apache.commons.codec.language.bm.NameType ASHKENAZI
+org.apache.commons.codec.language.bm.NameType: org.apache.commons.codec.language.bm.NameType GENERIC
+org.apache.commons.codec.language.bm.NameType: org.apache.commons.codec.language.bm.NameType SEPHARDIC
+org.apache.commons.codec.language.bm.NameType: java.lang.String name
+org.apache.commons.codec.language.bm.NameType: org.apache.commons.codec.language.bm.NameType[] $VALUES
+org.apache.commons.codec.language.bm.NameType: org.apache.commons.codec.language.bm.NameType[] values()
+org.apache.commons.codec.language.bm.NameType: org.apache.commons.codec.language.bm.NameType valueOf(java.lang.String)
+org.apache.commons.codec.language.bm.RuleType: org.apache.commons.codec.language.bm.RuleType APPROX
+org.apache.commons.codec.language.bm.RuleType: org.apache.commons.codec.language.bm.RuleType EXACT
+org.apache.commons.codec.language.bm.RuleType: org.apache.commons.codec.language.bm.RuleType RULES
+org.apache.commons.codec.language.bm.RuleType: java.lang.String name
+org.apache.commons.codec.language.bm.RuleType: org.apache.commons.codec.language.bm.RuleType[] $VALUES
+org.apache.commons.codec.language.bm.RuleType: org.apache.commons.codec.language.bm.RuleType[] values()
+org.apache.commons.codec.language.bm.RuleType: org.apache.commons.codec.language.bm.RuleType valueOf(java.lang.String)
+org.apache.http.annotation.ThreadingBehavior: org.apache.http.annotation.ThreadingBehavior IMMUTABLE
+org.apache.http.annotation.ThreadingBehavior: org.apache.http.annotation.ThreadingBehavior IMMUTABLE_CONDITIONAL
+org.apache.http.annotation.ThreadingBehavior: org.apache.http.annotation.ThreadingBehavior SAFE
+org.apache.http.annotation.ThreadingBehavior: org.apache.http.annotation.ThreadingBehavior SAFE_CONDITIONAL
+org.apache.http.annotation.ThreadingBehavior: org.apache.http.annotation.ThreadingBehavior UNSAFE
+org.apache.http.annotation.ThreadingBehavior: org.apache.http.annotation.ThreadingBehavior[] $VALUES
+org.apache.http.annotation.ThreadingBehavior: org.apache.http.annotation.ThreadingBehavior[] values()
+org.apache.http.annotation.ThreadingBehavior: org.apache.http.annotation.ThreadingBehavior valueOf(java.lang.String)
+org.apache.http.auth.AuthProtocolState: org.apache.http.auth.AuthProtocolState UNCHALLENGED
+org.apache.http.auth.AuthProtocolState: org.apache.http.auth.AuthProtocolState CHALLENGED
+org.apache.http.auth.AuthProtocolState: org.apache.http.auth.AuthProtocolState HANDSHAKE
+org.apache.http.auth.AuthProtocolState: org.apache.http.auth.AuthProtocolState FAILURE
+org.apache.http.auth.AuthProtocolState: org.apache.http.auth.AuthProtocolState SUCCESS
+org.apache.http.auth.AuthProtocolState: org.apache.http.auth.AuthProtocolState[] $VALUES
+org.apache.http.auth.AuthProtocolState: org.apache.http.auth.AuthProtocolState[] values()
+org.apache.http.auth.AuthProtocolState: org.apache.http.auth.AuthProtocolState valueOf(java.lang.String)
+org.apache.http.auth.ChallengeState: org.apache.http.auth.ChallengeState TARGET
+org.apache.http.auth.ChallengeState: org.apache.http.auth.ChallengeState PROXY
+org.apache.http.auth.ChallengeState: org.apache.http.auth.ChallengeState[] $VALUES
+org.apache.http.auth.ChallengeState: org.apache.http.auth.ChallengeState[] values()
+org.apache.http.auth.ChallengeState: org.apache.http.auth.ChallengeState valueOf(java.lang.String)
+org.apache.http.conn.routing.RouteInfo$LayerType: org.apache.http.conn.routing.RouteInfo$LayerType PLAIN
+org.apache.http.conn.routing.RouteInfo$LayerType: org.apache.http.conn.routing.RouteInfo$LayerType LAYERED
+org.apache.http.conn.routing.RouteInfo$LayerType: org.apache.http.conn.routing.RouteInfo$LayerType[] $VALUES
+org.apache.http.conn.routing.RouteInfo$LayerType: org.apache.http.conn.routing.RouteInfo$LayerType[] values()
+org.apache.http.conn.routing.RouteInfo$LayerType: org.apache.http.conn.routing.RouteInfo$LayerType valueOf(java.lang.String)
+org.apache.http.conn.routing.RouteInfo$TunnelType: org.apache.http.conn.routing.RouteInfo$TunnelType PLAIN
+org.apache.http.conn.routing.RouteInfo$TunnelType: org.apache.http.conn.routing.RouteInfo$TunnelType TUNNELLED
+org.apache.http.conn.routing.RouteInfo$TunnelType: org.apache.http.conn.routing.RouteInfo$TunnelType[] $VALUES
+org.apache.http.conn.routing.RouteInfo$TunnelType: org.apache.http.conn.routing.RouteInfo$TunnelType[] values()
+org.apache.http.conn.routing.RouteInfo$TunnelType: org.apache.http.conn.routing.RouteInfo$TunnelType valueOf(java.lang.String)
+org.apache.http.conn.ssl.DefaultHostnameVerifier$HostNameType: org.apache.http.conn.ssl.DefaultHostnameVerifier$HostNameType IPv4
+org.apache.http.conn.ssl.DefaultHostnameVerifier$HostNameType: org.apache.http.conn.ssl.DefaultHostnameVerifier$HostNameType IPv6
+org.apache.http.conn.ssl.DefaultHostnameVerifier$HostNameType: org.apache.http.conn.ssl.DefaultHostnameVerifier$HostNameType DNS
+org.apache.http.conn.ssl.DefaultHostnameVerifier$HostNameType: int subjectType
+org.apache.http.conn.ssl.DefaultHostnameVerifier$HostNameType: org.apache.http.conn.ssl.DefaultHostnameVerifier$HostNameType[] $VALUES
+org.apache.http.conn.ssl.DefaultHostnameVerifier$HostNameType: org.apache.http.conn.ssl.DefaultHostnameVerifier$HostNameType[] values()
+org.apache.http.conn.ssl.DefaultHostnameVerifier$HostNameType: org.apache.http.conn.ssl.DefaultHostnameVerifier$HostNameType valueOf(java.lang.String)
+org.apache.http.conn.util.DomainType: org.apache.http.conn.util.DomainType UNKNOWN
+org.apache.http.conn.util.DomainType: org.apache.http.conn.util.DomainType ICANN
+org.apache.http.conn.util.DomainType: org.apache.http.conn.util.DomainType PRIVATE
+org.apache.http.conn.util.DomainType: org.apache.http.conn.util.DomainType[] $VALUES
+org.apache.http.conn.util.DomainType: org.apache.http.conn.util.DomainType[] values()
+org.apache.http.conn.util.DomainType: org.apache.http.conn.util.DomainType valueOf(java.lang.String)
+org.apache.http.impl.auth.GGSSchemeBase$State: org.apache.http.impl.auth.GGSSchemeBase$State UNINITIATED
+org.apache.http.impl.auth.GGSSchemeBase$State: org.apache.http.impl.auth.GGSSchemeBase$State CHALLENGE_RECEIVED
+org.apache.http.impl.auth.GGSSchemeBase$State: org.apache.http.impl.auth.GGSSchemeBase$State TOKEN_GENERATED
+org.apache.http.impl.auth.GGSSchemeBase$State: org.apache.http.impl.auth.GGSSchemeBase$State FAILED
+org.apache.http.impl.auth.GGSSchemeBase$State: org.apache.http.impl.auth.GGSSchemeBase$State[] $VALUES
+org.apache.http.impl.auth.GGSSchemeBase$State: org.apache.http.impl.auth.GGSSchemeBase$State[] values()
+org.apache.http.impl.auth.GGSSchemeBase$State: org.apache.http.impl.auth.GGSSchemeBase$State valueOf(java.lang.String)
+org.apache.http.impl.auth.NTLMEngineImpl$Mode: org.apache.http.impl.auth.NTLMEngineImpl$Mode CLIENT
+org.apache.http.impl.auth.NTLMEngineImpl$Mode: org.apache.http.impl.auth.NTLMEngineImpl$Mode SERVER
+org.apache.http.impl.auth.NTLMEngineImpl$Mode: org.apache.http.impl.auth.NTLMEngineImpl$Mode[] $VALUES
+org.apache.http.impl.auth.NTLMEngineImpl$Mode: org.apache.http.impl.auth.NTLMEngineImpl$Mode[] values()
+org.apache.http.impl.auth.NTLMEngineImpl$Mode: org.apache.http.impl.auth.NTLMEngineImpl$Mode valueOf(java.lang.String)
+org.apache.http.impl.auth.NTLMScheme$State: org.apache.http.impl.auth.NTLMScheme$State UNINITIATED
+org.apache.http.impl.auth.NTLMScheme$State: org.apache.http.impl.auth.NTLMScheme$State CHALLENGE_RECEIVED
+org.apache.http.impl.auth.NTLMScheme$State: org.apache.http.impl.auth.NTLMScheme$State MSG_TYPE1_GENERATED
+org.apache.http.impl.auth.NTLMScheme$State: org.apache.http.impl.auth.NTLMScheme$State MSG_TYPE2_RECEVIED
+org.apache.http.impl.auth.NTLMScheme$State: org.apache.http.impl.auth.NTLMScheme$State MSG_TYPE3_GENERATED
+org.apache.http.impl.auth.NTLMScheme$State: org.apache.http.impl.auth.NTLMScheme$State FAILED
+org.apache.http.impl.auth.NTLMScheme$State: org.apache.http.impl.auth.NTLMScheme$State[] $VALUES
+org.apache.http.impl.auth.NTLMScheme$State: org.apache.http.impl.auth.NTLMScheme$State[] values()
+org.apache.http.impl.auth.NTLMScheme$State: org.apache.http.impl.auth.NTLMScheme$State valueOf(java.lang.String)
+org.apache.http.impl.bootstrap.HttpServer$Status: org.apache.http.impl.bootstrap.HttpServer$Status READY
+org.apache.http.impl.bootstrap.HttpServer$Status: org.apache.http.impl.bootstrap.HttpServer$Status ACTIVE
+org.apache.http.impl.bootstrap.HttpServer$Status: org.apache.http.impl.bootstrap.HttpServer$Status STOPPING
+org.apache.http.impl.bootstrap.HttpServer$Status: org.apache.http.impl.bootstrap.HttpServer$Status[] $VALUES
+org.apache.http.impl.bootstrap.HttpServer$Status: org.apache.http.impl.bootstrap.HttpServer$Status[] values()
+org.apache.http.impl.bootstrap.HttpServer$Status: org.apache.http.impl.bootstrap.HttpServer$Status valueOf(java.lang.String)
+org.apache.http.impl.cookie.BrowserCompatSpecFactory$SecurityLevel: org.apache.http.impl.cookie.BrowserCompatSpecFactory$SecurityLevel SECURITYLEVEL_DEFAULT
+org.apache.http.impl.cookie.BrowserCompatSpecFactory$SecurityLevel: org.apache.http.impl.cookie.BrowserCompatSpecFactory$SecurityLevel SECURITYLEVEL_IE_MEDIUM
+org.apache.http.impl.cookie.BrowserCompatSpecFactory$SecurityLevel: org.apache.http.impl.cookie.BrowserCompatSpecFactory$SecurityLevel[] $VALUES
+org.apache.http.impl.cookie.BrowserCompatSpecFactory$SecurityLevel: org.apache.http.impl.cookie.BrowserCompatSpecFactory$SecurityLevel[] values()
+org.apache.http.impl.cookie.BrowserCompatSpecFactory$SecurityLevel: org.apache.http.impl.cookie.BrowserCompatSpecFactory$SecurityLevel valueOf(java.lang.String)
+org.apache.http.impl.cookie.DefaultCookieSpecProvider$CompatibilityLevel: org.apache.http.impl.cookie.DefaultCookieSpecProvider$CompatibilityLevel DEFAULT
+org.apache.http.impl.cookie.DefaultCookieSpecProvider$CompatibilityLevel: org.apache.http.impl.cookie.DefaultCookieSpecProvider$CompatibilityLevel IE_MEDIUM_SECURITY
+org.apache.http.impl.cookie.DefaultCookieSpecProvider$CompatibilityLevel: org.apache.http.impl.cookie.DefaultCookieSpecProvider$CompatibilityLevel[] $VALUES
+org.apache.http.impl.cookie.DefaultCookieSpecProvider$CompatibilityLevel: org.apache.http.impl.cookie.DefaultCookieSpecProvider$CompatibilityLevel[] values()
+org.apache.http.impl.cookie.DefaultCookieSpecProvider$CompatibilityLevel: org.apache.http.impl.cookie.DefaultCookieSpecProvider$CompatibilityLevel valueOf(java.lang.String)
+org.apache.http.impl.cookie.RFC6265CookieSpecProvider$CompatibilityLevel: org.apache.http.impl.cookie.RFC6265CookieSpecProvider$CompatibilityLevel STRICT
+org.apache.http.impl.cookie.RFC6265CookieSpecProvider$CompatibilityLevel: org.apache.http.impl.cookie.RFC6265CookieSpecProvider$CompatibilityLevel RELAXED
+org.apache.http.impl.cookie.RFC6265CookieSpecProvider$CompatibilityLevel: org.apache.http.impl.cookie.RFC6265CookieSpecProvider$CompatibilityLevel IE_MEDIUM_SECURITY
+org.apache.http.impl.cookie.RFC6265CookieSpecProvider$CompatibilityLevel: org.apache.http.impl.cookie.RFC6265CookieSpecProvider$CompatibilityLevel[] $VALUES
+org.apache.http.impl.cookie.RFC6265CookieSpecProvider$CompatibilityLevel: org.apache.http.impl.cookie.RFC6265CookieSpecProvider$CompatibilityLevel[] values()
+org.apache.http.impl.cookie.RFC6265CookieSpecProvider$CompatibilityLevel: org.apache.http.impl.cookie.RFC6265CookieSpecProvider$CompatibilityLevel valueOf(java.lang.String)
+org.bouncycastle.crypto.PasswordConverter: org.bouncycastle.crypto.PasswordConverter ASCII
+org.bouncycastle.crypto.PasswordConverter: org.bouncycastle.crypto.PasswordConverter UTF8
+org.bouncycastle.crypto.PasswordConverter: org.bouncycastle.crypto.PasswordConverter PKCS12
+org.bouncycastle.crypto.PasswordConverter: org.bouncycastle.crypto.PasswordConverter[] $VALUES
+org.bouncycastle.crypto.PasswordConverter: org.bouncycastle.crypto.PasswordConverter[] values()
+org.bouncycastle.crypto.PasswordConverter: org.bouncycastle.crypto.PasswordConverter valueOf(java.lang.String)
+org.bouncycastle.crypto.util.DERMacData$Type: org.bouncycastle.crypto.util.DERMacData$Type UNILATERALU
+org.bouncycastle.crypto.util.DERMacData$Type: org.bouncycastle.crypto.util.DERMacData$Type UNILATERALV
+org.bouncycastle.crypto.util.DERMacData$Type: org.bouncycastle.crypto.util.DERMacData$Type BILATERALU
+org.bouncycastle.crypto.util.DERMacData$Type: org.bouncycastle.crypto.util.DERMacData$Type BILATERALV
+org.bouncycastle.crypto.util.DERMacData$Type: java.lang.String enc
+org.bouncycastle.crypto.util.DERMacData$Type: org.bouncycastle.crypto.util.DERMacData$Type[] $VALUES
+org.bouncycastle.crypto.util.DERMacData$Type: org.bouncycastle.crypto.util.DERMacData$Type[] values()
+org.bouncycastle.crypto.util.DERMacData$Type: org.bouncycastle.crypto.util.DERMacData$Type valueOf(java.lang.String)
+org.bouncycastle.jce.provider.BouncyCastleProvider
+org.bouncycastle.jce.provider.BouncyCastleProvider: java.lang.String info
+org.bouncycastle.jce.provider.BouncyCastleProvider: java.lang.String PROVIDER_NAME
+org.bouncycastle.jce.provider.BouncyCastleProvider: org.bouncycastle.jcajce.provider.config.ProviderConfiguration CONFIGURATION
+org.bouncycastle.jce.provider.BouncyCastleProvider: java.util.Map keyInfoConverters
+org.bouncycastle.jce.provider.BouncyCastleProvider: java.lang.String SYMMETRIC_PACKAGE
+org.bouncycastle.jce.provider.BouncyCastleProvider: java.lang.String[] SYMMETRIC_GENERIC
+org.bouncycastle.jce.provider.BouncyCastleProvider: java.lang.String[] SYMMETRIC_MACS
+org.bouncycastle.jce.provider.BouncyCastleProvider: java.lang.String[] SYMMETRIC_CIPHERS
+org.bouncycastle.jce.provider.BouncyCastleProvider: java.lang.String ASYMMETRIC_PACKAGE
+org.bouncycastle.jce.provider.BouncyCastleProvider: java.lang.String[] ASYMMETRIC_GENERIC
+org.bouncycastle.jce.provider.BouncyCastleProvider: java.lang.String[] ASYMMETRIC_CIPHERS
+org.bouncycastle.jce.provider.BouncyCastleProvider: java.lang.String DIGEST_PACKAGE
+org.bouncycastle.jce.provider.BouncyCastleProvider: java.lang.String[] DIGESTS
+org.bouncycastle.jce.provider.BouncyCastleProvider: java.lang.String KEYSTORE_PACKAGE
+org.bouncycastle.jce.provider.BouncyCastleProvider: java.lang.String[] KEYSTORES
+org.bouncycastle.jce.provider.BouncyCastleProvider: java.lang.String SECURE_RANDOM_PACKAGE
+org.bouncycastle.jce.provider.BouncyCastleProvider: java.lang.String[] SECURE_RANDOMS
+org.bouncycastle.jce.provider.BouncyCastleProvider: BouncyCastleProvider()
+org.bouncycastle.jce.provider.BouncyCastleProvider: void setup()
+org.bouncycastle.jce.provider.BouncyCastleProvider: void loadAlgorithms(java.lang.String,java.lang.String[])
+org.bouncycastle.jce.provider.BouncyCastleProvider: void loadPQCKeys()
+org.bouncycastle.jce.provider.BouncyCastleProvider: void setParameter(java.lang.String,java.lang.Object)
+org.bouncycastle.jce.provider.BouncyCastleProvider: boolean hasAlgorithm(java.lang.String,java.lang.String)
+org.bouncycastle.jce.provider.BouncyCastleProvider: void addAlgorithm(java.lang.String,java.lang.String)
+org.bouncycastle.jce.provider.BouncyCastleProvider: void addAlgorithm(java.lang.String,org.bouncycastle.asn1.ASN1ObjectIdentifier,java.lang.String)
+org.bouncycastle.jce.provider.BouncyCastleProvider: void addKeyInfoConverter(org.bouncycastle.asn1.ASN1ObjectIdentifier,org.bouncycastle.jcajce.provider.util.AsymmetricKeyInfoConverter)
+org.bouncycastle.jce.provider.BouncyCastleProvider: void addAttributes(java.lang.String,java.util.Map)
+org.bouncycastle.jce.provider.BouncyCastleProvider: org.bouncycastle.jcajce.provider.util.AsymmetricKeyInfoConverter getAsymmetricKeyInfoConverter(org.bouncycastle.asn1.ASN1ObjectIdentifier)
+org.bouncycastle.jce.provider.BouncyCastleProvider: java.security.PublicKey getPublicKey(org.bouncycastle.asn1.x509.SubjectPublicKeyInfo)
+org.bouncycastle.jce.provider.BouncyCastleProvider: java.security.PrivateKey getPrivateKey(org.bouncycastle.asn1.pkcs.PrivateKeyInfo)
+org.bouncycastle.jce.provider.BouncyCastleProvider: void access$000(org.bouncycastle.jce.provider.BouncyCastleProvider)
+org.bouncycastle.jce.provider.BouncyCastleProvider: void <clinit>()
+org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider
+org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider: java.lang.String info
+org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider: java.lang.String PROVIDER_NAME
+org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider: org.bouncycastle.jcajce.provider.config.ProviderConfiguration CONFIGURATION
+org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider: java.util.Map keyInfoConverters
+org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider: java.lang.String ALGORITHM_PACKAGE
+org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider: java.lang.String[] ALGORITHMS
+org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider: BouncyCastlePQCProvider()
+org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider: void setup()
+org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider: void loadAlgorithms(java.lang.String,java.lang.String[])
+org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider: void setParameter(java.lang.String,java.lang.Object)
+org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider: boolean hasAlgorithm(java.lang.String,java.lang.String)
+org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider: void addAlgorithm(java.lang.String,java.lang.String)
+org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider: void addAlgorithm(java.lang.String,org.bouncycastle.asn1.ASN1ObjectIdentifier,java.lang.String)
+org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider: void addKeyInfoConverter(org.bouncycastle.asn1.ASN1ObjectIdentifier,org.bouncycastle.jcajce.provider.util.AsymmetricKeyInfoConverter)
+org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider: void addAttributes(java.lang.String,java.util.Map)
+org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider: org.bouncycastle.jcajce.provider.util.AsymmetricKeyInfoConverter getAsymmetricKeyInfoConverter(org.bouncycastle.asn1.ASN1ObjectIdentifier)
+org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider: java.security.PublicKey getPublicKey(org.bouncycastle.asn1.x509.SubjectPublicKeyInfo)
+org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider: java.security.PrivateKey getPrivateKey(org.bouncycastle.asn1.pkcs.PrivateKeyInfo)
+org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider: java.lang.Class loadClass(java.lang.Class,java.lang.String)
+org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider: void access$000(org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider)
+org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider: void <clinit>()
+org.slf4j.event.Level: org.slf4j.event.Level ERROR
+org.slf4j.event.Level: org.slf4j.event.Level WARN
+org.slf4j.event.Level: org.slf4j.event.Level INFO
+org.slf4j.event.Level: org.slf4j.event.Level DEBUG
+org.slf4j.event.Level: org.slf4j.event.Level TRACE
+org.slf4j.event.Level: int levelInt
+org.slf4j.event.Level: java.lang.String levelStr
+org.slf4j.event.Level: org.slf4j.event.Level[] $VALUES
+org.slf4j.event.Level: org.slf4j.event.Level[] values()
+org.slf4j.event.Level: org.slf4j.event.Level valueOf(java.lang.String)
+org.slf4j.helpers.MarkerIgnoringBase: long serialVersionUID
+org.slf4j.helpers.MarkerIgnoringBase: MarkerIgnoringBase()
+org.slf4j.helpers.MarkerIgnoringBase: boolean isTraceEnabled(org.slf4j.Marker)
+org.slf4j.helpers.MarkerIgnoringBase: void trace(org.slf4j.Marker,java.lang.String)
+org.slf4j.helpers.MarkerIgnoringBase: void trace(org.slf4j.Marker,java.lang.String,java.lang.Object)
+org.slf4j.helpers.MarkerIgnoringBase: void trace(org.slf4j.Marker,java.lang.String,java.lang.Object,java.lang.Object)
+org.slf4j.helpers.MarkerIgnoringBase: void trace(org.slf4j.Marker,java.lang.String,java.lang.Object[])
+org.slf4j.helpers.MarkerIgnoringBase: void trace(org.slf4j.Marker,java.lang.String,java.lang.Throwable)
+org.slf4j.helpers.MarkerIgnoringBase: boolean isDebugEnabled(org.slf4j.Marker)
+org.slf4j.helpers.MarkerIgnoringBase: void debug(org.slf4j.Marker,java.lang.String)
+org.slf4j.helpers.MarkerIgnoringBase: void debug(org.slf4j.Marker,java.lang.String,java.lang.Object)
+org.slf4j.helpers.MarkerIgnoringBase: void debug(org.slf4j.Marker,java.lang.String,java.lang.Object,java.lang.Object)
+org.slf4j.helpers.MarkerIgnoringBase: void debug(org.slf4j.Marker,java.lang.String,java.lang.Object[])
+org.slf4j.helpers.MarkerIgnoringBase: void debug(org.slf4j.Marker,java.lang.String,java.lang.Throwable)
+org.slf4j.helpers.MarkerIgnoringBase: boolean isInfoEnabled(org.slf4j.Marker)
+org.slf4j.helpers.MarkerIgnoringBase: void info(org.slf4j.Marker,java.lang.String)
+org.slf4j.helpers.MarkerIgnoringBase: void info(org.slf4j.Marker,java.lang.String,java.lang.Object)
+org.slf4j.helpers.MarkerIgnoringBase: void info(org.slf4j.Marker,java.lang.String,java.lang.Object,java.lang.Object)
+org.slf4j.helpers.MarkerIgnoringBase: void info(org.slf4j.Marker,java.lang.String,java.lang.Object[])
+org.slf4j.helpers.MarkerIgnoringBase: void info(org.slf4j.Marker,java.lang.String,java.lang.Throwable)
+org.slf4j.helpers.MarkerIgnoringBase: boolean isWarnEnabled(org.slf4j.Marker)
+org.slf4j.helpers.MarkerIgnoringBase: void warn(org.slf4j.Marker,java.lang.String)
+org.slf4j.helpers.MarkerIgnoringBase: void warn(org.slf4j.Marker,java.lang.String,java.lang.Object)
+org.slf4j.helpers.MarkerIgnoringBase: void warn(org.slf4j.Marker,java.lang.String,java.lang.Object,java.lang.Object)
+org.slf4j.helpers.MarkerIgnoringBase: void warn(org.slf4j.Marker,java.lang.String,java.lang.Object[])
+org.slf4j.helpers.MarkerIgnoringBase: void warn(org.slf4j.Marker,java.lang.String,java.lang.Throwable)
+org.slf4j.helpers.MarkerIgnoringBase: boolean isErrorEnabled(org.slf4j.Marker)
+org.slf4j.helpers.MarkerIgnoringBase: void error(org.slf4j.Marker,java.lang.String)
+org.slf4j.helpers.MarkerIgnoringBase: void error(org.slf4j.Marker,java.lang.String,java.lang.Object)
+org.slf4j.helpers.MarkerIgnoringBase: void error(org.slf4j.Marker,java.lang.String,java.lang.Object,java.lang.Object)
+org.slf4j.helpers.MarkerIgnoringBase: void error(org.slf4j.Marker,java.lang.String,java.lang.Object[])
+org.slf4j.helpers.MarkerIgnoringBase: void error(org.slf4j.Marker,java.lang.String,java.lang.Throwable)
+org.slf4j.helpers.MarkerIgnoringBase: java.lang.String toString()
+org.slf4j.helpers.MarkerIgnoringBase: java.lang.String getName()
+org.slf4j.helpers.NamedLoggerBase: long serialVersionUID
+org.slf4j.helpers.NamedLoggerBase: java.lang.String name
+org.slf4j.helpers.NamedLoggerBase: NamedLoggerBase()
+org.slf4j.helpers.NamedLoggerBase: java.lang.String getName()
+org.slf4j.helpers.NamedLoggerBase: java.lang.Object readResolve()
+org.slf4j.impl.OutputChoice$OutputChoiceType: org.slf4j.impl.OutputChoice$OutputChoiceType SYS_OUT
+org.slf4j.impl.OutputChoice$OutputChoiceType: org.slf4j.impl.OutputChoice$OutputChoiceType CACHED_SYS_OUT
+org.slf4j.impl.OutputChoice$OutputChoiceType: org.slf4j.impl.OutputChoice$OutputChoiceType SYS_ERR
+org.slf4j.impl.OutputChoice$OutputChoiceType: org.slf4j.impl.OutputChoice$OutputChoiceType CACHED_SYS_ERR
+org.slf4j.impl.OutputChoice$OutputChoiceType: org.slf4j.impl.OutputChoice$OutputChoiceType FILE
+org.slf4j.impl.OutputChoice$OutputChoiceType: org.slf4j.impl.OutputChoice$OutputChoiceType[] $VALUES
+org.slf4j.impl.OutputChoice$OutputChoiceType: org.slf4j.impl.OutputChoice$OutputChoiceType[] values()
+org.slf4j.impl.OutputChoice$OutputChoiceType: org.slf4j.impl.OutputChoice$OutputChoiceType valueOf(java.lang.String)
+org.slf4j.impl.SimpleLogger
+org.slf4j.impl.SimpleLogger: long serialVersionUID
+org.slf4j.impl.SimpleLogger: long START_TIME
+org.slf4j.impl.SimpleLogger: int LOG_LEVEL_TRACE
+org.slf4j.impl.SimpleLogger: int LOG_LEVEL_DEBUG
+org.slf4j.impl.SimpleLogger: int LOG_LEVEL_INFO
+org.slf4j.impl.SimpleLogger: int LOG_LEVEL_WARN
+org.slf4j.impl.SimpleLogger: int LOG_LEVEL_ERROR
+org.slf4j.impl.SimpleLogger: int LOG_LEVEL_OFF
+org.slf4j.impl.SimpleLogger: boolean INITIALIZED
+org.slf4j.impl.SimpleLogger: org.slf4j.impl.SimpleLoggerConfiguration CONFIG_PARAMS
+org.slf4j.impl.SimpleLogger: int currentLogLevel
+org.slf4j.impl.SimpleLogger: java.lang.String shortLogName
+org.slf4j.impl.SimpleLogger: java.lang.String SYSTEM_PREFIX
+org.slf4j.impl.SimpleLogger: java.lang.String LOG_KEY_PREFIX
+org.slf4j.impl.SimpleLogger: java.lang.String CACHE_OUTPUT_STREAM_STRING_KEY
+org.slf4j.impl.SimpleLogger: java.lang.String WARN_LEVEL_STRING_KEY
+org.slf4j.impl.SimpleLogger: java.lang.String LEVEL_IN_BRACKETS_KEY
+org.slf4j.impl.SimpleLogger: java.lang.String LOG_FILE_KEY
+org.slf4j.impl.SimpleLogger: java.lang.String SHOW_SHORT_LOG_NAME_KEY
+org.slf4j.impl.SimpleLogger: java.lang.String SHOW_LOG_NAME_KEY
+org.slf4j.impl.SimpleLogger: java.lang.String SHOW_THREAD_NAME_KEY
+org.slf4j.impl.SimpleLogger: java.lang.String DATE_TIME_FORMAT_KEY
+org.slf4j.impl.SimpleLogger: java.lang.String SHOW_DATE_TIME_KEY
+org.slf4j.impl.SimpleLogger: java.lang.String DEFAULT_LOG_LEVEL_KEY
+org.slf4j.impl.SimpleLogger: void lazyInit()
+org.slf4j.impl.SimpleLogger: void init()
+org.slf4j.impl.SimpleLogger: SimpleLogger(java.lang.String)
+org.slf4j.impl.SimpleLogger: java.lang.String recursivelyComputeLevelString()
+org.slf4j.impl.SimpleLogger: void log(int,java.lang.String,java.lang.Throwable)
+org.slf4j.impl.SimpleLogger: java.lang.String renderLevel(int)
+org.slf4j.impl.SimpleLogger: void write(java.lang.StringBuilder,java.lang.Throwable)
+org.slf4j.impl.SimpleLogger: void writeThrowable(java.lang.Throwable,java.io.PrintStream)
+org.slf4j.impl.SimpleLogger: java.lang.String getFormattedDate()
+org.slf4j.impl.SimpleLogger: java.lang.String computeShortName()
+org.slf4j.impl.SimpleLogger: void formatAndLog(int,java.lang.String,java.lang.Object,java.lang.Object)
+org.slf4j.impl.SimpleLogger: void formatAndLog(int,java.lang.String,java.lang.Object[])
+org.slf4j.impl.SimpleLogger: boolean isLevelEnabled(int)
+org.slf4j.impl.SimpleLogger: boolean isTraceEnabled()
+org.slf4j.impl.SimpleLogger: void trace(java.lang.String)
+org.slf4j.impl.SimpleLogger: void trace(java.lang.String,java.lang.Object)
+org.slf4j.impl.SimpleLogger: void trace(java.lang.String,java.lang.Object,java.lang.Object)
+org.slf4j.impl.SimpleLogger: void trace(java.lang.String,java.lang.Object[])
+org.slf4j.impl.SimpleLogger: void trace(java.lang.String,java.lang.Throwable)
+org.slf4j.impl.SimpleLogger: boolean isDebugEnabled()
+org.slf4j.impl.SimpleLogger: void debug(java.lang.String)
+org.slf4j.impl.SimpleLogger: void debug(java.lang.String,java.lang.Object)
+org.slf4j.impl.SimpleLogger: void debug(java.lang.String,java.lang.Object,java.lang.Object)
+org.slf4j.impl.SimpleLogger: void debug(java.lang.String,java.lang.Object[])
+org.slf4j.impl.SimpleLogger: void debug(java.lang.String,java.lang.Throwable)
+org.slf4j.impl.SimpleLogger: boolean isInfoEnabled()
+org.slf4j.impl.SimpleLogger: void info(java.lang.String)
+org.slf4j.impl.SimpleLogger: void info(java.lang.String,java.lang.Object)
+org.slf4j.impl.SimpleLogger: void info(java.lang.String,java.lang.Object,java.lang.Object)
+org.slf4j.impl.SimpleLogger: void info(java.lang.String,java.lang.Object[])
+org.slf4j.impl.SimpleLogger: void info(java.lang.String,java.lang.Throwable)
+org.slf4j.impl.SimpleLogger: boolean isWarnEnabled()
+org.slf4j.impl.SimpleLogger: void warn(java.lang.String)
+org.slf4j.impl.SimpleLogger: void warn(java.lang.String,java.lang.Object)
+org.slf4j.impl.SimpleLogger: void warn(java.lang.String,java.lang.Object,java.lang.Object)
+org.slf4j.impl.SimpleLogger: void warn(java.lang.String,java.lang.Object[])
+org.slf4j.impl.SimpleLogger: void warn(java.lang.String,java.lang.Throwable)
+org.slf4j.impl.SimpleLogger: boolean isErrorEnabled()
+org.slf4j.impl.SimpleLogger: void error(java.lang.String)
+org.slf4j.impl.SimpleLogger: void error(java.lang.String,java.lang.Object)
+org.slf4j.impl.SimpleLogger: void error(java.lang.String,java.lang.Object,java.lang.Object)
+org.slf4j.impl.SimpleLogger: void error(java.lang.String,java.lang.Object[])
+org.slf4j.impl.SimpleLogger: void error(java.lang.String,java.lang.Throwable)
+org.slf4j.impl.SimpleLogger: void log(org.slf4j.event.LoggingEvent)
+org.slf4j.impl.SimpleLogger: void <clinit>()
+org.slf4j.impl.SimpleLoggerConfiguration
+org.slf4j.impl.SimpleLoggerConfiguration: java.lang.String CONFIGURATION_FILE
+org.slf4j.impl.SimpleLoggerConfiguration: int DEFAULT_LOG_LEVEL_DEFAULT
+org.slf4j.impl.SimpleLoggerConfiguration: int defaultLogLevel
+org.slf4j.impl.SimpleLoggerConfiguration: boolean SHOW_DATE_TIME_DEFAULT
+org.slf4j.impl.SimpleLoggerConfiguration: boolean showDateTime
+org.slf4j.impl.SimpleLoggerConfiguration: java.lang.String DATE_TIME_FORMAT_STR_DEFAULT
+org.slf4j.impl.SimpleLoggerConfiguration: java.lang.String dateTimeFormatStr
+org.slf4j.impl.SimpleLoggerConfiguration: java.text.DateFormat dateFormatter
+org.slf4j.impl.SimpleLoggerConfiguration: boolean SHOW_THREAD_NAME_DEFAULT
+org.slf4j.impl.SimpleLoggerConfiguration: boolean showThreadName
+org.slf4j.impl.SimpleLoggerConfiguration: boolean SHOW_LOG_NAME_DEFAULT
+org.slf4j.impl.SimpleLoggerConfiguration: boolean showLogName
+org.slf4j.impl.SimpleLoggerConfiguration: boolean SHOW_SHORT_LOG_NAME_DEFAULT
+org.slf4j.impl.SimpleLoggerConfiguration: boolean showShortLogName
+org.slf4j.impl.SimpleLoggerConfiguration: boolean LEVEL_IN_BRACKETS_DEFAULT
+org.slf4j.impl.SimpleLoggerConfiguration: boolean levelInBrackets
+org.slf4j.impl.SimpleLoggerConfiguration: java.lang.String LOG_FILE_DEFAULT
+org.slf4j.impl.SimpleLoggerConfiguration: java.lang.String logFile
+org.slf4j.impl.SimpleLoggerConfiguration: org.slf4j.impl.OutputChoice outputChoice
+org.slf4j.impl.SimpleLoggerConfiguration: boolean CACHE_OUTPUT_STREAM_DEFAULT
+org.slf4j.impl.SimpleLoggerConfiguration: boolean cacheOutputStream
+org.slf4j.impl.SimpleLoggerConfiguration: java.lang.String WARN_LEVELS_STRING_DEFAULT
+org.slf4j.impl.SimpleLoggerConfiguration: java.lang.String warnLevelString
+org.slf4j.impl.SimpleLoggerConfiguration: java.util.Properties properties
+org.slf4j.impl.SimpleLoggerConfiguration: SimpleLoggerConfiguration()
+org.slf4j.impl.SimpleLoggerConfiguration: void init()
+org.slf4j.impl.SimpleLoggerConfiguration: void loadProperties()
+org.slf4j.impl.SimpleLoggerConfiguration: java.lang.String getStringProperty(java.lang.String,java.lang.String)
+org.slf4j.impl.SimpleLoggerConfiguration: boolean getBooleanProperty(java.lang.String,boolean)
+org.slf4j.impl.SimpleLoggerConfiguration: java.lang.String getStringProperty(java.lang.String)
+org.slf4j.impl.SimpleLoggerConfiguration: int stringToLevel(java.lang.String)
+org.slf4j.impl.SimpleLoggerConfiguration: org.slf4j.impl.OutputChoice computeOutputChoice(java.lang.String,boolean)
+org.slf4j.impl.SimpleLoggerConfiguration: void <clinit>()
+org.slf4j.impl.SimpleLoggerConfiguration$1
+org.slf4j.impl.SimpleLoggerConfiguration$1: org.slf4j.impl.SimpleLoggerConfiguration this$0
+org.slf4j.impl.SimpleLoggerConfiguration$1: SimpleLoggerConfiguration$1(org.slf4j.impl.SimpleLoggerConfiguration)
+org.slf4j.impl.SimpleLoggerConfiguration$1: java.io.InputStream run()
+org.slf4j.impl.SimpleLoggerConfiguration$1: java.lang.Object run()
+org.slf4j.impl.SimpleLoggerFactory
+org.slf4j.impl.SimpleLoggerFactory: java.util.concurrent.ConcurrentMap loggerMap
+org.slf4j.impl.SimpleLoggerFactory: SimpleLoggerFactory()
+org.slf4j.impl.SimpleLoggerFactory: org.slf4j.Logger getLogger(java.lang.String)
+org.slf4j.impl.SimpleLoggerFactory: void reset()
+pro.javacard.gp.GPData$CPLC$Field: pro.javacard.gp.GPData$CPLC$Field ICFabricator
+pro.javacard.gp.GPData$CPLC$Field: pro.javacard.gp.GPData$CPLC$Field ICType
+pro.javacard.gp.GPData$CPLC$Field: pro.javacard.gp.GPData$CPLC$Field OperatingSystemID
+pro.javacard.gp.GPData$CPLC$Field: pro.javacard.gp.GPData$CPLC$Field OperatingSystemReleaseDate
+pro.javacard.gp.GPData$CPLC$Field: pro.javacard.gp.GPData$CPLC$Field OperatingSystemReleaseLevel
+pro.javacard.gp.GPData$CPLC$Field: pro.javacard.gp.GPData$CPLC$Field ICFabricationDate
+pro.javacard.gp.GPData$CPLC$Field: pro.javacard.gp.GPData$CPLC$Field ICSerialNumber
+pro.javacard.gp.GPData$CPLC$Field: pro.javacard.gp.GPData$CPLC$Field ICBatchIdentifier
+pro.javacard.gp.GPData$CPLC$Field: pro.javacard.gp.GPData$CPLC$Field ICModuleFabricator
+pro.javacard.gp.GPData$CPLC$Field: pro.javacard.gp.GPData$CPLC$Field ICModulePackagingDate
+pro.javacard.gp.GPData$CPLC$Field: pro.javacard.gp.GPData$CPLC$Field ICCManufacturer
+pro.javacard.gp.GPData$CPLC$Field: pro.javacard.gp.GPData$CPLC$Field ICEmbeddingDate
+pro.javacard.gp.GPData$CPLC$Field: pro.javacard.gp.GPData$CPLC$Field ICPrePersonalizer
+pro.javacard.gp.GPData$CPLC$Field: pro.javacard.gp.GPData$CPLC$Field ICPrePersonalizationEquipmentDate
+pro.javacard.gp.GPData$CPLC$Field: pro.javacard.gp.GPData$CPLC$Field ICPrePersonalizationEquipmentID
+pro.javacard.gp.GPData$CPLC$Field: pro.javacard.gp.GPData$CPLC$Field ICPersonalizer
+pro.javacard.gp.GPData$CPLC$Field: pro.javacard.gp.GPData$CPLC$Field ICPersonalizationDate
+pro.javacard.gp.GPData$CPLC$Field: pro.javacard.gp.GPData$CPLC$Field ICPersonalizationEquipmentID
+pro.javacard.gp.GPData$CPLC$Field: pro.javacard.gp.GPData$CPLC$Field[] $VALUES
+pro.javacard.gp.GPData$CPLC$Field: pro.javacard.gp.GPData$CPLC$Field[] values()
+pro.javacard.gp.GPData$CPLC$Field: pro.javacard.gp.GPData$CPLC$Field valueOf(java.lang.String)
+pro.javacard.gp.GPKey$Type: pro.javacard.gp.GPKey$Type RAW
+pro.javacard.gp.GPKey$Type: pro.javacard.gp.GPKey$Type DES
+pro.javacard.gp.GPKey$Type: pro.javacard.gp.GPKey$Type DES3
+pro.javacard.gp.GPKey$Type: pro.javacard.gp.GPKey$Type AES
+pro.javacard.gp.GPKey$Type: pro.javacard.gp.GPKey$Type RSAPUB
+pro.javacard.gp.GPKey$Type: pro.javacard.gp.GPKey$Type[] $VALUES
+pro.javacard.gp.GPKey$Type: pro.javacard.gp.GPKey$Type[] values()
+pro.javacard.gp.GPKey$Type: pro.javacard.gp.GPKey$Type valueOf(java.lang.String)
+pro.javacard.gp.GPRegistryEntry$Kind: pro.javacard.gp.GPRegistryEntry$Kind IssuerSecurityDomain
+pro.javacard.gp.GPRegistryEntry$Kind: pro.javacard.gp.GPRegistryEntry$Kind Application
+pro.javacard.gp.GPRegistryEntry$Kind: pro.javacard.gp.GPRegistryEntry$Kind SecurityDomain
+pro.javacard.gp.GPRegistryEntry$Kind: pro.javacard.gp.GPRegistryEntry$Kind ExecutableLoadFile
+pro.javacard.gp.GPRegistryEntry$Kind: pro.javacard.gp.GPRegistryEntry$Kind[] $VALUES
+pro.javacard.gp.GPRegistryEntry$Kind: pro.javacard.gp.GPRegistryEntry$Kind[] values()
+pro.javacard.gp.GPRegistryEntry$Kind: pro.javacard.gp.GPRegistryEntry$Kind valueOf(java.lang.String)
+pro.javacard.gp.GPRegistryEntry$Privilege: pro.javacard.gp.GPRegistryEntry$Privilege SecurityDomain
+pro.javacard.gp.GPRegistryEntry$Privilege: pro.javacard.gp.GPRegistryEntry$Privilege DAPVerification
+pro.javacard.gp.GPRegistryEntry$Privilege: pro.javacard.gp.GPRegistryEntry$Privilege DelegatedManagement
+pro.javacard.gp.GPRegistryEntry$Privilege: pro.javacard.gp.GPRegistryEntry$Privilege CardLock
+pro.javacard.gp.GPRegistryEntry$Privilege: pro.javacard.gp.GPRegistryEntry$Privilege CardTerminate
+pro.javacard.gp.GPRegistryEntry$Privilege: pro.javacard.gp.GPRegistryEntry$Privilege CardReset
+pro.javacard.gp.GPRegistryEntry$Privilege: pro.javacard.gp.GPRegistryEntry$Privilege CVMManagement
+pro.javacard.gp.GPRegistryEntry$Privilege: pro.javacard.gp.GPRegistryEntry$Privilege MandatedDAPVerification
+pro.javacard.gp.GPRegistryEntry$Privilege: pro.javacard.gp.GPRegistryEntry$Privilege TrustedPath
+pro.javacard.gp.GPRegistryEntry$Privilege: pro.javacard.gp.GPRegistryEntry$Privilege AuthorizedManagement
+pro.javacard.gp.GPRegistryEntry$Privilege: pro.javacard.gp.GPRegistryEntry$Privilege TokenVerification
+pro.javacard.gp.GPRegistryEntry$Privilege: pro.javacard.gp.GPRegistryEntry$Privilege GlobalDelete
+pro.javacard.gp.GPRegistryEntry$Privilege: pro.javacard.gp.GPRegistryEntry$Privilege GlobalLock
+pro.javacard.gp.GPRegistryEntry$Privilege: pro.javacard.gp.GPRegistryEntry$Privilege GlobalRegistry
+pro.javacard.gp.GPRegistryEntry$Privilege: pro.javacard.gp.GPRegistryEntry$Privilege FinalApplication
+pro.javacard.gp.GPRegistryEntry$Privilege: pro.javacard.gp.GPRegistryEntry$Privilege GlobalService
+pro.javacard.gp.GPRegistryEntry$Privilege: pro.javacard.gp.GPRegistryEntry$Privilege ReceiptGeneration
+pro.javacard.gp.GPRegistryEntry$Privilege: pro.javacard.gp.GPRegistryEntry$Privilege CipheredLoadFileDataBlock
+pro.javacard.gp.GPRegistryEntry$Privilege: pro.javacard.gp.GPRegistryEntry$Privilege ContactlessActivation
+pro.javacard.gp.GPRegistryEntry$Privilege: pro.javacard.gp.GPRegistryEntry$Privilege ContactlessSelfActivation
+pro.javacard.gp.GPRegistryEntry$Privilege: pro.javacard.gp.GPRegistryEntry$Privilege[] $VALUES
+pro.javacard.gp.GPRegistryEntry$Privilege: pro.javacard.gp.GPRegistryEntry$Privilege[] values()
+pro.javacard.gp.GPRegistryEntry$Privilege: pro.javacard.gp.GPRegistryEntry$Privilege valueOf(java.lang.String)
+pro.javacard.gp.GPSessionKeyProvider$KeyPurpose: pro.javacard.gp.GPSessionKeyProvider$KeyPurpose ENC
+pro.javacard.gp.GPSessionKeyProvider$KeyPurpose: pro.javacard.gp.GPSessionKeyProvider$KeyPurpose MAC
+pro.javacard.gp.GPSessionKeyProvider$KeyPurpose: pro.javacard.gp.GPSessionKeyProvider$KeyPurpose DEK
+pro.javacard.gp.GPSessionKeyProvider$KeyPurpose: pro.javacard.gp.GPSessionKeyProvider$KeyPurpose RMAC
+pro.javacard.gp.GPSessionKeyProvider$KeyPurpose: int value
+pro.javacard.gp.GPSessionKeyProvider$KeyPurpose: pro.javacard.gp.GPSessionKeyProvider$KeyPurpose[] $VALUES
+pro.javacard.gp.GPSessionKeyProvider$KeyPurpose: pro.javacard.gp.GPSessionKeyProvider$KeyPurpose[] values()
+pro.javacard.gp.GPSessionKeyProvider$KeyPurpose: pro.javacard.gp.GPSessionKeyProvider$KeyPurpose valueOf(java.lang.String)
+pro.javacard.gp.GPTool
+pro.javacard.gp.GPTool: void main(java.lang.String[])
+pro.javacard.gp.GlobalPlatform$APDUMode: pro.javacard.gp.GlobalPlatform$APDUMode CLR
+pro.javacard.gp.GlobalPlatform$APDUMode: pro.javacard.gp.GlobalPlatform$APDUMode MAC
+pro.javacard.gp.GlobalPlatform$APDUMode: pro.javacard.gp.GlobalPlatform$APDUMode ENC
+pro.javacard.gp.GlobalPlatform$APDUMode: pro.javacard.gp.GlobalPlatform$APDUMode RMAC
+pro.javacard.gp.GlobalPlatform$APDUMode: pro.javacard.gp.GlobalPlatform$APDUMode RENC
+pro.javacard.gp.GlobalPlatform$APDUMode: int value
+pro.javacard.gp.GlobalPlatform$APDUMode: pro.javacard.gp.GlobalPlatform$APDUMode[] $VALUES
+pro.javacard.gp.GlobalPlatform$APDUMode: pro.javacard.gp.GlobalPlatform$APDUMode[] values()
+pro.javacard.gp.GlobalPlatform$APDUMode: pro.javacard.gp.GlobalPlatform$APDUMode valueOf(java.lang.String)
+pro.javacard.gp.GlobalPlatform$GPSpec: pro.javacard.gp.GlobalPlatform$GPSpec OP201
+pro.javacard.gp.GlobalPlatform$GPSpec: pro.javacard.gp.GlobalPlatform$GPSpec GP211
+pro.javacard.gp.GlobalPlatform$GPSpec: pro.javacard.gp.GlobalPlatform$GPSpec GP22
+pro.javacard.gp.GlobalPlatform$GPSpec: pro.javacard.gp.GlobalPlatform$GPSpec[] $VALUES
+pro.javacard.gp.GlobalPlatform$GPSpec: pro.javacard.gp.GlobalPlatform$GPSpec[] values()
+pro.javacard.gp.GlobalPlatform$GPSpec: pro.javacard.gp.GlobalPlatform$GPSpec valueOf(java.lang.String)
+pro.javacard.gp.PlaintextKeys$Diversification: pro.javacard.gp.PlaintextKeys$Diversification VISA2
+pro.javacard.gp.PlaintextKeys$Diversification: pro.javacard.gp.PlaintextKeys$Diversification EMV
+pro.javacard.gp.PlaintextKeys$Diversification: pro.javacard.gp.PlaintextKeys$Diversification KDF3
+pro.javacard.gp.PlaintextKeys$Diversification: pro.javacard.gp.PlaintextKeys$Diversification[] $VALUES
+pro.javacard.gp.PlaintextKeys$Diversification: pro.javacard.gp.PlaintextKeys$Diversification[] values()
+pro.javacard.gp.PlaintextKeys$Diversification: pro.javacard.gp.PlaintextKeys$Diversification valueOf(java.lang.String)
+pro.javacard.gp.SEAccessControl$EventAccessRules: pro.javacard.gp.SEAccessControl$EventAccessRules NEVER
+pro.javacard.gp.SEAccessControl$EventAccessRules: pro.javacard.gp.SEAccessControl$EventAccessRules ALWAYS
+pro.javacard.gp.SEAccessControl$EventAccessRules: pro.javacard.gp.SEAccessControl$EventAccessRules CUSTOM
+pro.javacard.gp.SEAccessControl$EventAccessRules: pro.javacard.gp.SEAccessControl$EventAccessRules NONE
+pro.javacard.gp.SEAccessControl$EventAccessRules: byte value
+pro.javacard.gp.SEAccessControl$EventAccessRules: pro.javacard.gp.SEAccessControl$EventAccessRules[] $VALUES
+pro.javacard.gp.SEAccessControl$EventAccessRules: pro.javacard.gp.SEAccessControl$EventAccessRules[] values()
+pro.javacard.gp.SEAccessControl$EventAccessRules: pro.javacard.gp.SEAccessControl$EventAccessRules valueOf(java.lang.String)

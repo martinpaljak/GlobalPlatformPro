@@ -237,7 +237,7 @@ public final class GPCrypto {
         try {
             // Pad with random
             int n = key.getLength() % 16 + 1;
-            byte[] plaintext = new byte[n * 16];
+            byte[] plaintext = new byte[n * key.getLength()];
             random.nextBytes(plaintext);
             System.arraycopy(key.getBytes(), 0, plaintext, 0, key.getLength());
             // encrypt

@@ -169,8 +169,8 @@ public final class GPData {
         for (GPKey k : list) {
             // Descriptive text about the key
             final String nice;
-            if (k.getType() == Type.RSA) {
-                nice = "(RSA-" + k.getLength() * 8 + ")";
+            if (k.getType() == Type.RSAPUB) {
+                nice = "(RSA-" + k.getLength() * 8 + " public)";
             } else if (k.getType() == Type.AES) {
                 nice = "(AES-" + k.getLength() * 8 + ")";
             } else {
@@ -220,7 +220,7 @@ public final class GPData {
                     // TODO
                     throw new GPDataException("Extended key template not yet supported", tmpl);
                 }
-                // XXX: RSA keys have two components A1 and A0, gets called with A1 and A0 (exponent) discarded
+                // XXX: RSAPUB keys have two components A1 and A0, gets called with A1 and A0 (exponent) discarded
                 r.add(new GPKey(version, id, length, type));
             }
         }

@@ -72,6 +72,8 @@ public class GPRegistry implements Iterable<GPRegistryEntry> {
 		GPRegistryEntry existing = entries.get(entry.getAID());
 		if (existing != null && existing.getType() != entry.getType()) {
 			// OP201 cards list the ISD AID as load file.
+			// FIXME: different types with same AID.
+			logger.warn("Duplicate entry! " + existing + " vs " + entry);
 			return;
 		}
 		entries.put(entry.getAID(), entry);

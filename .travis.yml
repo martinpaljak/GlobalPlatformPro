@@ -32,6 +32,7 @@ addons:
     branch_pattern: coverity
 deploy:
   - provider: releases
+    prerelease: true
     file:
       - gp.jar
       - gp.exe

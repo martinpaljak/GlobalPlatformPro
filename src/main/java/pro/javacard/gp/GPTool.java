@@ -79,6 +79,7 @@ public final class GPTool {
     private final static String OPT_LOCK_ENC = "lock-enc";
     private final static String OPT_LOCK_MAC = "lock-mac";
     private final static String OPT_LOCK_DEK = "lock-dek";
+    private final static String OPT_LOCK_KDF3 = "lock-kdf3";
     private final static String OPT_LOCK_APPLET = "lock-applet";
     private final static String OPT_LOCK_CARD = "lock-card";
     private final static String OPT_MAKE_DEFAULT = "make-default";
@@ -197,6 +198,7 @@ public final class GPTool {
         parser.accepts(OPT_LOCK_ENC, "Set new ENC key").withRequiredArg().describedAs("key");
         parser.accepts(OPT_LOCK_MAC, "Set new MAC key").withRequiredArg().describedAs("key");
         parser.accepts(OPT_LOCK_DEK, "Set new DEK key").withRequiredArg().describedAs("key");
+        parser.accepts(OPT_LOCK_KDF3, "Set new keys using KDF3").withRequiredArg().describedAs("key");
         parser.accepts(OPT_UNLOCK, "Set default key for card key");
         parser.accepts(OPT_NEW_KEY_VERSION, "Key version for the new key").withRequiredArg();
 
@@ -787,15 +789,14 @@ public final class GPTool {
                             newkeys.add(new GPKey(kv, 2, new_key));
                             newkeys.add(new GPKey(kv, 3, new_key));
 
-                            gp.putKeys(newkeys, replace);
+                            gp.putKeys(newkeys, replace, null);
 
                             System.out.println("Default " + new_key.toString() + " set as master key.");
                         }
 
                         // --lock
-                        if (args.has(OPT_LOCK) || (args.has(OPT_LOCK_ENC) && args.has(OPT_LOCK_MAC) && args.has(OPT_LOCK_DEK))) {
-
-                            // By default we try to change an existing key
+                        if (args.has(OPT_LOCK_KDF3) || args.has(OPT_LOCK) || (args.has(OPT_LOCK_ENC) && args.has(OPT_LOCK_MAC) && args.has(OPT_LOCK_DEK))) {
+                           // By default we try to change an existing key
                             boolean replace = true;
                             List<GPKey> current = gp.getKeyInfoTemplate();
 
@@ -834,8 +835,17 @@ public final class GPTool {
                                 updatekeys.add(new GPKey(new_version, 1, nk));
                                 updatekeys.add(new GPKey(new_version, 2, nk));
                                 updatekeys.add(new GPKey(new_version, 3, nk));
-                                gp.putKeys(updatekeys, replace);
+                                gp.putKeys(updatekeys, replace, null);
                                 System.out.println("Card locked with: " + HexUtils.bin2hex(nk.getBytes()));
+                            }else if (args.has(OPT_LOCK_KDF3)){
+                                GPKey k = new GPKey(HexUtils.stringToBin((String) args.valueOf(OPT_LOCK_KDF3)));
+                                if (gp.getSCPVersion() == 3)
+                                    k.become(Type.AES);
+                                else
+                                    k.become(Type.DES3);
+                                updatekeys.add(new GPKey(new_version, 1, k));
+                                gp.putKeys(updatekeys, replace, KDF3);
+                                System.out.println("Card locked with: " + HexUtils.bin2hex(k.getBytes()) + " using KDF3.");
                             }else{
                                 GPKey nk1 = new GPKey(HexUtils.stringToBin((String) args.valueOf(OPT_LOCK_ENC)));
                                 GPKey nk2 = new GPKey(HexUtils.stringToBin((String) args.valueOf(OPT_LOCK_MAC)));
@@ -855,7 +865,7 @@ public final class GPTool {
                                 updatekeys.add(new GPKey(new_version, 1, nk1));
                                 updatekeys.add(new GPKey(new_version, 2, nk2));
                                 updatekeys.add(new GPKey(new_version, 3, nk3));
-                                gp.putKeys(updatekeys, replace);
+                                gp.putKeys(updatekeys, replace,null);
                                 System.out.println("Card locked with ENC: " + HexUtils.bin2hex(nk1.getBytes()));
                                 System.out.println("Card locked with MAC: " + HexUtils.bin2hex(nk2.getBytes()));
                                 System.out.println("Card locked with DEK: " + HexUtils.bin2hex(nk3.getBytes()));
@@ -985,7 +995,7 @@ public final class GPTool {
             return true;
         if (args.has(OPT_ACR_ADD) || args.has(OPT_ACR_DELETE))
             return true;
-        if (args.has(OPT_LOCK) || (args.has(OPT_LOCK_ENC) && args.has(OPT_LOCK_MAC) && args.has(OPT_LOCK_DEK))|| args.has(OPT_UNLOCK) || args.has(OPT_MAKE_DEFAULT))
+        if (args.has(OPT_LOCK_KDF3) || args.has(OPT_LOCK) || (args.has(OPT_LOCK_ENC) && args.has(OPT_LOCK_MAC) && args.has(OPT_LOCK_DEK))|| args.has(OPT_UNLOCK) || args.has(OPT_MAKE_DEFAULT))
             return true;
         if (args.has(OPT_UNINSTALL) || args.has(OPT_SECURE_APDU) || args.has(OPT_DOMAIN))
             return true;

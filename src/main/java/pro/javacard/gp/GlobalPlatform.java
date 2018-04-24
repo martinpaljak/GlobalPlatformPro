@@ -680,7 +680,7 @@ public class GlobalPlatform implements AutoCloseable {
         // send the INSTALL for personalization command
         ByteArrayOutputStream bo = new ByteArrayOutputStream();
         try {
-            // GP 2.1.1 9.5.2.3.5
+            // GP 2.1.1 9.5.2.3.5, 2.2.1 - 11.5.2.3.6
             bo.write(0);
             bo.write(0);
             bo.write(aid.getLength());
@@ -691,14 +691,14 @@ public class GlobalPlatform implements AutoCloseable {
         } catch (IOException ioe) {
             throw new RuntimeException(ioe);
         }
-        CommandAPDU install = new CommandAPDU(CLA_GP, INS_INSTALL, 0x20, 0x00, bo.toByteArray());
+        CommandAPDU install = new CommandAPDU(CLA_GP, INS_INSTALL, 0x20, 0x00, bo.toByteArray(), 256);
         ResponseAPDU response = transmit(install);
         GPException.check(response, "Install for personalization failed");
 
         // Now pump the data
         List<byte[]> blocks = GPUtils.splitArray(data, wrapper.getBlockSize());
         for (int i = 0; i < blocks.size(); i++) {
-            CommandAPDU load = new CommandAPDU(CLA_GP, INS_STORE_DATA, (i == (blocks.size() - 1)) ? P1 : 0x00, (byte) i, blocks.get(i));
+            CommandAPDU load = new CommandAPDU(CLA_GP, INS_STORE_DATA, (i == (blocks.size() - 1)) ? P1 | 0x80 : P1 & 0x7F, (byte) i, blocks.get(i), 256);
             response = transmit(load);
             GPException.check(response, "STORE DATA failed");
         }

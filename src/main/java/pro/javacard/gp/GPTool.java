@@ -608,7 +608,7 @@ public final class GPTool {
                         }
 
                         // --create <aid> (--applet <aid> --package <aid> or --cap <cap>)
-                        if (args.has(OPT_CREATE)) {
+                        if (args.has(OPT_CREATE) && !args.has(OPT_INSTALL)) {
                             AID packageAID = null;
                             AID appletAID = null;
 

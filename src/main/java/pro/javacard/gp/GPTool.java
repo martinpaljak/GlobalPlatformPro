@@ -271,6 +271,11 @@ public final class GPTool {
                 System.out.println("**** CAP info of " + capfile.getName());
                 cap.dump(System.out);
             }
+
+            if (args.specs().size() == 2) {
+                // Exit after --cap <file> --info
+                System.exit(0);
+            }
         }
 
         if (args.has(OPT_LIST_PRIVS)) {

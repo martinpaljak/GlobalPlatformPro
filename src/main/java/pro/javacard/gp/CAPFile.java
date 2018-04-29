@@ -281,7 +281,13 @@ public final class CAPFile {
     }
 
     public void dump(PrintStream out) {
-        out.println("CAP file (v" + cap_version + "), contains: " + String.join(", ", getFlags()) + " for JavaCard " + guessVersion());
+        String gpversion = guessGlobalPlatformVersion();
+        if (gpversion != null) {
+            gpversion = "/GlobalPlatform " + gpversion;
+        } else {
+            gpversion = "";
+        }
+        out.println("CAP file (v" + cap_version + "), contains: " + String.join(", ", getFlags()) + " for JavaCard " + guessJavaCardVersion() + gpversion);
         out.println("Package: " + packageName + " " + packageAID + " v" + package_version);
         for (CAPPackage imp : imports) {
             out.println("Import: " + imp.aid + String.format(" v%d.%d", imp.major, imp.minor));
@@ -332,7 +338,7 @@ public final class CAPFile {
 
     // Guess the targeted JavaCard version based on javacard.framework version
     // See https://stackoverflow.com/questions/25031338/how-to-get-javacard-version-on-card for a nice list
-    public String guessVersion() {
+    public String guessJavaCardVersion() {
         AID jf = new AID("A0000000620101");
         String result = "unknown";
         for (CAPPackage p : imports) {
@@ -355,6 +361,26 @@ public final class CAPFile {
             }
         }
         return result;
+    }
+
+    public String guessGlobalPlatformVersion() {
+        AID jf = new AID("A00000015100");
+        for (CAPPackage p : imports) {
+            if (p.aid.equals(jf)) {
+                if (p.minor == 0) {
+                    return "2.1.1";
+                } else if (p.minor >= 1 && p.minor <= 4) {
+                    return "2.2";
+                } else if (p.minor == 5) {
+                    return "2.2.1";
+                } else if (p.minor == 6) {
+                    return "2.3.1";
+                } else {
+                    return String.format("unknown: %d.%d", p.major, p.minor);
+                }
+            }
+        }
+        return null;
     }
 
     static class CAPPackage {

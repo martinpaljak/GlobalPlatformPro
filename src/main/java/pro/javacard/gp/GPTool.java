@@ -270,11 +270,10 @@ public final class GPTool {
             if (args.has(OPT_INFO)) {
                 System.out.println("**** CAP info of " + capfile.getName());
                 cap.dump(System.out);
-            }
-
-            if (args.specs().size() == 2) {
-                // Exit after --cap <file> --info
-                System.exit(0);
+                if (args.specs().size() == 2) {
+                    // Exit after --cap <file> --info
+                    System.exit(0);
+                }
             }
         }
 
@@ -848,7 +847,7 @@ public final class GPTool {
                         }
                         // --set-pre-perso
                         if (args.has(OPT_SET_PRE_PERSO)) {
-                            byte [] payload = HexUtils.stringToBin((String) args.valueOf(OPT_SET_PRE_PERSO));
+                            byte[] payload = HexUtils.stringToBin((String) args.valueOf(OPT_SET_PRE_PERSO));
                             if (args.has(OPT_TODAY)) {
                                 System.arraycopy(GPData.CPLC.today(), 0, payload, 2, 2);
                             }
@@ -856,7 +855,7 @@ public final class GPTool {
                         }
                         // --set-perso
                         if (args.has(OPT_SET_PERSO)) {
-                            byte [] payload = HexUtils.stringToBin((String) args.valueOf(OPT_SET_PERSO));
+                            byte[] payload = HexUtils.stringToBin((String) args.valueOf(OPT_SET_PERSO));
                             if (args.has(OPT_TODAY)) {
                                 System.arraycopy(GPData.CPLC.today(), 0, payload, 2, 2);
                             }

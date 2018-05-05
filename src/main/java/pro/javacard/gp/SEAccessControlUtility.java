@@ -111,7 +111,7 @@ public final class SEAccessControlUtility {
 	public static void acrStore(final GlobalPlatform gp, final BerTlv data) throws CardException, GPException {
 		try {
 			//0x90 is for getting BER-TLV data (Secure Element Access Control v1.0 p36)
-			gp.storeData(SEAccessControl.ACR_AID, new BerTlvBuilder().addBerTlv(data).buildArray(), (byte) 0x90);
+			gp.personalize(SEAccessControl.ACR_AID, new BerTlvBuilder().addBerTlv(data).buildArray(), (byte) 0x90);
 		} catch (GPException e) {
 			if (SEAccessControl.ACR_STORE_DATA_ERROR.containsKey(e.sw)) {
 				System.out.println("[SW] " + SEAccessControl.ACR_STORE_DATA_ERROR.get(e.sw));

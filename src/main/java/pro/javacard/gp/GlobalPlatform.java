@@ -665,8 +665,8 @@ public class GlobalPlatform implements AutoCloseable {
      * @throws GPException
      * @throws CardException
      */
-    public void storeData(AID aid, byte[] data) throws CardException, GPException {
-        storeData(aid, data, (byte) 0x80);
+    public void personalize(AID aid, byte[] data) throws CardException, GPException {
+        personalize(aid, data, 0x80);
     }
 
     /**
@@ -676,7 +676,7 @@ public class GlobalPlatform implements AutoCloseable {
      * @throws GPException
      * @throws CardException
      */
-    public void storeData(AID aid, byte[] data, byte P1) throws CardException, GPException {
+    public void personalize(AID aid, byte[] data, int P1) throws CardException, GPException {
         // send the INSTALL for personalization command
         ByteArrayOutputStream bo = new ByteArrayOutputStream();
         try {
@@ -693,16 +693,22 @@ public class GlobalPlatform implements AutoCloseable {
         }
         CommandAPDU install = new CommandAPDU(CLA_GP, INS_INSTALL, 0x20, 0x00, bo.toByteArray(), 256);
         ResponseAPDU response = transmit(install);
-        GPException.check(response, "Install for personalization failed");
+        GPException.check(response, "INSTALL [for personalization] failed");
 
         // Now pump the data
+        storeData(data, P1);
+    }
+
+    // Send a GP-formatted STORE DATA block, splitting as necessary
+    public void storeData(byte[] data, int P1) throws CardException, GPException {
         List<byte[]> blocks = GPUtils.splitArray(data, wrapper.getBlockSize());
         for (int i = 0; i < blocks.size(); i++) {
-            CommandAPDU load = new CommandAPDU(CLA_GP, INS_STORE_DATA, (i == (blocks.size() - 1)) ? P1 | 0x80 : P1 & 0x7F, (byte) i, blocks.get(i), 256);
-            response = transmit(load);
+            CommandAPDU load = new CommandAPDU(CLA_GP, INS_STORE_DATA, (i == (blocks.size() - 1)) ? P1 | 0x80 : P1 & 0x7F, i, blocks.get(i), 256);
+            ResponseAPDU response = transmit(load);
             GPException.check(response, "STORE DATA failed");
         }
     }
+
 
     public void makeDefaultSelected(AID aid) throws CardException, GPException {
         // FIXME: only works for some 2.1.1 cards ? Clarify and document

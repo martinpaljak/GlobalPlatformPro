@@ -673,9 +673,9 @@ public final class GPTool {
                         // --store-data <XX>
                         if (args.has(OPT_STORE_DATA)) {
                             if (args.has(OPT_APPLET)) {
-                                gp.storeData(AID.fromString(args.valueOf(OPT_APPLET)), HexUtils.stringToBin((String) args.valueOf(OPT_STORE_DATA)));
+                                gp.personalize(AID.fromString(args.valueOf(OPT_APPLET)), HexUtils.stringToBin((String) args.valueOf(OPT_STORE_DATA)));
                             } else {
-                                System.err.println("Must specify target application with -" + OPT_APPLET);
+                                gp.storeData(HexUtils.stringToBin((String) args.valueOf(OPT_STORE_DATA)), 0x0);
                             }
                         }
 

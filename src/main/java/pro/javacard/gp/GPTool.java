@@ -20,10 +20,7 @@
  */
 package pro.javacard.gp;
 
-import apdu4j.APDUReplayProvider;
-import apdu4j.HexUtils;
-import apdu4j.LoggingCardTerminal;
-import apdu4j.TerminalManager;
+import apdu4j.*;
 import joptsimple.OptionException;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
@@ -114,6 +111,8 @@ public final class GPTool {
     private final static String OPT_ACR_DELETE = "acr-delete";
     private final static String OPT_ACR_RULE = "acr-rule";
     private final static String OPT_ACR_CERT_HASH = "acr-hash";
+
+    private static boolean isVerbose = false;
 
     private static OptionSet parseArguments(String[] argv) throws IOException {
         OptionSet args = null;
@@ -240,6 +239,7 @@ public final class GPTool {
 
         if (args.has(OPT_VERBOSE)) {
             System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "debug");
+            isVerbose = true;
         } else if (args.has(OPT_DEBUG)) {
             System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "trace");
         } else {
@@ -301,13 +301,20 @@ public final class GPTool {
             if (args.has(OPT_DEBUG)) {
                 System.out.println("# Detected readers from " + tf.getProvider().getName());
                 for (CardTerminal term : terminals.list()) {
-                    System.out.println((term.isCardPresent() ? "[*] " : "[ ] ") + term.getName());
+                    String c = " ";
+                    if (term.isCardPresent()) {
+                        c = "*";
+                        if (ignoreReader(term.getName())) {
+                            c = "I";
+                        }
+                    }
+                    System.out.println("[" + c + "] " + term.getName());
                 }
             }
 
             // Select terminal(s) to work on
             List<CardTerminal> do_readers;
-            if (args.has(OPT_READER) || System.getenv("GP_READER") != null) {
+            if (args.has(OPT_READER) || System.getenv().containsKey("GP_READER")) {
                 String reader = System.getenv("GP_READER");
                 if (args.has(OPT_READER))
                     reader = (String) args.valueOf(OPT_READER);
@@ -317,12 +324,23 @@ public final class GPTool {
                 }
                 do_readers = Arrays.asList(t);
             } else {
-                do_readers = terminals.list(State.CARD_PRESENT);
+                List<CardTerminal> tmp = terminals.list(State.CARD_PRESENT);
+                do_readers = new ArrayList<>();
+                for (CardTerminal t : tmp) {
+                    if (!ignoreReader(t.getName())) {
+                        do_readers.add(t);
+                    } else {
+                        if (args.has(OPT_VERBOSE)) {
+                            System.out.println("# Ignoring " + t.getName());
+                        }
+                    }
+                }
             }
 
             if (do_readers.size() == 0) {
                 fail("No smart card readers with a card found");
             }
+
             // Work all readers
             for (CardTerminal reader : do_readers) {
                 if (do_readers.size() > 1) {
@@ -344,7 +362,7 @@ public final class GPTool {
                     // Establish connection
                     try {
                         card = reader.connect("*");
-                        // Use use apdu4j which by default uses jnasmartcardio
+                        // We use apdu4j which by default uses jnasmartcardio
                         // which uses real SCardBeginTransaction
                         card.beginExclusive();
                     } catch (CardException e) {
@@ -362,6 +380,17 @@ public final class GPTool {
 
                     // Send all raw APDU-s to the default-selected application of the card
                     if (args.has(OPT_APDU)) {
+                        // Select the application, if present
+                        AID target = null;
+                        if (args.has(OPT_APPLET)) {
+                            target = AID.fromString(args.valueOf(OPT_APPLET));
+                        } else if (cap != null) {
+                            target = cap.getAppletAIDs().get(0);
+                        }
+                        if (target != null) {
+                            verbose("Selecting " + target);
+                            card.getBasicChannel().transmit(new CommandAPDU(0x00, ISO7816.INS_SELECT, 0x04, 0x00, target.getBytes()));
+                        }
                         for (Object s : args.valuesOf(OPT_APDU)) {
                             CommandAPDU c = new CommandAPDU(HexUtils.stringToBin((String) s));
                             card.getBasicChannel().transmit(c);
@@ -948,6 +977,19 @@ public final class GPTool {
         return params;
     }
 
+    private static boolean ignoreReader(String name) {
+        String ignore = System.getenv("GP_READER_IGNORE");
+        if (ignore != null) {
+            String[] names = ignore.toLowerCase().split(";");
+            for (String n : names) {
+                if (name.toLowerCase().contains(n)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     private static boolean needsAuthentication(OptionSet args) {
         if (args.has(OPT_LIST) || args.has(OPT_LOAD) || args.has(OPT_INSTALL))
             return true;
@@ -971,5 +1013,11 @@ public final class GPTool {
     private static void fail(String msg) {
         System.err.println(msg);
         System.exit(1);
+    }
+
+    private static void verbose(String s) {
+        if (isVerbose) {
+            System.out.println("# " + s);
+        }
     }
 }

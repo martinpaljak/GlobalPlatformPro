@@ -47,6 +47,8 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 
+import static pro.javacard.gp.PlaintextKeys.diversify;
+
 /**
  * Represents a connection to a GlobalPlatform Card (BIBO interface)
  * Does secure channel and low-level translation of GP* objects to APDU-s and arguments
@@ -95,7 +97,7 @@ public class GlobalPlatform implements AutoCloseable {
     private CardChannel channel;
     private GPRegistry registry = null;
     private boolean dirty = true; // True if registry is dirty.
-
+    private byte[] kdd = null;
     /**
      * Maintaining locks to the underlying hardware is the duty of the caller
      *
@@ -412,6 +414,7 @@ public class GlobalPlatform implements AutoCloseable {
         // Parse the response
         int offset = 0;
         byte[] diversification_data = Arrays.copyOfRange(update_response, 0, 10);
+        kdd = diversification_data;
         offset += diversification_data.length;
         // Get used key version from response
         scpKeyVersion = update_response[offset] & 0xFF;
@@ -870,7 +873,14 @@ public class GlobalPlatform implements AutoCloseable {
         }
     }
 
-    public void putKeys(List<GPKey> keys, boolean replace) throws GPException, CardException {
+    public void putKeys(List<GPKey> keys, boolean replace, PlaintextKeys.Diversification diversifier) throws GPException, CardException {
+        if(diversifier != null){
+            GPKey key= keys.get(0);
+            keys.clear();
+            keys.add(new GPKey(key.getVersion(), 1,diversify(key, GPSessionKeyProvider.KeyPurpose.ENC, kdd,diversifier)));
+            keys.add(new GPKey(key.getVersion(), 2,diversify(key, GPSessionKeyProvider.KeyPurpose.MAC, kdd,diversifier)));
+            keys.add(new GPKey(key.getVersion(), 3,diversify(key, GPSessionKeyProvider.KeyPurpose.DEK, kdd,diversifier)));
+        }
         // Check for sanity and usability
         if (keys.size() < 1 || keys.size() > 3) {
             throw new IllegalArgumentException("Can add 1 or up to 3 keys at a time");
@@ -931,9 +941,10 @@ public class GlobalPlatform implements AutoCloseable {
             // New key version
             bo.write(keys.get(0).getVersion());
             // Key data
-            for (GPKey k : keys) {
-                bo.write(encodeKey(k, sessionKeys.getKeyFor(GPSessionKeyProvider.KeyPurpose.DEK), true));
-            }
+
+            bo.write(encodeKey(keys.get(0), sessionKeys.getKeyFor(GPSessionKeyProvider.KeyPurpose.DEK), true));
+            bo.write(encodeKey(keys.get(1), sessionKeys.getKeyFor(GPSessionKeyProvider.KeyPurpose.DEK), true));
+            bo.write(encodeKey(keys.get(2), sessionKeys.getKeyFor(GPSessionKeyProvider.KeyPurpose.DEK), true));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

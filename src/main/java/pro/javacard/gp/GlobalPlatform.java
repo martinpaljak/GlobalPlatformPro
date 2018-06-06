@@ -214,7 +214,10 @@ public class GlobalPlatform implements AutoCloseable {
     public AID getAID() {
         return new AID(sdAID.getBytes());
     }
-    public CardChannel getCardChannel() { return channel; }
+
+    public CardChannel getCardChannel() {
+        return channel;
+    }
 
     protected void giveStrictWarning(String message) throws GPException {
         message = "STRICT WARNING: " + message;
@@ -654,9 +657,35 @@ public class GlobalPlatform implements AutoCloseable {
 
         CommandAPDU install = new CommandAPDU(CLA_GP, INS_INSTALL, 0x0C, 0x00, bo.toByteArray());
         ResponseAPDU response = transmit(install);
-        GPException.check(response, "Install for Install and make selectable failed");
+        GPException.check(response, "INSTALL [for install and make selectable] failed");
         dirty = true;
     }
+
+    public void extradite(AID what, AID to) throws GPException, CardException {
+        // GP 2.2.1 Table 11-45
+        ByteArrayOutputStream bo = new ByteArrayOutputStream();
+        try {
+            bo.write(to.getLength());
+            bo.write(to.getBytes());
+
+            bo.write(0x00);
+            bo.write(what.getLength());
+            bo.write(what.getBytes());
+
+            bo.write(0x00);
+
+            bo.write(0x00); // no extradition parameters
+            bo.write(0x00); // no extradition token
+        } catch (IOException ioe) {
+            throw new RuntimeException(ioe);
+        }
+
+        CommandAPDU install = new CommandAPDU(CLA_GP, INS_INSTALL, 0x10, 0x00, bo.toByteArray());
+        ResponseAPDU response = transmit(install);
+        GPException.check(response, "INSTALL [for extradition] failed");
+        dirty = true;
+    }
+
 
     /**
      * Sends STORE DATA commands to the application identified
@@ -732,7 +761,7 @@ public class GlobalPlatform implements AutoCloseable {
 
         CommandAPDU install = new CommandAPDU(CLA_GP, INS_INSTALL, 0x08, 0x00, bo.toByteArray());
         ResponseAPDU response = transmit(install);
-        GPException.check(response, "Install for make selectable failed");
+        GPException.check(response, "INSTALL [for make selectable] failed");
         dirty = true;
     }
 

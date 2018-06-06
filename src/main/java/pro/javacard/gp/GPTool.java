@@ -54,6 +54,8 @@ public final class GPTool {
     private final static String OPT_DELETE_KEY = "delete-key";
 
     private final static String OPT_DOMAIN = "domain";
+    private final static String OPT_EXTRADITE = "extradite";
+
     private final static String OPT_DUMP = "dump";
     private final static String OPT_EMV = "emv";
     private final static String OPT_FORCE = "force";
@@ -154,6 +156,7 @@ public final class GPTool {
         parser.accepts(OPT_UNLOCK_CARD, "Unlock card");
         parser.accepts(OPT_SECURE_CARD, "Transition ISD to SECURED state");
         parser.accepts(OPT_INITIALIZE_CARD, "Transition ISD to INITIALIZED state");
+        parser.accepts(OPT_EXTRADITE, "Extradite to").withRequiredArg().describedAs("AID");
 
         parser.accepts(OPT_SET_PRE_PERSO, "Set PrePerso data in CPLC").withRequiredArg().describedAs("data");
         parser.accepts(OPT_SET_PERSO, "Set Perso data in CPLC").withRequiredArg().describedAs("data");
@@ -627,7 +630,7 @@ public final class GPTool {
                                 System.out.println("CAP loaded");
                             } catch (GPException e) {
                                 if (e.sw == 0x6985 || e.sw == 0x6A80) {
-                                    System.err.println("Applet loading failed. Are you sure the CAP file (JC version, packages) is compatible with your card?");
+                                    System.err.println("Applet loading failed. Are you sure the CAP file (JC version, packages, sizes) is compatible with your card?");
                                 }
                                 throw e;
                             }
@@ -687,7 +690,7 @@ public final class GPTool {
                                 packageAID = AID.fromString(args.valueOf(OPT_PACKAGE));
                                 appletAID = AID.fromString(args.valueOf(OPT_APPLET));
                             } else {
-                                System.out.println("Note: using default AID-s for SSD: " + appletAID + " from " + packageAID);
+                                System.out.println("Note: using default AID-s for SSD instantiation: " + appletAID + " from " + packageAID);
                             }
                             AID instanceAID = AID.fromString(args.valueOf(OPT_DOMAIN));
 
@@ -697,6 +700,16 @@ public final class GPTool {
 
                             // shoot
                             gp.installAndMakeSelectable(packageAID, appletAID, instanceAID, privs, null, null);
+                        }
+
+                        if (args.has(OPT_EXTRADITE)) {
+                            if (!args.has(OPT_APPLET)) {
+                                fail("Specify extradited entity with --" + OPT_APPLET);
+                            }
+                            AID what = AID.fromString(args.valueOf(OPT_APPLET));
+                            AID to = AID.fromString(args.valueOf(OPT_EXTRADITE));
+
+                            gp.extradite(what, to);
                         }
 
                         // --store-data <XX>
@@ -816,7 +829,7 @@ public final class GPTool {
 
                             gp.putKeys(newkeys, replace);
 
-                            System.out.println("Default " + new_key.toString() + " set as master key.");
+                            System.out.println("Default " + new_key.toString() + " set as master key for " + gp.getAID());
                         }
 
                         // --lock
@@ -1005,7 +1018,7 @@ public final class GPTool {
             return true;
         if (args.has(OPT_STORE_DATA) || args.has(OPT_INITIALIZE_CARD) || args.has(OPT_SECURE_CARD) || args.has(OPT_RENAME_ISD))
             return true;
-        if (args.has(OPT_SET_PRE_PERSO) || args.has(OPT_SET_PERSO))
+        if (args.has(OPT_SET_PRE_PERSO) || args.has(OPT_SET_PERSO) || args.has(OPT_EXTRADITE))
             return true;
         return false;
     }

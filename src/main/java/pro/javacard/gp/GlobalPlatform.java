@@ -541,10 +541,16 @@ public class GlobalPlatform implements AutoCloseable {
     }
 
     public void loadCapFile(CAPFile cap) throws CardException, GPException {
-        loadCapFile(cap, false, false, false, false);
+        loadCapFile(cap, sdAID, false, false, false, false);
     }
 
-    private void loadCapFile(CAPFile cap, boolean includeDebug, boolean separateComponents, boolean loadParam, boolean useHash)
+    public void loadCapFile(CAPFile cap, AID target) throws CardException, GPException {
+        if (target == null)
+            target = sdAID;
+        loadCapFile(cap, target, false, false, false, false);
+    }
+
+    private void loadCapFile(CAPFile cap, AID sdaid, boolean includeDebug, boolean separateComponents, boolean loadParam, boolean useHash)
             throws GPException, CardException {
 
         if (getRegistry().allAIDs().contains(cap.getPackageAID())) {
@@ -562,8 +568,8 @@ public class GlobalPlatform implements AutoCloseable {
             bo.write(cap.getPackageAID().getLength());
             bo.write(cap.getPackageAID().getBytes());
 
-            bo.write(sdAID.getLength());
-            bo.write(sdAID.getBytes());
+            bo.write(sdaid.getLength());
+            bo.write(sdaid.getBytes());
 
             bo.write(hash.length);
             bo.write(hash);

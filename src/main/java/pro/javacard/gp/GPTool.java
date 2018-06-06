@@ -99,6 +99,8 @@ public final class GPTool {
     private final static String OPT_TERMINALS = "terminals";
     private final static String OPT_TERMINATE = "terminate";
     private final static String OPT_TODAY = "today";
+    private final static String OPT_TO = "to";
+
     private final static String OPT_UNINSTALL = "uninstall";
     private final static String OPT_UNLOCK = "unlock";
     private final static String OPT_UNLOCK_APPLET = "unlock-applet";
@@ -157,6 +159,7 @@ public final class GPTool {
         parser.accepts(OPT_SECURE_CARD, "Transition ISD to SECURED state");
         parser.accepts(OPT_INITIALIZE_CARD, "Transition ISD to INITIALIZED state");
         parser.accepts(OPT_EXTRADITE, "Extradite to").withRequiredArg().describedAs("AID");
+        parser.accepts(OPT_TO, "Destination security domain").withRequiredArg().describedAs("AID");
 
         parser.accepts(OPT_SET_PRE_PERSO, "Set PrePerso data in CPLC").withRequiredArg().describedAs("data");
         parser.accepts(OPT_SET_PERSO, "Set Perso data in CPLC").withRequiredArg().describedAs("data");
@@ -388,7 +391,7 @@ public final class GPTool {
                         if (args.has(OPT_APPLET)) {
                             target = AID.fromString(args.valueOf(OPT_APPLET));
                         } else if (cap != null) {
-                            target = cap.getAppletAIDs().get(0);
+                            target = cap.getAppletAIDs().get(0); // FIXME: generalize and only work if one 
                         }
                         if (target != null) {
                             verbose("Selecting " + target);
@@ -562,17 +565,19 @@ public final class GPTool {
                             File capfile = (File) args.valueOf(OPT_LOAD);
                             CAPFile loadcap = new CAPFile(new FileInputStream(capfile));
 
-                            if (args.has(OPT_VERBOSE)) {
+                            if (isVerbose) {
                                 loadcap.dump(System.out);
                             }
                             try {
-                                gp.loadCapFile(loadcap);
+                                AID target = null;
+                                if (args.has(OPT_TO))
+                                    target = AID.fromString(args.valueOf(OPT_TO));
+                                gp.loadCapFile(loadcap, target);
                             } catch (GPException e) {
                                 if (e.sw == 0x6985) {
                                     System.err.println("Applet loading failed. Are you sure the CAP file target is compatible with your card?");
-                                } else {
-                                    throw e;
                                 }
+                                throw e;
                             }
                         }
 
@@ -626,7 +631,10 @@ public final class GPTool {
                             }
 
                             try {
-                                gp.loadCapFile(instcap);
+                                AID target = null;
+                                if (args.has(OPT_TO))
+                                    target = AID.fromString(args.valueOf(OPT_TO));
+                                gp.loadCapFile(instcap, target);
                                 System.out.println("CAP loaded");
                             } catch (GPException e) {
                                 if (e.sw == 0x6985 || e.sw == 0x6A80) {
@@ -699,15 +707,16 @@ public final class GPTool {
                             privs.add(Privilege.SecurityDomain);
 
                             // shoot
-                            gp.installAndMakeSelectable(packageAID, appletAID, instanceAID, privs, null, null);
+                            gp.installAndMakeSelectable(packageAID, appletAID, instanceAID, privs, getInstParams(args), null);
                         }
 
+                        // --extradite <AID>
                         if (args.has(OPT_EXTRADITE)) {
-                            if (!args.has(OPT_APPLET)) {
-                                fail("Specify extradited entity with --" + OPT_APPLET);
+                            if (!args.has(OPT_TO)) {
+                                fail("Specify extradition target with --" + OPT_TO);
                             }
-                            AID what = AID.fromString(args.valueOf(OPT_APPLET));
-                            AID to = AID.fromString(args.valueOf(OPT_EXTRADITE));
+                            AID what = AID.fromString(args.valueOf(OPT_EXTRADITE));
+                            AID to = AID.fromString(args.valueOf(OPT_TO));
 
                             gp.extradite(what, to);
                         }

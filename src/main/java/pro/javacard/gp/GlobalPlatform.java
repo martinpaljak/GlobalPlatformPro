@@ -34,12 +34,10 @@ import pro.javacard.gp.GPRegistryEntry.Privilege;
 import pro.javacard.gp.GPRegistryEntry.Privileges;
 
 import javax.crypto.Cipher;
-import javax.smartcardio.CardChannel;
-import javax.smartcardio.CardException;
-import javax.smartcardio.CommandAPDU;
-import javax.smartcardio.ResponseAPDU;
+import javax.smartcardio.*;
 import java.io.*;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.util.ArrayList;
@@ -52,7 +50,7 @@ import java.util.List;
  * Does secure channel and low-level translation of GP* objects to APDU-s and arguments
  * NOT thread-safe
  */
-public class GlobalPlatform implements AutoCloseable {
+public class GlobalPlatform extends CardChannel implements AutoCloseable  {
     private static final Logger logger = LoggerFactory.getLogger(GlobalPlatform.class);
 
     public static final int SCP_ANY = 0;
@@ -195,7 +193,7 @@ public class GlobalPlatform implements AutoCloseable {
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() {
         // TODO explicitly closes SecureChannel, if connected.
     }
 
@@ -316,58 +314,10 @@ public class GlobalPlatform implements AutoCloseable {
         }
     }
 
-    private ResponseAPDU always_transmit(CommandAPDU cmd) throws CardException, GPException {
-        if (wrapper != null) {
-            return transmit(cmd);
-        } else {
-            return channel.transmit(cmd);
-        }
-    }
-
-    // Assumes a selected SD
-    public byte[] getKeyInfoTemplateBytes() throws CardException, GPException {
-        CommandAPDU command = new CommandAPDU(CLA_GP, ISO7816.INS_GET_DATA, 0x00, 0xE0, 256);
-        ResponseAPDU resp = always_transmit(command);
-
-        if (resp.getSW() == ISO7816.SW_NO_ERROR) {
-            return resp.getData();
-        } else {
-            logger.warn("GET DATA(Key Information Template) not supported");
-            return new byte[0];
-        }
-    }
-
-    public List<GPKey> getKeyInfoTemplate() throws CardException, GPException {
+    List<GPKey> getKeyInfoTemplate() throws CardException, GPException {
         List<GPKey> result = new ArrayList<>();
-        result.addAll(GPData.get_key_template_list(getKeyInfoTemplateBytes()));
+        result.addAll(GPData.get_key_template_list(GPData.fetchKeyInfoTemplate(this)));
         return result;
-    }
-
-    public byte[] fetchCardData() throws CardException, GPException {
-        // Card data
-        CommandAPDU command = new CommandAPDU(CLA_GP, ISO7816.INS_GET_DATA, 0x00, 0x66, 256);
-        ResponseAPDU resp = always_transmit(command);
-        if (resp.getSW() == 0x6A86) {
-            logger.debug("GET DATA(CardData) not supported, Open Platform 2.0.1 card? " + GPData.sw2str(resp.getSW()));
-            return new byte[0];
-        }
-        // FIXME: JCOP SSD -  6A88
-        if (resp.getSW() == ISO7816.SW_NO_ERROR) {
-            return resp.getData();
-        }
-        return new byte[0];
-    }
-
-    public byte[] fetchCPLC() throws CardException, GPException {
-        CommandAPDU command = new CommandAPDU(CLA_GP, INS_GET_DATA, 0x9F, 0x7F, 256);
-        ResponseAPDU resp = channel.transmit(command);
-
-        if (resp.getSW() == ISO7816.SW_NO_ERROR) {
-            return resp.getData();
-        } else {
-            logger.warn("GET DATA(CPLC) failed: " + GPData.sw2str(resp.getSW()));
-        }
-        return new byte[0];
     }
 
     /**
@@ -530,10 +480,31 @@ public class GlobalPlatform implements AutoCloseable {
         }
     }
 
-    public ResponseAPDU transmit(CommandAPDU command) throws CardException, GPException {
-        CommandAPDU wc = wrapper.wrap(command);
-        ResponseAPDU wr = channel.transmit(wc);
-        return wrapper.unwrap(wr);
+    // Exist to be able to pass around a transmit method
+    @Override
+    public Card getCard() {
+        return null;
+    }
+
+    @Override
+    public int getChannelNumber() {
+        return 0;
+    }
+
+    @Override
+    public ResponseAPDU transmit(CommandAPDU command) throws CardException {
+        try {
+            CommandAPDU wc = wrapper.wrap(command);
+            ResponseAPDU wr = channel.transmit(wc);
+            return wrapper.unwrap(wr);
+        } catch (GPException e) {
+            throw new CardException("Secure channel failure: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public int transmit(ByteBuffer byteBuffer, ByteBuffer byteBuffer1) throws CardException {
+        throw new IllegalStateException("Use the other transmit");
     }
 
     public int getSCPVersion() {

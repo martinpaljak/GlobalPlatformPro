@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pro.javacard.gp.*;
 
+import java.util.Arrays;
 import java.util.List;
 
 public class TestParseTags {
@@ -24,6 +25,22 @@ public class TestParseTags {
         data = HexUtils.hex2bin("6657735506072A864886FC6B01600B06092A864886FC6B020202630906072A864886FC6B03640B06092A864886FC6B040370640B06092A864886FC6B048000650A06082A864886FC6B0504660C060A2B060104012A026E0103");
         GPData.pretty_print_card_data(data);
     }
+
+    @Test
+    public void testPrintCardCapabilities() throws  Exception {
+        byte[] data = HexUtils.hex2bin("6735A00E8001038106001020306070820107A007800102810215558103FF9E0082031E160083010284018F8502FF028602FF028702FF02");
+        GPData.pretty_print_card_capabilities(data);
+
+    }
+
+    @Test
+    public void testBrokenPrintCardCapabilities() throws  Exception {
+        // Broken - double 0x67
+        byte[] data = HexUtils.hex2bin("673A6738A006800102810155A00A8001038102001082010781039EFE8082031E03008301028504010208408602040887040102084088050102030405");
+        GPData.pretty_print_card_capabilities(data);
+    }
+
+
 
     @Test
     public void testOracle() throws Exception {
@@ -69,4 +86,10 @@ public class TestParseTags {
         GPData.CPLC.toDate(b);
     }
 
+    @Test(expected = GPDataException.class)
+    public void testCPLCTagless() throws Exception {
+        byte[] b = HexUtils.hex2bin("FF401AE218E116C1144434050D9648B771CB3500D5398D36CE3F1C23A4");
+        //b = Arrays.copyOf(b, 0x2A);
+        System.out.println(GPData.CPLC.fromBytes(b).toPrettyString());
+    }
 }

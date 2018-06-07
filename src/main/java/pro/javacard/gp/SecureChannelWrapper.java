@@ -19,8 +19,11 @@
  */
 package pro.javacard.gp;
 
+import javax.smartcardio.CardChannel;
+import javax.smartcardio.CardException;
 import javax.smartcardio.CommandAPDU;
 import javax.smartcardio.ResponseAPDU;
+import java.nio.ByteBuffer;
 import java.util.EnumSet;
 
 abstract class SecureChannelWrapper {

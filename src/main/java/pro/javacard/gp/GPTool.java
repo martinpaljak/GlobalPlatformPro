@@ -173,6 +173,7 @@ public final class GPTool extends GPCommandLineInterface {
                 }
 
                 Card card = null;
+                CardChannel channel = null;
                 try {
                     // Establish connection
                     try {
@@ -180,6 +181,7 @@ public final class GPTool extends GPCommandLineInterface {
                         // We use apdu4j which by default uses jnasmartcardio
                         // which uses real SCardBeginTransaction
                         card.beginExclusive();
+                        channel = card.getBasicChannel();
                     } catch (CardException e) {
                         System.err.println("Could not connect to " + reader.getName() + ": " + TerminalManager.getExceptionMessage(e));
                         continue;
@@ -204,22 +206,27 @@ public final class GPTool extends GPCommandLineInterface {
                         }
                         if (target != null) {
                             verbose("Selecting " + target);
-                            card.getBasicChannel().transmit(new CommandAPDU(0x00, ISO7816.INS_SELECT, 0x04, 0x00, target.getBytes()));
+                            channel.transmit(new CommandAPDU(0x00, ISO7816.INS_SELECT, 0x04, 0x00, target.getBytes()));
                         }
                         for (Object s : args.valuesOf(OPT_APDU)) {
                             CommandAPDU c = new CommandAPDU(HexUtils.stringToBin((String) s));
-                            card.getBasicChannel().transmit(c);
+                            channel.transmit(c);
                         }
                     }
 
                     // GlobalPlatform specific
                     final GlobalPlatform gp;
                     if (args.has(OPT_SDAID)) {
-                        gp = GlobalPlatform.connect(card.getBasicChannel(), AID.fromString(args.valueOf(OPT_SDAID)));
+                        gp = GlobalPlatform.connect(channel, AID.fromString(args.valueOf(OPT_SDAID)));
                     } else {
                         // Oracle only applies if no other arguments given
-                        gp = GlobalPlatform.discover(card.getBasicChannel());
+                        gp = GlobalPlatform.discover(channel);
                         // FIXME: would like to get AID from oracle as well.
+                    }
+
+                    // Extract information
+                    if (args.has(OPT_INFO)) {
+                        GPData.dump(channel);
                     }
 
                     // Normally assume a single master key
@@ -230,7 +237,7 @@ public final class GPTool extends GPCommandLineInterface {
                         fail("Not yet implemented");
                         keys = PlaintextKeys.fromMasterKey(GPData.getDefaultKey());
                     } else if (args.has(OPT_ORACLE)) {
-                        keys = PythiaKeys.ask(card.getATR().getBytes(), gp.fetchCPLC(), gp.getKeyInfoTemplateBytes());
+                        keys = PythiaKeys.ask(card.getATR().getBytes(), GPData.fetchCPLC(channel), GPData.fetchKeyInfoTemplate(channel));
                     } else {
                         PlaintextKeys keyz;
                         if (args.has(OPT_KEY)) {
@@ -300,11 +307,6 @@ public final class GPTool extends GPCommandLineInterface {
                         SEAccessControlUtility.acrList(gp, card);
                     }
 
-                    // Fetch some possibly interesting data
-                    if (args.has(OPT_INFO)) {
-                        GPData.print_card_info(gp);
-                    }
-
                     // Authenticate, only if needed
                     if (needsAuthentication(args)) {
                         EnumSet<APDUMode> mode = GlobalPlatform.defaultMode.clone();
@@ -316,7 +318,7 @@ public final class GPTool extends GPCommandLineInterface {
                             }
                         }
 
-                        // Possibly brick the card now, if keys don't match.
+                        // IMPORTANT PLACE. Possibly brick the card now, if keys don't match.
                         gp.openSecureChannel(keys, null, 0, mode);
 
                         // --secure-apdu or -s

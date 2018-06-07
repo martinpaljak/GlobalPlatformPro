@@ -631,8 +631,16 @@ public class GlobalPlatform implements AutoCloseable {
         if (getRegistry().allAppletAIDs().contains(instanceAID)) {
             giveStrictWarning("Instance AID " + instanceAID + " is already present on card");
         }
-        if (installParams == null) {
+        if (installParams == null || installParams.length == 0) {
             installParams = new byte[]{(byte) 0xC9, 0x00};
+        }
+        // Simple use: only application parameters without tag, prepend 0xC9
+        if (installParams[0] != (byte) 0xC9) {
+            byte[] newparams = new byte[installParams.length + 2];
+            newparams[0] = (byte) 0xC9;
+            newparams[1] = (byte) installParams.length;
+            System.arraycopy(installParams, 0, newparams, 2, installParams.length);
+            installParams = newparams;
         }
         if (installToken == null) {
             installToken = new byte[0];

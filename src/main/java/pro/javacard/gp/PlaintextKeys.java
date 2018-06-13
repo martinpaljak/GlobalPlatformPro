@@ -264,7 +264,7 @@ public class PlaintextKeys extends GPSessionKeyProvider {
             for (Map.Entry<KeyPurpose, GPKey> e : cardKeys.entrySet()) {
                 cardKeys.put(e.getKey(), diversify(e.getValue(), e.getKey(), kdd, diversifier));
             }
-            logger.debug("Derived per-card keys: {}", cardKeys.toString());
+            logger.trace("Derived per-card keys: {}", cardKeys.toString());
         }
 
         // Calculate session keys
@@ -281,7 +281,7 @@ public class PlaintextKeys extends GPSessionKeyProvider {
                 }
             }
         }
-        logger.debug("Session keys: {}", sessionKeys.toString());
+        logger.trace("Session keys: {}", sessionKeys.toString());
     }
 
     // Returns the key for the purpose for this session

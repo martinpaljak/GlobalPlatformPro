@@ -298,12 +298,10 @@ public class GPRegistry implements Iterable<GPRegistryEntry> {
 
 	// FIXME: this is ugly
 	public void parse(int p1, byte[] data, Kind type, GPSpec spec) throws GPDataException {
-		data = StupidFixes.fix_get_status(data);
 		if (tags) {
 			populate_tags(data, type);
 		} else {
 			populate_legacy(p1, data, type, spec);
 		}
 	}
-
 }

@@ -69,7 +69,7 @@ public class TestParseTags {
 
    @Test
    public void testParseISD() throws Exception {
-       byte[] r = HexUtils.hex2bin("E3124F07A00000015100009F700107C5EA028000");
+       byte[] r = HexUtils.hex2bin("E3144F07A00000015100009F700107C50180EA028000");
        GPRegistry g = new GPRegistry();
        g.parse(0x80, r, GPRegistryEntry.Kind.IssuerSecurityDomain, GlobalPlatform.GPSpec.GP22);
        Assert.assertEquals(1, g.allAIDs().size());

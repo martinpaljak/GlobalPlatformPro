@@ -336,6 +336,10 @@ public final class CAPFile {
         return result;
     }
 
+    public List<CAPPackage> getImports() {
+        return imports;
+    }
+
     // Guess the targeted JavaCard version based on javacard.framework version
     // See https://stackoverflow.com/questions/25031338/how-to-get-javacard-version-on-card for a nice list
     public String guessJavaCardVersion() {

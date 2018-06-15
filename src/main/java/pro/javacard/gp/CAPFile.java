@@ -37,7 +37,7 @@ import java.util.zip.ZipInputStream;
 /**
  * Parses a CAP file as specified in JavaCard 2.2 VM Specification, chapter 6.
  */
-public final class CAPFile {
+public class CAPFile {
     private static final String[] componentNames = {"Header", "Directory", "Import", "Applet", "Class", "Method", "StaticField", "Export",
             "ConstantPool", "RefLocation", "Descriptor", "Debug"};
     private final HashMap<String, byte[]> capComponents = new HashMap<>();
@@ -387,10 +387,10 @@ public final class CAPFile {
         return null;
     }
 
-    static class CAPPackage {
-        AID aid;
-        byte major;
-        byte minor;
+    public static class CAPPackage {
+        public AID aid;
+        public byte major;
+        public byte minor;
 
         CAPPackage(AID aid, byte major, byte minor) {
             this.aid = aid;

@@ -490,7 +490,7 @@ public final class GPData {
             if (data.length < 0x2A)
                 throw new GPDataException(String.format("Input can't be valid CPLC if length is only %02X!", data.length));
             // Remove tag, if present
-            if (data[0] == 0x9f && data[1] == 0x7f && data[2] == 0x2A)
+            if (data[0] == (byte) 0x9f && data[1] == (byte) 0x7f && data[2] == (byte) 0x2A)
                 data = Arrays.copyOfRange(data, 3, data.length);
             return new CPLC(data);
         }
@@ -531,8 +531,8 @@ public final class GPData {
         public static String toDate(byte[] v) throws GPDataException {
             String sv = HexUtils.bin2hex(v);
             try {
-                int y = Integer.valueOf(sv.substring(0, 1));
-                int d = Integer.valueOf(sv.substring(1, 4));
+                int y = Integer.parseInt(sv.substring(0, 1));
+                int d = Integer.parseInt(sv.substring(1, 4));
                 if (d > 366) {
                     throw new GPDataException("Invalid CPLC date format: " + sv);
                 }

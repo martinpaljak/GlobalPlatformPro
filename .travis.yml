@@ -9,7 +9,7 @@ before_script:
 - tar -C ext -xzf launch4j-3.12-linux.tgz
 - ant fetch
 script:
-- mvn -B clean package
+- mvn -U -B clean package findbugs:check
 - ant windist
 env:
   global:

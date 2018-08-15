@@ -68,8 +68,10 @@ public final class GPKey {
             this.type = Type.AES;
         } else if (type == 0xA1 || type == 0xA0) {
             this.type = Type.RSAPUB;
+        } else if (type == 0x85) {
+            this.type = Type.PSK;
         } else {
-            throw new UnsupportedOperationException(String.format("Only AES, 3DES and RSA public keys are supported currently: 0x%02X", type));
+            throw new UnsupportedOperationException(String.format("Only AES, 3DES, PSK and RSA public keys are supported currently: 0x%02X", type));
         }
     }
 
@@ -156,7 +158,7 @@ public final class GPKey {
     }
 
     public enum Type {
-        RAW, DES, DES3, AES, RSAPUB;
+        RAW, DES, DES3, AES, RSAPUB, PSK;
 
         @Override
         public String toString() {

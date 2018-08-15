@@ -169,9 +169,9 @@ public final class GPData {
         for (GPKey k : list) {
             // Descriptive text about the key
             final String nice;
-            if (k.getType() == Type.RSAPUB) {
+            if (k.getType() == Type.RSAPUB && k.getLength() > 0) {
                 nice = "(RSA-" + k.getLength() * 8 + " public)";
-            } else if (k.getType() == Type.AES) {
+            } else if (k.getType() == Type.AES && k.getLength() > 0) {
                 nice = "(AES-" + k.getLength() * 8 + ")";
             } else {
                 nice = "";
@@ -212,14 +212,15 @@ public final class GPData {
                 if (tmpl.length < 4) {
                     throw new GPDataException("Key info template shorter than 4 bytes", tmpl);
                 }
-                int id = tmpl[0] & 0xFF;
-                int version = tmpl[1] & 0xFF;
-                int type = tmpl[2] & 0xFF;
-                int length = tmpl[3] & 0xFF;
+                int offset = 0;
+                int id = tmpl[offset++] & 0xFF;
+                int version = tmpl[offset++] & 0xFF;
+                int type = tmpl[offset++] & 0xFF;
                 if (type == 0xFF) {
-                    // TODO
-                    throw new GPDataException("Extended key template not yet supported", tmpl);
+                    // extended key type, use second byte
+                    type = tmpl[offset++] & 0xFF;
                 }
+                int length = tmpl[offset++] & 0xFF;
                 // XXX: RSAPUB keys have two components A1 and A0, gets called with A1 and A0 (exponent) discarded
                 r.add(new GPKey(version, id, length, type));
             }

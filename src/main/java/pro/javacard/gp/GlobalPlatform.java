@@ -562,6 +562,7 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable  {
         ByteArrayOutputStream loadblock = new ByteArrayOutputStream();
         try {
             // TODO: DAP blocks
+            // See GP 2.1.1 Table 9-40
             loadblock.write(0xC4);
             loadblock.write(GPUtils.encodeLength(code.length));
             loadblock.write(code);
@@ -570,7 +571,7 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable  {
         }
 
         // Split according to available block size
-        List<byte[]> blocks = GPUtils.splitArray(loadblock.toByteArray(), blockSize);
+        List<byte[]> blocks = GPUtils.splitArray(loadblock.toByteArray(), wrapper.getBlockSize());
 
         for (int i = 0; i < blocks.size(); i++) {
             CommandAPDU load = new CommandAPDU(CLA_GP, INS_LOAD, (i == (blocks.size() - 1)) ? 0x80 : 0x00, (byte) i, blocks.get(i));

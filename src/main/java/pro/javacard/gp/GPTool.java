@@ -420,7 +420,7 @@ public final class GPTool extends GPCommandLineInterface {
                             }
 
                             // Load
-                            if (instcap.getAppletAIDs().size() == 0) {
+                            if (instcap.getAppletAIDs().size() <= 1) {
                                 try {
                                     AID target = null;
                                     if (args.has(OPT_TO))

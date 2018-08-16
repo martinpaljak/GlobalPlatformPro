@@ -22,6 +22,8 @@ package pro.javacard.gp;
 
 import apdu4j.*;
 import joptsimple.OptionSet;
+import pro.javacard.AID;
+import pro.javacard.CAPFile;
 import pro.javacard.gp.GPKey.Type;
 import pro.javacard.gp.GPRegistryEntry.Privilege;
 import pro.javacard.gp.GPRegistryEntry.Privileges;
@@ -81,7 +83,7 @@ public final class GPTool extends GPCommandLineInterface {
         CAPFile cap = null;
         if (args.has(OPT_CAP)) {
             File capfile = (File) args.valueOf(OPT_CAP);
-            cap = new CAPFile(new FileInputStream(capfile));
+            cap = CAPFile.fromStream(new FileInputStream(capfile));
             if (args.has(OPT_INFO)) {
                 System.out.println("**** CAP info of " + capfile.getName());
                 cap.dump(System.out);
@@ -367,7 +369,7 @@ public final class GPTool extends GPCommandLineInterface {
                         // --uninstall <cap>
                         if (args.has(OPT_UNINSTALL)) {
                             File capfile = (File) args.valueOf(OPT_UNINSTALL);
-                            CAPFile instcap = new CAPFile(new FileInputStream(capfile));
+                            CAPFile instcap = CAPFile.fromStream(new FileInputStream(capfile));
                             AID aid = instcap.getPackageAID();
                             if (!gp.getRegistry().allAIDs().contains(aid)) {
                                 System.out.println(aid + " is not present on card!");
@@ -380,7 +382,7 @@ public final class GPTool extends GPCommandLineInterface {
                         // --load <applet.cap>
                         if (args.has(OPT_LOAD)) {
                             File capfile = (File) args.valueOf(OPT_LOAD);
-                            CAPFile loadcap = new CAPFile(new FileInputStream(capfile));
+                            CAPFile loadcap = CAPFile.fromStream(new FileInputStream(capfile));
 
                             if (isVerbose) {
                                 loadcap.dump(System.out);
@@ -404,20 +406,41 @@ public final class GPTool extends GPCommandLineInterface {
                             final File capfile;
                             capfile = (File) args.valueOf(OPT_INSTALL);
 
-                            CAPFile instcap = new CAPFile(new FileInputStream(capfile));
+                            CAPFile instcap = CAPFile.fromStream(new FileInputStream(capfile));
 
                             if (args.has(OPT_VERBOSE)) {
                                 instcap.dump(System.out);
                             }
-                            // Only install if cap contains a single applet
-                            if (instcap.getAppletAIDs().size() == 0) {
-                                fail("No applets in CAP, use --" + OPT_LOAD + " instead");
-                                // TODO: DWIM: why not load with --install
+
+                            GPRegistry reg = gp.getRegistry();
+
+                            // Remove existing load file
+                            if (args.has(OPT_FORCE) && reg.allPackageAIDs().contains(instcap.getPackageAID())) {
+                                gp.deleteAID(instcap.getPackageAID(), true);
                             }
 
+                            // Load
+                            if (instcap.getAppletAIDs().size() == 0) {
+                                try {
+                                    AID target = null;
+                                    if (args.has(OPT_TO))
+                                        target = AID.fromString(args.valueOf(OPT_TO));
+                                    gp.loadCapFile(instcap, target);
+                                    System.out.println("CAP loaded");
+                                } catch (GPException e) {
+                                    if (e.sw == 0x6985 || e.sw == 0x6A80) {
+                                        System.err.println("Loading failed. Are you sure the CAP file (JC version, packages, sizes) is compatible with your card?");
+                                    }
+                                    throw e;
+                                }
+                            }
+
+                            // Install
                             final AID appaid;
                             final AID instanceaid;
-                            if (instcap.getAppletAIDs().size() > 1) {
+                            if (instcap.getAppletAIDs().size() == 0) {
+                                return;
+                            } else if (instcap.getAppletAIDs().size() > 1) {
                                 if (args.has(OPT_APPLET)) {
                                     appaid = AID.fromString(args.valueOf(OPT_APPLET));
                                 } else {
@@ -435,35 +458,18 @@ public final class GPTool extends GPCommandLineInterface {
                                 instanceaid = appaid;
                             }
 
-                            GPRegistry reg = gp.getRegistry();
                             Privileges privs = getInstPrivs(args);
 
                             // Remove existing default app
                             if (args.has(OPT_FORCE) && (reg.getDefaultSelectedAID() != null && privs.has(Privilege.CardReset))) {
                                 gp.deleteAID(reg.getDefaultSelectedAID(), false);
                             }
-                            // Remove existing load file
-                            if (args.has(OPT_FORCE) && reg.allPackageAIDs().contains(instcap.getPackageAID())) {
-                                gp.deleteAID(instcap.getPackageAID(), true);
-                            }
-
-                            try {
-                                AID target = null;
-                                if (args.has(OPT_TO))
-                                    target = AID.fromString(args.valueOf(OPT_TO));
-                                gp.loadCapFile(instcap, target);
-                                System.out.println("CAP loaded");
-                            } catch (GPException e) {
-                                if (e.sw == 0x6985 || e.sw == 0x6A80) {
-                                    System.err.println("Applet loading failed. Are you sure the CAP file (JC version, packages, sizes) is compatible with your card?");
-                                }
-                                throw e;
-                            }
 
                             // warn
-                            if (gp.getRegistry().allAIDs().contains(instanceaid)) {
+                            if (gp.getRegistry().allAppletAIDs().contains(instanceaid)) {
                                 System.err.println("WARNING: Applet " + instanceaid + " already present on card");
                             }
+
                             // shoot
                             gp.installAndMakeSelectable(instcap.getPackageAID(), appaid, instanceaid, privs, getInstParams(args), null);
                         }

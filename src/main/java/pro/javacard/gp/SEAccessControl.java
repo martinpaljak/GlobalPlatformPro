@@ -27,6 +27,7 @@ import apdu4j.HexUtils;
 import apdu4j.ISO7816;
 import com.payneteasy.tlv.*;
 import org.bouncycastle.util.Arrays;
+import pro.javacard.AID;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;

@@ -20,6 +20,7 @@
 package pro.javacard.gp;
 
 import apdu4j.HexUtils;
+import pro.javacard.AID;
 
 import javax.smartcardio.CardException;
 import javax.smartcardio.CommandAPDU;

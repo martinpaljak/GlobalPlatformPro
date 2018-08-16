@@ -5,7 +5,7 @@
     <groupId>com.github.martinpaljak</groupId>
     <artifactId>globalplatformpro</artifactId>
     <packaging>jar</packaging>
-    <version>0.3.10-rc12</version>
+    <version>0.3.10-rc13</version>
     <name>GlobalPlatformPro</name>
     <url>https://github.com/martinpaljak/GlobalPlatformPro</url>
     <description>Manage applets and keys on JavaCard-s like a pro</description>
@@ -13,49 +13,56 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
     <dependencies>
-        <!-- https://mvnrepository.com/artifact/com.github.martinpaljak/apdu4j -->
+        <!-- For PC/SC reader access -->
         <dependency>
             <groupId>com.github.martinpaljak</groupId>
             <artifactId>apdu4j</artifactId>
-            <version>17.11.26</version>
+            <version>18.06.25</version>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/com.google.code.gson/gson -->
+        <!-- For CAP file parsing -->
+        <dependency>
+            <groupId>com.github.martinpaljak</groupId>
+            <artifactId>capfile</artifactId>
+            <version>18.8.15</version>
+        </dependency>
+        <!-- For JSON handling -->
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
             <version>2.8.2</version>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/org.apache.httpcomponents/httpclient -->
+        <!-- For HTTP handling -->
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
             <version>4.5.5</version>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/org.slf4j/slf4j-simple -->
+        <!-- For logging in the command line tool -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
             <version>1.7.25</version>
+            <optional>true</optional>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/org.slf4j/slf4j-api -->
+        <!-- For logging -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>1.7.25</version>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/org.bouncycastle/bcprov-jdk15on -->
+        <!-- For crypto in SCP03 -->
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcprov-jdk15on</artifactId>
             <version>1.59</version>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/net.sf.jopt-simple/jopt-simple -->
+        <!-- For command line parsing -->
         <dependency>
             <groupId>net.sf.jopt-simple</groupId>
             <artifactId>jopt-simple</artifactId>
             <version>5.0.4</version>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/com.payneteasy/ber-tlv -->
+        <!-- For TLV handling -->
         <dependency>
             <groupId>com.payneteasy</groupId>
             <artifactId>ber-tlv</artifactId>

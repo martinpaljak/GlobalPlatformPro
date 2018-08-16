@@ -20,6 +20,7 @@
 package pro.javacard.gp;
 
 import apdu4j.HexUtils;
+import pro.javacard.AID;
 
 import java.util.EnumSet;
 import java.util.stream.Collectors;

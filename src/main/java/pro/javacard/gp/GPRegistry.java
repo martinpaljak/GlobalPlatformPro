@@ -27,7 +27,6 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 
-import apdu4j.HexUtils;
 import com.payneteasy.tlv.BerTag;
 import com.payneteasy.tlv.BerTlv;
 import com.payneteasy.tlv.BerTlvParser;
@@ -36,6 +35,7 @@ import com.payneteasy.tlv.BerTlvs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import pro.javacard.AID;
 import pro.javacard.gp.GPRegistryEntry.Kind;
 import pro.javacard.gp.GPRegistryEntry.Privilege;
 import pro.javacard.gp.GPRegistryEntry.Privileges;

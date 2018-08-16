@@ -1,11 +1,12 @@
 import apdu4j.HexUtils;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pro.javacard.AID;
 import pro.javacard.gp.*;
 
-import java.util.Arrays;
 import java.util.List;
 
 public class TestParseTags {
@@ -66,6 +67,7 @@ public class TestParseTags {
     }
 
     @Test
+    @Ignore // FIXME: see https://github.com/martinpaljak/GlobalPlatformPro/issues/116
     public void testCPLCDateParse() throws Exception {
         byte[] b = HexUtils.hex2bin("1210");
         Assert.assertEquals("2011-07-29", GPData.CPLC.toDate(b));

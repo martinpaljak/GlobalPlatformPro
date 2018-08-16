@@ -28,6 +28,8 @@ import apdu4j.ISO7816;
 import com.payneteasy.tlv.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pro.javacard.AID;
+import pro.javacard.CAPFile;
 import pro.javacard.gp.GPKey.Type;
 import pro.javacard.gp.GPRegistryEntry.Kind;
 import pro.javacard.gp.GPRegistryEntry.Privilege;
@@ -528,10 +530,10 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable  {
             giveStrictWarning("Package with AID " + cap.getPackageAID() + " is already present on card");
         }
         byte[] hash = useHash ? cap.getLoadFileDataHash("SHA1", includeDebug) : new byte[0];
-        int len = cap.getCodeLength(includeDebug);
+        byte[] code = cap.getCode(includeDebug);
         // FIXME: parameters are optional for load
-        byte[] loadParams = loadParam ? new byte[]{(byte) 0xEF, 0x04, (byte) 0xC6, 0x02, (byte) ((len & 0xFF00) >> 8),
-                (byte) (len & 0xFF)} : new byte[0];
+        byte[] loadParams = loadParam ? new byte[]{(byte) 0xEF, 0x04, (byte) 0xC6, 0x02, (byte) ((code.length & 0xFF00) >> 8),
+                (byte) (code.length & 0xFF)} : new byte[0];
 
         ByteArrayOutputStream bo = new ByteArrayOutputStream();
 
@@ -556,7 +558,20 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable  {
         ResponseAPDU response = transmit(installForLoad);
         GPException.check(response, "Install for Load failed");
 
-        List<byte[]> blocks = cap.getLoadBlocks(includeDebug, separateComponents, wrapper.getBlockSize());
+        // Construct load block
+        ByteArrayOutputStream loadblock = new ByteArrayOutputStream();
+        try {
+            // TODO: DAP blocks
+            loadblock.write(0xC4);
+            loadblock.write(GPUtils.encodeLength(code.length));
+            loadblock.write(code);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        // Split according to available block size
+        List<byte[]> blocks = GPUtils.splitArray(loadblock.toByteArray(), blockSize);
+
         for (int i = 0; i < blocks.size(); i++) {
             CommandAPDU load = new CommandAPDU(CLA_GP, INS_LOAD, (i == (blocks.size() - 1)) ? 0x80 : 0x00, (byte) i, blocks.get(i));
             response = transmit(load);

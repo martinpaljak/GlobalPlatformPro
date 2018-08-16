@@ -25,6 +25,7 @@ package pro.javacard.gp;
 
 import com.payneteasy.tlv.BerTlv;
 import com.payneteasy.tlv.BerTlvBuilder;
+import pro.javacard.AID;
 
 import javax.smartcardio.Card;
 import javax.smartcardio.CardException;

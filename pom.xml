@@ -128,14 +128,11 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <executable>git</executable>
+                    <executable>sh</executable>
                     <outputFile>target/generated-resources/pro/javacard/gp/pro_version.txt</outputFile>
                     <arguments>
-                        <argument>describe</argument>
-                        <argument>--tags</argument>
-                        <argument>--always</argument>
-                        <argument>--long</argument>
-                        <argument>--dirty</argument>
+                        <argument>-c</argument>
+                        <argument>[ "x$GPPRO_VERSION" = "x" ] &amp;&amp; git describe --tags --always --long --dirty || echo "$GPPRO_VERSION"</argument>
                     </arguments>
                 </configuration>
             </plugin>

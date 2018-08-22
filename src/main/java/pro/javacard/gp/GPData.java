@@ -346,7 +346,7 @@ public final class GPData {
         // CIN
         byte[] cin = getData(channel, 0x00, 0x45, "CIN", false);
         if (cin != null) {
-            System.out.println("CIN: " + HexUtils.bin2hex(iin));
+            System.out.println("CIN: " + HexUtils.bin2hex(cin));
         }
         // FIXME: SSC?
 //        BerTlvParser parser = new BerTlvParser();

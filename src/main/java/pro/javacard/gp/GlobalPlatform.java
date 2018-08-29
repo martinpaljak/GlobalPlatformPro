@@ -80,6 +80,10 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable  {
     public static final byte INS_PUT_KEY = (byte) 0xD8;
     public static final byte INS_STORE_DATA = (byte) 0xE2;
     public static final byte INS_GET_DATA = (byte) 0xCA;
+
+    public static final byte P1_INSTALL_AND_MAKE_SELECTABLE = (byte) 0x0C;
+    public static final byte P1_INSTALL_FOR_INSTALL = (byte) 0x04;
+
     protected boolean strict = true;
     GPSpec spec = GPSpec.GP211;
 
@@ -610,13 +614,81 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable  {
         installAndMakeSelectable(packageAID, appletAID, instanceAID, Privileges.fromByte(privileges), installParams, installToken);
     }
 
+    /**
+     * Install an applet and make it selectable. The package and applet AID must
+     * be present (ie. non-null). If one of the other parameters is null
+     * sensible defaults are chosen. If installation parameters are used, they
+     * must be passed in a special format, see parameter description below.
+     * <p>
+     * Before installation the package containing the applet must be loaded onto
+     * the card, see {@link #loadCapFile loadCapFile}.
+     * <p>
+     * This method installs just one applet. Call it several times for packages
+     * containing several applets.
+     *
+     * @param packageAID    the package that containing the applet
+     * @param appletAID     the applet to be installed
+     * @param instanceAID   the applet AID passed to the install method of the applet,
+     *                      defaults to {@code packageAID} if null
+     * @param privileges    privileges encoded as an object
+     * @param installParams tagged installation parameters, defaults to {@code 0xC9 00}
+     *                      (ie. no installation parameters) if null, if non-null the
+     *                      format is {@code 0xC9 len data...}
+     */
     public void installAndMakeSelectable(AID packageAID, AID appletAID, AID instanceAID, Privileges privileges, byte[] installParams, byte[] installToken) throws GPException, CardException {
-
         if (instanceAID == null) {
             instanceAID = appletAID;
         }
         if (getRegistry().allAppletAIDs().contains(instanceAID)) {
             giveStrictWarning("Instance AID " + instanceAID + " is already present on card");
+        }
+
+        byte[] data = buildInstallData(packageAID, appletAID, instanceAID, privileges, installParams, installToken);
+        CommandAPDU install = new CommandAPDU(CLA_GP, INS_INSTALL, P1_INSTALL_AND_MAKE_SELECTABLE, 0x00, data);
+        ResponseAPDU response = transmit(install);
+        GPException.check(response, "INSTALL [for install and make selectable] failed");
+        dirty = true;
+    }
+
+    /**
+     * Install an applet. Do not make it selectable. The package and applet AID must
+     * be present (ie. non-null). If one of the other parameters is null
+     * sensible defaults are chosen. If installation parameters are used, they
+     * must be passed in a special format, see parameter description below.
+     * <p>
+     * Before installation the package containing the applet must be loaded onto
+     * the card, see {@link #loadCapFile loadCapFile}.
+     * <p>
+     * This method installs just one applet. Call it several times for packages
+     * containing several applets.
+     *
+     * @param packageAID    the package that containing the applet
+     * @param appletAID     the applet to be installed
+     * @param instanceAID   the applet AID passed to the install method of the applet,
+     *                      defaults to {@code packageAID} if null
+     * @param privileges    privileges encoded as an object
+     * @param installParams tagged installation parameters, defaults to {@code 0xC9 00}
+     *                      (ie. no installation parameters) if null, if non-null the
+     *                      format is {@code 0xC9 len data...}
+     */
+    public void installForInstall(AID packageAID, AID appletAID, AID instanceAID, Privileges privileges, byte[] installParams, byte[] installToken) throws GPException, CardException {
+        if (instanceAID == null) {
+            instanceAID = appletAID;
+        }
+        if (getRegistry().allAppletAIDs().contains(instanceAID)) {
+            giveStrictWarning("Instance AID " + instanceAID + " is already present on card");
+        }
+
+        byte[] data = buildInstallData(packageAID, appletAID, instanceAID, privileges, installParams, installToken);
+        CommandAPDU install = new CommandAPDU(CLA_GP, INS_INSTALL, P1_INSTALL_FOR_INSTALL, 0x00, data);
+        ResponseAPDU response = transmit(install);
+        GPException.check(response, "INSTALL [for install] failed");
+        dirty = true;
+    }
+
+    private byte[] buildInstallData(AID packageAID, AID appletAID, AID instanceAID, Privileges privileges, byte[] installParams, byte[] installToken) {
+        if (instanceAID == null) {
+            instanceAID = appletAID;
         }
         if (installParams == null || installParams.length == 0) {
             installParams = new byte[]{(byte) 0xC9, 0x00};
@@ -655,11 +727,7 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable  {
         } catch (IOException ioe) {
             throw new RuntimeException(ioe);
         }
-
-        CommandAPDU install = new CommandAPDU(CLA_GP, INS_INSTALL, 0x0C, 0x00, bo.toByteArray());
-        ResponseAPDU response = transmit(install);
-        GPException.check(response, "INSTALL [for install and make selectable] failed");
-        dirty = true;
+        return bo.toByteArray();
     }
 
     public void extradite(AID what, AID to) throws GPException, CardException {

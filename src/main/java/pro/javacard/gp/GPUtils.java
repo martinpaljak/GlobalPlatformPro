@@ -23,7 +23,9 @@
 package pro.javacard.gp;
 
 import java.io.ByteArrayOutputStream;
+import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class GPUtils {
@@ -101,5 +103,19 @@ public class GPUtils {
 			bo.write((byte) (len & 0xFF));
 		}
 		return bo.toByteArray();
+	}
+
+	// Assumes the bignum length must be even
+	static byte[] positive(byte[] bytes) {
+		if (bytes[0] == 0 && bytes.length % 2 == 1) {
+			return Arrays.copyOfRange(bytes, 1, bytes.length);
+		}
+		return bytes;
+	}
+
+	// JavaCard requires values without sign byte (assumed positive)
+	static byte[] positive(BigInteger i) {
+		byte[] bytes = i.toByteArray();
+		return positive(bytes);
 	}
 }

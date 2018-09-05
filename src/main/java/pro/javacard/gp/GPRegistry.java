@@ -130,6 +130,15 @@ public class GPRegistry implements Iterable<GPRegistryEntry> {
 		}
 		return res;
 	}
+
+	public GPRegistryEntryApp getDomain(AID aid) {
+		for (GPRegistryEntryApp e : allDomains()) {
+			if (e.aid.equals(aid))
+				return e;
+		}
+		return null;
+	}
+
 	/**
 	 * Returns a list of all applets in this registry.
 	 *

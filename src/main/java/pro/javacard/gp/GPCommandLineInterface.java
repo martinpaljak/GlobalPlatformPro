@@ -28,6 +28,8 @@ import java.io.IOException;
 import java.util.Arrays;
 
 abstract class GPCommandLineInterface {
+    protected final static String OPT_ALLOW_TO = "allow-to";
+    protected final static String OPT_ALLOW_FROM = "allow-from";
     protected final static String OPT_APDU = "apdu";
     protected final static String OPT_APPLET = "applet"; // can always be shortened, so -app is valid
     protected final static String OPT_BS = "bs";
@@ -38,7 +40,7 @@ abstract class GPCommandLineInterface {
     protected final static String OPT_DELETE = "delete";
     protected final static String OPT_DELETE_KEY = "delete-key";
     protected final static String OPT_DOMAIN = "domain";
-    protected final static String OPT_EXTRADITE = "extradite";
+    protected final static String OPT_MOVE = "move";
     protected final static String OPT_DUMP = "dump";
     protected final static String OPT_EMV = "emv";
     protected final static String OPT_FORCE = "force";
@@ -79,8 +81,7 @@ abstract class GPCommandLineInterface {
     protected final static String OPT_SECURE_CARD = "secure-card";
     protected final static String OPT_SET_PRE_PERSO = "set-pre-perso";
     protected final static String OPT_SET_PERSO = "set-perso";
-    protected final static String OPT_SSD_ACCEPT_TO = "ssd-accept-to";
-    protected final static String OPT_SSD_ACCEPT_FROM = "ssd-accept-from";
+    protected final static String OPT_SHA256 = "sha256";
     protected final static String OPT_STORE_DATA = "store-data";
     protected final static String OPT_TERMINALS = "terminals";
     protected final static String OPT_TERMINATE = "terminate";
@@ -140,10 +141,11 @@ abstract class GPCommandLineInterface {
         parser.accepts(OPT_UNLOCK_CARD, "Unlock card");
         parser.accepts(OPT_SECURE_CARD, "Transition ISD to SECURED state");
         parser.accepts(OPT_INITIALIZE_CARD, "Transition ISD to INITIALIZED state");
-        parser.accepts(OPT_EXTRADITE, "Extradite to").withRequiredArg().describedAs("AID");
+        parser.accepts(OPT_MOVE, "Move something").withRequiredArg().describedAs("AID");
         parser.accepts(OPT_TO, "Destination security domain").withRequiredArg().describedAs("AID");
-        parser.accepts(OPT_SSD_ACCEPT_TO, "Accept extradition to SSD");
-        parser.accepts(OPT_SSD_ACCEPT_FROM, "Accept extradition from SSD");
+        parser.accepts(OPT_ALLOW_TO, "Accept extradition to SSD");
+        parser.accepts(OPT_ALLOW_FROM, "Accept extradition from SSD");
+        parser.accepts(OPT_SHA256, "Use SHA-256 for LFDB hash");
 
         parser.accepts(OPT_SET_PRE_PERSO, "Set PrePerso data in CPLC").withRequiredArg().describedAs("data");
         parser.accepts(OPT_SET_PERSO, "Set Perso data in CPLC").withRequiredArg().describedAs("data");
@@ -177,7 +179,7 @@ abstract class GPCommandLineInterface {
 
         parser.accepts(OPT_KEY_ID, "Specify key ID").withRequiredArg();
         parser.accepts(OPT_KEY_VERSION, "Specify key version").withRequiredArg();
-        parser.accepts(OPT_PUT_KEY, "Put a new key").withRequiredArg();
+        parser.accepts(OPT_PUT_KEY, "Put a new key").withRequiredArg().describedAs("PEM file");
 
         parser.accepts(OPT_LOCK, "Set new key").withRequiredArg().describedAs("key");
         parser.accepts(OPT_LOCK_ENC, "Set new ENC key").withRequiredArg().describedAs("key");

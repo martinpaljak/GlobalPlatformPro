@@ -191,7 +191,7 @@ public final class GPData {
     }
 
     // GP 2.1.1 9.3.3.1
-    // GP 2.2.1 11.1.8
+    // GP 2.2.1 11.3.3.1 and 11.1.8
     // TODO: move to GPKey
     public static List<GPKey> get_key_template_list(byte[] data) throws GPException {
         List<GPKey> r = new ArrayList<>();
@@ -216,11 +216,20 @@ public final class GPData {
                 int id = tmpl[offset++] & 0xFF;
                 int version = tmpl[offset++] & 0xFF;
                 int type = tmpl[offset++] & 0xFF;
-                if (type == 0xFF) {
+                boolean extended = type == 0xFF;
+                if (extended) {
                     // extended key type, use second byte
                     type = tmpl[offset++] & 0xFF;
                 }
+                // parse length
                 int length = tmpl[offset++] & 0xFF;
+                if (extended) {
+                    length = length << 8 | tmpl[offset++] & 0xFF;
+                }
+                if (extended) {
+                    // XXX usage and access is not shown currently
+                    logger.warn("Extended format not parsed: " + HexUtils.bin2hex(Arrays.copyOfRange(tmpl, tmpl.length - 4, tmpl.length)));
+                }
                 // XXX: RSAPUB keys have two components A1 and A0, gets called with A1 and A0 (exponent) discarded
                 r.add(new GPKey(version, id, length, type));
             }
@@ -278,10 +287,13 @@ public final class GPData {
         }
     }
 
+    // GPV 2.2 AmdE 6.1
     public static void pretty_print_card_capabilities(byte[] data) throws GPDataException {
         // BUGFIX: exist cards that return nested 0x67 tag with GET DATA with GP CLA
-        if (data[0] == 0x67 && data[2] == 0x67)
+        if (data[0] == 0x67 && data[2] == 0x67) {
+            logger.warn("Bogus data detected, fixing double tag");
             data = Arrays.copyOfRange(data, 2, data.length);
+        }
         // END BUGFIX
 
         BerTlvParser parser = new BerTlvParser();
@@ -317,12 +329,37 @@ public final class GPData {
                     }
                     t = v.find(new BerTag(0x81));
                     if (t != null) {
-                        System.out.println("Available DOM privileges: " + GPRegistryEntry.Privileges.fromBytes(t.getBytesValue()));
+                        System.out.println("Supported DOM privileges: " + GPRegistryEntry.Privileges.fromBytes(t.getBytesValue()));
                         continue;
                     }
                     t = v.find(new BerTag(0x82));
                     if (t != null) {
-                        System.out.println("Available APP privileges: " + GPRegistryEntry.Privileges.fromBytes(t.getBytesValue()));
+                        System.out.println("Supported APP privileges: " + GPRegistryEntry.Privileges.fromBytes(t.getBytesValue()));
+                        continue;
+                    }
+                    t = v.find(new BerTag(0x83));
+                    if (t != null) {
+                        System.out.println("Supported LFDB hash: " + HexUtils.bin2hex(t.getBytesValue()));
+                        continue;
+                    }
+                    t = v.find(new BerTag(0x85));
+                    if (t != null) { // TODO: parse
+                        System.out.println("Supported Token Verification ciphers: " + HexUtils.bin2hex(t.getBytesValue()));
+                        continue;
+                    }
+                    t = v.find(new BerTag(0x86));
+                    if (t != null) {
+                        System.out.println("Supported Receipt Generation ciphers: " + HexUtils.bin2hex(t.getBytesValue()));
+                        continue;
+                    }
+                    t = v.find(new BerTag(0x87));
+                    if (t != null) {
+                        System.out.println("Supported DAP Verification ciphers: " + HexUtils.bin2hex(t.getBytesValue()));
+                        continue;
+                    }
+                    t = v.find(new BerTag(0x88));
+                    if (t != null) {
+                        System.out.println("Supported ECC Key Parameters: " + HexUtils.bin2hex(t.getBytesValue()));
                         continue;
                     }
                 }

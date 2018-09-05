@@ -42,6 +42,7 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
+import java.security.interfaces.RSAPublicKey;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
@@ -52,9 +53,10 @@ import java.util.List;
  * Does secure channel and low-level translation of GP* objects to APDU-s and arguments
  * NOT thread-safe
  */
-public class GlobalPlatform extends CardChannel implements AutoCloseable  {
+public class GlobalPlatform extends CardChannel implements AutoCloseable {
     private static final Logger logger = LoggerFactory.getLogger(GlobalPlatform.class);
 
+    private static final String LFDBH_SHA1 = "SHA1";
     public static final int SCP_ANY = 0;
     public static final int SCP_01_05 = 1;
     public static final int SCP_01_15 = 2;
@@ -517,23 +519,27 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable  {
         return scpMajorVersion;
     }
 
-    public void loadCapFile(CAPFile cap) throws CardException, GPException {
-        loadCapFile(cap, sdAID, false, false, false, false);
-    }
-
     public void loadCapFile(CAPFile cap, AID target) throws CardException, GPException {
         if (target == null)
             target = sdAID;
-        loadCapFile(cap, target, false, false, false, false);
+        loadCapFile(cap, target, false, false, null, LFDBH_SHA1);
     }
 
-    private void loadCapFile(CAPFile cap, AID sdaid, boolean includeDebug, boolean separateComponents, boolean loadParam, boolean useHash)
+    public void loadCapFile(CAPFile cap, AID target, byte[] dap, String hash) throws CardException, GPException {
+        if (target == null)
+            target = sdAID;
+        loadCapFile(cap, target, false, false, dap, hash);
+    }
+
+    private void loadCapFile(CAPFile cap, AID sdaid, boolean includeDebug, boolean loadParam, byte[] dap, String lfdbh)
             throws GPException, CardException {
 
         if (getRegistry().allAIDs().contains(cap.getPackageAID())) {
             giveStrictWarning("Package with AID " + cap.getPackageAID() + " is already present on card");
         }
-        byte[] hash = useHash ? cap.getLoadFileDataHash("SHA1", includeDebug) : new byte[0];
+
+        // FIXME: hash type handling needs to be sensible.
+        byte[] hash = dap != null ? cap.getLoadFileDataHash(lfdbh, includeDebug) : new byte[0];
         byte[] code = cap.getCode(includeDebug);
         // FIXME: parameters are optional for load
         byte[] loadParams = loadParam ? new byte[]{(byte) 0xEF, 0x04, (byte) 0xC6, 0x02, (byte) ((code.length & 0xFF00) >> 8),
@@ -548,25 +554,36 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable  {
             bo.write(sdaid.getLength());
             bo.write(sdaid.getBytes());
 
-            bo.write(hash.length);
+            bo.write(hash.length); // Load File Data Block Hash
             bo.write(hash);
 
             bo.write(loadParams.length);
             bo.write(loadParams);
-            bo.write(0);
+            bo.write(0); // Load token
         } catch (IOException ioe) {
             throw new RuntimeException(ioe);
         }
 
         CommandAPDU installForLoad = new CommandAPDU(CLA_GP, INS_INSTALL, 0x02, 0x00, bo.toByteArray());
         ResponseAPDU response = transmit(installForLoad);
-        GPException.check(response, "Install for Load failed");
+        GPException.check(response, "INSTALL [for load] failed");
+
 
         // Construct load block
         ByteArrayOutputStream loadblock = new ByteArrayOutputStream();
         try {
-            // TODO: DAP blocks
-            // See GP 2.1.1 Table 9-40
+            // Add DAP block, if signature present
+            if (dap != null) {
+                loadblock.write(0xE2);
+                loadblock.write(GPUtils.encodeLength(sdaid.getLength() + dap.length + GPUtils.encodeLength(dap.length).length + 3)); // two tags, two lengths FIXME: proper size
+                loadblock.write(0x4F);
+                loadblock.write(sdaid.getLength());
+                loadblock.write(sdaid.getBytes());
+                loadblock.write(0xC3);
+                loadblock.write(GPUtils.encodeLength(dap.length));
+                loadblock.write(dap);
+            }
+            // See GP 2.1.1 Table 9-40, GP 2.2.1 11.6.2.3 / Table 11-58
             loadblock.write(0xC4);
             loadblock.write(GPUtils.encodeLength(code.length));
             loadblock.write(code);
@@ -1012,6 +1029,30 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable  {
         GPException.check(response, "PUT KEY failed");
     }
 
+    // Puts a RSA public key for DAP purposes (format 1)
+    public void putKey(RSAPublicKey pubkey, int version) throws CardException, GPException {
+        ByteArrayOutputStream bo = new ByteArrayOutputStream();
+
+        try {
+            bo.write(version); // DAP key Version number
+            bo.write(0xA1); // Modulus
+            byte[] modulus = GPUtils.positive(pubkey.getModulus());
+            byte[] exponent = GPUtils.positive(pubkey.getPublicExponent());
+            bo.write(modulus.length);
+            bo.write(modulus);
+            bo.write(0xA0);
+            bo.write(exponent.length);
+            bo.write(exponent);
+            bo.write(0x00); // No KCV
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        CommandAPDU command = new CommandAPDU(CLA_GP, INS_PUT_KEY, 0x00, 0x01, bo.toByteArray());
+        ResponseAPDU response = transmit(command);
+        GPException.check(response, "PUT KEY failed");
+    }
+    
     public GPRegistry getRegistry() throws GPException, CardException {
         if (dirty) {
             registry = getStatus();

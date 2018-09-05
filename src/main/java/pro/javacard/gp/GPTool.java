@@ -37,6 +37,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
+import java.security.PublicKey;
+import java.security.interfaces.RSAPublicKey;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -389,9 +391,26 @@ public final class GPTool extends GPCommandLineInterface {
                             }
                             try {
                                 AID target = null;
-                                if (args.has(OPT_TO))
+                                boolean dapRequired = false;
+                                if (args.has(OPT_TO)) {
                                     target = AID.fromString(args.valueOf(OPT_TO));
-                                gp.loadCapFile(loadcap, target);
+                                    if (gp.getRegistry().getDomain(target).getPrivileges().has(Privilege.DAPVerification))
+                                        dapRequired = true;
+                                }
+
+                                // Check if DAP block is required
+                                for (GPRegistryEntryApp e : gp.getRegistry().allDomains()) {
+                                    if (e.getPrivileges().has(Privilege.MandatedDAPVerification))
+                                        dapRequired = true;
+                                }
+
+                                // XXX: figure out right signature type in a better way
+                                if (dapRequired) {
+                                    byte[] dap = args.has(OPT_SHA256) ? loadcap.getMetaInfEntry(CAPFile.DAP_RSA_V1_SHA256_FILE) : loadcap.getMetaInfEntry(CAPFile.DAP_RSA_V1_SHA1_FILE);
+                                    gp.loadCapFile(loadcap, target, dap, args.has(OPT_SHA256) ? "SHA-256" : "SHA1");
+                                } else {
+                                    gp.loadCapFile(loadcap, target);
+                                }
                             } catch (GPException e) {
                                 if (e.sw == 0x6985) {
                                     System.err.println("Applet loading failed. Are you sure the CAP file target is compatible with your card?");
@@ -399,7 +418,20 @@ public final class GPTool extends GPCommandLineInterface {
                                 throw e;
                             }
                         }
+                        // --put-key <keyfile.pem>
+                        // Load a RSA public key (for DAP purposes)
+                        if (args.has(OPT_PUT_KEY)) {
+                            int keyVersion = 0x73; // Default DAP version
+                            if (args.has(OPT_NEW_KEY_VERSION)) {
+                                keyVersion = GPUtils.intValue(args.valuesOf(OPT_NEW_KEY_VERSION).toString());
+                            }
 
+                            // Get public key
+                            PublicKey key = GPCrypto.pem2pubkey(new FileInputStream(new File(args.valueOf(OPT_PUT_KEY).toString())));
+                            if (key instanceof RSAPublicKey) {
+                                gp.putKey((RSAPublicKey) key, 0x73);
+                            }
+                        }
 
                         // --install <applet.cap> (--applet <aid> --create <aid> --privs <privs> --params <params>)
                         if (args.has(OPT_INSTALL)) {
@@ -420,6 +452,7 @@ public final class GPTool extends GPCommandLineInterface {
                             }
 
                             // Load
+                            // TODO: handle DAP here as well
                             if (instcap.getAppletAIDs().size() <= 1) {
                                 try {
                                     AID target = null;
@@ -513,8 +546,8 @@ public final class GPTool extends GPCommandLineInterface {
                         // --domain <AID>
                         if (args.has(OPT_DOMAIN)) {
                             // Arguments check
-                            if ((args.has(OPT_SSD_ACCEPT_FROM) || args.has(OPT_SSD_ACCEPT_TO)) && args.has(OPT_PARAMS)) {
-                                fail("SSD accept options can't be used with SSD installation parameters");
+                            if ((args.has(OPT_ALLOW_FROM) || args.has(OPT_ALLOW_TO)) && args.has(OPT_PARAMS)) {
+                                fail("SSD extradition options can't be used with SSD installation parameters");
                             }
 
                             // Default AID-s
@@ -539,10 +572,10 @@ public final class GPTool extends GPCommandLineInterface {
                             if (args.has(OPT_PARAMS)) {
                                 params = getInstParams(args);
                             } else {
-                                if (args.has(OPT_SSD_ACCEPT_TO)) {
+                                if (args.has(OPT_ALLOW_TO)) {
                                     params = GPUtils.concatenate(params, new byte[]{(byte) 0x82, 0x01, 0x20});
                                 }
-                                if (args.has(OPT_SSD_ACCEPT_FROM)) {
+                                if (args.has(OPT_ALLOW_FROM)) {
                                     params = GPUtils.concatenate(params, new byte[]{(byte) 0x87, 0x01, 0x20});
                                 }
                             }
@@ -551,12 +584,12 @@ public final class GPTool extends GPCommandLineInterface {
                             gp.installAndMakeSelectable(packageAID, appletAID, instanceAID, privs, params, null);
                         }
 
-                        // --extradite <AID>
-                        if (args.has(OPT_EXTRADITE)) {
+                        // --move <AID>
+                        if (args.has(OPT_MOVE)) {
                             if (!args.has(OPT_TO)) {
                                 fail("Specify extradition target with --" + OPT_TO);
                             }
-                            AID what = AID.fromString(args.valueOf(OPT_EXTRADITE));
+                            AID what = AID.fromString(args.valueOf(OPT_MOVE));
                             AID to = AID.fromString(args.valueOf(OPT_TO));
 
                             gp.extradite(what, to);
@@ -854,7 +887,8 @@ public final class GPTool extends GPCommandLineInterface {
         String[] yes = new String[]{OPT_LIST, OPT_LOAD, OPT_INSTALL, OPT_DELETE, OPT_DELETE_KEY, OPT_CREATE,
                 OPT_ACR_ADD, OPT_ACR_DELETE, OPT_LOCK, OPT_UNLOCK, OPT_LOCK_ENC, OPT_LOCK_MAC, OPT_LOCK_DEK, OPT_MAKE_DEFAULT,
                 OPT_UNINSTALL, OPT_SECURE_APDU, OPT_DOMAIN, OPT_LOCK_CARD, OPT_UNLOCK_CARD, OPT_LOCK_APPLET, OPT_UNLOCK_APPLET,
-                OPT_STORE_DATA, OPT_INITIALIZE_CARD, OPT_SECURE_CARD, OPT_RENAME_ISD, OPT_SET_PERSO, OPT_SET_PRE_PERSO, OPT_EXTRADITE};
+                OPT_STORE_DATA, OPT_INITIALIZE_CARD, OPT_SECURE_CARD, OPT_RENAME_ISD, OPT_SET_PERSO, OPT_SET_PRE_PERSO, OPT_MOVE,
+                OPT_PUT_KEY};
 
         for (String s : yes) {
             if (args.has(s)) {

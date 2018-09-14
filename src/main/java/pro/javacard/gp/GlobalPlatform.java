@@ -978,24 +978,25 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
         List<GPKey> tmpl = getKeyInfoTemplate();
 
         if (tmpl.size() > 0) {
-            if ((tmpl.get(0).getVersion() < 1 || tmpl.get(0).getVersion() > 0x7F) && replace) {
-                giveStrictWarning("Trying to replace factory keys, when you need to add new ones? Is this a virgin card? (use --virgin)");
-            }
-
-            // Check if key types and lengths are the same when replacing
-            if (replace && (keys.get(0).getType() != tmpl.get(0).getType() || keys.get(0).getLength() != tmpl.get(0).getLength())) {
-                // FIXME: SCE60 template has 3DES keys but uses AES.
-                giveStrictWarning("Can not replace keys of different type or size: " + tmpl.get(0).getType() + "->" + keys.get(0).getType());
-            }
-
-            // Check for matching version numbers if replacing and vice versa
-            if (!replace && (keys.get(0).getVersion() == tmpl.get(0).getVersion())) {
-                throw new IllegalArgumentException("Not adding keys and version matches existing?");
-            }
-
-            if (replace && (keys.get(0).getVersion() != tmpl.get(0).getVersion())) {
-                throw new IllegalArgumentException("Replacing keys and versions don't match existing?");
-            }
+//            // TODO: move to GPTool
+//            if ((tmpl.get(0).getVersion() < 1 || tmpl.get(0).getVersion() > 0x7F) && replace) {
+//                giveStrictWarning("Trying to replace factory keys, when you need to add new ones? Is this a virgin card? (use --virgin)");
+//            }
+//
+//            // Check if key types and lengths are the same when replacing
+//            if (replace && (keys.get(0).getType() != tmpl.get(0).getType() || keys.get(0).getLength() != tmpl.get(0).getLength())) {
+//                // FIXME: SCE60 template has 3DES keys but uses AES.
+//                giveStrictWarning("Can not replace keys of different type or size: " + tmpl.get(0).getType() + "->" + keys.get(0).getType());
+//            }
+//
+//            // Check for matching version numbers if replacing and vice versa
+//            if (!replace && (keys.get(0).getVersion() == tmpl.get(0).getVersion())) {
+//                throw new IllegalArgumentException("Not adding keys and version matches existing?");
+//            }
+//
+//            if (replace && (keys.get(0).getVersion() != tmpl.get(0).getVersion())) {
+//                throw new IllegalArgumentException("Replacing keys and versions don't match existing?");
+//            }
         } else {
             if (replace) {
                 logger.warn("No key template on card but trying to replace. Implying add");
@@ -1052,7 +1053,7 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
         ResponseAPDU response = transmit(command);
         GPException.check(response, "PUT KEY failed");
     }
-    
+
     public GPRegistry getRegistry() throws GPException, CardException {
         if (dirty) {
             registry = getStatus();

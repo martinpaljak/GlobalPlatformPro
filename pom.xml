@@ -5,7 +5,7 @@
     <groupId>com.github.martinpaljak</groupId>
     <artifactId>globalplatformpro</artifactId>
     <packaging>jar</packaging>
-    <version>18.08.16.1</version>
+    <version>18.09.14</version>
     <name>GlobalPlatformPro</name>
     <url>https://github.com/martinpaljak/GlobalPlatformPro</url>
     <description>Manage applets and keys on JavaCard-s like a pro</description>
@@ -92,7 +92,7 @@
                         <version>1.6.8</version>
                         <extensions>true</extensions>
                         <configuration>
-                            <serverId>ossrh</serverId>
+                            <serverId>ossrh-martinpaljak</serverId>
                             <nexusUrl>https://oss.sonatype.org/</nexusUrl>
                             <autoReleaseAfterClose>true</autoReleaseAfterClose>
                         </configuration>

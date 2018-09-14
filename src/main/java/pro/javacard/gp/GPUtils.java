@@ -32,7 +32,7 @@ public class GPUtils {
 
 	public static int intValue(String s) {
 		if (s.trim().toLowerCase().startsWith("0x")) {
-			return Integer.parseInt(s, 16);
+			return Integer.parseInt(s.substring(2), 16);
 		}
 		return Integer.parseInt(s);
 	}

@@ -271,6 +271,9 @@ public final class GPTool extends GPCommandLineInterface {
                                 GPKey mac = new GPKey(HexUtils.stringToBin(env.get("GP_KEY_MAC")));
                                 GPKey dek = new GPKey(HexUtils.stringToBin(env.get("GP_KEY_DEK")));
                                 keyz = PlaintextKeys.fromKeys(enc, mac, dek);
+                                if (env.containsKey("GP_KEY_VERSION")) {
+                                    keyz.setVersion(GPUtils.intValue(env.get("GP_KEY_VERSION")));
+                                }
                             } else {
                                 if (needsAuthentication(args)) {
                                     System.out.println("Warning: no keys given, using default test key " + HexUtils.bin2hex(GPData.defaultKeyBytes));
@@ -737,6 +740,7 @@ public final class GPTool extends GPCommandLineInterface {
                             // If a specific new key version is specified, use that instead.
                             if (args.has(OPT_NEW_KEY_VERSION)) {
                                 new_version = GPUtils.intValue((String) args.valueOf(OPT_NEW_KEY_VERSION));
+                                replace = false;
                                 System.out.println("New version: " + new_version);
                             }
 

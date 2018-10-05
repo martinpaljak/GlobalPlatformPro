@@ -64,6 +64,8 @@ public final class GPKey {
         // GP 2.2.1 11.1.8 Key Type Coding
         if (type == 0x80 || type == 0x81 || type == 0x82) {
             this.type = Type.DES3;
+        } else if (type == 0x85) {
+            this.type = Type.PSK;
         } else if (type == 0x88) {
             this.type = Type.AES;
         } else if (type == 0xA1 || type == 0xA0) {
@@ -154,6 +156,6 @@ public final class GPKey {
     }
 
     public enum Type {
-        RAW, DES, DES3, AES, RSA
+        RAW, DES, DES3, AES, RSA, PSK
     }
 }

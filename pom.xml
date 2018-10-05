@@ -111,25 +111,8 @@
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>1.6.0</version>
-                <executions>
-                    <execution>
-                        <id>git-version</id>
-                        <phase>generate-resources</phase>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                    </execution>
-                </executions>
                 <configuration>
-                    <executable>git</executable>
-                    <outputFile>target/generated-resources/pro/javacard/gp/pro_version.txt</outputFile>
-                    <arguments>
-                        <argument>describe</argument>
-                        <argument>--tags</argument>
-                        <argument>--always</argument>
-                        <argument>--long</argument>
-                        <argument>--dirty</argument>
-                    </arguments>
+                    <mainClass>pro.javacard.gp.GPTool</mainClass>
                 </configuration>
             </plugin>
             <plugin>

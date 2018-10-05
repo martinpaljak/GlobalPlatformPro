@@ -64,7 +64,8 @@ public class GPRegistry implements Iterable<GPRegistryEntry> {
 		// "fix" the kind at a single location.
 		if (entry instanceof GPRegistryEntryApp) {
 			GPRegistryEntryApp app = (GPRegistryEntryApp) entry;
-			if (app.getPrivileges().has(Privilege.SecurityDomain) && entry.getType() == Kind.Application) {
+            Privileges privileges = app.getPrivileges();
+			if (privileges != null &&  privileges.has(Privilege.SecurityDomain) && entry.getType() == Kind.Application) {
 				entry.setType(Kind.SecurityDomain);
 			}
 		}

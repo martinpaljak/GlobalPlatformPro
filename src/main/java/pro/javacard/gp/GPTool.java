@@ -651,9 +651,9 @@ public final class GPTool {
                             // Extra privileges
                             Privileges privs = getInstPrivs(args);
                             privs.add(Privilege.SecurityDomain);
-
+byte[] installParams = new byte[]{(byte) 0xC9, 0x01, 0x45};
                             // shoot
-                            gp.installAndMakeSelectable(packageAID, appletAID, instanceAID, privs, null, null);
+                            gp.installAndMakeSelectable(packageAID, appletAID, instanceAID, privs, installParams, null);
                         }
 
                         // --store-data <XX>

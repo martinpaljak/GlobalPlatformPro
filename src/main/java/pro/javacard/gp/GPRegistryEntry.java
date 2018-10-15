@@ -20,6 +20,7 @@
 package pro.javacard.gp;
 
 import apdu4j.HexUtils;
+import pro.javacard.AID;
 
 import java.util.EnumSet;
 import java.util.stream.Collectors;
@@ -31,7 +32,7 @@ public class GPRegistryEntry {
     protected Kind kind;
     protected AID domain; // Associated security domain
 
-    private static String getLifeCycleString(Kind kind, int lifeCycleState) {
+    static String getLifeCycleString(Kind kind, int lifeCycleState) {
         switch (kind) {
             case IssuerSecurityDomain:
                 switch (lifeCycleState) {
@@ -391,6 +392,10 @@ public class GPRegistryEntry {
 
         public boolean isEmpty() {
             return privs.size() == 0;
+        }
+
+        public int size() {
+            return privs.size();
         }
     }
 }

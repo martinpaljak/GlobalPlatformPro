@@ -4,8 +4,8 @@
   <!-- Build dependencies -->
   <target name="fetch">
     <mkdir dir="lib"/>
-    <get src="http://central.maven.org/maven2/net/sf/proguard/proguard-base/5.3.3/proguard-base-5.3.3.jar" dest="lib" verbose="true" skipexisting="true"/>
-    <checksum algorithm="SHA-256" file="lib/proguard-base-5.3.3.jar" property="1d2e883717b8ab7d3fcc9fa01034d165809a9c94daa6303a838f11e4d36adc86" verifyProperty="proguardOK"/>
+    <get src="http://central.maven.org/maven2/net/sf/proguard/proguard-base/6.0.3/proguard-base-6.0.3.jar" dest="lib" verbose="true" skipexisting="true"/>
+    <checksum algorithm="SHA-256" file="lib/proguard-base-6.0.3.jar" property="75bc89695fa66e75374ecda439b802406f0ab1d826dd386eed0a23b1f0a9d264" verifyProperty="proguardOK"/>
     <fail message="Checksum failure">
       <condition>
         <or>
@@ -19,7 +19,7 @@
     <java classname="proguard.ProGuard" fork="true" failonerror="true">
       <arg line="@globalplatform.pro"/>
       <classpath>
-        <pathelement location="lib/proguard-base-5.3.3.jar"/>
+        <pathelement location="lib/proguard-base-6.0.3.jar"/>
       </classpath>
     </java>
   </target>

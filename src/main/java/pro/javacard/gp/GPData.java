@@ -20,22 +20,31 @@
 package pro.javacard.gp;
 
 import apdu4j.HexUtils;
+import apdu4j.ISO7816;
 import com.payneteasy.tlv.*;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pro.javacard.gp.GPKey.Type;
 
+import javax.smartcardio.CardChannel;
 import javax.smartcardio.CardException;
+import javax.smartcardio.CommandAPDU;
+import javax.smartcardio.ResponseAPDU;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.math.BigInteger;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static pro.javacard.gp.GlobalPlatform.CLA_GP;
 
 // Various constants from GP specification and other sources
 // Methods to pretty-print those structures and constants.
 public final class GPData {
+    private static final Logger logger = LoggerFactory.getLogger(GPData.class);
+
     // SD states
     public static final byte readyStatus = 0x1;
     public static final byte initializedStatus = 0x7;
@@ -52,11 +61,9 @@ public final class GPData {
     @Deprecated
     public static final byte securityDomainPriv = (byte) 0x80;
     // Default test key TODO: provide getters for arrays, this class should be kept public
-    static final byte[] defaultKeyBytes = {0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F};
-
+    static final byte[] defaultKeyBytes = HexUtils.hex2bin("404142434445464748494A4B4C4D4E4F");
     // Default ISD AID-s
     static final byte[] defaultISDBytes = HexUtils.hex2bin("A000000151000000");
-    final static Logger logger = LoggerFactory.getLogger(GPData.class);
     static final Map<Integer, String> sw = new HashMap<>();
 
     static {
@@ -160,9 +167,22 @@ public final class GPData {
         boolean factory_keys = false;
         out.flush();
         for (GPKey k : list) {
-            out.println(String.format("Version: %d (0x%02X) ID: %d (0x%02X) type: %s length: %d", k.getVersion(), k.getVersion(), k.getID(), k.getID(), k.getType(), k.getLength()));
+            // Descriptive text about the key
+            final String nice;
+            if (k.getType() == Type.RSAPUB && k.getLength() > 0) {
+                nice = "(RSA-" + k.getLength() * 8 + " public)";
+            } else if (k.getType() == Type.AES && k.getLength() > 0) {
+                nice = "(AES-" + k.getLength() * 8 + ")";
+            } else {
+                nice = "";
+            }
+
+            // Detect unaddressable factory keys
             if (k.getVersion() == 0x00 || k.getVersion() == 0xFF)
                 factory_keys = true;
+
+            // print
+            out.println(String.format("Version: %3d (0x%02X) ID: %3d (0x%02X) type: %-4s length: %3d %s", k.getVersion(), k.getVersion(), k.getID(), k.getID(), k.getType(), k.getLength(), nice));
         }
         if (factory_keys) {
             out.println("Key version suggests factory keys");
@@ -171,7 +191,7 @@ public final class GPData {
     }
 
     // GP 2.1.1 9.3.3.1
-    // GP 2.2.1 11.1.8
+    // GP 2.2.1 11.3.3.1 and 11.1.8
     // TODO: move to GPKey
     public static List<GPKey> get_key_template_list(byte[] data) throws GPException {
         List<GPKey> r = new ArrayList<>();
@@ -192,15 +212,25 @@ public final class GPData {
                 if (tmpl.length < 4) {
                     throw new GPDataException("Key info template shorter than 4 bytes", tmpl);
                 }
-                int id = tmpl[0] & 0xFF;
-                int version = tmpl[1] & 0xFF;
-                int type = tmpl[2] & 0xFF;
-                int length = tmpl[3] & 0xFF;
-                if (type == 0xFF) {
-                    // TODO
-                    throw new GPDataException("Extended key template not yet supported", tmpl);
+                int offset = 0;
+                int id = tmpl[offset++] & 0xFF;
+                int version = tmpl[offset++] & 0xFF;
+                int type = tmpl[offset++] & 0xFF;
+                boolean extended = type == 0xFF;
+                if (extended) {
+                    // extended key type, use second byte
+                    type = tmpl[offset++] & 0xFF;
                 }
-                // XXX: RSA keys have two components A1 and A0, gets called with A1 and A0 (exponent) discarded
+                // parse length
+                int length = tmpl[offset++] & 0xFF;
+                if (extended) {
+                    length = length << 8 | tmpl[offset++] & 0xFF;
+                }
+                if (extended) {
+                    // XXX usage and access is not shown currently
+                    logger.warn("Extended format not parsed: " + HexUtils.bin2hex(Arrays.copyOfRange(tmpl, tmpl.length - 4, tmpl.length)));
+                }
+                // XXX: RSAPUB keys have two components A1 and A0, gets called with A1 and A0 (exponent) discarded
                 r.add(new GPKey(version, id, length, type));
             }
         }
@@ -243,6 +273,12 @@ public final class GPData {
                                 }
                             }
                         }
+                        if (oid.startsWith("1.3.6.1.4.1.42.2.110.1")) {
+                            String p = oid.substring("1.3.6.1.4.1.42.2.110.1.".length());
+                            if (p.length() == 1) {
+                                System.out.println("-> JavaCard v" + p);
+                            }
+                        }
                     }
                 }
             }
@@ -251,30 +287,144 @@ public final class GPData {
         }
     }
 
-    public static void pretty_print_cplc(byte[] data, PrintStream out) {
-        if (data == null) {
-            out.println("NO CPLC");
-            return;
+    // GPV 2.2 AmdE 6.1
+    public static void pretty_print_card_capabilities(byte[] data) throws GPDataException {
+        // BUGFIX: exist cards that return nested 0x67 tag with GET DATA with GP CLA
+        if (data[0] == 0x67 && data[2] == 0x67) {
+            logger.warn("Bogus data detected, fixing double tag");
+            data = Arrays.copyOfRange(data, 2, data.length);
         }
-        CPLC cplc = CPLC.fromBytes(data);
-        out.println(cplc);
+        // END BUGFIX
+
+        BerTlvParser parser = new BerTlvParser();
+        BerTlvs tlvs = parser.parse(data);
+        BerTlvLogger.log("    ", tlvs, GPData.getLoggerInstance());
+        if (tlvs != null) {
+            BerTlv caps = tlvs.find(new BerTag(0x67));
+            if (caps != null) {
+                for (BerTlv v : caps.getValues()) {
+                    BerTlv t = v.find(new BerTag(0xA0));
+                    if (t != null) {
+                        int scp = t.find(new BerTag(0x80)).getIntValue();
+                        byte[] is = t.find(new BerTag(0x81)).getBytesValue();
+                        System.out.format("Supports: SCP%02X", scp);
+                        for (int i = 0; i < is.length; i++) {
+                            System.out.format(" i=%02X", is[i]);
+                        }
+                        BerTlv keylens = t.find(new BerTag(0x82));
+                        if (keylens != null) {
+                            System.out.print(" with");
+                            if ((keylens.getIntValue() & 0x01) == 0x01) {
+                                System.out.print(" AES-128");
+                            }
+                            if ((keylens.getIntValue() & 0x02) == 0x02) {
+                                System.out.print(" AES-196");
+                            }
+                            if ((keylens.getIntValue() & 0x04) == 0x04) {
+                                System.out.print(" AES-256");
+                            }
+                        }
+                        System.out.println();
+                        continue;
+                    }
+                    t = v.find(new BerTag(0x81));
+                    if (t != null) {
+                        System.out.println("Supported DOM privileges: " + GPRegistryEntry.Privileges.fromBytes(t.getBytesValue()));
+                        continue;
+                    }
+                    t = v.find(new BerTag(0x82));
+                    if (t != null) {
+                        System.out.println("Supported APP privileges: " + GPRegistryEntry.Privileges.fromBytes(t.getBytesValue()));
+                        continue;
+                    }
+                    t = v.find(new BerTag(0x83));
+                    if (t != null) {
+                        System.out.println("Supported LFDB hash: " + HexUtils.bin2hex(t.getBytesValue()));
+                        continue;
+                    }
+                    t = v.find(new BerTag(0x85));
+                    if (t != null) { // TODO: parse
+                        System.out.println("Supported Token Verification ciphers: " + HexUtils.bin2hex(t.getBytesValue()));
+                        continue;
+                    }
+                    t = v.find(new BerTag(0x86));
+                    if (t != null) {
+                        System.out.println("Supported Receipt Generation ciphers: " + HexUtils.bin2hex(t.getBytesValue()));
+                        continue;
+                    }
+                    t = v.find(new BerTag(0x87));
+                    if (t != null) {
+                        System.out.println("Supported DAP Verification ciphers: " + HexUtils.bin2hex(t.getBytesValue()));
+                        continue;
+                    }
+                    t = v.find(new BerTag(0x88));
+                    if (t != null) {
+                        System.out.println("Supported ECC Key Parameters: " + HexUtils.bin2hex(t.getBytesValue()));
+                        continue;
+                    }
+                }
+            }
+        }
     }
 
-    // TODO public for debugging purposes
-    public static void print_card_info(GlobalPlatform gp) throws CardException, GPException {
-        // Print CPLC
-        pretty_print_cplc(gp.fetchCPLC(), System.out);
 
-        //
-        gp.dumpCardProperties(System.out);
-        // Print CardData
-        System.out.println("***** CARD DATA");
-        byte[] card_data = gp.fetchCardData();
-        pretty_print_card_data(card_data);
+    // NB! This assumes a selected (I)SD!
+    public static void dump(CardChannel channel) throws CardException, GPException {
+        byte[] cplc = fetchCPLC(channel);
+        if (cplc != null) {
+            System.out.println(GPData.CPLC.fromBytes(cplc).toPrettyString());
+        }
+
+        // IIN
+        byte[] iin = getData(channel, 0x00, 0x42, "IIN", false);
+        if (iin != null) {
+            System.out.println("IIN: " + HexUtils.bin2hex(iin));
+        }
+        // CIN
+        byte[] cin = getData(channel, 0x00, 0x45, "CIN", false);
+        if (cin != null) {
+            System.out.println("CIN: " + HexUtils.bin2hex(cin));
+        }
+        // FIXME: SSC?
+//        BerTlvParser parser = new BerTlvParser();
+//        BerTlvs tlvs = parser.parse(resp.getData());
+//        BerTlvLogger.log("    ", tlvs, GPData.getLoggerInstance());
+//        if (tlvs != null) {
+//            BerTlv ssc = tlvs.find(new BerTag(0xC1));
+//            if (ssc != null) {
+//                out.println(HexUtils.bin2hex(ssc.getBytesValue()));
+//            }
+//        }
+        // Print Card Data
+        System.out.println("Card Data: ");
+        byte[] cardData = getData(channel, 0x00, 0x66, "Card Data", false);
+        if (cardData != null) {
+            pretty_print_card_data(cardData);
+        }
+        // Print Card Capabilities
+        System.out.println("Card Capabilities: ");
+        byte[] cardCapabilities = getData(channel, 0x00, 0x67, "Card Capabilities", false);
+        if (cardCapabilities != null) {
+            pretty_print_card_capabilities(cardCapabilities);
+        }
+
         // Print Key Info Template
-        System.out.println("***** KEY INFO");
-        pretty_print_key_template(gp.getKeyInfoTemplate(), System.out);
+        byte[] keyInfo = fetchKeyInfoTemplate(channel);
+        if (keyInfo != null) {
+            pretty_print_key_template(GPData.get_key_template_list(keyInfo), System.out);
+        }
     }
+
+
+    // Just to encapsulate tag constants behind meaningful name
+    public static byte[] fetchCPLC(CardChannel channel) throws CardException {
+        return getData(channel, 0x9f, 0x7f, "CPLC", true);
+    }
+
+    public static byte[] fetchKeyInfoTemplate(CardChannel channel) throws CardException {
+        return getData(channel, 0x00, 0xE0, "Key Info Template", false);
+    }
+
 
     public static String sw2str(int sw) {
         String msg = GPData.sw.get(sw);
@@ -312,16 +462,28 @@ public final class GPData {
         }
     }
 
+    public static byte[] getData(CardChannel channel, int p1, int p2, String name, boolean failsafe) throws CardException {
+        logger.trace("GET DATA({})", name);
+        ResponseAPDU resp = channel.transmit(new CommandAPDU(CLA_GP, ISO7816.INS_GET_DATA, p1, p2, 256));
+        if (failsafe && resp.getSW() != ISO7816.SW_NO_ERROR)
+            resp = channel.transmit(new CommandAPDU(0x00, ISO7816.INS_GET_DATA, p1, p2, 256));
+        if (resp.getSW() == ISO7816.SW_NO_ERROR) {
+            return resp.getData();
+        } else if (resp.getSW() == 0x6A88) {
+            logger.debug("GET DATA({}): N/A", name);
+            return null;
+        } else {
+            logger.warn("GET DATA({}) not supported", name);
+            return null;
+        }
+    }
+
     public static final class CPLC {
 
-        private HashMap<Field, byte[]> values = null;
-
-        ;
+        private HashMap<Field, byte[]> values = new HashMap<>();
 
         private CPLC(byte[] data) {
-            // prepended by tag 0x9F7F
-            short offset = 3;
-            values = new HashMap<>();
+            short offset = 0;
             values.put(Field.ICFabricator, Arrays.copyOfRange(data, offset, offset + 2));
             offset += 2;
             values.put(Field.ICType, Arrays.copyOfRange(data, offset, offset + 2));
@@ -360,9 +522,14 @@ public final class GPData {
             offset += 4;
         }
 
-        public static CPLC fromBytes(byte[] data) {
-            if (data == null || data.length < 3 || data[2] != 0x2A)
-                throw new IllegalArgumentException("CPLC MUST be 0x2A bytes long");
+        public static CPLC fromBytes(byte[] data) throws GPDataException {
+            if (data == null)
+                throw new IllegalArgumentException("data is null");
+            if (data.length < 0x2A)
+                throw new GPDataException(String.format("Input can't be valid CPLC if length is only %02X!", data.length));
+            // Remove tag, if present
+            if (data[0] == (byte) 0x9f && data[1] == (byte) 0x7f && data[2] == (byte) 0x2A)
+                data = Arrays.copyOfRange(data, 3, data.length);
             return new CPLC(data);
         }
 
@@ -371,7 +538,11 @@ public final class GPData {
         }
 
         public String toString() {
-            return Arrays.asList(Field.values()).stream().map(i -> i.toString() + "=" + HexUtils.bin2hex(values.get(i))).collect(Collectors.joining(", ", "[CPLC ", "]"));
+            return Arrays.asList(Field.values()).stream().map(i -> i.toString() + "=" + HexUtils.bin2hex(values.get(i))).collect(Collectors.joining(", ", "[CPLC: ", "]"));
+        }
+
+        public String toPrettyString() {
+            return Arrays.asList(Field.values()).stream().map(i -> i.toString() + "=" + HexUtils.bin2hex(values.get(i)) + (i.toString().endsWith("Date") ? " (" + toDateFailsafe(values.get(i)) + ")" : "")).collect(Collectors.joining("\n      ", "CPLC: ", "\n"));
         }
 
         public enum Field {
@@ -393,6 +564,46 @@ public final class GPData {
             ICPersonalizer,
             ICPersonalizationDate,
             ICPersonalizationEquipmentID
+        }
+
+        public static String toDate(byte[] v) throws GPDataException {
+            String sv = HexUtils.bin2hex(v);
+            try {
+                int y = Integer.parseInt(sv.substring(0, 1));
+                int d = Integer.parseInt(sv.substring(1, 4));
+                if (d > 366) {
+                    throw new GPDataException("Invalid CPLC date format: " + sv);
+                }
+                // Make 0000 show something meaningful
+                if (d == 0) {
+                    d = 1;
+                }
+                GregorianCalendar gc = new GregorianCalendar(TimeZone.getTimeZone("UTC"));
+                // FIXME: 2010 is hardcoded.
+                gc.set(GregorianCalendar.YEAR, 2010 + y);
+                gc.set(GregorianCalendar.DAY_OF_YEAR, d);
+                SimpleDateFormat f = new SimpleDateFormat("yyyy-MM-dd");
+                return f.format(gc.getTime());
+            } catch (NumberFormatException e) {
+                throw new GPDataException("Invalid CPLC date: " + sv, e);
+            }
+        }
+
+        public static String toDateFailsafe(byte[] v) {
+            try {
+                return toDate(v);
+            } catch (GPDataException e) {
+                logger.warn("Invalid CPLC date: " + HexUtils.bin2hex(v));
+                return "invalid date format";
+            }
+        }
+
+        public static byte[] today() {
+            return fromDate(new GregorianCalendar());
+        }
+
+        public static byte[] fromDate(GregorianCalendar d) {
+            return HexUtils.hex2bin(String.format("%d%03d", d.get(GregorianCalendar.YEAR) - 2010, d.get(GregorianCalendar.DAY_OF_YEAR)));
         }
     }
 }

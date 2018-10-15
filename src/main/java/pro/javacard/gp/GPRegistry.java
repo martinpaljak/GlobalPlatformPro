@@ -27,7 +27,6 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 
-import apdu4j.HexUtils;
 import com.payneteasy.tlv.BerTag;
 import com.payneteasy.tlv.BerTlv;
 import com.payneteasy.tlv.BerTlvParser;
@@ -36,6 +35,7 @@ import com.payneteasy.tlv.BerTlvs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import pro.javacard.AID;
 import pro.javacard.gp.GPRegistryEntry.Kind;
 import pro.javacard.gp.GPRegistryEntry.Privilege;
 import pro.javacard.gp.GPRegistryEntry.Privileges;
@@ -64,8 +64,7 @@ public class GPRegistry implements Iterable<GPRegistryEntry> {
 		// "fix" the kind at a single location.
 		if (entry instanceof GPRegistryEntryApp) {
 			GPRegistryEntryApp app = (GPRegistryEntryApp) entry;
-            Privileges privileges = app.getPrivileges();
-			if (privileges != null &&  privileges.has(Privilege.SecurityDomain) && entry.getType() == Kind.Application) {
+			if (app.getPrivileges().has(Privilege.SecurityDomain) && entry.getType() == Kind.Application) {
 				entry.setType(Kind.SecurityDomain);
 			}
 		}
@@ -73,6 +72,8 @@ public class GPRegistry implements Iterable<GPRegistryEntry> {
 		GPRegistryEntry existing = entries.get(entry.getAID());
 		if (existing != null && existing.getType() != entry.getType()) {
 			// OP201 cards list the ISD AID as load file.
+			// FIXME: different types with same AID.
+			logger.warn("Duplicate entry! " + existing + " vs " + entry);
 			return;
 		}
 		entries.put(entry.getAID(), entry);
@@ -129,6 +130,15 @@ public class GPRegistry implements Iterable<GPRegistryEntry> {
 		}
 		return res;
 	}
+
+	public GPRegistryEntryApp getDomain(AID aid) {
+		for (GPRegistryEntryApp e : allDomains()) {
+			if (e.aid.equals(aid))
+				return e;
+		}
+		return null;
+	}
+
 	/**
 	 * Returns a list of all applets in this registry.
 	 *
@@ -297,18 +307,10 @@ public class GPRegistry implements Iterable<GPRegistryEntry> {
 
 	// FIXME: this is ugly
 	public void parse(int p1, byte[] data, Kind type, GPSpec spec) throws GPDataException {
-		data = StupidFixes.fix_get_status(data);
 		if (tags) {
 			populate_tags(data, type);
 		} else {
 			populate_legacy(p1, data, type, spec);
 		}
-	}
-
-	public static void main(String[] args) throws Exception {
-		byte[] r = HexUtils.decodeHexString_imp("E3124F07A00000015100009F700107C5EA028000");
-		GPRegistry g = new GPRegistry();
-		g.parse(0x80, r, Kind.IssuerSecurityDomain, GPSpec.GP22);
-		GPCommands.listRegistry(g, System.out, true);
 	}
 }

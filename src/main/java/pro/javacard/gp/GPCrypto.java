@@ -19,12 +19,16 @@
  */
 package pro.javacard.gp;
 
+import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.BlockCipher;
 import org.bouncycastle.crypto.engines.AESEngine;
 import org.bouncycastle.crypto.generators.KDFCounterBytesGenerator;
 import org.bouncycastle.crypto.macs.CMac;
 import org.bouncycastle.crypto.params.KDFCounterParameters;
 import org.bouncycastle.crypto.params.KeyParameter;
+import org.bouncycastle.openssl.PEMKeyPair;
+import org.bouncycastle.openssl.PEMParser;
+import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
 import pro.javacard.gp.GPKey.Type;
 
 import javax.crypto.BadPaddingException;
@@ -34,6 +38,9 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.IvParameterSpec;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.util.Arrays;
 
@@ -85,6 +92,19 @@ public final class GPCrypto {
 
     public static byte[] pad80(byte[] text, int blocksize) {
         return pad80(text, 0, text.length, blocksize);
+    }
+
+    public static byte[] unpad80(byte[] text) throws BadPaddingException {
+        if (text.length < 1)
+            throw new BadPaddingException("Invalid ISO 7816-4 padding");
+        int offset = text.length - 1;
+        while (offset > 0 && text[offset] == 0) {
+            offset--;
+        }
+        if (text[offset] != (byte) 0x80) {
+            throw new BadPaddingException("Invalid ISO 7816-4 padding");
+        }
+        return Arrays.copyOf(text, offset);
     }
 
     private static void buffer_increment(byte[] buffer, int offset, int len) {
@@ -193,7 +213,7 @@ public final class GPCrypto {
         }
         byte[] blocka = bo.toByteArray();
         byte[] blockb = context;
-        return scp03_kdf(key, blocka, blockb, blocklen_bits/8);
+        return scp03_kdf(key, blocka, blockb, blocklen_bits / 8);
     }
 
     // Generic KDF in counter mode with one byte counter.
@@ -224,7 +244,7 @@ public final class GPCrypto {
         try {
             // Pad with random
             int n = key.getLength() % 16 + 1;
-            byte[] plaintext = new byte[n * 16];
+            byte[] plaintext = new byte[n * key.getLength()];
             random.nextBytes(plaintext);
             System.arraycopy(key.getBytes(), 0, plaintext, 0, key.getLength());
             // encrypt
@@ -245,6 +265,19 @@ public final class GPCrypto {
             return Arrays.copyOf(check, 3);
         } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
             throw new RuntimeException("Could not calculate KCV", e);
+        }
+    }
+
+    // Get a public key from a PEM file, either public key or keypair
+    public static PublicKey pem2pubkey(InputStream in) throws IOException {
+        try (PEMParser pem = new PEMParser(new InputStreamReader(in, StandardCharsets.US_ASCII))) {
+            Object ohh = pem.readObject();
+            if (ohh instanceof PEMKeyPair) {
+                PEMKeyPair kp = (PEMKeyPair) ohh;
+                return new JcaPEMKeyConverter().getKeyPair(kp).getPublic();
+            } else if (ohh instanceof SubjectPublicKeyInfo) {
+                return new JcaPEMKeyConverter().getPublicKey((SubjectPublicKeyInfo) ohh);
+            } else throw new IllegalArgumentException("Can not read PEM");
         }
     }
 }

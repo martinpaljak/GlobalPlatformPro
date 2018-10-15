@@ -182,8 +182,9 @@ public class PlaintextKeys extends GPSessionKeyProvider {
 
     private GPKey deriveSessionKeySCP01(GPKey cardKey, KeyPurpose p, byte[] host_challenge, byte[] card_challenge) {
         // RMAC is not supported
-        if (p == KeyPurpose.RMAC)
-            return null;
+        if (!(p == KeyPurpose.ENC || p == KeyPurpose.MAC || p == KeyPurpose.DEK)) {
+            throw new IllegalArgumentException("SCP 01 has only ENC, MAC, DEK: " + p);
+        }
 
         // DEK is not session based.
         if (p == KeyPurpose.DEK)
@@ -207,6 +208,9 @@ public class PlaintextKeys extends GPSessionKeyProvider {
     }
 
     private GPKey deriveSessionKeySCP02(GPKey cardKey, KeyPurpose p, byte[] sequence) {
+        if (p != KeyPurpose.ENC && p != KeyPurpose.MAC && p != KeyPurpose.DEK && p != KeyPurpose.RMAC) {
+            throw new IllegalArgumentException("SCP 01 has only ENC, MAC, DEK, RMAC: " + p);
+        }
         // TODO: clarify RMAC/DEK
         try {
             Cipher cipher = Cipher.getInstance(GPCrypto.DES3_CBC_CIPHER);
@@ -260,7 +264,7 @@ public class PlaintextKeys extends GPSessionKeyProvider {
             for (Map.Entry<KeyPurpose, GPKey> e : cardKeys.entrySet()) {
                 cardKeys.put(e.getKey(), diversify(e.getValue(), e.getKey(), kdd, diversifier));
             }
-            logger.debug("Derived per-card keys: {}", cardKeys.toString());
+            logger.trace("Derived per-card keys: {}", cardKeys.toString());
         }
 
         // Calculate session keys
@@ -271,9 +275,13 @@ public class PlaintextKeys extends GPSessionKeyProvider {
                 sessionKeys.put(e.getKey(), deriveSessionKeySCP02(e.getValue(), e.getKey(), ssc));
             } else if (scp == 3) {
                 sessionKeys.put(e.getKey(), deriveSessionKeySCP03(e.getValue(), e.getKey(), host_challenge, card_challenge));
+                // Also make a RMAC key
+                if (e.getKey() == KeyPurpose.MAC) {
+                    sessionKeys.put(KeyPurpose.RMAC, deriveSessionKeySCP03(e.getValue(), KeyPurpose.RMAC, host_challenge, card_challenge));
+                }
             }
         }
-        logger.debug("session keys: {}", sessionKeys.toString());
+        logger.trace("Session keys: {}", sessionKeys.toString());
     }
 
     // Returns the key for the purpose for this session

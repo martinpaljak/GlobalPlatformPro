@@ -28,8 +28,8 @@ import java.util.Arrays;
 // Encapsulates a plaintext symmetric key used with GlobalPlatform
 public final class GPKey {
     private Type type;
-    private int version = 0;
-    private int id = 0;
+    private int version = 0; // 1..7f
+    private int id = -1; // 0..7f
     private int length = -1;
     private transient byte[] bytes = null;
 
@@ -64,14 +64,14 @@ public final class GPKey {
         // GP 2.2.1 11.1.8 Key Type Coding
         if (type == 0x80 || type == 0x81 || type == 0x82) {
             this.type = Type.DES3;
-        } else if (type == 0x85) {
-            this.type = Type.PSK;
         } else if (type == 0x88) {
             this.type = Type.AES;
         } else if (type == 0xA1 || type == 0xA0) {
-            this.type = Type.RSA;
+            this.type = Type.RSAPUB;
+        } else if (type == 0x85) {
+            this.type = Type.PSK;
         } else {
-            throw new UnsupportedOperationException(String.format("Only AES, 3DES and RSA are supported currently: 0x%02X", type));
+            throw new UnsupportedOperationException(String.format("Only AES, 3DES, PSK and RSA public keys are supported currently: 0x%02X", type));
         }
     }
 
@@ -124,9 +124,11 @@ public final class GPKey {
 
     public String toString() {
         StringBuffer s = new StringBuffer();
+        s.append("type=" + type);
+        if (version >= 1 && version <= 0x7f)
         s.append("version=" + String.format("%d (0x%02X)", version, version));
+        if (id >= 0 && id <= 0x7F)
         s.append(" id=" + String.format("%d (0x%02X)", id, id));
-        s.append(" type=" + type);
         if (bytes != null)
             s.append(" bytes=" + HexUtils.bin2hex(bytes));
         else
@@ -156,6 +158,13 @@ public final class GPKey {
     }
 
     public enum Type {
-        RAW, DES, DES3, AES, RSA, PSK
+        RAW, DES, DES3, AES, RSAPUB, PSK;
+
+        @Override
+        public String toString() {
+            if (this.name().equals("RSAPUB"))
+                return "RSA";
+            return super.toString();
+        }
     }
 }

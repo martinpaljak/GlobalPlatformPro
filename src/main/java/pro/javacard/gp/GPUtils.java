@@ -22,14 +22,17 @@
 
 package pro.javacard.gp;
 
+import java.io.ByteArrayOutputStream;
+import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class GPUtils {
 
 	public static int intValue(String s) {
 		if (s.trim().toLowerCase().startsWith("0x")) {
-			return Integer.parseInt(s, 16);
+			return Integer.parseInt(s.substring(2), 16);
 		}
 		return Integer.parseInt(s);
 	}
@@ -81,4 +84,38 @@ public class GPUtils {
 		return result;
 	}
 
+	public static byte[] encodeLength(int len) {
+		ByteArrayOutputStream bo = new ByteArrayOutputStream();
+		// XXX: can probably re-use some existing method somewhere
+		if (len < 0x80) {
+			bo.write((byte) len);
+		} else if (len <= 0xFF) {
+			bo.write((byte) 0x81);
+			bo.write((byte) len);
+		} else if (len <= 0xFFFF) {
+			bo.write((byte) 0x82);
+			bo.write((byte) ((len & 0xFF00) >> 8));
+			bo.write((byte) (len & 0xFF));
+		} else {
+			bo.write((byte) 0x83);
+			bo.write((byte) ((len & 0xFF0000) >> 16));
+			bo.write((byte) ((len & 0xFF00) >> 8));
+			bo.write((byte) (len & 0xFF));
+		}
+		return bo.toByteArray();
+	}
+
+	// Assumes the bignum length must be even
+	static byte[] positive(byte[] bytes) {
+		if (bytes[0] == 0 && bytes.length % 2 == 1) {
+			return Arrays.copyOfRange(bytes, 1, bytes.length);
+		}
+		return bytes;
+	}
+
+	// JavaCard requires values without sign byte (assumed positive)
+	static byte[] positive(BigInteger i) {
+		byte[] bytes = i.toByteArray();
+		return positive(bytes);
+	}
 }

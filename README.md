@@ -140,6 +140,10 @@ The following command `-acr-add` & `-acr-delete` require authentication (install
 
        gp -acr-add -acr-rule 01 -app D2760001240102000000000000000000 -acr-hash 53AC1FC8DB794570D0CF2565DBFBE98C266AE07F
 
+* add an access control rule to **authorize** (`-acr-rule 01`) apdu access for all applications for all applets `D2760001240102000000000000000000` 
+
+       gp -acr-add -acr-rule 01
+
  * add an access control rule to **deny** (`-acr-rule 00`) apdu access for application signed with certificate hash `53AC1FC8DB794570D0CF2565DBFBE98C266AE07F` for applet with AID `D2760001240102000000000000000000` 
 
        gp -acr-add -acr-rule 00 -app D2760001240102000000000000000000 -acr-hash 53AC1FC8DB794570D0CF2565DBFBE98C266AE07F
@@ -147,6 +151,10 @@ The following command `-acr-add` & `-acr-delete` require authentication (install
  * delete all access control rule for applet with AID `D2760001240102000000000000000000` 
 
        gp -acr-delete -app D2760001240102000000000000000000
+
+ * delete all access control rules
+
+       gp -acr-delete 
 
 #### Debugging options
 

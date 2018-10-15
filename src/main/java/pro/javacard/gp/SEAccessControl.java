@@ -394,7 +394,7 @@ public class SEAccessControl {
         }
 
         public RefArDo(final AID aid, final byte[] hash) {
-            this.refDo = new RefDo(new AidRefDo(aid.getBytes()), new HashRefDo(hash));
+            this.refDo = new RefDo(aid == null ? null : new AidRefDo(aid.getBytes()), hash == null ? null : new HashRefDo(hash));
             this.arDo = new ArDo(new ApduArDo(EventAccessRules.ALWAYS, new byte[]{}), null);
         }
 

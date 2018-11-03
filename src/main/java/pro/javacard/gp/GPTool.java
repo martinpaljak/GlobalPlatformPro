@@ -434,6 +434,8 @@ public final class GPTool extends GPCommandLineInterface {
                                     case 0x6985:
                                         System.err.println("Applet loading not allowed. Are you sure the domain can accept it?");
                                         break;
+                                    default:
+                                        // Do nothing. Here for findbugs
                                 }
                                 throw e;
                             }

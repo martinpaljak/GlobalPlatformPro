@@ -72,24 +72,6 @@ public final class GPCrypto {
         }
     }
 
-    private static byte[] pad80(byte[] text, int offset, int length, int blocksize) {
-        if (length == -1) {
-            length = text.length - offset;
-        }
-        int totalLength = length;
-        for (totalLength++; (totalLength % blocksize) != 0; totalLength++) {
-            ;
-        }
-        int padlength = totalLength - length;
-        byte[] result = new byte[totalLength];
-        System.arraycopy(text, offset, result, 0, length);
-        result[length] = (byte) 0x80;
-        for (int i = 1; i < padlength; i++) {
-            result[length + i] = (byte) 0x00;
-        }
-        return result;
-    }
-
     public static byte[] pad80(byte[] text, int blocksize) {
         int total = (text.length / blocksize + 1) * blocksize;
         byte[] result = Arrays.copyOfRange(text, 0, total);

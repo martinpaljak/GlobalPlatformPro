@@ -394,7 +394,10 @@ public final class GPTool extends GPCommandLineInterface {
                             }
                             try {
                                 AID target = null;
+                                AID dapdomain = null;
                                 boolean dapRequired = false;
+
+                                // Override target and check for DAP
                                 if (args.has(OPT_TO)) {
                                     target = AID.fromString(args.valueOf(OPT_TO));
                                     if (gp.getRegistry().getDomain(target).getPrivileges().has(Privilege.DAPVerification))
@@ -407,20 +410,35 @@ public final class GPTool extends GPCommandLineInterface {
                                         dapRequired = true;
                                 }
 
+                                // Check if DAP is overriden
+                                if (args.has(OPT_DAP_DOMAIN)) {
+                                    dapdomain = AID.fromString(args.valuesOf(OPT_DAP_DOMAIN));
+                                    Privileges p = gp.getRegistry().getDomain(dapdomain).getPrivileges();
+                                    if (!p.has(Privilege.DAPVerification) || !p.has(Privilege.MandatedDAPVerification)) {
+                                        fail("Specified DAP domain does not have (Mandated)DAPVerification privilege!");
+                                    }
+                                }
+
                                 // XXX: figure out right signature type in a better way
                                 if (dapRequired) {
                                     byte[] dap = args.has(OPT_SHA256) ? loadcap.getMetaInfEntry(CAPFile.DAP_RSA_V1_SHA256_FILE) : loadcap.getMetaInfEntry(CAPFile.DAP_RSA_V1_SHA1_FILE);
-                                    gp.loadCapFile(loadcap, target, dap, args.has(OPT_SHA256) ? "SHA-256" : "SHA1");
+                                    gp.loadCapFile(loadcap, target, dapdomain == null ? target : dapdomain, dap, args.has(OPT_SHA256) ? "SHA-256" : "SHA1");
                                 } else {
                                     gp.loadCapFile(loadcap, target);
                                 }
                             } catch (GPException e) {
-                                if (e.sw == 0x6985) {
-                                    System.err.println("Applet loading failed. Are you sure the CAP file target is compatible with your card?");
+                                switch (e.sw) {
+                                    case 0x6A80:
+                                        System.err.println("Applet loading failed. Are you sure the card can handle it?");
+                                        break;
+                                    case 0x6985:
+                                        System.err.println("Applet loading not allowed. Are you sure the domain can accept it?");
+                                        break;
                                 }
                                 throw e;
                             }
                         }
+
                         // --put-key <keyfile.pem>
                         // Load a RSA public key (for DAP purposes)
                         if (args.has(OPT_PUT_KEY)) {

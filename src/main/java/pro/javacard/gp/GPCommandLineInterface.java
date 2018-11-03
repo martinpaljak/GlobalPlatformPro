@@ -35,6 +35,7 @@ abstract class GPCommandLineInterface {
     protected final static String OPT_BS = "bs";
     protected final static String OPT_CAP = "cap";
     protected final static String OPT_CREATE = "create";
+    protected final static String OPT_DAP_DOMAIN = "dap-domain";
     protected final static String OPT_DEBUG = "debug";
     protected final static String OPT_DEFAULT = "default";
     protected final static String OPT_DELETE = "delete";
@@ -141,10 +142,12 @@ abstract class GPCommandLineInterface {
         parser.accepts(OPT_UNLOCK_CARD, "Unlock card");
         parser.accepts(OPT_SECURE_CARD, "Transition ISD to SECURED state");
         parser.accepts(OPT_INITIALIZE_CARD, "Transition ISD to INITIALIZED state");
+        // SSD and DAP related options
         parser.accepts(OPT_MOVE, "Move something").withRequiredArg().describedAs("AID");
         parser.accepts(OPT_TO, "Destination security domain").withRequiredArg().describedAs("AID");
         parser.accepts(OPT_ALLOW_TO, "Accept extradition to SSD");
         parser.accepts(OPT_ALLOW_FROM, "Accept extradition from SSD");
+        parser.accepts(OPT_DAP_DOMAIN, "Domain to use for DAP verification").withRequiredArg().describedAs("AID");
         parser.accepts(OPT_SHA256, "Use SHA-256 for LFDB hash");
 
         parser.accepts(OPT_SET_PRE_PERSO, "Set PrePerso data in CPLC").withRequiredArg().describedAs("data");

@@ -527,16 +527,22 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
     public void loadCapFile(CAPFile cap, AID target) throws CardException, GPException {
         if (target == null)
             target = sdAID;
-        loadCapFile(cap, target, false, false, null, LFDBH_SHA1);
+        loadCapFile(cap, target, false, false, null, null, LFDBH_SHA1);
     }
 
     public void loadCapFile(CAPFile cap, AID target, byte[] dap, String hash) throws CardException, GPException {
         if (target == null)
             target = sdAID;
-        loadCapFile(cap, target, false, false, dap, hash);
+        loadCapFile(cap, target, false, false, target, dap, hash);
     }
 
-    private void loadCapFile(CAPFile cap, AID sdaid, boolean includeDebug, boolean loadParam, byte[] dap, String lfdbh)
+    public void loadCapFile(CAPFile cap, AID target, AID dapdomain, byte[] dap, String hash) throws CardException, GPException {
+        if (target == null)
+            target = sdAID;
+        loadCapFile(cap, target, false, false, dapdomain, dap, hash);
+    }
+
+    private void loadCapFile(CAPFile cap, AID sdaid, boolean includeDebug, boolean loadParam, AID dapdomain, byte[] dap, String lfdbh)
             throws GPException, CardException {
 
         if (getRegistry().allAIDs().contains(cap.getPackageAID())) {
@@ -580,10 +586,10 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
             // Add DAP block, if signature present
             if (dap != null) {
                 loadblock.write(0xE2);
-                loadblock.write(GPUtils.encodeLength(sdaid.getLength() + dap.length + GPUtils.encodeLength(dap.length).length + 3)); // two tags, two lengths FIXME: proper size
+                loadblock.write(GPUtils.encodeLength(dapdomain.getLength() + dap.length + GPUtils.encodeLength(dap.length).length + 3)); // two tags, two lengths FIXME: proper size
                 loadblock.write(0x4F);
-                loadblock.write(sdaid.getLength());
-                loadblock.write(sdaid.getBytes());
+                loadblock.write(dapdomain.getLength());
+                loadblock.write(dapdomain.getBytes());
                 loadblock.write(0xC3);
                 loadblock.write(GPUtils.encodeLength(dap.length));
                 loadblock.write(dap);

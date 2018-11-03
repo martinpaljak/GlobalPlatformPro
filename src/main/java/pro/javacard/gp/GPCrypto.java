@@ -72,7 +72,7 @@ public final class GPCrypto {
         }
     }
 
-    public static byte[] pad80(byte[] text, int offset, int length, int blocksize) {
+    private static byte[] pad80(byte[] text, int offset, int length, int blocksize) {
         if (length == -1) {
             length = text.length - offset;
         }
@@ -91,7 +91,10 @@ public final class GPCrypto {
     }
 
     public static byte[] pad80(byte[] text, int blocksize) {
-        return pad80(text, 0, text.length, blocksize);
+        int total = (text.length / blocksize + 1) * blocksize;
+        byte[] result = Arrays.copyOfRange(text, 0, total);
+        result[text.length] = (byte) 0x80;
+        return result;
     }
 
     public static byte[] unpad80(byte[] text) throws BadPaddingException {

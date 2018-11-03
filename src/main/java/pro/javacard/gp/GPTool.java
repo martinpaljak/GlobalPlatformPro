@@ -603,7 +603,7 @@ public final class GPTool extends GPCommandLineInterface {
                             if (args.has(OPT_APPLET)) {
                                 gp.personalize(AID.fromString(args.valueOf(OPT_APPLET)), HexUtils.stringToBin((String) args.valueOf(OPT_STORE_DATA)));
                             } else {
-                                gp.storeData(HexUtils.stringToBin((String) args.valueOf(OPT_STORE_DATA)), 0x0);
+                                gp.storeData(HexUtils.stringToBin((String) args.valueOf(OPT_STORE_DATA)), 0x1);
                             }
                         }
 

@@ -253,10 +253,15 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
     }
 
     private void parse_select_response(byte[] fci) throws GPException {
-        BerTlvParser parser = new BerTlvParser();
-        BerTlvs tlvs = parser.parse(fci);
-        BerTlvLogger.log("    ", tlvs, GPData.getLoggerInstance());
-
+        final BerTlvs tlvs;
+        try {
+            BerTlvParser parser = new BerTlvParser();
+            tlvs = parser.parse(fci);
+            BerTlvLogger.log("    ", tlvs, GPData.getLoggerInstance());
+        } catch (IllegalStateException e) {
+            logger.warn("Could not parse SELECT response: " + e.getMessage());
+            return;
+        }
         BerTlv fcitag = tlvs.find(new BerTag(0x6F));
         if (fcitag != null) {
             BerTlv isdaid = fcitag.find(new BerTag(0x84));
@@ -781,11 +786,12 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
      * @throws CardException
      */
     public void personalize(AID aid, byte[] data) throws CardException, GPException {
-        personalize(aid, data, 0x80);
+        // possibility return data (GP 2.3.1 11.11.2.1)
+        personalize(aid, data, 0x01);
     }
 
     /**
-     * Sends STORE DATA commands to the application identified
+     * Sends STORE DATA commands to the application identified via SD
      *
      * @param aid - AID of the target application (or Security Domain)
      * @throws GPException

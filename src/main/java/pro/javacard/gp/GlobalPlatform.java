@@ -150,10 +150,17 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
         // 6283 - locked. Pass through locked.
         GPException.check(response, "Could not SELECT default selected", 0x6283);
 
-        // Detect security domain based on default select
-        BerTlvParser parser = new BerTlvParser();
-        BerTlvs tlvs = parser.parse(response.getData());
-        BerTlvLogger.log("    ", tlvs, GPData.getLoggerInstance());
+        final BerTlvs tlvs;
+        try {
+            // Detect security domain based on default select
+            BerTlvParser parser = new BerTlvParser();
+            tlvs = parser.parse(response.getData());
+            BerTlvLogger.log("    ", tlvs, GPData.getLoggerInstance());
+        } catch (ArrayIndexOutOfBoundsException | IllegalStateException e) {
+            // XXX: Exists a card, which returns plain AID as response
+            logger.warn("Could not parse SELECT response: " + e.getMessage());
+            throw new GPDataException("Could not auto-detect ISD AID", response.getData());
+        }
 
         BerTlv fcitag = tlvs.find(new BerTag(0x6F));
         if (fcitag != null) {
@@ -258,7 +265,7 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
             BerTlvParser parser = new BerTlvParser();
             tlvs = parser.parse(fci);
             BerTlvLogger.log("    ", tlvs, GPData.getLoggerInstance());
-        } catch (IllegalStateException e) {
+        } catch (ArrayIndexOutOfBoundsException | IllegalStateException e) {
             logger.warn("Could not parse SELECT response: " + e.getMessage());
             return;
         }

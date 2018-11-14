@@ -412,10 +412,10 @@ public final class GPTool extends GPCommandLineInterface {
 
                                 // Check if DAP is overriden
                                 if (args.has(OPT_DAP_DOMAIN)) {
-                                    dapdomain = AID.fromString(args.valuesOf(OPT_DAP_DOMAIN));
+                                    dapdomain = AID.fromString(args.valueOf(OPT_DAP_DOMAIN));
                                     Privileges p = gp.getRegistry().getDomain(dapdomain).getPrivileges();
-                                    if (!p.has(Privilege.DAPVerification) || !p.has(Privilege.MandatedDAPVerification)) {
-                                        fail("Specified DAP domain does not have (Mandated)DAPVerification privilege!");
+                                    if (!(p.has(Privilege.DAPVerification) || p.has(Privilege.MandatedDAPVerification))) {
+                                        fail("Specified DAP domain does not have (Mandated)DAPVerification privilege: " + p.toString());
                                     }
                                 }
 

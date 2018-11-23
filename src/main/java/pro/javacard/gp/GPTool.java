@@ -218,10 +218,14 @@ public final class GPTool extends GPCommandLineInterface {
                         }
                     }
 
+                    Map<String, String> env = System.getenv();
+
                     // GlobalPlatform specific
                     final GlobalPlatform gp;
                     if (args.has(OPT_SDAID)) {
                         gp = GlobalPlatform.connect(channel, AID.fromString(args.valueOf(OPT_SDAID)));
+                    } else if (env.containsKey("GP_AID")) {
+                        gp = GlobalPlatform.connect(channel, AID.fromString(env.get("GP_AID")));
                     } else {
                         // Oracle only applies if no other arguments given
                         gp = GlobalPlatform.discover(channel);
@@ -259,7 +263,6 @@ public final class GPTool extends GPCommandLineInterface {
                             }
                             keyz = PlaintextKeys.fromMasterKey(k);
                         } else {
-                            Map<String, String> env = System.getenv();
                             // XXX: better checks for exclusive key options
                             if (args.has(OPT_KEY_MAC) && args.has(OPT_KEY_ENC) && args.has(OPT_KEY_DEK)) {
                                 GPKey enc = new GPKey(HexUtils.stringToBin((String) args.valueOf(OPT_KEY_ENC)));

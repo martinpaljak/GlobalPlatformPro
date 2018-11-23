@@ -275,7 +275,9 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
             if (isdaid != null) {
                 AID detectedAID = new AID(isdaid.getBytesValue());
                 if (!detectedAID.equals(sdAID)) {
-                    giveStrictWarning(String.format("SD AID in FCI (%s) does not match the requested AID (%s)!", detectedAID, sdAID));
+                    logger.warn(String.format("SD AID in FCI (%s) does not match the requested AID (%s). Using reported AID!", detectedAID, sdAID));
+                    // So one can select only the prefix
+                    sdAID = detectedAID;
                 }
             }
 

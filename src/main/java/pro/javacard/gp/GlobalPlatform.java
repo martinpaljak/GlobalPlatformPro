@@ -802,17 +802,10 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
      */
     public void personalize(AID aid, byte[] data) throws CardException, GPException {
         // possibility return data (GP 2.3.1 11.11.2.1)
-        personalize(aid, data, 0x01);
+        personalize(aid, data, 0x91); // XXX: changed from 01 to 91 for ARA
     }
 
-    /**
-     * Sends STORE DATA commands to the application identified via SD
-     *
-     * @param aid - AID of the target application (or Security Domain)
-     * @throws GPException
-     * @throws CardException
-     */
-    public void personalize(AID aid, byte[] data, int P1) throws CardException, GPException {
+    public void installForPersonalization(AID aid) throws CardException, GPException {
         // send the INSTALL for personalization command
         ByteArrayOutputStream bo = new ByteArrayOutputStream();
         try {
@@ -828,23 +821,45 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
             throw new RuntimeException(ioe);
         }
         CommandAPDU install = new CommandAPDU(CLA_GP, INS_INSTALL, 0x20, 0x00, bo.toByteArray(), 256);
-        ResponseAPDU response = transmit(install);
-        GPException.check(response, "INSTALL [for personalization] failed");
+        GPException.check(transmit(install), "INSTALL [for personalization] failed");
+    }
 
+
+    public byte[] personalizeSingle(AID aid, byte[] data, int P1) throws CardException, GPException {
+        installForPersonalization(aid);
+        return storeDataSingle(data, P1, 0x00);
+    }
+
+    /**
+     * Sends STORE DATA commands to the application identified via SD
+     *
+     * @param aid - AID of the target application (or Security Domain)
+     * @throws GPException
+     * @throws CardException
+     */
+    public void personalize(AID aid, byte[] data, int P1) throws CardException, GPException {
+        installForPersonalization(aid);
         // Now pump the data
         storeData(data, P1);
+    }
+
+
+    public byte[] storeDataSingle(byte[] data, int P1, int P2) throws CardException, GPException {
+        if (data.length > wrapper.getBlockSize()) {
+            throw new IllegalArgumentException("block size is bigger than possibility to send: " + data.length + ">" + wrapper.getBlockSize());
+        }
+        // P1 = Last command, expect output. P2 is controlled by caller
+        CommandAPDU load = new CommandAPDU(CLA_GP, INS_STORE_DATA, P1 | 0x01, P2, data, 256);
+        return GPException.check(transmit(load), "STORE DATA failed").getData();
     }
 
     // Send a GP-formatted STORE DATA block, splitting as necessary
     public void storeData(byte[] data, int P1) throws CardException, GPException {
         List<byte[]> blocks = GPUtils.splitArray(data, wrapper.getBlockSize());
         for (int i = 0; i < blocks.size(); i++) {
-            CommandAPDU load = new CommandAPDU(CLA_GP, INS_STORE_DATA, (i == (blocks.size() - 1)) ? P1 | 0x80 : P1 & 0x7F, i, blocks.get(i), 256);
-            ResponseAPDU response = transmit(load);
-            GPException.check(response, "STORE DATA failed");
+            storeDataSingle(blocks.get(i), (i == (blocks.size() - 1)) ? P1 | 0x80 : P1 & 0x7F, i);
         }
     }
-
 
     public void makeDefaultSelected(AID aid) throws CardException, GPException {
         // FIXME: only works for some 2.1.1 cards ? Clarify and document

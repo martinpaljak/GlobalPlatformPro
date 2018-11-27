@@ -29,6 +29,7 @@ import com.payneteasy.tlv.*;
 import org.bouncycastle.util.Arrays;
 import pro.javacard.AID;
 
+import javax.smartcardio.CardException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
@@ -261,21 +262,22 @@ public class SEAccessControl {
      */
     public static void printList(final List<RefArDo> acrList) {
         if (acrList.size() == 0) {
-            System.out.println("No Rule found");
+            System.out.println("No rules found");
             return;
         }
 
         for (int i = 0; i < acrList.size(); i++) {
             RefArDo r = acrList.get(i);
             System.out.println("RULE #" + i + " :");
-            // Google extension works without AID-s.
-            if (r.refDo.aidRefDo.aid.length != 0)
+            if (r.refDo.aidRefDo.aid.length > 0)
                 System.out.println("       AID  : " + r.refDo.aidRefDo);
-            System.out.println("       HASH : " + r.refDo.hashRefDo);
+            if (r.refDo.hashRefDo.hash.length > 0)
+                System.out.println("       HASH : " + r.refDo.hashRefDo);
             if (r.arDo != null) {
                 if (r.arDo.apduArDo != null) {
                     System.out.println("       APDU rule   : " + r.arDo.apduArDo.rule + "(" + String.format("0x%02X", r.arDo.apduArDo.rule.getValue()) + ")");
-                    System.out.println("       APDU filter : " + HexUtils.bin2hex(r.arDo.apduArDo.filter));
+                    if (r.arDo.apduArDo.filter.length > 0)
+                        System.out.println("       APDU filter : " + HexUtils.bin2hex(r.arDo.apduArDo.filter));
                 }
                 if (r.arDo.nfcArDo != null) {
                     System.out.println("       NFC  rule   : " + r.arDo.nfcArDo.rule + "(" + String.format("0x%02X", r.arDo.nfcArDo.rule.getValue()) + ")");
@@ -346,6 +348,22 @@ public class SEAccessControl {
         }
     }
 
+
+    /**
+     * Command-Delete-AR-DO (p39) for deleting AR-DO
+     */
+    public static class DeleteAll implements ITLV {
+
+        public DeleteAll() {
+        }
+
+        @Override
+        public BerTlv toTlv() {
+            return new BerTlvBuilder(new BerTag(DELETE_AR_DO))
+                    .buildTlv();
+        }
+    }
+
     /**
      * Command-Store-AR-DO (p38)
      */
@@ -378,13 +396,8 @@ public class SEAccessControl {
             this.arDo = arDo;
         }
 
-        public RefArDo(final AID aid, final byte[] hash) {
-            this.refDo = new RefDo(new AidRefDo(aid.getBytes()), new HashRefDo(hash));
-            this.arDo = new ArDo(new ApduArDo(EventAccessRules.ALWAYS, new byte[]{}), null);
-        }
-
         public RefArDo(final AID aid, final byte[] hash, final byte[] rules) {
-            this.refDo = new RefDo(new AidRefDo(aid.getBytes()), new HashRefDo(hash));
+            this.refDo = new RefDo(new AidRefDo(aid == null ? new byte[0] : aid.getBytes()), new HashRefDo(hash == null ? new byte[0] : hash));
             this.arDo = new ArDo(new ApduArDo(rules), null);
         }
 
@@ -433,7 +446,10 @@ public class SEAccessControl {
         final byte[] aid;
 
         public AidRefDo(final byte[] data) {
-            aid = Arrays.copyOf(data, data.length);
+            if (data == null)
+                aid = new byte[0];
+            else
+                aid = Arrays.copyOf(data, data.length);
         }
 
         public String toString() {
@@ -455,7 +471,10 @@ public class SEAccessControl {
         final byte[] hash;
 
         public HashRefDo(final byte[] data) {
-            hash = Arrays.copyOf(data, data.length);
+            if (data == null)
+                hash = new byte[0];
+            else
+                hash = Arrays.copyOf(data, data.length);
         }
 
         public String toString() {
@@ -649,6 +668,7 @@ public class SEAccessControl {
                 int length = 0; // actual length integer
                 int offset = 3; //offset
 
+                // FIXME: standard length
                 if (first < 0x80) {
                     length = first & 0xFF;
                 } else {
@@ -681,19 +701,73 @@ public class SEAccessControl {
             }
         }
 
-        public static AcrListResponse fromBytes(final int length, final byte[] data) throws GPDataException {
+
+        public static AcrListResponse fromBytes(final byte[] data) throws GPDataException {
             BerTlvParser parser = new BerTlvParser();
 
             List<RefArDo> acrList = new ArrayList<>();
 
-            int offset = 0;
-            while (length > offset) {
-                BerTlvs tlvs = parser.parse(Arrays.copyOfRange(data, offset, data.length));
-                BerTlv refArDoTag = tlvs.find(new BerTag(REF_AR_DO));
-                acrList.add(parseRefArDo(refArDoTag));
-                offset += ((data[1 + offset] & 0xFF) + 2);
+            BerTlvs tlvs = parser.parse(data);
+
+            for (BerTlv t : tlvs.findAll(new BerTag(REF_AR_DO))) {
+                acrList.add(parseRefArDo(t));
             }
             return new AcrListResponse(acrList);
         }
     }
+
+    public static class AcrListFetcher {
+        final GlobalPlatform gp;
+
+        public AcrListFetcher(GlobalPlatform gp) {
+            this.gp = gp;
+        }
+
+        // Assumes a SD AID is selected
+        public byte[] get(AID araAid) throws CardException, GPException {
+            byte[] result = new byte[0];
+            byte[] r;
+
+            if (araAid != null) {
+                r = gp.personalizeSingle(araAid, new byte[]{(byte) 0xf3, 0x00}, 0x10);
+            } else {
+                r = gp.storeDataSingle(new byte[]{(byte) 0xf5, 0x00}, 0x10, 0x00);
+            }
+
+            int length = getLen(r, 2);
+            result = GPUtils.concatenate(result, r);
+
+            int i = 1;
+            // XXX: This is not the most precise, but seems to work for now.
+            while (result.length < length) {
+                r = gp.storeDataSingle(new byte[]{(byte) 0xf5, 0x00}, 0x10, i++);
+                result = GPUtils.concatenate(result, r);
+            }
+            return result;
+        }
+
+        public byte[] get() throws CardException, GPException {
+            return get(null);
+        }
+    }
+
+    // FIXME: standard length
+    static int getLen(byte[] buffer, int offset) throws GPDataException {
+        int first = buffer[offset] & 0xFF;
+        final int length;
+
+        if (first < 0x80) {
+            length = first & 0xFF;
+        } else if (first == 0x81) {
+            length = buffer[offset + 1] & 0xFF;
+        } else if (first == 0x82) {
+            length = ((buffer[offset + 1] & 0xFF) << 8) | (buffer[offset + 2] & 0xFF);
+        } else if (first == 0x83) {
+            length = ((buffer[offset + 1] & 0xFF) << 16) | ((buffer[offset + 2] & 0xFF) << 8) | (buffer[offset + 3] & 0xFF);
+        } else {
+            throw new GPDataException("Invalid length", buffer);
+        }
+        return length;
+    }
+
 }

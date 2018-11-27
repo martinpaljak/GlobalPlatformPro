@@ -27,10 +27,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 
-import com.payneteasy.tlv.BerTag;
-import com.payneteasy.tlv.BerTlv;
-import com.payneteasy.tlv.BerTlvParser;
-import com.payneteasy.tlv.BerTlvs;
+import com.payneteasy.tlv.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -247,6 +244,7 @@ public class GPRegistry implements Iterable<GPRegistryEntry> {
 
 		BerTlvParser parser = new BerTlvParser();
 		BerTlvs tlvs = parser.parse(data);
+		BerTlvLogger.log("    ", tlvs, GPData.getLoggerInstance());
 
 		for (BerTlv t: tlvs.findAll(new BerTag(0xE3))) {
 			GPRegistryEntryApp app = new GPRegistryEntryApp();
@@ -270,7 +268,7 @@ public class GPRegistry implements Iterable<GPRegistryEntry> {
 					app.setPrivileges(privs);
 				}
 				for (BerTlv cf: t.findAll(new BerTag(0xCF))) {
-					logger.debug("CF=" + cf.getHexValue());
+					logger.debug("CF=" + cf.getHexValue() + " for " + app.aid);
 					// FIXME: how to expose?
 				}
 

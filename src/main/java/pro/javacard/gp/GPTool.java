@@ -59,10 +59,12 @@ public final class GPTool extends GPCommandLineInterface {
         if (args.has(OPT_VERBOSE)) {
             System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "debug");
             isVerbose = true;
-        } else if (args.has(OPT_DEBUG)) {
-            System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "trace");
         } else {
             System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "warn");
+        }
+
+        if (args.has(OPT_DEBUG)) {
+            System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "trace");
         }
 
         if (args.has(OPT_VERSION) || args.has(OPT_VERBOSE) || args.has(OPT_DEBUG) || args.has(OPT_INFO)) {
@@ -312,9 +314,9 @@ public final class GPTool extends GPCommandLineInterface {
                         gp.setBlockSize((int) args.valueOf(OPT_BS));
                     }
 
-                    // list access rules
-                    if (args.has(OPT_ACR_LIST)) {
-                        SEAccessControlUtility.acrList(gp, card);
+                    // list access rules from ARA-M
+                    if (args.has(OPT_ACR_LIST_ARAM)) {
+                        SEAccessControlUtility.acrList(gp);
                     }
 
                     // Authenticate, only if needed
@@ -337,6 +339,14 @@ public final class GPTool extends GPCommandLineInterface {
                                 CommandAPDU c = new CommandAPDU(HexUtils.stringToBin((String) s));
                                 gp.transmit(c);
                             }
+                        }
+
+                        // list access rules from ARA-* via STORE DATA
+                        if (args.has(OPT_ACR_LIST)) {
+                            SEAccessControl.AcrListFetcher fetcher = new SEAccessControl.AcrListFetcher(gp);
+                            byte[] r = fetcher.get(args.has(OPT_ACR_AID) ? AID.fromString(args.valueOf(OPT_ACR_AID)) : null);
+                            SEAccessControl.AcrListResponse resp = SEAccessControl.AcrListResponse.fromBytes(r);
+                            SEAccessControl.printList(resp.acrList);
                         }
 
                         // --delete <aid> or --delete --default
@@ -631,32 +641,43 @@ public final class GPTool extends GPCommandLineInterface {
                         }
 
                         if (args.has(OPT_ACR_ADD)) {
-                            if (!args.has(OPT_ACR_CERT_HASH)) {
-                                System.err.println("Must specify certificate hash with -" + OPT_ACR_CERT_HASH);
-                            } else if (!args.has(OPT_APPLET)) {
-                                System.err.println("Must specify target application id with -" + OPT_APPLET);
-                            } else if (!args.has(OPT_ACR_RULE)) {
+                            AID aid = null;
+                            byte[] hash = null;
+                            AID araAid = SEAccessControl.ACR_AID;
+                            if (args.has(OPT_APPLET))
+                                aid = AID.fromString(args.valueOf(OPT_APPLET));
+                            if (args.has(OPT_ACR_CERT_HASH))
+                                hash = HexUtils.stringToBin((String) args.valueOf(OPT_ACR_CERT_HASH));
+                            if (args.has(OPT_ACR_AID))
+                                araAid = AID.fromString((String) args.valueOf(OPT_ACR_AID));
+                            if (!args.has(OPT_ACR_RULE)) {
                                 System.err.println("Must specify an access rule with -" + OPT_ACR_RULE + " (00, 01 or an apdu filter)");
-                            } else if (HexUtils.stringToBin((String) args.valueOf(OPT_ACR_CERT_HASH)).length == 20) {
-                                SEAccessControlUtility.acrAdd(gp, AID.fromString(args.valueOf(OPT_APPLET)), HexUtils.stringToBin((String) args.valueOf(OPT_ACR_CERT_HASH)), HexUtils.stringToBin((String) args.valueOf(OPT_ACR_RULE)));
-                            } else {
-                                System.err.println("certificate hash must be 20 bytes");
                             }
+                            if (hash != null && hash.length != 20) {
+                                fail("certificate hash must be 20 bytes");
+                            }
+                            SEAccessControlUtility.acrAdd(gp, araAid, aid, hash, HexUtils.stringToBin((String) args.valueOf(OPT_ACR_RULE)));
                         }
 
+                        // --acr-delete
                         if (args.has(OPT_ACR_DELETE)) {
-                            if (!args.has(OPT_APPLET)) {
-                                System.err.println("Must specify target application id with -" + OPT_APPLET);
-                            } else if (args.has(OPT_ACR_CERT_HASH)) {
-                                byte[] hash = HexUtils.stringToBin((String) args.valueOf(OPT_ACR_CERT_HASH));
-                                if (hash.length == 20) {
-                                    SEAccessControlUtility.acrDelete(gp, AID.fromString(args.valueOf(OPT_APPLET)), hash);
-                                } else {
-                                    System.err.println("certificate hash must be 20 bytes");
-                                }
-                            } else {
-                                SEAccessControlUtility.acrDelete(gp, AID.fromString(args.valueOf(OPT_APPLET)), null);
+                            AID araAid = SEAccessControl.ACR_AID;
+                            if (args.has(OPT_ACR_AID))
+                                araAid = AID.fromString(args.valueOf(OPT_ACR_AID));
+
+                            AID aid = null;
+                            if (args.has(OPT_APPLET)) {
+                                aid = AID.fromString(OPT_APPLET);
                             }
+
+                            byte[] hash = null;
+                            if (args.has(OPT_ACR_CERT_HASH)) {
+                                hash = HexUtils.stringToBin((String) args.valueOf(OPT_ACR_CERT_HASH));
+                                if (hash.length != 20)
+                                    fail("certificate hash must be 20 bytes");
+                            }
+
+                            SEAccessControlUtility.acrDelete(gp, araAid, aid, hash);
                         }
 
                         // --lock-card
@@ -915,7 +936,7 @@ public final class GPTool extends GPCommandLineInterface {
                 OPT_ACR_ADD, OPT_ACR_DELETE, OPT_LOCK, OPT_UNLOCK, OPT_LOCK_ENC, OPT_LOCK_MAC, OPT_LOCK_DEK, OPT_MAKE_DEFAULT,
                 OPT_UNINSTALL, OPT_SECURE_APDU, OPT_DOMAIN, OPT_LOCK_CARD, OPT_UNLOCK_CARD, OPT_LOCK_APPLET, OPT_UNLOCK_APPLET,
                 OPT_STORE_DATA, OPT_INITIALIZE_CARD, OPT_SECURE_CARD, OPT_RENAME_ISD, OPT_SET_PERSO, OPT_SET_PRE_PERSO, OPT_MOVE,
-                OPT_PUT_KEY};
+                OPT_PUT_KEY, OPT_ACR_AID, OPT_ACR_LIST};
 
         for (String s : yes) {
             if (args.has(s)) {

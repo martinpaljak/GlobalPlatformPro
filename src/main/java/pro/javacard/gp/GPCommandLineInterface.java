@@ -148,8 +148,8 @@ abstract class GPCommandLineInterface {
         // SSD and DAP related options
         parser.accepts(OPT_MOVE, "Move something").withRequiredArg().describedAs("AID");
         parser.accepts(OPT_TO, "Destination security domain").withRequiredArg().describedAs("AID");
-        parser.accepts(OPT_ALLOW_TO, "Accept moving to SSD");
-        parser.accepts(OPT_ALLOW_FROM, "Accept moving from SSD");
+        parser.accepts(OPT_ALLOW_TO, "Allow moving to created SSD");
+        parser.accepts(OPT_ALLOW_FROM, "Allow moving from created SSD");
         parser.accepts(OPT_DAP_DOMAIN, "Domain to use for DAP verification").withRequiredArg().describedAs("AID");
         parser.accepts(OPT_SHA256, "Use SHA-256 for LFDB hash");
 
@@ -198,17 +198,17 @@ abstract class GPCommandLineInterface {
         parser.accepts(OPT_NEW_KEY_VERSION, "Key version for the new key").withRequiredArg();
 
         // GP SE access rules
-        parser.accepts(OPT_ACR_AID, "ARA applet AID").withRequiredArg().describedAs("AID");
+        parser.accepts(OPT_ACR_AID, "ARA-C applet AID").withRequiredArg().describedAs("AID");
         parser.accepts(OPT_ACR_LIST, "List access rules");
         parser.accepts(OPT_ACR_LIST_ARAM, "List access rules from ARA-M");
         parser.accepts(OPT_ACR_ADD, "Add an access rule");
         parser.accepts(OPT_ACR_DELETE, "Delete an access rule");
         parser.accepts(OPT_ACR_RULE, "Access control rule (can be 0x00(NEVER),0x01(ALWAYS) or an APDU filter").withRequiredArg();
-        parser.accepts(OPT_ACR_CERT_HASH, "Certificate hash (sha1)").withRequiredArg();
+        parser.accepts(OPT_ACR_CERT_HASH, "Certificate hash").withRequiredArg().describedAs("SHA1");
 
         // General GP options
-        parser.accepts(OPT_SC_MODE, "Secure channel to use (mac/enc/clr)").withRequiredArg();
-        parser.accepts(OPT_BS, "maximum APDU payload size").withRequiredArg().ofType(Integer.class);
+        parser.accepts(OPT_SC_MODE, "Secure channel to use (mac/enc/clr)").withRequiredArg().describedAs("mac/enc/clr");
+        parser.accepts(OPT_BS, "maximum APDU payload size").withRequiredArg().ofType(Integer.class).describedAs("bytes");
         parser.accepts(OPT_OP201, "Enable OpenPlatform 2.0.1 mode");
 
         parser.accepts(OPT_SDAID, "ISD AID").withRequiredArg().describedAs("AID");

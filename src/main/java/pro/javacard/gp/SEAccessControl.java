@@ -731,7 +731,7 @@ public class SEAccessControl {
             if (araAid != null) {
                 r = gp.personalizeSingle(araAid, new byte[]{(byte) 0xf3, 0x00}, 0x10);
             } else {
-                r = gp.storeDataSingle(new byte[]{(byte) 0xf5, 0x00}, 0x10, 0x00);
+                r = gp.storeDataSingle(new byte[]{(byte) 0xf5, 0x00}, 0x10);
             }
 
             int length = getLen(r, 2);
@@ -740,7 +740,7 @@ public class SEAccessControl {
             int i = 1;
             // XXX: This is not the most precise, but seems to work for now.
             while (result.length < length) {
-                r = gp.storeDataSingle(new byte[]{(byte) 0xf5, 0x00}, 0x10, i++);
+                r = gp._storeDataSingle(new byte[]{(byte) 0xf5, 0x00}, 0x10, i++);
                 result = GPUtils.concatenate(result, r);
             }
             return result;

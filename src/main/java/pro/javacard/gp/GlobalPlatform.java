@@ -43,10 +43,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.interfaces.RSAPublicKey;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.List;
+import java.util.*;
 
 /**
  * Represents a connection to a GlobalPlatform Card (BIBO interface)
@@ -793,17 +790,7 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
     }
 
 
-    /**
-     * Sends STORE DATA commands to the application identified
-     *
-     * @param aid - AID of the target application (or Security Domain)
-     * @throws GPException
-     * @throws CardException
-     */
-    public void personalize(AID aid, byte[] data) throws CardException, GPException {
-        // possibility return data (GP 2.3.1 11.11.2.1)
-        personalize(aid, data, 0x91); // XXX: changed from 01 to 91 for ARA
-    }
+
 
     public void installForPersonalization(AID aid) throws CardException, GPException {
         // send the INSTALL for personalization command
@@ -826,8 +813,7 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
 
 
     public byte[] personalizeSingle(AID aid, byte[] data, int P1) throws CardException, GPException {
-        installForPersonalization(aid);
-        return storeDataSingle(data, P1, 0x00);
+        return personalize(aid, Collections.singletonList(data), P1).get(0);
     }
 
     /**
@@ -844,21 +830,38 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
     }
 
 
-    public byte[] storeDataSingle(byte[] data, int P1, int P2) throws CardException, GPException {
+    public List<byte[]> personalize(AID aid, List<byte[]> data, int P1) throws CardException, GPException {
+        installForPersonalization(aid);
+        return storeData(data, P1);
+    }
+
+
+    public byte[] storeDataSingle(byte[] data, int P1) throws CardException, GPException {
         if (data.length > wrapper.getBlockSize()) {
             throw new IllegalArgumentException("block size is bigger than possibility to send: " + data.length + ">" + wrapper.getBlockSize());
         }
-        // P1 = Last command, expect output. P2 is controlled by caller
-        CommandAPDU load = new CommandAPDU(CLA_GP, INS_STORE_DATA, P1 | 0x01, P2, data, 256);
-        return GPException.check(transmit(load), "STORE DATA failed").getData();
+        return storeData(Collections.singletonList(data), P1).get(0);
     }
 
-    // Send a GP-formatted STORE DATA block, splitting as necessary
+    // Send a GP-formatted STORE DATA block, splitting it into pieces if/as necessary
     public void storeData(byte[] data, int P1) throws CardException, GPException {
         List<byte[]> blocks = GPUtils.splitArray(data, wrapper.getBlockSize());
+        storeData(blocks, P1);
+    }
+
+    // Send a GP-formatted STORE DATA blocks
+    public List<byte[]> storeData(List<byte[]> blocks, int P1) throws CardException, GPException {
+        List<byte[]> result = new ArrayList<>();
         for (int i = 0; i < blocks.size(); i++) {
-            storeDataSingle(blocks.get(i), (i == (blocks.size() - 1)) ? P1 | 0x80 : P1 & 0x7F, i);
+            CommandAPDU store = new CommandAPDU(CLA_GP, INS_STORE_DATA, (i == (blocks.size() - 1)) ? P1 | 0x80 : P1 & 0x7F, i, blocks.get(i), 256);
+            result.add(GPException.check(transmit(store), "STORE DATA failed").getData());
         }
+        return result;
+    }
+
+    byte[] _storeDataSingle(byte[] data, int P1, int P2) throws CardException, GPException {
+        CommandAPDU store = new CommandAPDU(CLA_GP, INS_STORE_DATA, P1, P2, data, 256);
+        return GPException.check(transmit(store), "STORE DATA failed").getData();
     }
 
     public void makeDefaultSelected(AID aid) throws CardException, GPException {

@@ -83,7 +83,8 @@ abstract class GPCommandLineInterface {
     protected final static String OPT_SET_PRE_PERSO = "set-pre-perso";
     protected final static String OPT_SET_PERSO = "set-perso";
     protected final static String OPT_SHA256 = "sha256";
-    protected final static String OPT_STORE_DATA = "store-data";
+    protected final static String OPT_STORE_DATA_BLOB = "store-data";
+    protected final static String OPT_STORE_DATA = "store-data-chunk";
     protected final static String OPT_TERMINALS = "terminals";
     protected final static String OPT_TERMINATE = "terminate";
     protected final static String OPT_TODAY = "today";
@@ -147,8 +148,8 @@ abstract class GPCommandLineInterface {
         // SSD and DAP related options
         parser.accepts(OPT_MOVE, "Move something").withRequiredArg().describedAs("AID");
         parser.accepts(OPT_TO, "Destination security domain").withRequiredArg().describedAs("AID");
-        parser.accepts(OPT_ALLOW_TO, "Accept extradition to SSD");
-        parser.accepts(OPT_ALLOW_FROM, "Accept extradition from SSD");
+        parser.accepts(OPT_ALLOW_TO, "Accept moving to SSD");
+        parser.accepts(OPT_ALLOW_FROM, "Accept moving from SSD");
         parser.accepts(OPT_DAP_DOMAIN, "Domain to use for DAP verification").withRequiredArg().describedAs("AID");
         parser.accepts(OPT_SHA256, "Use SHA-256 for LFDB hash");
 
@@ -156,7 +157,9 @@ abstract class GPCommandLineInterface {
         parser.accepts(OPT_SET_PERSO, "Set Perso data in CPLC").withRequiredArg().describedAs("data");
         parser.accepts(OPT_TODAY, "Set date to today when updating CPLC");
 
-        parser.accepts(OPT_STORE_DATA, "STORE DATA to applet").withRequiredArg().describedAs("data");
+        parser.accepts(OPT_STORE_DATA_BLOB, "STORE DATA blob").withRequiredArg().describedAs("data");
+        parser.accepts(OPT_STORE_DATA, "send STORE DATA commands").withRequiredArg().describedAs("data");
+
 
         parser.accepts(OPT_MAKE_DEFAULT, "Make AID the default").withRequiredArg().describedAs("AID");
         parser.accepts(OPT_RENAME_ISD, "Rename ISD").withRequiredArg().describedAs("new AID");

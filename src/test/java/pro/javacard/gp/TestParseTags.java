@@ -1,3 +1,5 @@
+package pro.javacard.gp;
+
 import apdu4j.HexUtils;
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -5,7 +7,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pro.javacard.AID;
-import pro.javacard.gp.*;
 
 import java.util.List;
 

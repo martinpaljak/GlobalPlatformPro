@@ -1,10 +1,10 @@
+package pro.javacard.gp;
+
 import apdu4j.HexUtils;
 import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pro.javacard.gp.GPCrypto;
-import pro.javacard.gp.GPUtils;
 
 import static pro.javacard.gp.GPSessionKeyProvider.KeyPurpose.ENC;
 import static pro.javacard.gp.PlaintextKeys.SCP03_KDF_CONSTANTS;

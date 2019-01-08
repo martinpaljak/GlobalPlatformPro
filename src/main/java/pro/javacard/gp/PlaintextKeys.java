@@ -209,7 +209,7 @@ public class PlaintextKeys extends GPSessionKeyProvider {
 
     private GPKey deriveSessionKeySCP02(GPKey cardKey, KeyPurpose p, byte[] sequence) {
         if (p != KeyPurpose.ENC && p != KeyPurpose.MAC && p != KeyPurpose.DEK && p != KeyPurpose.RMAC) {
-            throw new IllegalArgumentException("SCP 01 has only ENC, MAC, DEK, RMAC: " + p);
+            throw new IllegalArgumentException("SCP 02 has only ENC, MAC, DEK, RMAC: " + p);
         }
         // TODO: clarify RMAC/DEK
         try {

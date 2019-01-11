@@ -90,21 +90,6 @@ public final class GPData {
         sw.put(0x6A88, "Referenced data not found");  // 2.3 Table 11-78
     }
 
-    @Deprecated
-    public static IBerTlvLogger getLoggerInstance() {
-        return new IBerTlvLogger() {
-            @Override
-            public boolean isDebugEnabled() {
-                return true;
-            }
-
-            @Override
-            public void debug(String s, Object... objects) {
-                logger.trace(s, objects);
-            }
-        };
-    }
-
     // GP 2.1.1 9.1.6
     // GP 2.2.1 11.1.8
     public static String get_key_type_coding_string(int type) {
@@ -198,7 +183,7 @@ public final class GPData {
 
         BerTlvParser parser = new BerTlvParser();
         BerTlvs tlvs = parser.parse(data);
-        BerTlvLogger.log("    ", tlvs, GPData.getLoggerInstance());
+        GPUtils.trace_tlv(data, logger);
 
         BerTlv keys = tlvs.find(new BerTag(0xE0));
         if (keys != null && keys.isConstructed()) {
@@ -242,7 +227,7 @@ public final class GPData {
     public static void pretty_print_card_data(byte[] data) {
         BerTlvParser parser = new BerTlvParser();
         BerTlvs tlvs = parser.parse(data);
-        BerTlvLogger.log("    ", tlvs, GPData.getLoggerInstance());
+        GPUtils.trace_tlv(data, logger);
 
         BerTlv cd = tlvs.find(new BerTag(0x66));
         if (cd != null && cd.isConstructed()) {
@@ -298,7 +283,7 @@ public final class GPData {
 
         BerTlvParser parser = new BerTlvParser();
         BerTlvs tlvs = parser.parse(data);
-        BerTlvLogger.log("    ", tlvs, GPData.getLoggerInstance());
+        GPUtils.trace_tlv(data, logger);
         if (tlvs != null) {
             BerTlv caps = tlvs.find(new BerTag(0x67));
             if (caps != null) {

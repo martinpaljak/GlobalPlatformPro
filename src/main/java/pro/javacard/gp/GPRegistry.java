@@ -244,7 +244,7 @@ public class GPRegistry implements Iterable<GPRegistryEntry> {
 
 		BerTlvParser parser = new BerTlvParser();
 		BerTlvs tlvs = parser.parse(data);
-		BerTlvLogger.log("    ", tlvs, GPData.getLoggerInstance());
+		GPUtils.trace_tlv(data, logger);
 
 		for (BerTlv t: tlvs.findAll(new BerTag(0xE3))) {
 			GPRegistryEntryApp app = new GPRegistryEntryApp();

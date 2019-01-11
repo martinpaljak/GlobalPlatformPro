@@ -25,7 +25,10 @@ package pro.javacard.gp;
 
 import apdu4j.HexUtils;
 import apdu4j.ISO7816;
-import com.payneteasy.tlv.*;
+import com.payneteasy.tlv.BerTag;
+import com.payneteasy.tlv.BerTlv;
+import com.payneteasy.tlv.BerTlvParser;
+import com.payneteasy.tlv.BerTlvs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pro.javacard.AID;
@@ -152,7 +155,7 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
             // Detect security domain based on default select
             BerTlvParser parser = new BerTlvParser();
             tlvs = parser.parse(response.getData());
-            BerTlvLogger.log("    ", tlvs, GPData.getLoggerInstance());
+            GPUtils.trace_tlv(response.getData(), logger);
         } catch (ArrayIndexOutOfBoundsException | IllegalStateException e) {
             // XXX: Exists a card, which returns plain AID as response
             logger.warn("Could not parse SELECT response: " + e.getMessage());
@@ -261,7 +264,7 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
         try {
             BerTlvParser parser = new BerTlvParser();
             tlvs = parser.parse(fci);
-            BerTlvLogger.log("    ", tlvs, GPData.getLoggerInstance());
+            GPUtils.trace_tlv(fci, logger);
         } catch (ArrayIndexOutOfBoundsException | IllegalStateException e) {
             logger.warn("Could not parse SELECT response: " + e.getMessage());
             return;
@@ -521,6 +524,12 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
         }
     }
 
+    private ResponseAPDU transmitLV(CommandAPDU command) throws CardException {
+        logger.trace("Payload: ");
+        GPUtils.trace_lv(command.getData(), logger);
+        return transmit(command);
+    }
+
     @Override
     public int transmit(ByteBuffer byteBuffer, ByteBuffer byteBuffer1) throws CardException {
         throw new IllegalStateException("Use the other transmit");
@@ -582,7 +591,7 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
         }
 
         CommandAPDU installForLoad = new CommandAPDU(CLA_GP, INS_INSTALL, 0x02, 0x00, bo.toByteArray());
-        ResponseAPDU response = transmit(installForLoad);
+        ResponseAPDU response = transmitLV(installForLoad);
         GPException.check(response, "INSTALL [for load] failed");
 
 
@@ -679,7 +688,7 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
 
         byte[] data = buildInstallData(packageAID, appletAID, instanceAID, privileges, installParams, installToken);
         CommandAPDU install = new CommandAPDU(CLA_GP, INS_INSTALL, P1_INSTALL_AND_MAKE_SELECTABLE, 0x00, data);
-        ResponseAPDU response = transmit(install);
+        ResponseAPDU response = transmitLV(install);
         GPException.check(response, "INSTALL [for install and make selectable] failed");
         dirty = true;
     }
@@ -715,7 +724,7 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
 
         byte[] data = buildInstallData(packageAID, appletAID, instanceAID, privileges, installParams, installToken);
         CommandAPDU install = new CommandAPDU(CLA_GP, INS_INSTALL, P1_INSTALL_FOR_INSTALL, 0x00, data);
-        ResponseAPDU response = transmit(install);
+        ResponseAPDU response = transmitLV(install);
         GPException.check(response, "INSTALL [for install] failed");
         dirty = true;
     }
@@ -784,12 +793,10 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
         }
 
         CommandAPDU install = new CommandAPDU(CLA_GP, INS_INSTALL, 0x10, 0x00, bo.toByteArray());
-        ResponseAPDU response = transmit(install);
+        ResponseAPDU response = transmitLV(install);
         GPException.check(response, "INSTALL [for extradition] failed");
         dirty = true;
     }
-
-
 
 
     public void installForPersonalization(AID aid) throws CardException, GPException {
@@ -808,7 +815,7 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
             throw new RuntimeException(ioe);
         }
         CommandAPDU install = new CommandAPDU(CLA_GP, INS_INSTALL, 0x20, 0x00, bo.toByteArray(), 256);
-        GPException.check(transmit(install), "INSTALL [for personalization] failed");
+        GPException.check(transmitLV(install), "INSTALL [for personalization] failed");
     }
 
 
@@ -885,7 +892,7 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
         }
 
         CommandAPDU install = new CommandAPDU(CLA_GP, INS_INSTALL, 0x08, 0x00, bo.toByteArray());
-        ResponseAPDU response = transmit(install);
+        ResponseAPDU response = transmitLV(install);
         GPException.check(response, "INSTALL [for make selectable] failed");
         dirty = true;
     }

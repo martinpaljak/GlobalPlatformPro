@@ -262,20 +262,15 @@ public final class GPTool extends GPCommandLineInterface {
                             }
                             keyz = PlaintextKeys.fromMasterKey(k);
                         } else {
+                            Optional<SecureChannelParameters> params = SecureChannelParameters.fromEnvironment();
                             // XXX: better checks for exclusive key options
                             if (args.has(OPT_KEY_MAC) && args.has(OPT_KEY_ENC) && args.has(OPT_KEY_DEK)) {
                                 GPKey enc = new GPKey(HexUtils.stringToBin((String) args.valueOf(OPT_KEY_ENC)));
                                 GPKey mac = new GPKey(HexUtils.stringToBin((String) args.valueOf(OPT_KEY_MAC)));
                                 GPKey dek = new GPKey(HexUtils.stringToBin((String) args.valueOf(OPT_KEY_DEK)));
                                 keyz = PlaintextKeys.fromKeys(enc, mac, dek);
-                            } else if (env.containsKey("GP_KEY_ENC") && env.containsKey("GP_KEY_MAC") && env.containsKey("GP_KEY_DEK")) {
-                                GPKey enc = new GPKey(HexUtils.stringToBin(env.get("GP_KEY_ENC")));
-                                GPKey mac = new GPKey(HexUtils.stringToBin(env.get("GP_KEY_MAC")));
-                                GPKey dek = new GPKey(HexUtils.stringToBin(env.get("GP_KEY_DEK")));
-                                keyz = PlaintextKeys.fromKeys(enc, mac, dek);
-                                if (env.containsKey("GP_KEY_VERSION")) {
-                                    keyz.setVersion(GPUtils.intValue(env.get("GP_KEY_VERSION")));
-                                }
+                            } else if (params.isPresent()) {
+                                keyz = (PlaintextKeys) params.get().getSessionKeys();
                             } else {
                                 if (needsAuthentication(args)) {
                                     System.out.println("Warning: no keys given, using default test key " + HexUtils.bin2hex(GPData.defaultKeyBytes));

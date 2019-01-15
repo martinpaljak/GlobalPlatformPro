@@ -231,6 +231,10 @@ public final class GPTool extends GPCommandLineInterface {
                         // FIXME: would like to get AID from oracle as well.
                     }
 
+                    // Don't do sanity checks, just run asked commands
+                    if (args.has(OPT_FORCE))
+                        gp.setStrict(false);
+
                     // Extract information
                     if (args.has(OPT_INFO)) {
                         GPData.dump(channel);
@@ -354,7 +358,7 @@ public final class GPTool extends GPCommandLineInterface {
                                 }
                             }
                             List<AID> aids = args.valuesOf(OPT_DELETE).stream().map(a -> AID.fromString(a)).collect(Collectors.toList());
-                            for (AID  aid : aids) {
+                            for (AID aid : aids) {
                                 try {
                                     // If the AID represents a package or otherwise force is enabled.
                                     gp.deleteAID(aid, reg.allPackageAIDs().contains(aid) || args.has(OPT_FORCE));

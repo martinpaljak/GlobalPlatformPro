@@ -468,7 +468,7 @@ public final class GPData {
         private HashMap<Field, byte[]> values = new HashMap<>();
 
         private CPLC(byte[] data) {
-            short offset = 0;
+            int offset = 0;
             values.put(Field.ICFabricator, Arrays.copyOfRange(data, offset, offset + 2));
             offset += 2;
             values.put(Field.ICType, Arrays.copyOfRange(data, offset, offset + 2));

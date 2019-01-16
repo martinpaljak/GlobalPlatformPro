@@ -84,7 +84,9 @@ public final class GPTool extends GPCommandLineInterface {
         CAPFile cap = null;
         if (args.has(OPT_CAP)) {
             File capfile = (File) args.valueOf(OPT_CAP);
-            cap = CAPFile.fromStream(new FileInputStream(capfile));
+            try (FileInputStream fin = new FileInputStream(capfile)) {
+                cap = CAPFile.fromStream(fin);
+            }
             if (args.has(OPT_INFO)) {
                 System.out.println("**** CAP info of " + capfile.getName());
                 cap.dump(System.out);
@@ -108,7 +110,9 @@ public final class GPTool extends GPCommandLineInterface {
                 // Replay responses from a file
                 // FIXME: use the generic provider interface and drop command line options
                 File f = (File) args.valueOf(OPT_REPLAY);
-                tf = TerminalFactory.getInstance("PC/SC", new FileInputStream(f), new APDUReplayProvider());
+                try (FileInputStream fin = new FileInputStream(f)) {
+                    tf = TerminalFactory.getInstance("PC/SC", fin, new APDUReplayProvider());
+                }
             } else {
                 tf = TerminalManager.getTerminalFactory((String) args.valueOf(OPT_TERMINALS));
             }
@@ -456,10 +460,12 @@ public final class GPTool extends GPCommandLineInterface {
                                 keyVersion = GPUtils.intValue(args.valueOf(OPT_NEW_KEY_VERSION).toString());
                             }
 
-                            // Get public key
-                            PublicKey key = GPCrypto.pem2pubkey(new FileInputStream(new File(args.valueOf(OPT_PUT_KEY).toString())));
-                            if (key instanceof RSAPublicKey) {
-                                gp.putKey((RSAPublicKey) key, 0x73);
+                            try (FileInputStream fin = new FileInputStream(new File(args.valueOf(OPT_PUT_KEY).toString()))) {
+                                // Get public key
+                                PublicKey key = GPCrypto.pem2pubkey(fin);
+                                if (key instanceof RSAPublicKey) {
+                                    gp.putKey((RSAPublicKey) key, 0x73);
+                                }
                             }
                         }
 
@@ -468,7 +474,10 @@ public final class GPTool extends GPCommandLineInterface {
                             final File capfile;
                             capfile = (File) args.valueOf(OPT_INSTALL);
 
-                            CAPFile instcap = CAPFile.fromStream(new FileInputStream(capfile));
+                            final CAPFile instcap;
+                            try (FileInputStream fin = new FileInputStream(capfile)) {
+                                instcap = CAPFile.fromStream(fin);
+                            }
 
                             if (args.has(OPT_VERBOSE)) {
                                 instcap.dump(System.out);
@@ -942,8 +951,8 @@ public final class GPTool extends GPCommandLineInterface {
 
     private static List<CAPFile> getCapFileList(OptionSet args, String arg) {
         return args.valuesOf(arg).stream().map(e -> {
-            try {
-                return CAPFile.fromStream(new FileInputStream((File) e));
+            try (FileInputStream fin = new FileInputStream((File) e)) {
+                return CAPFile.fromStream(fin);
             } catch (IOException x) {
                 fail("Could not read CAP: " + x.getMessage());
                 return null; // For compiler, fail() quits the process

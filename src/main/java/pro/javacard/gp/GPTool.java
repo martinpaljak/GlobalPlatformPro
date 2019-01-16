@@ -464,7 +464,7 @@ public final class GPTool extends GPCommandLineInterface {
                                 // Get public key
                                 PublicKey key = GPCrypto.pem2pubkey(fin);
                                 if (key instanceof RSAPublicKey) {
-                                    gp.putKey((RSAPublicKey) key, 0x73);
+                                    gp.putKey((RSAPublicKey) key, keyVersion);
                                 }
                             }
                         }

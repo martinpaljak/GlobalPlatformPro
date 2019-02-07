@@ -104,6 +104,8 @@ abstract class GPCommandLineInterface {
     protected final static String OPT_ACR_DELETE = "acr-delete";
     protected final static String OPT_ACR_RULE = "acr-rule";
     protected final static String OPT_ACR_CERT_HASH = "acr-hash";
+    protected final static String OPT_TOKEN = "token-key";
+    protected final static String OPT_TOKEN_KEY = "token-key";
 
     protected static OptionSet parseArguments(String[] argv) throws IOException {
         OptionSet args = null;
@@ -158,8 +160,10 @@ abstract class GPCommandLineInterface {
         parser.accepts(OPT_TODAY, "Set date to today when updating CPLC");
 
         parser.accepts(OPT_STORE_DATA_BLOB, "STORE DATA blob").withRequiredArg().describedAs("data");
-        parser.accepts(OPT_STORE_DATA, "send STORE DATA commands").withRequiredArg().describedAs("data");
+        parser.accepts(OPT_STORE_DATA, "Send STORE DATA commands").withRequiredArg().describedAs("data");
 
+        parser.accepts(OPT_TOKEN, "Generate Delegated Management tokens on the fly");
+        parser.accepts(OPT_TOKEN_KEY, "Path to private key used in token generation").withRequiredArg().describedAs("path");
 
         parser.accepts(OPT_MAKE_DEFAULT, "Make AID the default").withRequiredArg().describedAs("AID");
         parser.accepts(OPT_RENAME_ISD, "Rename ISD").withRequiredArg().describedAs("new AID");

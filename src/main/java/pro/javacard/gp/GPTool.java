@@ -406,6 +406,8 @@ public final class GPTool extends GPCommandLineInterface {
                                     AID target = null;
                                     AID dapdomain = null;
                                     boolean dapRequired = false;
+                                    boolean calculateToken = false;
+                                    String keyPath = null;
 
                                     // Override target and check for DAP
                                     if (args.has(OPT_TO)) {
@@ -429,10 +431,17 @@ public final class GPTool extends GPCommandLineInterface {
                                         }
                                     }
 
+                                    if (args.has(OPT_TOKEN)) {
+                                        calculateToken = true;
+                                        if (args.has(OPT_TOKEN_KEY)) {
+                                            keyPath = (String) args.valueOf(OPT_TOKEN_KEY);
+                                        }
+                                    }
+
                                     // XXX: figure out right signature type in a better way
                                     if (dapRequired) {
                                         byte[] dap = args.has(OPT_SHA256) ? loadcap.getMetaInfEntry(CAPFile.DAP_RSA_V1_SHA256_FILE) : loadcap.getMetaInfEntry(CAPFile.DAP_RSA_V1_SHA1_FILE);
-                                        gp.loadCapFile(loadcap, target, dapdomain == null ? target : dapdomain, dap, args.has(OPT_SHA256) ? "SHA-256" : "SHA1");
+                                        gp.loadCapFile(loadcap, target, dapdomain == null ? target : dapdomain, dap, args.has(OPT_SHA256) ? "SHA-256" : "SHA1", calculateToken, keyPath);
                                     } else {
                                         gp.loadCapFile(loadcap, target);
                                     }

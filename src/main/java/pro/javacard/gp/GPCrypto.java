@@ -29,6 +29,7 @@ import org.bouncycastle.crypto.params.KeyParameter;
 import org.bouncycastle.openssl.PEMKeyPair;
 import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
+import pro.javacard.AID;
 import pro.javacard.gp.GPKey.Type;
 
 import javax.crypto.BadPaddingException;
@@ -36,12 +37,12 @@ import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.IvParameterSpec;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.security.*;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Arrays;
 
 // Various cryptographic primitives used for secure channel or plaintext keys
@@ -265,4 +266,60 @@ public final class GPCrypto {
             } else throw new IllegalArgumentException("Can not read PEM");
         }
     }
+
+    public static byte[] calculateLoadToken(int followingLength, AID loadFile, AID securityDomain, byte[] hash, byte[] loadParams, String keyPath) {
+        PrivateKey privateKey;
+
+        if (keyPath != null && !keyPath.isEmpty()) {
+            privateKey = get(keyPath);
+        } else {
+            //Will probably load from HSM in the future, throw for now
+            throw new RuntimeException("Token calculation (currently) expects a path for RSA key");
+        }
+
+        try {
+            ByteArrayOutputStream signatureData = new ByteArrayOutputStream();
+            signatureData.write(0x02);
+            signatureData.write(0x00);
+            signatureData.write(followingLength);
+            signatureData.write(loadFile.getLength());
+            signatureData.write(loadFile.getBytes());
+            signatureData.write(securityDomain.getLength());
+            signatureData.write(securityDomain.getBytes());
+            signatureData.write(hash.length);
+            signatureData.write(hash);
+            signatureData.write(loadParams.length);
+            signatureData.write(loadParams);
+
+            return signSignatureData(privateKey, signatureData.toByteArray(), "SHA1withRSA");
+        } catch (Exception e) {
+            throw new RuntimeException("Could not calculate load token", e);
+        }
+    }
+
+    public static byte[] signSignatureData(PrivateKey privateKey, byte[] signatureData, String signatureAlgorithm) {
+        try {
+            Signature signature = Signature.getInstance(signatureAlgorithm);
+            signature.initSign(privateKey);
+            signature.update(signatureData);
+            return signature.sign();
+        } catch (Exception e) {
+            throw new RuntimeException("Could not create signature with instance " + signatureAlgorithm, e);
+        }
+
+    }
+
+    public static PrivateKey get(String path) {
+        try {
+            byte[] keyBytes = Files.readAllBytes(Paths.get(path));
+            PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(keyBytes);
+            KeyFactory kf = KeyFactory.getInstance("RSA");
+            return kf.generatePrivate(spec);
+        } catch (Exception e) {
+            throw new RuntimeException("Could not obtain private key from '" + path + "'", e);
+        }
+
+    }
+
+
 }

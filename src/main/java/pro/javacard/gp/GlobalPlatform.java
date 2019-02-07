@@ -85,6 +85,8 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
 
     public static final byte P1_INSTALL_AND_MAKE_SELECTABLE = (byte) 0x0C;
     public static final byte P1_INSTALL_FOR_INSTALL = (byte) 0x04;
+    public static final byte P1_MORE_BLOCKS = (byte) 0x00;
+    public static final byte P1_LAST_BLOCK = (byte) 0x80;
 
     protected boolean strict = true;
     GPSpec spec = GPSpec.GP211;
@@ -205,6 +207,12 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
         } catch (IOException e) {
             return "unknown-error";
         }
+    }
+
+    public static byte[] getLoadParams(boolean loadParam, byte[] code) {
+        return loadParam
+                ? new byte[]{(byte) 0xEF, 0x04, (byte) 0xC6, 0x02, (byte) ((code.length & 0xFF00) >> 8), (byte) (code.length & 0xFF)}
+                : new byte[0];
     }
 
     @Override
@@ -468,7 +476,10 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
                 // FIXME: this should be possible from GPTool
                 System.err.println("Read more from https://github.com/martinpaljak/GlobalPlatformPro/wiki/Keys");
             }
-            giveStrictWarning("Card cryptogram invalid!\nCard: " + HexUtils.bin2hex(card_cryptogram) + "\nHost: " + HexUtils.bin2hex(my_card_cryptogram) + "\n!!! DO NOT RE-TRY THE SAME COMMAND/KEYS OR YOU MAY BRICK YOUR CARD !!!");
+            giveStrictWarning("Card cryptogram invalid!" +
+                    "\nCard: " + HexUtils.bin2hex(card_cryptogram) +
+                    "\nHost: " + HexUtils.bin2hex(my_card_cryptogram) +
+                    "\n!!! DO NOT RE-TRY THE SAME COMMAND/KEYS OR YOU MAY BRICK YOUR CARD !!!");
         } else {
             logger.debug("Verified card cryptogram: " + HexUtils.bin2hex(my_card_cryptogram));
         }
@@ -542,22 +553,22 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
     public void loadCapFile(CAPFile cap, AID target) throws CardException, GPException {
         if (target == null)
             target = sdAID;
-        loadCapFile(cap, target, false, false, null, null, LFDBH_SHA1);
+        loadCapFile(cap, target, false, false, null, null, LFDBH_SHA1, false, null);
     }
 
     public void loadCapFile(CAPFile cap, AID target, byte[] dap, String hash) throws CardException, GPException {
         if (target == null)
             target = sdAID;
-        loadCapFile(cap, target, false, false, target, dap, hash);
+        loadCapFile(cap, target, false, false, target, dap, hash, false, null);
     }
 
-    public void loadCapFile(CAPFile cap, AID target, AID dapdomain, byte[] dap, String hash) throws CardException, GPException {
+    public void loadCapFile(CAPFile cap, AID target, AID dapdomain, byte[] dap, String hashFunction, boolean calculateToken, String keyPath) throws CardException, GPException {
         if (target == null)
             target = sdAID;
-        loadCapFile(cap, target, false, false, dapdomain, dap, hash);
+        loadCapFile(cap, target, false, false, dapdomain, dap, hashFunction, calculateToken, keyPath);
     }
 
-    private void loadCapFile(CAPFile cap, AID sdaid, boolean includeDebug, boolean loadParam, AID dapdomain, byte[] dap, String lfdbh)
+    private void loadCapFile(CAPFile cap, AID sdaid, boolean includeDebug, boolean loadParam, AID dapdomain, byte[] dap, String hashFunction, boolean calculateToken, String keyPath)
             throws GPException, CardException {
 
         if (getRegistry().allAIDs().contains(cap.getPackageAID())) {
@@ -565,11 +576,10 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
         }
 
         // FIXME: hash type handling needs to be sensible.
-        byte[] hash = dap != null ? cap.getLoadFileDataHash(lfdbh, includeDebug) : new byte[0];
+        byte[] hash = dap != null ? cap.getLoadFileDataHash(hashFunction, includeDebug) : new byte[0];
         byte[] code = cap.getCode(includeDebug);
         // FIXME: parameters are optional for load
-        byte[] loadParams = loadParam ? new byte[]{(byte) 0xEF, 0x04, (byte) 0xC6, 0x02, (byte) ((code.length & 0xFF00) >> 8),
-                (byte) (code.length & 0xFF)} : new byte[0];
+        byte[] loadParams = getLoadParams(loadParam, code);
 
         ByteArrayOutputStream bo = new ByteArrayOutputStream();
 
@@ -585,7 +595,18 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
 
             bo.write(loadParams.length);
             bo.write(loadParams);
-            bo.write(0); // Load token
+
+            if (calculateToken) {
+                try {
+                    byte[] loadToken = GPCrypto.calculateLoadToken(bo.size(), cap.getPackageAID(), sdaid, hash, loadParams, keyPath);
+                    bo.write(loadToken.length);
+                    bo.write(loadToken);
+                } catch (RuntimeException e) {
+                    bo.write(0);
+                }
+            } else {
+                bo.write(0);
+            }
         } catch (IOException ioe) {
             throw new RuntimeException(ioe);
         }
@@ -596,32 +617,33 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
 
 
         // Construct load block
-        ByteArrayOutputStream loadblock = new ByteArrayOutputStream();
+        ByteArrayOutputStream loadBlock = new ByteArrayOutputStream();
         try {
             // Add DAP block, if signature present
             if (dap != null) {
-                loadblock.write(0xE2);
-                loadblock.write(GPUtils.encodeLength(dapdomain.getLength() + dap.length + GPUtils.encodeLength(dap.length).length + 3)); // two tags, two lengths FIXME: proper size
-                loadblock.write(0x4F);
-                loadblock.write(dapdomain.getLength());
-                loadblock.write(dapdomain.getBytes());
-                loadblock.write(0xC3);
-                loadblock.write(GPUtils.encodeLength(dap.length));
-                loadblock.write(dap);
+                loadBlock.write(0xE2);
+                loadBlock.write(GPUtils.encodeLength(dapdomain.getLength() + dap.length + GPUtils.encodeLength(dap.length).length + 3)); // two tags, two lengths FIXME: proper size
+                loadBlock.write(0x4F);
+                loadBlock.write(dapdomain.getLength());
+                loadBlock.write(dapdomain.getBytes());
+                loadBlock.write(0xC3);
+                loadBlock.write(GPUtils.encodeLength(dap.length));
+                loadBlock.write(dap);
             }
             // See GP 2.1.1 Table 9-40, GP 2.2.1 11.6.2.3 / Table 11-58
-            loadblock.write(0xC4);
-            loadblock.write(GPUtils.encodeLength(code.length));
-            loadblock.write(code);
+            loadBlock.write(0xC4);
+            loadBlock.write(GPUtils.encodeLength(code.length));
+            loadBlock.write(code);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
 
         // Split according to available block size
-        List<byte[]> blocks = GPUtils.splitArray(loadblock.toByteArray(), wrapper.getBlockSize());
+        List<byte[]> blocks = GPUtils.splitArray(loadBlock.toByteArray(), wrapper.getBlockSize());
 
         for (int i = 0; i < blocks.size(); i++) {
-            CommandAPDU load = new CommandAPDU(CLA_GP, INS_LOAD, (i == (blocks.size() - 1)) ? 0x80 : 0x00, (byte) i, blocks.get(i));
+            byte p1 = (i == (blocks.size() - 1)) ? P1_LAST_BLOCK : P1_MORE_BLOCKS;
+            CommandAPDU load = new CommandAPDU(CLA_GP, INS_LOAD, p1, (byte) i, blocks.get(i));
             response = transmit(load);
             GPException.check(response, "LOAD failed");
         }

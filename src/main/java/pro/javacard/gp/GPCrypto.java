@@ -19,6 +19,7 @@
  */
 package pro.javacard.gp;
 
+import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.BlockCipher;
 import org.bouncycastle.crypto.engines.AESEngine;
@@ -39,10 +40,7 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.IvParameterSpec;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.security.*;
-import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Arrays;
 
 // Various cryptographic primitives used for secure channel or plaintext keys
@@ -255,7 +253,7 @@ public final class GPCrypto {
     }
 
     // Get a public key from a PEM file, either public key or keypair
-    public static PublicKey pem2pubkey(InputStream in) throws IOException {
+    public static PublicKey pem2PublicKey(InputStream in) throws IOException {
         try (PEMParser pem = new PEMParser(new InputStreamReader(in, StandardCharsets.US_ASCII))) {
             Object ohh = pem.readObject();
             if (ohh instanceof PEMKeyPair) {
@@ -267,59 +265,17 @@ public final class GPCrypto {
         }
     }
 
-    public static byte[] calculateLoadToken(int followingLength, AID loadFile, AID securityDomain, byte[] hash, byte[] loadParams, String keyPath) {
-        PrivateKey privateKey;
-
-        if (keyPath != null && !keyPath.isEmpty()) {
-            privateKey = get(keyPath);
-        } else {
-            //Will probably load from HSM in the future, throw for now
-            throw new RuntimeException("Token calculation (currently) expects a path for RSA key");
-        }
-
-        try {
-            ByteArrayOutputStream signatureData = new ByteArrayOutputStream();
-            signatureData.write(0x02);
-            signatureData.write(0x00);
-            signatureData.write(followingLength);
-            signatureData.write(loadFile.getLength());
-            signatureData.write(loadFile.getBytes());
-            signatureData.write(securityDomain.getLength());
-            signatureData.write(securityDomain.getBytes());
-            signatureData.write(hash.length);
-            signatureData.write(hash);
-            signatureData.write(loadParams.length);
-            signatureData.write(loadParams);
-
-            return signSignatureData(privateKey, signatureData.toByteArray(), "SHA1withRSA");
-        } catch (Exception e) {
-            throw new RuntimeException("Could not calculate load token", e);
+    // Get a private key from a PEM file, either private key or keypair
+    public static PrivateKey pem2PrivateKey(InputStream in) throws IOException {
+        try (PEMParser pem = new PEMParser(new InputStreamReader(in, StandardCharsets.US_ASCII))) {
+            Object ohh = pem.readObject();
+            if (ohh instanceof PEMKeyPair) {
+                PEMKeyPair kp = (PEMKeyPair) ohh;
+                return new JcaPEMKeyConverter().getKeyPair(kp).getPrivate();
+            } else if (ohh instanceof PrivateKeyInfo) {
+                return new JcaPEMKeyConverter().getPrivateKey((PrivateKeyInfo) ohh);
+            } else throw new IllegalArgumentException("Can not read PEM");
         }
     }
-
-    public static byte[] signSignatureData(PrivateKey privateKey, byte[] signatureData, String signatureAlgorithm) {
-        try {
-            Signature signature = Signature.getInstance(signatureAlgorithm);
-            signature.initSign(privateKey);
-            signature.update(signatureData);
-            return signature.sign();
-        } catch (Exception e) {
-            throw new RuntimeException("Could not create signature with instance " + signatureAlgorithm, e);
-        }
-
-    }
-
-    public static PrivateKey get(String path) {
-        try {
-            byte[] keyBytes = Files.readAllBytes(Paths.get(path));
-            PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(keyBytes);
-            KeyFactory kf = KeyFactory.getInstance("RSA");
-            return kf.generatePrivate(spec);
-        } catch (Exception e) {
-            throw new RuntimeException("Could not obtain private key from '" + path + "'", e);
-        }
-
-    }
-
 
 }

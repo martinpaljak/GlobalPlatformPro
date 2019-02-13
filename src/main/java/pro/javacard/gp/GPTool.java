@@ -34,7 +34,9 @@ import javax.crypto.Cipher;
 import javax.smartcardio.*;
 import javax.smartcardio.CardTerminals.State;
 import java.io.*;
+import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -356,7 +358,8 @@ public final class GPTool extends GPCommandLineInterface {
                             // DWIM: assume that default selected is the one to be deleted
                             if (args.has(OPT_DEFAULT) && reg.getDefaultSelectedAID() != null) {
                                 if (reg.getDefaultSelectedPackageAID() != null) {
-                                    gp.deleteAID(reg.getDefaultSelectedPackageAID(), true);
+                                    PrivateKey delegatedManagementKey = privateKeyOrNull(args);
+                                    gp.deleteAID(reg.getDefaultSelectedPackageAID(), true, delegatedManagementKey);
                                 } else {
                                     System.err.println("Could not identify default selected application!");
                                 }
@@ -365,7 +368,9 @@ public final class GPTool extends GPCommandLineInterface {
                             for (AID aid : aids) {
                                 try {
                                     // If the AID represents a package or otherwise force is enabled.
-                                    gp.deleteAID(aid, reg.allPackageAIDs().contains(aid) || args.has(OPT_FORCE));
+                                    Boolean deleteDeps = reg.allPackageAIDs().contains(aid) || args.has(OPT_FORCE);
+                                    PrivateKey delegatedManagementKey = privateKeyOrNull(args);
+                                    gp.deleteAID(aid, deleteDeps, delegatedManagementKey);
                                 } catch (GPException e) {
                                     if (!gp.getRegistry().allAIDs().contains(aid)) {
                                         System.err.println("Could not delete AID (not present on card): " + aid);
@@ -389,7 +394,8 @@ public final class GPTool extends GPCommandLineInterface {
                                 if (!gp.getRegistry().allAIDs().contains(aid)) {
                                     System.out.println(aid + " is not present on card!");
                                 } else {
-                                    gp.deleteAID(aid, true);
+                                    PrivateKey delegatedManagementKey = privateKeyOrNull(args);
+                                    gp.deleteAID(aid, true, delegatedManagementKey);
                                     System.out.println(aid + " deleted.");
                                 }
                             }
@@ -406,8 +412,6 @@ public final class GPTool extends GPCommandLineInterface {
                                     AID target = null;
                                     AID dapdomain = null;
                                     boolean dapRequired = false;
-                                    boolean calculateToken = false;
-                                    String keyPath = null;
 
                                     // Override target and check for DAP
                                     if (args.has(OPT_TO)) {
@@ -431,19 +435,14 @@ public final class GPTool extends GPCommandLineInterface {
                                         }
                                     }
 
-                                    if (args.has(OPT_TOKEN)) {
-                                        calculateToken = true;
-                                        if (args.has(OPT_TOKEN_KEY)) {
-                                            keyPath = (String) args.valueOf(OPT_TOKEN_KEY);
-                                        }
-                                    }
-
                                     // XXX: figure out right signature type in a better way
                                     if (dapRequired) {
                                         byte[] dap = args.has(OPT_SHA256) ? loadcap.getMetaInfEntry(CAPFile.DAP_RSA_V1_SHA256_FILE) : loadcap.getMetaInfEntry(CAPFile.DAP_RSA_V1_SHA1_FILE);
-                                        gp.loadCapFile(loadcap, target, dapdomain == null ? target : dapdomain, dap, args.has(OPT_SHA256) ? "SHA-256" : "SHA1", calculateToken, keyPath);
+                                        PrivateKey delegatedManagementKey = privateKeyOrNull(args);
+                                        gp.loadCapFile(loadcap, target, dapdomain == null ? target : dapdomain, dap, args.has(OPT_SHA256) ? "SHA-256" : "SHA1", delegatedManagementKey);
                                     } else {
-                                        gp.loadCapFile(loadcap, target);
+                                        PrivateKey delegatedManagementKey = privateKeyOrNull(args);
+                                        gp.loadCapFile(loadcap, target, delegatedManagementKey);
                                     }
                                 } catch (GPException e) {
                                     switch (e.sw) {
@@ -471,7 +470,7 @@ public final class GPTool extends GPCommandLineInterface {
 
                             try (FileInputStream fin = new FileInputStream(new File(args.valueOf(OPT_PUT_KEY).toString()))) {
                                 // Get public key
-                                PublicKey key = GPCrypto.pem2pubkey(fin);
+                                PublicKey key = GPCrypto.pem2PublicKey(fin);
                                 if (key instanceof RSAPublicKey) {
                                     gp.putKey((RSAPublicKey) key, keyVersion);
                                 }
@@ -496,7 +495,8 @@ public final class GPTool extends GPCommandLineInterface {
 
                             // Remove existing load file
                             if (args.has(OPT_FORCE) && reg.allPackageAIDs().contains(instcap.getPackageAID())) {
-                                gp.deleteAID(instcap.getPackageAID(), true);
+                                PrivateKey delegatedManagementKey = privateKeyOrNull(args);
+                                gp.deleteAID(instcap.getPackageAID(), true, delegatedManagementKey);
                             }
 
                             // Load
@@ -504,9 +504,11 @@ public final class GPTool extends GPCommandLineInterface {
                             if (instcap.getAppletAIDs().size() <= 1) {
                                 try {
                                     AID target = null;
-                                    if (args.has(OPT_TO))
+                                    if (args.has(OPT_TO)) {
                                         target = AID.fromString(args.valueOf(OPT_TO));
-                                    gp.loadCapFile(instcap, target);
+                                    }
+                                    PrivateKey delegatedManagementKey = privateKeyOrNull(args);
+                                    gp.loadCapFile(instcap, target, delegatedManagementKey);
                                     System.out.println("CAP loaded");
                                 } catch (GPException e) {
                                     if (e.sw == 0x6985 || e.sw == 0x6A80) {
@@ -543,7 +545,8 @@ public final class GPTool extends GPCommandLineInterface {
 
                             // Remove existing default app
                             if (args.has(OPT_FORCE) && (reg.getDefaultSelectedAID() != null && privs.has(Privilege.CardReset))) {
-                                gp.deleteAID(reg.getDefaultSelectedAID(), false);
+                                PrivateKey delegatedManagementKey = privateKeyOrNull(args);
+                                gp.deleteAID(reg.getDefaultSelectedAID(), false, delegatedManagementKey);
                             }
 
                             // warn
@@ -552,7 +555,8 @@ public final class GPTool extends GPCommandLineInterface {
                             }
 
                             // shoot
-                            gp.installAndMakeSelectable(instcap.getPackageAID(), appaid, instanceaid, privs, getInstParams(args), null);
+                            PrivateKey delegatedManagementKey = privateKeyOrNull(args);
+                            gp.installAndMakeSelectable(instcap.getPackageAID(), appaid, instanceaid, privs, getInstParams(args), delegatedManagementKey);
                         }
 
                         // --create <aid> (--applet <aid> --package <aid> or --cap <cap>)
@@ -588,7 +592,8 @@ public final class GPTool extends GPCommandLineInterface {
 
                             // shoot
                             AID instanceAID = AID.fromString(args.valueOf(OPT_CREATE));
-                            gp.installAndMakeSelectable(packageAID, appletAID, instanceAID, getInstPrivs(args), getInstParams(args), null);
+                            PrivateKey delegatedManagementKey = privateKeyOrNull(args);
+                            gp.installAndMakeSelectable(packageAID, appletAID, instanceAID, getInstPrivs(args), getInstParams(args), delegatedManagementKey);
                         }
 
                         // --domain <AID>
@@ -629,7 +634,8 @@ public final class GPTool extends GPCommandLineInterface {
                             }
 
                             // shoot
-                            gp.installAndMakeSelectable(packageAID, appletAID, instanceAID, privs, params, null);
+                            PrivateKey delegatedManagementKey = privateKeyOrNull(args);
+                            gp.installAndMakeSelectable(packageAID, appletAID, instanceAID, privs, params, delegatedManagementKey);
                         }
 
                         // --move <AID>
@@ -639,8 +645,8 @@ public final class GPTool extends GPCommandLineInterface {
                             }
                             AID what = AID.fromString(args.valueOf(OPT_MOVE));
                             AID to = AID.fromString(args.valueOf(OPT_TO));
-
-                            gp.extradite(what, to);
+                            PrivateKey delegatedManagementKey = privateKeyOrNull(args);
+                            gp.extradite(what, to, delegatedManagementKey);
                         }
 
                         // --store-data <XX>
@@ -848,7 +854,8 @@ public final class GPTool extends GPCommandLineInterface {
 
                         // --make-default <aid>
                         if (args.has(OPT_MAKE_DEFAULT)) {
-                            gp.makeDefaultSelected(AID.fromString(args.valueOf(OPT_MAKE_DEFAULT)));
+                            PrivateKey delegatedManagementKey = privateKeyOrNull(args);
+                            gp.makeDefaultSelected(AID.fromString(args.valueOf(OPT_MAKE_DEFAULT)), delegatedManagementKey);
                         }
 
                         // --rename-isd
@@ -903,6 +910,20 @@ public final class GPTool extends GPCommandLineInterface {
         }
         // Other exceptions escape. fin.
         System.exit(0);
+    }
+
+    private static PrivateKey privateKeyOrNull(OptionSet args) {
+        if (args.has(OPT_TOKEN)) {
+            try (FileInputStream fin = new FileInputStream(new File(args.valueOf(OPT_TOKEN).toString()))) {
+                PrivateKey key = GPCrypto.pem2PrivateKey(fin);
+                if (key instanceof RSAPrivateKey) {
+                    return key;
+                }
+            } catch (Exception e) {
+                throw new RuntimeException("Could not extract RSA private key from supplied path");
+            }
+        }
+        return null;
     }
 
     // FIXME: get rid

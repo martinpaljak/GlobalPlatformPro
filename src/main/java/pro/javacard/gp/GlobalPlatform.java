@@ -45,6 +45,7 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
+import java.security.PrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.*;
 
@@ -537,7 +538,8 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
 
     private ResponseAPDU transmitLV(CommandAPDU command) throws CardException {
         logger.trace("Payload: ");
-        GPUtils.trace_lv(command.getData(), logger);
+        //Causes exception at java.util.Arrays.copyOfRange in trace_lv if data has token appended
+        //GPUtils.trace_lv(command.getData(), logger);
         return transmit(command);
     }
 
@@ -550,25 +552,25 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
         return scpMajorVersion;
     }
 
-    public void loadCapFile(CAPFile cap, AID target) throws CardException, GPException {
+    public void loadCapFile(CAPFile cap, AID target, PrivateKey key) throws CardException, GPException {
         if (target == null)
             target = sdAID;
-        loadCapFile(cap, target, false, false, null, null, LFDBH_SHA1, false, null);
+        loadCapFile(cap, target, false, false, null, null, LFDBH_SHA1, key);
     }
 
     public void loadCapFile(CAPFile cap, AID target, byte[] dap, String hash) throws CardException, GPException {
         if (target == null)
             target = sdAID;
-        loadCapFile(cap, target, false, false, target, dap, hash, false, null);
+        loadCapFile(cap, target, false, false, target, dap, hash, null);
     }
 
-    public void loadCapFile(CAPFile cap, AID target, AID dapdomain, byte[] dap, String hashFunction, boolean calculateToken, String keyPath) throws CardException, GPException {
+    public void loadCapFile(CAPFile cap, AID target, AID dapdomain, byte[] dap, String hashFunction, PrivateKey key) throws CardException, GPException {
         if (target == null)
             target = sdAID;
-        loadCapFile(cap, target, false, false, dapdomain, dap, hashFunction, calculateToken, keyPath);
+        loadCapFile(cap, target, false, false, dapdomain, dap, hashFunction, key);
     }
 
-    private void loadCapFile(CAPFile cap, AID sdaid, boolean includeDebug, boolean loadParam, AID dapdomain, byte[] dap, String hashFunction, boolean calculateToken, String keyPath)
+    private void loadCapFile(CAPFile cap, AID sdaid, boolean includeDebug, boolean loadParam, AID dapdomain, byte[] dap, String hashFunction, PrivateKey key)
             throws GPException, CardException {
 
         if (getRegistry().allAIDs().contains(cap.getPackageAID())) {
@@ -590,29 +592,19 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
             bo.write(sdaid.getLength());
             bo.write(sdaid.getBytes());
 
-            bo.write(hash.length); // Load File Data Block Hash
+            bo.write(hash.length);
             bo.write(hash);
 
             bo.write(loadParams.length);
             bo.write(loadParams);
-
-            if (calculateToken) {
-                try {
-                    byte[] loadToken = GPCrypto.calculateLoadToken(bo.size(), cap.getPackageAID(), sdaid, hash, loadParams, keyPath);
-                    bo.write(loadToken.length);
-                    bo.write(loadToken);
-                } catch (RuntimeException e) {
-                    bo.write(0);
-                }
-            } else {
-                bo.write(0);
-            }
         } catch (IOException ioe) {
             throw new RuntimeException(ioe);
         }
 
-        CommandAPDU installForLoad = new CommandAPDU(CLA_GP, INS_INSTALL, 0x02, 0x00, bo.toByteArray());
-        ResponseAPDU response = transmitLV(installForLoad);
+        DelegatedManagementHandler dmHandler = new DelegatedManagementHandler(key);
+        CommandAPDU command = new CommandAPDU(CLA_GP, INS_INSTALL, 0x02, 0x00, bo.toByteArray());
+        command = dmHandler.applyToken(command);
+        ResponseAPDU response = transmitLV(command);
         GPException.check(response, "INSTALL [for load] failed");
 
 
@@ -667,40 +659,12 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
      * @param appletAID     the applet to be installed
      * @param instanceAID   the applet AID passed to the install method of the applet,
      *                      defaults to {@code packageAID} if null
-     * @param privileges    privileges encoded as byte
-     * @param installParams tagged installation parameters, defaults to {@code 0xC9 00}
-     *                      (ie. no installation parameters) if null, if non-null the
-     *                      format is {@code 0xC9 len data...}
-     */
-    @Deprecated
-    public void installAndMakeSelectable(AID packageAID, AID appletAID, AID instanceAID, byte privileges, byte[] installParams,
-                                         byte[] installToken) throws GPException, CardException {
-
-        installAndMakeSelectable(packageAID, appletAID, instanceAID, Privileges.fromByte(privileges), installParams, installToken);
-    }
-
-    /**
-     * Install an applet and make it selectable. The package and applet AID must
-     * be present (ie. non-null). If one of the other parameters is null
-     * sensible defaults are chosen. If installation parameters are used, they
-     * must be passed in a special format, see parameter description below.
-     * <p>
-     * Before installation the package containing the applet must be loaded onto
-     * the card, see {@link #loadCapFile loadCapFile}.
-     * <p>
-     * This method installs just one applet. Call it several times for packages
-     * containing several applets.
-     *
-     * @param packageAID    the package that containing the applet
-     * @param appletAID     the applet to be installed
-     * @param instanceAID   the applet AID passed to the install method of the applet,
-     *                      defaults to {@code packageAID} if null
      * @param privileges    privileges encoded as an object
      * @param installParams tagged installation parameters, defaults to {@code 0xC9 00}
      *                      (ie. no installation parameters) if null, if non-null the
      *                      format is {@code 0xC9 len data...}
      */
-    public void installAndMakeSelectable(AID packageAID, AID appletAID, AID instanceAID, Privileges privileges, byte[] installParams, byte[] installToken) throws GPException, CardException {
+    public void installAndMakeSelectable(AID packageAID, AID appletAID, AID instanceAID, Privileges privileges, byte[] installParams, PrivateKey key) throws GPException, CardException {
         if (instanceAID == null) {
             instanceAID = appletAID;
         }
@@ -708,9 +672,11 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
             giveStrictWarning("Instance AID " + instanceAID + " is already present on card");
         }
 
-        byte[] data = buildInstallData(packageAID, appletAID, instanceAID, privileges, installParams, installToken);
-        CommandAPDU install = new CommandAPDU(CLA_GP, INS_INSTALL, P1_INSTALL_AND_MAKE_SELECTABLE, 0x00, data);
-        ResponseAPDU response = transmitLV(install);
+        byte[] data = buildInstallData(packageAID, appletAID, instanceAID, privileges, installParams);
+        DelegatedManagementHandler dmHandler = new DelegatedManagementHandler(key);
+        CommandAPDU command = new CommandAPDU(CLA_GP, INS_INSTALL, P1_INSTALL_AND_MAKE_SELECTABLE, 0x00, data);
+        command = dmHandler.applyToken(command);
+        ResponseAPDU response = transmitLV(command);
         GPException.check(response, "INSTALL [for install and make selectable] failed");
         dirty = true;
     }
@@ -736,7 +702,7 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
      *                      (ie. no installation parameters) if null, if non-null the
      *                      format is {@code 0xC9 len data...}
      */
-    public void installForInstall(AID packageAID, AID appletAID, AID instanceAID, Privileges privileges, byte[] installParams, byte[] installToken) throws GPException, CardException {
+    public void installForInstall(AID packageAID, AID appletAID, AID instanceAID, Privileges privileges, byte[] installParams, PrivateKey key) throws GPException, CardException {
         if (instanceAID == null) {
             instanceAID = appletAID;
         }
@@ -744,14 +710,16 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
             giveStrictWarning("Instance AID " + instanceAID + " is already present on card");
         }
 
-        byte[] data = buildInstallData(packageAID, appletAID, instanceAID, privileges, installParams, installToken);
-        CommandAPDU install = new CommandAPDU(CLA_GP, INS_INSTALL, P1_INSTALL_FOR_INSTALL, 0x00, data);
-        ResponseAPDU response = transmitLV(install);
+        byte[] data = buildInstallData(packageAID, appletAID, instanceAID, privileges, installParams);
+        DelegatedManagementHandler dmHandler = new DelegatedManagementHandler(key);
+        CommandAPDU command = new CommandAPDU(CLA_GP, INS_INSTALL, P1_INSTALL_FOR_INSTALL, 0x00, data);
+        command = dmHandler.applyToken(command);
+        ResponseAPDU response = transmitLV(command);
         GPException.check(response, "INSTALL [for install] failed");
         dirty = true;
     }
 
-    private byte[] buildInstallData(AID packageAID, AID appletAID, AID instanceAID, Privileges privileges, byte[] installParams, byte[] installToken) {
+    private byte[] buildInstallData(AID packageAID, AID appletAID, AID instanceAID, Privileges privileges, byte[] installParams) {
         if (instanceAID == null) {
             instanceAID = appletAID;
         }
@@ -765,9 +733,6 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
             newparams[1] = (byte) installParams.length;
             System.arraycopy(installParams, 0, newparams, 2, installParams.length);
             installParams = newparams;
-        }
-        if (installToken == null) {
-            installToken = new byte[0];
         }
         byte[] privs = privileges.toBytes();
         ByteArrayOutputStream bo = new ByteArrayOutputStream();
@@ -786,16 +751,13 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
 
             bo.write(installParams.length);
             bo.write(installParams);
-
-            bo.write(installToken.length);
-            bo.write(installToken);
         } catch (IOException ioe) {
             throw new RuntimeException(ioe);
         }
         return bo.toByteArray();
     }
 
-    public void extradite(AID what, AID to) throws GPException, CardException {
+    public void extradite(AID what, AID to, PrivateKey key) throws GPException, CardException {
         // GP 2.2.1 Table 11-45
         ByteArrayOutputStream bo = new ByteArrayOutputStream();
         try {
@@ -809,13 +771,14 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
             bo.write(0x00);
 
             bo.write(0x00); // no extradition parameters
-            bo.write(0x00); // no extradition token
         } catch (IOException ioe) {
             throw new RuntimeException(ioe);
         }
 
-        CommandAPDU install = new CommandAPDU(CLA_GP, INS_INSTALL, 0x10, 0x00, bo.toByteArray());
-        ResponseAPDU response = transmitLV(install);
+        DelegatedManagementHandler dmHandler = new DelegatedManagementHandler(key);
+        CommandAPDU command = new CommandAPDU(CLA_GP, INS_INSTALL, 0x10, 0x00, bo.toByteArray());
+        command = dmHandler.applyToken(command);
+        ResponseAPDU response = transmitLV(command);
         GPException.check(response, "INSTALL [for extradition] failed");
         dirty = true;
     }
@@ -882,7 +845,8 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
     public List<byte[]> storeData(List<byte[]> blocks, int P1) throws CardException, GPException {
         List<byte[]> result = new ArrayList<>();
         for (int i = 0; i < blocks.size(); i++) {
-            CommandAPDU store = new CommandAPDU(CLA_GP, INS_STORE_DATA, (i == (blocks.size() - 1)) ? P1 | 0x80 : P1 & 0x7F, i, blocks.get(i), 256);
+            int p1 = (i == (blocks.size() - 1)) ? P1 | 0x80 : P1 & 0x7F;
+            CommandAPDU store = new CommandAPDU(CLA_GP, INS_STORE_DATA, p1, i, blocks.get(i), 256);
             result.add(GPException.check(transmit(store), "STORE DATA failed").getData());
         }
         return result;
@@ -893,7 +857,7 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
         return GPException.check(transmit(store), "STORE DATA failed").getData();
     }
 
-    public void makeDefaultSelected(AID aid) throws CardException, GPException {
+    public void makeDefaultSelected(AID aid, PrivateKey key) throws CardException, GPException {
         // FIXME: only works for some 2.1.1 cards ? Clarify and document
         ByteArrayOutputStream bo = new ByteArrayOutputStream();
         // Only supported privilege.
@@ -908,13 +872,14 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
             bo.write(1);
             bo.write(privileges);
             bo.write(0);
-            bo.write(0);
         } catch (IOException ioe) {
             throw new RuntimeException(ioe);
         }
 
-        CommandAPDU install = new CommandAPDU(CLA_GP, INS_INSTALL, 0x08, 0x00, bo.toByteArray());
-        ResponseAPDU response = transmitLV(install);
+        DelegatedManagementHandler dmHandler = new DelegatedManagementHandler(key);
+        CommandAPDU command = new CommandAPDU(CLA_GP, INS_INSTALL, 0x08, 0x00, bo.toByteArray());
+        command = dmHandler.applyToken(command);
+        ResponseAPDU response = transmitLV(command);
         GPException.check(response, "INSTALL [for make selectable] failed");
         dirty = true;
     }
@@ -942,7 +907,7 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
      * @param deleteDeps if true delete dependencies as well
      * @throws CardException for low-level communication errors
      */
-    public void deleteAID(AID aid, boolean deleteDeps) throws GPException, CardException {
+    public void deleteAID(AID aid, boolean deleteDeps, PrivateKey key) throws GPException, CardException {
         ByteArrayOutputStream bo = new ByteArrayOutputStream();
         try {
             bo.write(0x4f);
@@ -951,8 +916,13 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
         } catch (IOException ioe) {
             throw new RuntimeException(ioe);
         }
-        CommandAPDU delete = new CommandAPDU(CLA_GP, INS_DELETE, 0x00, deleteDeps ? 0x80 : 0x00, bo.toByteArray());
-        ResponseAPDU response = transmit(delete);
+        CommandAPDU command = new CommandAPDU(CLA_GP, INS_DELETE, 0x00, deleteDeps ? 0x80 : 0x00, bo.toByteArray());
+        if (key != null) {
+            //Only add token bytes if key exists for token calculation, since token is optional
+            DelegatedManagementHandler dmHandler = new DelegatedManagementHandler(key);
+            command = dmHandler.applyToken(command);
+        }
+        ResponseAPDU response = transmit(command);
         GPException.check(response, "Deletion failed");
         dirty = true;
     }

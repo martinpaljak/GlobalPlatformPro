@@ -3,15 +3,14 @@ package pro.javacard.gp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.crypto.Cipher;
 import javax.smartcardio.CommandAPDU;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.security.PrivateKey;
-import java.security.Signature;
 
 public class DelegatedManagementHandler {
     private static final Logger logger = LoggerFactory.getLogger(DelegatedManagementHandler.class);
-    private static final String acceptedSignatureAlgorithm = "SHA1withRSA";
+    private static final String acceptedSignatureAlgorithm = "RSA/ECB/PKCS1Padding";
     private PrivateKey key;
 
     public DelegatedManagementHandler(PrivateKey key) {
@@ -33,13 +32,13 @@ public class DelegatedManagementHandler {
                 newData.write(token);
             }
             return new CommandAPDU(apdu.getCLA(), apdu.getINS(), apdu.getP1(), apdu.getP2(), newData.toByteArray());
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new RuntimeException("Could not add DM token to constructed APDU", e);
         }
     }
 
     private static byte[] calculateToken(CommandAPDU apdu, PrivateKey key) {
-        return signSignatureData(key, getTokenData(apdu), acceptedSignatureAlgorithm);
+        return signData(key, getTokenData(apdu));
     }
 
     private static byte[] getTokenData(CommandAPDU apdu) {
@@ -55,14 +54,14 @@ public class DelegatedManagementHandler {
         }
     }
 
-    private static byte[] signSignatureData(PrivateKey privateKey, byte[] signatureData, String signatureAlgorithm) {
+    private static byte[] signData(PrivateKey privateKey, byte[] apduData) {
         try {
-            Signature signature = Signature.getInstance(signatureAlgorithm);
-            signature.initSign(privateKey);
-            signature.update(signatureData);
-            return signature.sign();
+            Cipher cipher = Cipher.getInstance(acceptedSignatureAlgorithm);
+            cipher.init(Cipher.ENCRYPT_MODE, privateKey);
+
+            return cipher.doFinal(apduData);
         } catch (Exception e) {
-            throw new RuntimeException("Could not create signature with instance " + signatureAlgorithm, e);
+            throw new RuntimeException("Could not create signature with instance " + acceptedSignatureAlgorithm, e);
         }
     }
 

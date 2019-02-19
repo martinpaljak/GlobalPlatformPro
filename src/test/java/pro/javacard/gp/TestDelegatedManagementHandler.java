@@ -19,7 +19,7 @@ public class TestDelegatedManagementHandler {
 
     @Before
     public void setUp() {
-        try (FileInputStream fin = new FileInputStream(new File("test.pem"))) {
+        try (FileInputStream fin = new FileInputStream(new File("src/test/resources/test-private.pem"))) {
             key = GPCrypto.pem2PrivateKey(fin);
         } catch (Exception e) {
             e.printStackTrace();

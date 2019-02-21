@@ -373,7 +373,7 @@ public final class GPTool extends GPCommandLineInterface {
                             for (AID aid : aids) {
                                 try {
                                     // If the AID represents a package or otherwise force is enabled.
-                                    Boolean deleteDeps = reg.allPackageAIDs().contains(aid) || args.has(OPT_FORCE);
+                                    boolean deleteDeps = reg.allPackageAIDs().contains(aid) || args.has(OPT_FORCE);
                                     gp.deleteAID(aid, deleteDeps);
                                 } catch (GPException e) {
                                     if (!gp.getRegistry().allAIDs().contains(aid)) {

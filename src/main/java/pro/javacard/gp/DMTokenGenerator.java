@@ -3,17 +3,18 @@ package pro.javacard.gp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.crypto.Cipher;
 import javax.smartcardio.CommandAPDU;
 import java.io.ByteArrayOutputStream;
 import java.security.PrivateKey;
+import java.security.Signature;
 
-public class DelegatedManagementHandler {
-    private static final Logger logger = LoggerFactory.getLogger(DelegatedManagementHandler.class);
-    private static final String acceptedSignatureAlgorithm = "RSA/ECB/PKCS1Padding";
+public class DMTokenGenerator {
+    private static final Logger logger = LoggerFactory.getLogger(DMTokenGenerator.class);
+    private static final String acceptedSignatureAlgorithm = "SHA1withRSA";
+
     private PrivateKey key;
 
-    public DelegatedManagementHandler(PrivateKey key) {
+    public DMTokenGenerator(PrivateKey key) {
         this.key = key;
     }
 
@@ -56,13 +57,17 @@ public class DelegatedManagementHandler {
 
     private static byte[] signData(PrivateKey privateKey, byte[] apduData) {
         try {
-            Cipher cipher = Cipher.getInstance(acceptedSignatureAlgorithm);
-            cipher.init(Cipher.ENCRYPT_MODE, privateKey);
-
-            return cipher.doFinal(apduData);
+            Signature signature = Signature.getInstance(acceptedSignatureAlgorithm);
+            signature.initSign(privateKey);
+            signature.update(apduData);
+            return signature.sign();
         } catch (Exception e) {
             throw new RuntimeException("Could not create signature with instance " + acceptedSignatureAlgorithm, e);
         }
+    }
+
+    public boolean hasKey() {
+        return key != null;
     }
 
 }

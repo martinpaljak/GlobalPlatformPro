@@ -13,7 +13,7 @@ import java.security.PrivateKey;
 import static pro.javacard.gp.GlobalPlatform.CLA_GP;
 import static pro.javacard.gp.GlobalPlatform.INS_INSTALL;
 
-public class TestDelegatedManagementHandler {
+public class TestDMTokenGenerator {
 
     private PrivateKey key;
 
@@ -29,7 +29,7 @@ public class TestDelegatedManagementHandler {
     @Test
     public void testApplyToken() {
         CommandAPDU command = new CommandAPDU(CLA_GP, INS_INSTALL, 0x02, 0x00, new byte[]{0});
-        DelegatedManagementHandler dmHandler = new DelegatedManagementHandler(key);
+        DMTokenGenerator dmHandler = new DMTokenGenerator(key);
         command = dmHandler.applyToken(command);
         Assert.assertTrue(command.getData().length > 1);
     }
@@ -37,7 +37,7 @@ public class TestDelegatedManagementHandler {
     @Test
     public void testApplyEmptyToken() {
         CommandAPDU command = new CommandAPDU(CLA_GP, INS_INSTALL, 0x02, 0x00, new byte[]{0});
-        DelegatedManagementHandler dmHandler = new DelegatedManagementHandler(null);
+        DMTokenGenerator dmHandler = new DMTokenGenerator(null);
         command = dmHandler.applyToken(command);
         Assert.assertArrayEquals(command.getData(), new byte[]{0, 0});
     }

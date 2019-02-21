@@ -7,7 +7,6 @@ import javax.smartcardio.CardException;
 
 import static pro.javacard.gp.GPCommandLineInterface.OPT_DAP_DOMAIN;
 import static pro.javacard.gp.GPCommandLineInterface.OPT_TO;
-import static pro.javacard.gp.GPTool.fail;
 
 public class DAPProperties {
     private AID targetDomain = null;
@@ -18,6 +17,9 @@ public class DAPProperties {
         // Override target and check for DAP
         if (args.has(OPT_TO)) {
             targetDomain = AID.fromString(args.valueOf(OPT_TO));
+            if (gp.getRegistry().getDomain(targetDomain) == null) {
+                throw new GPException("Specified target domain is invalid: " + targetDomain);
+            }
             if (gp.getRegistry().getDomain(targetDomain).getPrivileges().has(GPRegistryEntry.Privilege.DAPVerification))
                 required = true;
         }
@@ -33,7 +35,7 @@ public class DAPProperties {
             dapDomain = AID.fromString(args.valueOf(OPT_DAP_DOMAIN));
             GPRegistryEntry.Privileges p = gp.getRegistry().getDomain(dapDomain).getPrivileges();
             if (!(p.has(GPRegistryEntry.Privilege.DAPVerification) || p.has(GPRegistryEntry.Privilege.MandatedDAPVerification))) {
-                fail("Specified DAP domain does not have (Mandated)DAPVerification privilege: " + p.toString());
+                throw new GPException("Specified DAP domain does not have (Mandated)DAPVerification privilege: " + p.toString());
             }
         }
     }
@@ -42,23 +44,11 @@ public class DAPProperties {
         return targetDomain;
     }
 
-    public void setTargetDomain(AID targetDomain) {
-        this.targetDomain = targetDomain;
-    }
-
     public AID getDapDomain() {
         return dapDomain;
     }
 
-    public void setDapDomain(AID dapDomain) {
-        this.dapDomain = dapDomain;
-    }
-
     public boolean isRequired() {
         return required;
-    }
-
-    public void setRequired(boolean required) {
-        this.required = required;
     }
 }

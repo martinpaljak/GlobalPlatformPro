@@ -237,7 +237,11 @@ public final class GPTool extends GPCommandLineInterface {
                         // FIXME: would like to get AID from oracle as well.
                     }
 
-                    gp.setTokenKey(privateKeyOrNull(args));
+                    if (args.has(OPT_TOKEN_KEY)) {
+                        gp.setDMTokenGenerator(new DMTokenGenerator(getRSAPrivateKey(args.valueOf(OPT_TOKEN_KEY).toString())));
+                    } else {
+                        gp.setDMTokenGenerator(new DMTokenGenerator(null));
+                    }
 
                     // Don't do sanity checks, just run asked commands
                     if (args.has(OPT_FORCE))
@@ -860,8 +864,6 @@ public final class GPTool extends GPCommandLineInterface {
                     // Do nothing. Here for findbugs
             }
             throw e;
-        } catch (CardException e) {
-            throw e;
         }
     }
 
@@ -875,18 +877,17 @@ public final class GPTool extends GPCommandLineInterface {
         }
     }
 
-    private static PrivateKey privateKeyOrNull(OptionSet args) {
-        if (args.has(OPT_TOKEN)) {
-            try (FileInputStream fin = new FileInputStream(new File(args.valueOf(OPT_TOKEN).toString()))) {
-                PrivateKey key = GPCrypto.pem2PrivateKey(fin);
-                if (key instanceof RSAPrivateKey) {
-                    return key;
-                }
-            } catch (Exception e) {
-                throw new RuntimeException("Could not extract RSA private key from supplied path");
+    private static PrivateKey getRSAPrivateKey(String path) {
+        try (FileInputStream fin = new FileInputStream(new File(path))) {
+            PrivateKey key = GPCrypto.pem2PrivateKey(fin);
+            if (key instanceof RSAPrivateKey) {
+                return key;
+            } else {
+                throw new RuntimeException("Supplied key at path is not instance of RSAPrivateKey");
             }
+        } catch (Exception e) {
+            throw new RuntimeException("Could not extract RSAPrivateKey from supplied path");
         }
-        return null;
     }
 
     // FIXME: get rid

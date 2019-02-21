@@ -104,7 +104,7 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
     private SecureChannelWrapper wrapper = null;
     private CardChannel channel;
     private GPRegistry registry = null;
-    private PrivateKey tokenKey;
+    private DMTokenGenerator tokenGenerator;
     private boolean dirty = true; // True if registry is dirty.
 
     /**
@@ -235,8 +235,8 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
         this.spec = spec;
     }
 
-    public void setTokenKey(PrivateKey key) {
-        this.tokenKey = key;
+    public void setDMTokenGenerator(DMTokenGenerator tokenGenerator) {
+        this.tokenGenerator = tokenGenerator;
     }
 
     public AID getAID() {
@@ -550,12 +550,11 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
     }
 
     private ResponseAPDU transmitDM(CommandAPDU command) throws CardException {
-        if (tokenKey == null && command.getINS() == INS_DELETE) {
+        if (!tokenGenerator.hasKey() && command.getINS() == INS_DELETE) {
             //Only add token bytes to INS_DELETE if key exists for token calculation, since token is optional
             return transmitLV(command);
         }
-        DelegatedManagementHandler dmHandler = new DelegatedManagementHandler(tokenKey);
-        command = dmHandler.applyToken(command);
+        command = tokenGenerator.applyToken(command);
         return transmitLV(command);
     }
 
@@ -625,7 +624,7 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
         ByteArrayOutputStream loadBlock = new ByteArrayOutputStream();
         try {
             // Add DAP block, if signature present
-            if (dap != null) {
+            if (dap != null && dapDomain != null) {
                 loadBlock.write(0xE2);
                 loadBlock.write(GPUtils.encodeLength(dapDomain.getLength() + dap.length + GPUtils.encodeLength(dap.length).length + 3)); // two tags, two lengths FIXME: proper size
                 loadBlock.write(0x4F);

@@ -153,7 +153,7 @@ class SCP03Wrapper extends SecureChannelWrapper {
                 o.write(response.getSW2());
                 response = new ResponseAPDU(o.toByteArray());
             }
-            if (renc) {
+            if (renc && response.getData().length>0) {
                 // Encrypt with S-ENC, after changing the first byte of the counter
                 byte [] response_encryption_counter = Arrays.copyOf(encryption_counter, encryption_counter.length);
                 response_encryption_counter[0] = (byte) 0x80;

@@ -550,10 +550,6 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
     }
 
     private ResponseAPDU transmitDM(CommandAPDU command) throws CardException {
-        if (!tokenGenerator.hasKey() && command.getINS() == INS_DELETE) {
-            //Only add token bytes to INS_DELETE if key exists for token calculation, since token is optional
-            return transmitLV(command);
-        }
         command = tokenGenerator.applyToken(command);
         return transmitLV(command);
     }

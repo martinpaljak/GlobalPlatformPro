@@ -32,7 +32,6 @@ import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.EnumSet;
-import java.nio.ByteBuffer;
 
 class SCP03Wrapper extends SecureChannelWrapper {
     // Both are block size length
@@ -86,15 +85,7 @@ class SCP03Wrapper extends SecureChannelWrapper {
                 bo.write(command.getINS());
                 bo.write(command.getP1());
                 bo.write(command.getP2());
-                // If LC is bigger than fits in one byte (255), 
-                // LC must be encoded in three bytes -> Extended Length APDU
-                if(lc>255) {
-                    byte[] lc_ba = ByteBuffer.allocate(4).putInt(lc).array();
-                    bo.write(Arrays.copyOfRange(lc_ba, 1, 4));
-                }
-                else {
-                    bo.write(lc);
-                }
+                bo.write(GPUtils.encodeLcLength(lc));
                 bo.write(data);
                 byte[] cmac_input = bo.toByteArray();
                 byte[] cmac = GPCrypto.scp03_mac(sessionKeys.getKeyFor(GPSessionKeyProvider.KeyPurpose.MAC), cmac_input, 128);

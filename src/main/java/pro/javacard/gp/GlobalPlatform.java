@@ -569,6 +569,12 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
         loadCapFile(cap, targetDomain, false, false, null, null, LFDBH_SHA1);
     }
 
+    public void loadCapFile(CAPFile cap, AID targetDomain, String hashFunction) throws CardException, GPException {
+        if (targetDomain == null)
+            targetDomain = sdAID;
+        loadCapFile(cap, targetDomain, false, false, null, null, hashFunction);
+    }
+
     public void loadCapFile(CAPFile cap, AID targetDomain, byte[] dap, String hash) throws CardException, GPException {
         if (targetDomain == null)
             targetDomain = sdAID;
@@ -589,7 +595,8 @@ public class GlobalPlatform extends CardChannel implements AutoCloseable {
         }
 
         // FIXME: hash type handling needs to be sensible.
-        byte[] hash = dap != null ? cap.getLoadFileDataHash(hashFunction, includeDebug) : new byte[0];
+        boolean isHashRequired = dap != null || tokenGenerator.hasKey();
+        byte[] hash = isHashRequired ? cap.getLoadFileDataHash(hashFunction, includeDebug) : new byte[0];
         byte[] code = cap.getCode(includeDebug);
         // FIXME: parameters are optional for load
         byte[] loadParams = getLoadParams(loadParam, code);

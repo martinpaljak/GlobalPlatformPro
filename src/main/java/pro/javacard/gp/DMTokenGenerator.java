@@ -27,7 +27,7 @@ public class DMTokenGenerator {
                 logger.debug("No private key for token generation provided");
                 newData.write(0); //Token length
             } else {
-                logger.debug("Using private key for token generation");
+                logger.debug("Using private key for token generation (" + acceptedSignatureAlgorithm + ")");
                 byte[] token = calculateToken(apdu, key);
                 newData.write(token.length);
                 newData.write(token);

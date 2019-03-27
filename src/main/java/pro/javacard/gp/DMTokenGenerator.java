@@ -8,6 +8,8 @@ import java.io.ByteArrayOutputStream;
 import java.security.PrivateKey;
 import java.security.Signature;
 
+import static pro.javacard.gp.GlobalPlatform.INS_DELETE;
+
 public class DMTokenGenerator {
     private static final Logger logger = LoggerFactory.getLogger(DMTokenGenerator.class);
     private static final String acceptedSignatureAlgorithm = "SHA1withRSA";
@@ -23,6 +25,11 @@ public class DMTokenGenerator {
 
         try {
             newData.write(apdu.getData());
+            if (apdu.getINS() == INS_DELETE || apdu.getINS() == (INS_DELETE & 255)) {
+                // See GP 2.3.1 Table 11-23
+                logger.debug("Adding tag 0x9E before Delete Token");
+                newData.write(0x9E);
+            }
             if (key == null) {
                 logger.debug("No private key for token generation provided");
                 newData.write(0); //Token length

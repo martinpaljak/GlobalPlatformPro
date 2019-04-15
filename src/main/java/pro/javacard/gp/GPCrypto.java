@@ -20,6 +20,8 @@
 package pro.javacard.gp;
 
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
+import org.bouncycastle.cert.X509CertificateHolder;
+import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.crypto.BlockCipher;
 import org.bouncycastle.crypto.engines.AESEngine;
 import org.bouncycastle.crypto.generators.KDFCounterBytesGenerator;
@@ -42,6 +44,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
+import java.security.cert.CertificateException;
 import java.util.Arrays;
 
 // Various cryptographic primitives used for secure channel or plaintext keys
@@ -262,6 +265,13 @@ public final class GPCrypto {
                 return new JcaPEMKeyConverter().getKeyPair(kp).getPublic();
             } else if (ohh instanceof SubjectPublicKeyInfo) {
                 return new JcaPEMKeyConverter().getPublicKey((SubjectPublicKeyInfo) ohh);
+            } else if (ohh instanceof X509CertificateHolder) {
+                X509CertificateHolder certHolder = (X509CertificateHolder) ohh;
+                try {
+                    return new JcaX509CertificateConverter().getCertificate(certHolder).getPublicKey();
+                } catch (CertificateException ce) {
+                    throw new IllegalArgumentException("Can not read PEM: " + ce.getMessage());
+                }
             } else throw new IllegalArgumentException("Can not read PEM");
         }
     }

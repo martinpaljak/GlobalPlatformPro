@@ -30,6 +30,7 @@ import com.payneteasy.tlv.IBerTlvLogger;
 import org.slf4j.Logger;
 
 import java.io.ByteArrayOutputStream;
+import java.nio.ByteBuffer;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -110,6 +111,17 @@ public class GPUtils {
             bo.write((byte) (len & 0xFF));
         }
         return bo.toByteArray();
+    }
+
+    // Encodes APDU LC value, which has either length of 1 byte or 3 bytes (for extended length APDUs)
+    // If LC is bigger than fits in one byte (255), LC must be encoded in three bytes
+    public static byte[] encodeLcLength(int lc) {
+        if(lc>255) {
+            byte[] lc_ba = ByteBuffer.allocate(4).putInt(lc).array();
+            return Arrays.copyOfRange(lc_ba, 1, 4);
+        }
+        else 
+            return new byte[]{(byte)lc};
     }
 
     // Assumes the bignum length must be even

@@ -85,7 +85,7 @@ class SCP03Wrapper extends SecureChannelWrapper {
                 bo.write(command.getINS());
                 bo.write(command.getP1());
                 bo.write(command.getP2());
-                bo.write(lc);
+                bo.write(GPUtils.encodeLcLength(lc));
                 bo.write(data);
                 byte[] cmac_input = bo.toByteArray();
                 byte[] cmac = GPCrypto.scp03_mac(sessionKeys.getKeyFor(GPSessionKeyProvider.KeyPurpose.MAC), cmac_input, 128);
@@ -94,21 +94,22 @@ class SCP03Wrapper extends SecureChannelWrapper {
                 // 8 bytes for actual mac
                 cmd_mac = Arrays.copyOf(cmac, 8);
             }
-            // Construct new command
-            ByteArrayOutputStream na = new ByteArrayOutputStream();
-            na.write(cla); // possibly fiddled
-            na.write(command.getINS());
-            na.write(command.getP1());
-            na.write(command.getP2());
-            na.write(lc);
-            na.write(data);
-            if (mac)
-                na.write(cmd_mac);
-            if (command.getNe() > 0) {
-                na.write(command.getNe());
+            // Constructing new a new command APDU ensures that the coding of LC and NE is correct; especially for Extend Length APDUs
+            CommandAPDU newAPDU = null;
+            
+            ByteArrayOutputStream newData = new ByteArrayOutputStream();
+            newData.write(data);
+            if (mac) {
+                newData.write(cmd_mac);
             }
-            byte[] new_apdu = na.toByteArray();
-            return new CommandAPDU(new_apdu);
+            if (command.getNe() > 0) {
+                newAPDU = new CommandAPDU(cla, command.getINS(), command.getP1(), command.getP2(),newData.toByteArray(),command.getNe());
+            }
+            else {
+                newAPDU = new CommandAPDU(cla, command.getINS(), command.getP1(), command.getP2(),newData.toByteArray());
+            }
+            return newAPDU;
+            
         } catch (IOException e) {
             throw new RuntimeException("APDU wrapping failed", e);
         } catch (NoSuchAlgorithmException | NoSuchPaddingException e) {

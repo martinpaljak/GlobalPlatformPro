@@ -19,6 +19,7 @@
  */
 package pro.javacard.gp;
 
+import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
@@ -31,6 +32,7 @@ import org.bouncycastle.crypto.params.KeyParameter;
 import org.bouncycastle.openssl.PEMKeyPair;
 import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
+import pro.javacard.AID;
 import pro.javacard.gp.GPKey.Type;
 
 import javax.crypto.BadPaddingException;
@@ -38,10 +40,7 @@ import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.IvParameterSpec;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.cert.CertificateException;
@@ -257,7 +256,7 @@ public final class GPCrypto {
     }
 
     // Get a public key from a PEM file, either public key or keypair
-    public static PublicKey pem2pubkey(InputStream in) throws IOException {
+    public static PublicKey pem2PublicKey(InputStream in) throws IOException {
         try (PEMParser pem = new PEMParser(new InputStreamReader(in, StandardCharsets.US_ASCII))) {
             Object ohh = pem.readObject();
             if (ohh instanceof PEMKeyPair) {
@@ -275,4 +274,18 @@ public final class GPCrypto {
             } else throw new IllegalArgumentException("Can not read PEM");
         }
     }
+
+    // Get a private key from a PEM file, either private key or keypair
+    public static PrivateKey pem2PrivateKey(InputStream in) throws IOException {
+        try (PEMParser pem = new PEMParser(new InputStreamReader(in, StandardCharsets.US_ASCII))) {
+            Object ohh = pem.readObject();
+            if (ohh instanceof PEMKeyPair) {
+                PEMKeyPair kp = (PEMKeyPair) ohh;
+                return new JcaPEMKeyConverter().getKeyPair(kp).getPrivate();
+            } else if (ohh instanceof PrivateKeyInfo) {
+                return new JcaPEMKeyConverter().getPrivateKey((PrivateKeyInfo) ohh);
+            } else throw new IllegalArgumentException("Can not read PEM");
+        }
+    }
+
 }

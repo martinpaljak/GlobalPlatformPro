@@ -34,7 +34,9 @@ import javax.crypto.Cipher;
 import javax.smartcardio.*;
 import javax.smartcardio.CardTerminals.State;
 import java.io.*;
+import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -235,6 +237,12 @@ public final class GPTool extends GPCommandLineInterface {
                         // FIXME: would like to get AID from oracle as well.
                     }
 
+                    if (args.has(OPT_TOKEN_KEY)) {
+                        gp.setDMTokenGenerator(new DMTokenGenerator(getRSAPrivateKey(args.valueOf(OPT_TOKEN_KEY).toString())));
+                    } else {
+                        gp.setDMTokenGenerator(new DMTokenGenerator(null));
+                    }
+
                     // Don't do sanity checks, just run asked commands
                     if (args.has(OPT_FORCE))
                         gp.setStrict(false);
@@ -365,7 +373,8 @@ public final class GPTool extends GPCommandLineInterface {
                             for (AID aid : aids) {
                                 try {
                                     // If the AID represents a package or otherwise force is enabled.
-                                    gp.deleteAID(aid, reg.allPackageAIDs().contains(aid) || args.has(OPT_FORCE));
+                                    boolean deleteDeps = reg.allPackageAIDs().contains(aid) || args.has(OPT_FORCE);
+                                    gp.deleteAID(aid, deleteDeps);
                                 } catch (GPException e) {
                                     if (!gp.getRegistry().allAIDs().contains(aid)) {
                                         System.err.println("Could not delete AID (not present on card): " + aid);
@@ -402,53 +411,8 @@ public final class GPTool extends GPCommandLineInterface {
                                 if (isVerbose) {
                                     loadcap.dump(System.out);
                                 }
-                                try {
-                                    AID target = null;
-                                    AID dapdomain = null;
-                                    boolean dapRequired = false;
 
-                                    // Override target and check for DAP
-                                    if (args.has(OPT_TO)) {
-                                        target = AID.fromString(args.valueOf(OPT_TO));
-                                        if (gp.getRegistry().getDomain(target).getPrivileges().has(Privilege.DAPVerification))
-                                            dapRequired = true;
-                                    }
-
-                                    // Check if DAP block is required
-                                    for (GPRegistryEntryApp e : gp.getRegistry().allDomains()) {
-                                        if (e.getPrivileges().has(Privilege.MandatedDAPVerification))
-                                            dapRequired = true;
-                                    }
-
-                                    // Check if DAP is overriden
-                                    if (args.has(OPT_DAP_DOMAIN)) {
-                                        dapdomain = AID.fromString(args.valueOf(OPT_DAP_DOMAIN));
-                                        Privileges p = gp.getRegistry().getDomain(dapdomain).getPrivileges();
-                                        if (!(p.has(Privilege.DAPVerification) || p.has(Privilege.MandatedDAPVerification))) {
-                                            fail("Specified DAP domain does not have (Mandated)DAPVerification privilege: " + p.toString());
-                                        }
-                                    }
-
-                                    // XXX: figure out right signature type in a better way
-                                    if (dapRequired) {
-                                        byte[] dap = args.has(OPT_SHA256) ? loadcap.getMetaInfEntry(CAPFile.DAP_RSA_V1_SHA256_FILE) : loadcap.getMetaInfEntry(CAPFile.DAP_RSA_V1_SHA1_FILE);
-                                        gp.loadCapFile(loadcap, target, dapdomain == null ? target : dapdomain, dap, args.has(OPT_SHA256) ? "SHA-256" : "SHA1");
-                                    } else {
-                                        gp.loadCapFile(loadcap, target);
-                                    }
-                                } catch (GPException e) {
-                                    switch (e.sw) {
-                                        case 0x6A80:
-                                            System.err.println("Applet loading failed. Are you sure the card can handle it?");
-                                            break;
-                                        case 0x6985:
-                                            System.err.println("Applet loading not allowed. Are you sure the domain can accept it?");
-                                            break;
-                                        default:
-                                            // Do nothing. Here for findbugs
-                                    }
-                                    throw e;
-                                }
+                                calculateDapPropertiesAndLoadCap(args, gp, loadcap);
                             }
                         }
 
@@ -462,7 +426,7 @@ public final class GPTool extends GPCommandLineInterface {
 
                             try (FileInputStream fin = new FileInputStream(new File(args.valueOf(OPT_PUT_KEY).toString()))) {
                                 // Get public key
-                                PublicKey key = GPCrypto.pem2pubkey(fin);
+                                PublicKey key = GPCrypto.pem2PublicKey(fin);
                                 if (key instanceof RSAPublicKey) {
                                     gp.putKey((RSAPublicKey) key, keyVersion);
                                 }
@@ -491,20 +455,8 @@ public final class GPTool extends GPCommandLineInterface {
                             }
 
                             // Load
-                            // TODO: handle DAP here as well
                             if (instcap.getAppletAIDs().size() <= 1) {
-                                try {
-                                    AID target = null;
-                                    if (args.has(OPT_TO))
-                                        target = AID.fromString(args.valueOf(OPT_TO));
-                                    gp.loadCapFile(instcap, target);
-                                    System.out.println("CAP loaded");
-                                } catch (GPException e) {
-                                    if (e.sw == 0x6985 || e.sw == 0x6A80) {
-                                        System.err.println("Loading failed. Are you sure the CAP file (JC version, packages, sizes) is compatible with your card?");
-                                    }
-                                    throw e;
-                                }
+                                calculateDapPropertiesAndLoadCap(args, gp, instcap);
                             }
 
                             // Install
@@ -543,7 +495,7 @@ public final class GPTool extends GPCommandLineInterface {
                             }
 
                             // shoot
-                            gp.installAndMakeSelectable(instcap.getPackageAID(), appaid, instanceaid, privs, getInstParams(args), null);
+                            gp.installAndMakeSelectable(instcap.getPackageAID(), appaid, instanceaid, privs, getInstParams(args));
                         }
 
                         // --create <aid> (--applet <aid> --package <aid> or --cap <cap>)
@@ -579,7 +531,7 @@ public final class GPTool extends GPCommandLineInterface {
 
                             // shoot
                             AID instanceAID = AID.fromString(args.valueOf(OPT_CREATE));
-                            gp.installAndMakeSelectable(packageAID, appletAID, instanceAID, getInstPrivs(args), getInstParams(args), null);
+                            gp.installAndMakeSelectable(packageAID, appletAID, instanceAID, getInstPrivs(args), getInstParams(args));
                         }
 
                         // --domain <AID>
@@ -620,7 +572,7 @@ public final class GPTool extends GPCommandLineInterface {
                             }
 
                             // shoot
-                            gp.installAndMakeSelectable(packageAID, appletAID, instanceAID, privs, params, null);
+                            gp.installAndMakeSelectable(packageAID, appletAID, instanceAID, privs, params);
                         }
 
                         // --move <AID>
@@ -630,7 +582,6 @@ public final class GPTool extends GPCommandLineInterface {
                             }
                             AID what = AID.fromString(args.valueOf(OPT_MOVE));
                             AID to = AID.fromString(args.valueOf(OPT_TO));
-
                             gp.extradite(what, to);
                         }
 
@@ -896,6 +847,49 @@ public final class GPTool extends GPCommandLineInterface {
         System.exit(0);
     }
 
+    private static void calculateDapPropertiesAndLoadCap(OptionSet args, GlobalPlatform gp, CAPFile capFile) throws GPException, CardException {
+        try {
+            DAPProperties dap = new DAPProperties(args, gp);
+            loadCapAccordingToDapRequirement(args, gp, dap.getTargetDomain(), dap.getDapDomain(), dap.isRequired(), capFile);
+            System.out.println("CAP loaded");
+        } catch (GPException e) {
+            switch (e.sw) {
+                case 0x6A80:
+                    System.err.println("Applet loading failed. Are you sure the card can handle it?");
+                    break;
+                case 0x6985:
+                    System.err.println("Applet loading not allowed. Are you sure the domain can accept it?");
+                    break;
+                default:
+                    // Do nothing. Here for findbugs
+            }
+            throw e;
+        }
+    }
+
+    private static void loadCapAccordingToDapRequirement(OptionSet args, GlobalPlatform gp, AID targetDomain, AID dapDomain, boolean dapRequired, CAPFile cap) throws CardException, GPException {
+        // XXX: figure out right signature type in a better way
+        if (dapRequired) {
+            byte[] dap = args.has(OPT_SHA256) ? cap.getMetaInfEntry(CAPFile.DAP_RSA_V1_SHA256_FILE) : cap.getMetaInfEntry(CAPFile.DAP_RSA_V1_SHA1_FILE);
+            gp.loadCapFile(cap, targetDomain, dapDomain == null ? targetDomain : dapDomain, dap, args.has(OPT_SHA256) ? "SHA-256" : "SHA-1");
+        } else {
+            gp.loadCapFile(cap, targetDomain, args.has(OPT_SHA256) ? "SHA-256" : "SHA-1");
+        }
+    }
+
+    private static PrivateKey getRSAPrivateKey(String path) {
+        try (FileInputStream fin = new FileInputStream(new File(path))) {
+            PrivateKey key = GPCrypto.pem2PrivateKey(fin);
+            if (key instanceof RSAPrivateKey) {
+                return key;
+            } else {
+                throw new RuntimeException("Supplied key at path is not instance of RSAPrivateKey");
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Could not extract RSAPrivateKey from supplied path");
+        }
+    }
+
     // FIXME: get rid
     private static Privileges getInstPrivs(OptionSet args) {
         Privileges privs = new Privileges();
@@ -975,7 +969,7 @@ public final class GPTool extends GPCommandLineInterface {
         return false;
     }
 
-    private static void fail(String msg) {
+    public static void fail(String msg) {
         System.err.println(msg);
         System.exit(1);
     }

@@ -25,7 +25,7 @@ import apdu4j.ResponseAPDU;
 import java.util.EnumSet;
 
 abstract class SecureChannelWrapper {
-    protected int blockSize = 0;
+    protected int blockSize = 255;
     protected GPSessionKeyProvider sessionKeys = null;
     protected boolean mac = false;
     protected boolean enc = false;

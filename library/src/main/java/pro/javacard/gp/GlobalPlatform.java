@@ -104,11 +104,8 @@ public class GlobalPlatform {
     private DMTokenGenerator tokenGenerator;
     private boolean dirty = true; // True if registry is dirty.
 
-    /**
+    /*
      * Maintaining locks to the underlying hardware is the duty of the caller
-     *
-     * @param channel channel to talk to
-     * @throws IllegalArgumentException if {@code channel} is null.
      */
     public GlobalPlatform(APDUBIBO channel, AID sdAID) {
         if (channel == null) {
@@ -192,7 +189,7 @@ public class GlobalPlatform {
         return gp;
     }
 
-    /**
+    /*
      * Get the version and build information of the library.
      */
     public static String getVersion() {
@@ -350,7 +347,7 @@ public class GlobalPlatform {
         return result;
     }
 
-    /**
+    /*
      * Establishes a secure channel to the security domain.
      */
     public void openSecureChannel(GPSessionKeyProvider keys, byte[] host_challenge, int scpVersion, EnumSet<APDUMode> securityLevel)
@@ -635,27 +632,6 @@ public class GlobalPlatform {
         dirty = true;
     }
 
-    /**
-     * Install an applet and make it selectable. The package and applet AID must
-     * be present (ie. non-null). If one of the other parameters is null
-     * sensible defaults are chosen. If installation parameters are used, they
-     * must be passed in a special format, see parameter description below.
-     * <p>
-     * Before installation the package containing the applet must be loaded onto
-     * the card, see {@link #loadCapFile loadCapFile}.
-     * <p>
-     * This method installs just one applet. Call it several times for packages
-     * containing several applets.
-     *
-     * @param packageAID    the package that containing the applet
-     * @param appletAID     the applet to be installed
-     * @param instanceAID   the applet AID passed to the install method of the applet,
-     *                      defaults to {@code packageAID} if null
-     * @param privileges    privileges encoded as an object
-     * @param installParams tagged installation parameters, defaults to {@code 0xC9 00}
-     *                      (ie. no installation parameters) if null, if non-null the
-     *                      format is {@code 0xC9 len data...}
-     */
     public void installAndMakeSelectable(AID packageAID, AID appletAID, AID instanceAID, Privileges privileges, byte[] installParams) throws GPException, IOException {
         if (instanceAID == null) {
             instanceAID = appletAID;
@@ -671,27 +647,6 @@ public class GlobalPlatform {
         dirty = true;
     }
 
-    /**
-     * Install an applet. Do not make it selectable. The package and applet AID must
-     * be present (ie. non-null). If one of the other parameters is null
-     * sensible defaults are chosen. If installation parameters are used, they
-     * must be passed in a special format, see parameter description below.
-     * <p>
-     * Before installation the package containing the applet must be loaded onto
-     * the card, see {@link #loadCapFile loadCapFile}.
-     * <p>
-     * This method installs just one applet. Call it several times for packages
-     * containing several applets.
-     *
-     * @param packageAID    the package that containing the applet
-     * @param appletAID     the applet to be installed
-     * @param instanceAID   the applet AID passed to the install method of the applet,
-     *                      defaults to {@code packageAID} if null
-     * @param privileges    privileges encoded as an object
-     * @param installParams tagged installation parameters, defaults to {@code 0xC9 00}
-     *                      (ie. no installation parameters) if null, if non-null the
-     *                      format is {@code 0xC9 len data...}
-     */
     public void installForInstall(AID packageAID, AID appletAID, AID instanceAID, Privileges privileges, byte[] installParams, PrivateKey key) throws GPException, IOException {
         if (instanceAID == null) {
             instanceAID = appletAID;
@@ -794,12 +749,8 @@ public class GlobalPlatform {
         return personalize(aid, Collections.singletonList(data), P1).get(0);
     }
 
-    /**
+    /*
      * Sends STORE DATA commands to the application identified via SD
-     *
-     * @param aid - AID of the target application (or Security Domain)
-     * @throws GPException
-     * @throws IOException
      */
     public void personalize(AID aid, byte[] data, int P1) throws IOException, GPException {
         installForPersonalization(aid);
@@ -883,13 +834,9 @@ public class GlobalPlatform {
         dirty = true;
     }
 
-    /**
+    /*
      * Delete file {@code aid} on the card. Delete dependencies as well if
      * {@code deleteDeps} is true.
-     *
-     * @param aid        identifier of the file to delete
-     * @param deleteDeps if true delete dependencies as well
-     * @throws IOException for low-level communication errors
      */
     public void deleteAID(AID aid, boolean deleteDeps) throws GPException, IOException {
         ByteArrayOutputStream bo = new ByteArrayOutputStream();

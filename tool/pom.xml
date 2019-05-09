@@ -7,7 +7,7 @@
     <parent>
         <groupId>com.github.martinpaljak</groupId>
         <artifactId>gppro</artifactId>
-        <version>19.04.20</version>
+        <version>19.05.08.1</version>
     </parent>
 
     <artifactId>gptool</artifactId>
@@ -17,13 +17,13 @@
         <dependency>
             <groupId>com.github.martinpaljak</groupId>
             <artifactId>apdu4j-pcsc</artifactId>
-            <version>19.04.20</version>
+            <version>19.05.08</version>
         </dependency>
         <!-- Library -->
         <dependency>
             <groupId>com.github.martinpaljak</groupId>
             <artifactId>globalplatformpro</artifactId>
-            <version>19.04.20</version>
+            <version>19.05.08.1</version>
         </dependency>
         <!-- For CAP file parsing -->
         <dependency>
@@ -82,4 +82,41 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.2.1</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <finalName>gp</finalName>
+                            <transformers>
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>pro.javacard.gp.GPTool</mainClass>
+                                </transformer>
+                            </transformers>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                        <exclude>META-INF/maven/**</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>

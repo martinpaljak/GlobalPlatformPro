@@ -121,16 +121,12 @@ public class SEAccessControl {
         }
     }
 
-    /**
+    /*
      * Parse REF_AR_DO object (p46 Secure Element Access Control v1.0).
      * <p>
      * <p>
      * 0xE2 | length | REF-DO | AR-DO
      * </p>
-     *
-     * @param refArDo REF_AR_DO data
-     * @return
-     * @throws GPDataException
      */
     public static RefArDo parseRefArDo(final BerTlv refArDo) throws GPDataException {
         RefDo refDo = parseRefDo(refArDo.find(new BerTag(REF_DO)));
@@ -138,16 +134,12 @@ public class SEAccessControl {
         return new RefArDo(refDo, arDo);
     }
 
-    /**
+    /*
      * Parse REF_DO object (p46 Secure Element Access control v1.0).
      * <p>
      * <p>
      * 0xE1 | length | AID-REF-DO | Hash-REF-DO
      * </p>
-     *
-     * @param refDo
-     * @return
-     * @throws GPDataException
      */
     public static RefDo parseRefDo(final BerTlv refDo) throws GPDataException {
         AidRefDo aidRefDo = parseAidRefDo(refDo.find(new BerTag(AID_REF_DO)));
@@ -155,33 +147,25 @@ public class SEAccessControl {
         return new RefDo(aidRefDo, hashRefDo);
     }
 
-    /**
+    /*
      * Parse AID_REF_DO object (p45 Secure Element Access Control v1.0).
      * <p>
      * 4F | length | AID
-     *
-     * @param aidRefDo
-     * @return
-     * @throws GPDataException
      */
     public static AidRefDo parseAidRefDo(final BerTlv aidRefDo) throws GPDataException {
         return new AidRefDo(aidRefDo != null ? aidRefDo.getBytesValue() : new byte[]{});
     }
 
-    /**
+    /*
      * Parse HASH_REF_DO (p46 Secure Element Access Control v1.0).
      * <p>
      * C1 | length | hash
-     *
-     * @param hashRefDo
-     * @return
-     * @throws GPDataException
      */
     public static HashRefDo parseHashRefDo(final BerTlv hashRefDo) throws GPDataException {
         return new HashRefDo(hashRefDo != null ? hashRefDo.getBytesValue() : new byte[]{});
     }
 
-    /**
+    /*
      * Parse AR_DO (p47 Secure Element Access Control v1.0)
      * <p>
      * E3 | length | APDU-AR-DO
@@ -193,10 +177,6 @@ public class SEAccessControl {
      * OR
      * <p>
      * E3 | length | APDU-AR-DO | NFC-AR-DO
-     *
-     * @param arDo
-     * @return
-     * @throws GPDataException
      */
     public static ArDo parseArDo(final BerTlv arDo) throws GPDataException {
         if (arDo != null) {
@@ -207,14 +187,10 @@ public class SEAccessControl {
         return null;
     }
 
-    /**
+    /*
      * Parse APDU_AR_DO (p48 Secure Element Access Control v1.0).
      * <p>
      * D0 | length | 0x00 or 0x01 or APDU filter 1 | APDU filter n
-     *
-     * @param apduArDo
-     * @return
-     * @throws GPDataException
      */
     public static ApduArDo parseApduArDo(final BerTlv apduArDo) throws GPDataException {
         if (apduArDo != null) {
@@ -233,14 +209,10 @@ public class SEAccessControl {
         return null;
     }
 
-    /**
+    /*
      * Parse NFC_AR_DO (p49 Secure Element Access Control v1.0).
      * <p>
      * D1 | 01 | 0x00 or 0x01
-     *
-     * @param nfcArDo
-     * @return
-     * @throws GPDataException
      */
     public static NfcArDo parseNfcArDo(final BerTlv nfcArDo) throws GPDataException {
         if (nfcArDo != null) {
@@ -254,10 +226,8 @@ public class SEAccessControl {
         return null;
     }
 
-    /**
+    /*
      * Print ACR list response.
-     *
-     * @param acrList list of REF-AR-DO
      */
     public static void printList(final List<RefArDo> acrList) {
         if (acrList.size() == 0) {
@@ -645,7 +615,7 @@ public class SEAccessControl {
         }
     }
 
-    /**
+    /*
      * Parse access rule list response.
      */
     public static class AcrListResponse {

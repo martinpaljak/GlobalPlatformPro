@@ -37,13 +37,8 @@ import java.io.IOException;
  */
 public final class SEAccessControlUtility {
 
-    /**
+    /*
      * Send Access Control rule GET DATA.
-     *
-     * @param channel
-     * @param P1
-     * @return
-     * @throws GPException
      */
     private static ResponseAPDU sendAcrGetData(final APDUBIBO channel, final byte P1) throws IOException, GPException {
         CommandAPDU list = new CommandAPDU(GlobalPlatform.CLA_GP, GlobalPlatform.INS_GET_DATA, 0xFF, P1, 256);
@@ -61,11 +56,8 @@ public final class SEAccessControlUtility {
         return response;
     }
 
-    /**
+    /*
      * List access rules.
-     *
-     * @throws IOException
-     * @throws GPException
      */
     public static void acrList(final GlobalPlatform gp) throws IOException, GPException {
         try {
@@ -86,14 +78,8 @@ public final class SEAccessControlUtility {
         }
     }
 
-    /**
+    /*
      * Add an access rule.
-     *
-     * @param aid
-     * @param hash
-     * @param rules
-     * @throws IOException
-     * @throws GPException
      */
     public static void acrAdd(final GlobalPlatform gp, final AID araAid, final AID aid, final byte[] hash, final byte[] rules) throws IOException, GPException {
         SEAccessControl.RefArDo refArDo = new SEAccessControl.RefArDo(aid, hash, rules);
@@ -101,12 +87,8 @@ public final class SEAccessControlUtility {
         acrStore(gp, araAid, storeArDo.toTlv());
     }
 
-    /**
+    /*
      * Send store data for access rule.
-     *
-     * @param data TLV data
-     * @throws IOException
-     * @throws GPException
      */
     public static void acrStore(final GlobalPlatform gp, final AID araAid, final BerTlv data) throws IOException, GPException {
         try {
@@ -121,13 +103,8 @@ public final class SEAccessControlUtility {
         }
     }
 
-    /**
+    /*
      * Delete an access rule by AID/HASH.
-     *
-     * @param aid
-     * @param hash
-     * @throws IOException
-     * @throws GPException
      */
     public static void acrDelete(final GlobalPlatform gp, final AID araAid, final AID aid, final byte[] hash) throws IOException, GPException {
         BerTlv request;

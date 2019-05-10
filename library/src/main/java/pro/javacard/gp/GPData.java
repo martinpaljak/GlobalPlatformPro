@@ -19,15 +19,19 @@
  */
 package pro.javacard.gp;
 
-import apdu4j.*;
-import com.payneteasy.tlv.*;
+import apdu4j.APDUBIBO;
+import apdu4j.CommandAPDU;
+import apdu4j.HexUtils;
+import apdu4j.ResponseAPDU;
+import com.payneteasy.tlv.BerTag;
+import com.payneteasy.tlv.BerTlv;
+import com.payneteasy.tlv.BerTlvParser;
+import com.payneteasy.tlv.BerTlvs;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pro.javacard.gp.GPKey.Type;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.math.BigInteger;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -46,17 +50,7 @@ public final class GPData {
     public static final byte securedStatus = 0xF;
     public static final byte lockedStatus = 0x7F;
     public static final byte terminatedStatus = (byte) 0xFF;
-    // See GP 2.1.1 Table 9-7: Application Privileges
-    @Deprecated
-    public static final byte defaultSelectedPriv = 0x04;
-    @Deprecated
-    public static final byte cardLockPriv = 0x10;
-    @Deprecated
-    public static final byte cardTerminatePriv = 0x08;
-    @Deprecated
-    public static final byte securityDomainPriv = (byte) 0x80;
-    // Default test key TODO: provide getters for arrays, this class should be kept public
-    static final byte[] defaultKeyBytes = HexUtils.hex2bin("404142434445464748494A4B4C4D4E4F");
+
     // Default ISD AID-s
     static final byte[] defaultISDBytes = HexUtils.hex2bin("A000000151000000");
     static final Map<Integer, String> sw = new HashMap<>();
@@ -83,138 +77,6 @@ public final class GPData {
         sw.put(0x6A84, "Not enough memory space"); // 2.3 Table 11-15
         sw.put(0x6A86, "Incorrect P1/P2"); // 2.3 Table 11-15
         sw.put(0x6A88, "Referenced data not found");  // 2.3 Table 11-78
-    }
-
-    // GP 2.1.1 9.1.6
-    // GP 2.2.1 11.1.8
-    public static String get_key_type_coding_string(int type) {
-        if ((0x00 <= type) && (type <= 0x7f))
-            return "Reserved for private use";
-        // symmetric
-        if (0x80 == type)
-            return "DES - mode (ECB/CBC) implicitly known";
-        if (0x81 == type)
-            return "Reserved (Triple DES)";
-        if (0x82 == type)
-            return "Triple DES in CBC mode";
-        if (0x83 == type)
-            return "DES in ECB mode";
-        if (0x84 == type)
-            return "DES in CBC mode";
-        if (0x85 == type)
-            return "Pre-Shared Key for Transport Layer Security";
-        if (0x88 == type)
-            return "AES (16, 24, or 32 long keys)";
-        if (0x90 == type)
-            return "HMAC-SHA1 - length of HMAC is implicitly known";
-        if (0x91 == type)
-            return "MAC-SHA1-160 - length of HMAC is 160 bits";
-        if (type == 0x86 || type == 0x87 || ((0x89 <= type) && (type <= 0x8F)) || ((0x92 <= type) && (type <= 0x9F)))
-            return "RFU (asymmetric algorithms)";
-        // asymmetric
-        if (0xA0 == type)
-            return "RSA Public Key - public exponent e component (clear text)";
-        if (0xA1 == type)
-            return "RSA Public Key - modulus N component (clear text)";
-        if (0xA2 == type)
-            return "RSA Private Key - modulus N component";
-        if (0xA3 == type)
-            return "RSA Private Key - private exponent d component";
-        if (0xA4 == type)
-            return "RSA Private Key - Chinese Remainder P component";
-        if (0xA5 == type)
-            return "RSA Private Key - Chinese Remainder Q component";
-        if (0xA6 == type)
-            return "RSA Private Key - Chinese Remainder PQ component";
-        if (0xA7 == type)
-            return "RSA Private Key - Chinese Remainder DP1 component";
-        if (0xA8 == type)
-            return "RSA Private Key - Chinese Remainder DQ1 component";
-        if ((0xA9 <= type) && (type <= 0xFE))
-            return "RFU (asymmetric algorithms)";
-        if (0xFF == type)
-            return "Extended Format";
-
-        return "UNKNOWN";
-    }
-
-    public static GPKey getDefaultKey() {
-        return new GPKey(defaultKeyBytes, Type.DES3);
-    }
-
-    // Print the key template
-    public static void pretty_print_key_template(List<GPKey> list, PrintStream out) {
-        boolean factory_keys = false;
-        out.flush();
-        for (GPKey k : list) {
-            // Descriptive text about the key
-            final String nice;
-            if (k.getType() == Type.RSAPUB && k.getLength() > 0) {
-                nice = "(RSA-" + k.getLength() * 8 + " public)";
-            } else if (k.getType() == Type.AES && k.getLength() > 0) {
-                nice = "(AES-" + k.getLength() * 8 + ")";
-            } else {
-                nice = "";
-            }
-
-            // Detect unaddressable factory keys
-            if (k.getVersion() == 0x00 || k.getVersion() == 0xFF)
-                factory_keys = true;
-
-            // print
-            out.println(String.format("Version: %3d (0x%02X) ID: %3d (0x%02X) type: %-4s length: %3d %s", k.getVersion(), k.getVersion(), k.getID(), k.getID(), k.getType(), k.getLength(), nice));
-        }
-        if (factory_keys) {
-            out.println("Key version suggests factory keys");
-        }
-        out.flush();
-    }
-
-    // GP 2.1.1 9.3.3.1
-    // GP 2.2.1 11.3.3.1 and 11.1.8
-    // TODO: move to GPKey
-    public static List<GPKey> get_key_template_list(byte[] data) throws GPException {
-        List<GPKey> r = new ArrayList<>();
-
-        BerTlvParser parser = new BerTlvParser();
-        BerTlvs tlvs = parser.parse(data);
-        GPUtils.trace_tlv(data, logger);
-
-        BerTlv keys = tlvs.find(new BerTag(0xE0));
-        if (keys != null && keys.isConstructed()) {
-            for (BerTlv key : keys.findAll(new BerTag(0xC0))) {
-                byte[] tmpl = key.getBytesValue();
-                if (tmpl.length == 0) {
-                    // Fresh SSD with an empty template.
-                    logger.info("Key template has zero length (empty). Skipping.");
-                    continue;
-                }
-                if (tmpl.length < 4) {
-                    throw new GPDataException("Key info template shorter than 4 bytes", tmpl);
-                }
-                int offset = 0;
-                int id = tmpl[offset++] & 0xFF;
-                int version = tmpl[offset++] & 0xFF;
-                int type = tmpl[offset++] & 0xFF;
-                boolean extended = type == 0xFF;
-                if (extended) {
-                    // extended key type, use second byte
-                    type = tmpl[offset++] & 0xFF;
-                }
-                // parse length
-                int length = tmpl[offset++] & 0xFF;
-                if (extended) {
-                    length = length << 8 | tmpl[offset++] & 0xFF;
-                }
-                if (extended) {
-                    // XXX usage and access is not shown currently
-                    logger.warn("Extended format not parsed: " + HexUtils.bin2hex(Arrays.copyOfRange(tmpl, tmpl.length - 4, tmpl.length)));
-                }
-                // XXX: RSAPUB keys have two components A1 and A0, gets called with A1 and A0 (exponent) discarded
-                r.add(new GPKey(version, id, length, type));
-            }
-        }
-        return r;
     }
 
     // GP 2.1.1: F.2 Table F-1
@@ -391,10 +253,9 @@ public final class GPData {
         // Print Key Info Template
         byte[] keyInfo = fetchKeyInfoTemplate(channel);
         if (keyInfo != null) {
-            pretty_print_key_template(GPData.get_key_template_list(keyInfo), System.out);
+            GPKeyInfo.print(GPKeyInfo.parseTemplate(keyInfo), System.out);
         }
     }
-
 
     // Just to encapsulate tag constants behind meaningful name
     public static byte[] fetchCPLC(APDUBIBO channel) throws IOException {

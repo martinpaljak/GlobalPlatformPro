@@ -44,11 +44,11 @@ public class PythiaKeys {
         try {
             final PlaintextKeys r;
             if (hint.key != null && hint.algo != null) {
-                r = PlaintextKeys.fromMasterKey(new GPKey(HexUtils.hex2bin(hint.key), GPKey.Type.valueOf(hint.algo)));
+                r = PlaintextKeys.fromMasterKey(HexUtils.hex2bin(hint.key));
             } else if (hint.mac != null && hint.enc != null && hint.kek != null && hint.algo != null) {
-                GPKey enc = new GPKey(HexUtils.hex2bin(hint.enc), GPKey.Type.valueOf(hint.algo));
-                GPKey mac = new GPKey(HexUtils.hex2bin(hint.mac), GPKey.Type.valueOf(hint.algo));
-                GPKey dek = new GPKey(HexUtils.hex2bin(hint.kek), GPKey.Type.valueOf(hint.algo));
+                byte[] enc = HexUtils.hex2bin(hint.enc);
+                byte[] mac = HexUtils.hex2bin(hint.mac);
+                byte[] dek = HexUtils.hex2bin(hint.kek);
                 r = PlaintextKeys.fromKeys(enc, mac, dek);
             } else {
                 throw new GPDataException("Oracle does not know the keys :(");
@@ -115,7 +115,7 @@ public class PythiaKeys {
                             X509Certificate c = (X509Certificate) cf.generateCertificate(cert);
                             return new X509Certificate[]{c};
                         }
-                    } catch (CertificateException|IOException e) {
+                    } catch (CertificateException | IOException e) {
                         // Ignore
                     }
                     return new X509Certificate[0];
@@ -185,8 +185,8 @@ public class PythiaKeys {
     private final static OracleHint makeDefault() {
         OracleHint DEFAULT = new OracleHint();
         DEFAULT.aid = HexUtils.bin2hex(GPData.defaultISDBytes);
-        DEFAULT.key = HexUtils.bin2hex(GPData.defaultKeyBytes);
-        DEFAULT.algo = GPKey.Type.DES3.name();
+        DEFAULT.key = HexUtils.bin2hex(PlaintextKeys.defaultKeyBytes);
+        DEFAULT.algo = GPKeyInfo.Type.DES3.name();
         return DEFAULT;
     }
 

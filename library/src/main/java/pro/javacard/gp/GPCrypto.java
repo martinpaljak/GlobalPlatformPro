@@ -32,15 +32,15 @@ import org.bouncycastle.crypto.params.KeyParameter;
 import org.bouncycastle.openssl.PEMKeyPair;
 import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
-import pro.javacard.AID;
-import pro.javacard.gp.GPKey.Type;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.IvParameterSpec;
-import java.io.*;
+import javax.crypto.spec.SecretKeySpec;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.cert.CertificateException;
@@ -111,13 +111,13 @@ public final class GPCrypto {
     }
 
     // 3des mac
-    public static byte[] mac_3des(GPKey key, byte[] text, byte[] iv) {
+    public static byte[] mac_3des(byte[] key, byte[] text, byte[] iv) {
         byte[] d = pad80(text, 8);
-        return mac_3des(key.getKeyAs(Type.DES3), d, 0, d.length, iv);
+        return mac_3des(new SecretKeySpec(resizeDES(key, 24), "DESede"), d, 0, d.length, iv);
     }
 
-    // 3des mac with null iv
-    public static byte[] mac_3des_nulliv(GPKey key, byte[] d) {
+
+    public static byte[] mac_3des_nulliv(byte[] key, byte[] d) {
         return mac_3des(key, d, null_bytes_8);
     }
 
@@ -135,17 +135,17 @@ public final class GPCrypto {
     }
 
     // The weird mac
-    public static byte[] mac_des_3des(GPKey key, byte[] text, byte[] iv) {
+    public static byte[] mac_des_3des(byte[] key, byte[] text, byte[] iv) {
         byte[] d = pad80(text, 8);
         return mac_des_3des(key, d, 0, d.length, iv);
     }
 
-    private static byte[] mac_des_3des(GPKey key, byte[] text, int offset, int length, byte[] iv) {
+    private static byte[] mac_des_3des(byte[] key, byte[] text, int offset, int length, byte[] iv) {
         try {
             Cipher cipher1 = Cipher.getInstance(DES_CBC_CIPHER);
-            cipher1.init(Cipher.ENCRYPT_MODE, key.getKeyAs(Type.DES), new IvParameterSpec(iv));
+            cipher1.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(resizeDES(key, 8), "DES"), new IvParameterSpec(iv));
             Cipher cipher2 = Cipher.getInstance(DES3_CBC_CIPHER);
-            cipher2.init(Cipher.ENCRYPT_MODE, key.getKeyAs(Type.DES3), new IvParameterSpec(iv));
+            cipher2.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(resizeDES(key, 24), "DESede"), new IvParameterSpec(iv));
 
             byte[] result = new byte[8];
             byte[] temp;
@@ -153,7 +153,7 @@ public final class GPCrypto {
             if (length > 8) {
                 temp = cipher1.doFinal(text, offset, length - 8);
                 System.arraycopy(temp, temp.length - 8, result, 0, 8);
-                cipher2.init(Cipher.ENCRYPT_MODE, key.getKeyAs(Type.DES3), new IvParameterSpec(result));
+                cipher2.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(resizeDES(key, 24), "DESede"), new IvParameterSpec(result));
             }
             temp = cipher2.doFinal(text, (offset + length) - 8, 8);
             System.arraycopy(temp, temp.length - 8, result, 0, 8);
@@ -164,10 +164,6 @@ public final class GPCrypto {
     }
 
     // SCP03 related
-    public static byte[] scp03_mac(GPKey key, byte[] msg, int lengthbits) {
-        return scp03_mac(key.getBytes(), msg, lengthbits);
-    }
-
     public static byte[] scp03_mac(byte[] keybytes, byte[] msg, int lengthBits) {
         // Use BouncyCastle light interface.
         BlockCipher cipher = new AESEngine();
@@ -180,10 +176,6 @@ public final class GPCrypto {
     }
 
     // GP 2.2.1 Amendment D v 1.1.1
-    public static byte[] scp03_kdf(GPKey key, byte constant, byte[] context, int blocklen_bits) {
-        return scp03_kdf(key.getBytes(), constant, context, blocklen_bits);
-    }
-
     static byte[] scp03_kdf(byte[] key, byte constant, byte[] context, int blocklen_bits) {
         // 11 bytes
         byte[] label = new byte[]{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
@@ -216,44 +208,48 @@ public final class GPCrypto {
 
 
     // GPC 2.2.1 Amendment D 7.2.2
-    public static byte[] scp03_key_check_value(GPKey key) {
+    public static byte[] kcv_aes(byte[] key) {
         try {
             Cipher c = Cipher.getInstance(AES_CBC_CIPHER);
-            c.init(Cipher.ENCRYPT_MODE, key.getKeyAs(Type.AES), iv_null_16);
+            c.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key, "AES"), iv_null_16);
             byte[] cv = c.doFinal(one_bytes_16);
             return Arrays.copyOfRange(cv, 0, 3);
         } catch (GeneralSecurityException e) {
-            throw new RuntimeException("Could not calculate KCV", e);
+            throw new GPException("Could not calculate KCV", e);
         }
     }
 
-    public static byte[] scp03_encrypt_key(GPKey dek, GPKey key) {
-        try {
-            // Pad with random
-            int n = key.getLength() % 16 + 1;
-            byte[] plaintext = new byte[n * key.getLength()];
-            random.nextBytes(plaintext);
-            System.arraycopy(key.getBytes(), 0, plaintext, 0, key.getLength());
-            // encrypt
-            Cipher c = Cipher.getInstance(AES_CBC_CIPHER);
-            c.init(Cipher.ENCRYPT_MODE, dek.getKeyAs(Type.AES), iv_null_16);
-            byte[] cgram = c.doFinal(plaintext);
-            return cgram;
-        } catch (GeneralSecurityException e) {
-            throw new RuntimeException("Could not encrypt key", e);
-        }
-    }
-
-    public static byte[] kcv_3des(GPKey key) {
+    public static byte[] kcv_3des(byte[] key) {
         try {
             Cipher cipher = Cipher.getInstance(DES3_ECB_CIPHER);
-            cipher.init(Cipher.ENCRYPT_MODE, key.getKeyAs(Type.DES3));
+            cipher.init(Cipher.ENCRYPT_MODE, des3key(key));
             byte check[] = cipher.doFinal(GPCrypto.null_bytes_8);
             return Arrays.copyOf(check, 3);
-        } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
-            throw new RuntimeException("Could not calculate KCV", e);
+        } catch (GeneralSecurityException e) {
+            throw new GPException("Could not calculate KCV", e);
         }
     }
+
+    static Key des3key(byte[] v) {
+        return new SecretKeySpec(resizeDES(v, 24), "DESede");
+    }
+
+    static Key aeskey(byte[] v) {
+        return new SecretKeySpec(v, "AES");
+    }
+
+    public static byte[] dek_encrypt_des(byte[] key, byte[] data) throws GeneralSecurityException {
+        Cipher cipher = Cipher.getInstance(DES3_ECB_CIPHER);
+        cipher.init(Cipher.ENCRYPT_MODE, des3key(key));
+        return cipher.doFinal(data);
+    }
+
+    public static byte[] dek_encrypt_aes(byte[] key, byte[] data) throws GeneralSecurityException {
+        Cipher cipher = Cipher.getInstance(AES_CBC_CIPHER);
+        cipher.init(Cipher.ENCRYPT_MODE, aeskey(key), iv_null_16);
+        return cipher.doFinal(data);
+    }
+
 
     // Get a public key from a PEM file, either public key or keypair
     public static PublicKey pem2PublicKey(InputStream in) throws IOException {
@@ -288,4 +284,17 @@ public final class GPCrypto {
         }
     }
 
+    // Do shuffling as necessary
+    static byte[] resizeDES(byte[] key, int length) {
+        if (length == 24) {
+            byte[] key24 = new byte[24];
+            System.arraycopy(key, 0, key24, 0, 16);
+            System.arraycopy(key, 0, key24, 16, 8);
+            return key24;
+        } else {
+            byte[] key8 = new byte[8];
+            System.arraycopy(key, 0, key8, 0, 8);
+            return key8;
+        }
+    }
 }

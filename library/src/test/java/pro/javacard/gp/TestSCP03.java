@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import static pro.javacard.gp.GPSessionKeyProvider.KeyPurpose.ENC;
+import static pro.javacard.gp.GPCardKeys.KeyPurpose.ENC;
 import static pro.javacard.gp.PlaintextKeys.SCP03_KDF_CONSTANTS;
 
 

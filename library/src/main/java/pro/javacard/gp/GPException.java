@@ -29,7 +29,7 @@ import apdu4j.ResponseAPDU;
  * Root exception class for all global platform protocol errors.
  */
 @SuppressWarnings("serial")
-public class GPException extends Exception {
+public class GPException extends RuntimeException {
 
     /**
      * Response status indicating the error, or 0 if not applicable.

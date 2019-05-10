@@ -26,6 +26,7 @@ import apdu4j.ResponseAPDU;
 import javax.crypto.Cipher;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -33,12 +34,15 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.EnumSet;
 
+import static pro.javacard.gp.GPCardKeys.KeyPurpose.ENC;
+import static pro.javacard.gp.GPCardKeys.KeyPurpose.RMAC;
+
 class SCP03Wrapper extends SecureChannelWrapper {
     // Both are block size length
     byte[] chaining_value = new byte[16];
     byte[] encryption_counter = new byte[16];
 
-    SCP03Wrapper(GPSessionKeyProvider sessionKeys, int scp, EnumSet<GlobalPlatform.APDUMode> securityLevel, byte[] icv, byte[] ricv, int bs) {
+    SCP03Wrapper(GPSessionKeys sessionKeys, int scp, EnumSet<GlobalPlatform.APDUMode> securityLevel, byte[] icv, byte[] ricv, int bs) {
         this.sessionKeys = sessionKeys;
         this.blockSize = bs;
         // initialize chaining value.
@@ -66,10 +70,10 @@ class SCP03Wrapper extends SecureChannelWrapper {
                     byte[] d = GPCrypto.pad80(command.getData(), 16);
                     // Encrypt with S-ENC, after increasing the counter
                     Cipher c = Cipher.getInstance(GPCrypto.AES_CBC_CIPHER);
-                    c.init(Cipher.ENCRYPT_MODE, sessionKeys.getKeyFor(GPSessionKeyProvider.KeyPurpose.ENC).getKeyAs(GPKey.Type.AES), GPCrypto.iv_null_16);
+                    c.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(sessionKeys.getKeyFor(ENC), "AES"), GPCrypto.iv_null_16);
                     byte[] iv = c.doFinal(encryption_counter);
                     // Now encrypt the data with S-ENC.
-                    c.init(Cipher.ENCRYPT_MODE, sessionKeys.getKeyFor(GPSessionKeyProvider.KeyPurpose.ENC).getKeyAs(GPKey.Type.AES), new IvParameterSpec(iv));
+                    c.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(sessionKeys.getKeyFor(ENC), "AES"), new IvParameterSpec(iv));
                     data = c.doFinal(d);
                     lc = data.length;
                 }
@@ -88,7 +92,7 @@ class SCP03Wrapper extends SecureChannelWrapper {
                 bo.write(GPUtils.encodeLcLength(lc));
                 bo.write(data);
                 byte[] cmac_input = bo.toByteArray();
-                byte[] cmac = GPCrypto.scp03_mac(sessionKeys.getKeyFor(GPSessionKeyProvider.KeyPurpose.MAC), cmac_input, 128);
+                byte[] cmac = GPCrypto.scp03_mac(sessionKeys.getKeyFor(GPCardKeys.KeyPurpose.MAC), cmac_input, 128);
                 // Set new chaining value
                 System.arraycopy(cmac, 0, chaining_value, 0, chaining_value.length);
                 // 8 bytes for actual mac
@@ -138,7 +142,7 @@ class SCP03Wrapper extends SecureChannelWrapper {
 
                 byte[] cmac_input = bo.toByteArray();
 
-                byte[] cmac = GPCrypto.scp03_mac(sessionKeys.getKeyFor(GPSessionKeyProvider.KeyPurpose.RMAC), cmac_input, 128);
+                byte[] cmac = GPCrypto.scp03_mac(sessionKeys.getKeyFor(RMAC), cmac_input, 128);
 
                 // 8 bytes for actual mac
                 byte[] resp_mac = Arrays.copyOf(cmac, 8);
@@ -158,10 +162,10 @@ class SCP03Wrapper extends SecureChannelWrapper {
                 byte[] response_encryption_counter = Arrays.copyOf(encryption_counter, encryption_counter.length);
                 response_encryption_counter[0] = (byte) 0x80;
                 Cipher c = Cipher.getInstance(GPCrypto.AES_CBC_CIPHER);
-                c.init(Cipher.ENCRYPT_MODE, sessionKeys.getKeyFor(GPSessionKeyProvider.KeyPurpose.ENC).getKeyAs(GPKey.Type.AES), GPCrypto.iv_null_16);
+                c.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(sessionKeys.getKeyFor(ENC), "AES"), GPCrypto.iv_null_16);
                 byte[] iv = c.doFinal(response_encryption_counter);
                 // Now decrypt the data with S-ENC, with the new IV
-                c.init(Cipher.DECRYPT_MODE, sessionKeys.getKeyFor(GPSessionKeyProvider.KeyPurpose.ENC).getKeyAs(GPKey.Type.AES), new IvParameterSpec(iv));
+                c.init(Cipher.DECRYPT_MODE, new SecretKeySpec(sessionKeys.getKeyFor(ENC), "AES"), new IvParameterSpec(iv));
                 byte[] data = c.doFinal(response.getData());
                 ByteArrayOutputStream o = new ByteArrayOutputStream();
                 o.write(GPCrypto.unpad80(data));

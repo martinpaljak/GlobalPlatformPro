@@ -27,7 +27,6 @@ import apdu4j.terminals.LoggingCardTerminal;
 import joptsimple.OptionSet;
 import pro.javacard.AID;
 import pro.javacard.CAPFile;
-import pro.javacard.gp.GPKey.Type;
 import pro.javacard.gp.GPRegistryEntry.Privilege;
 import pro.javacard.gp.GPRegistryEntry.Privileges;
 import pro.javacard.gp.GlobalPlatform.APDUMode;
@@ -254,45 +253,40 @@ public final class GPTool extends GPCommandLineInterface {
                     }
 
                     // Normally assume a single master key
-                    final GPSessionKeyProvider keys;
+                    final GPCardKeys keys;
 
                     if (args.has(OPT_KEYS)) {
                         // keys come from custom provider
                         fail("Not yet implemented");
-                        keys = PlaintextKeys.fromMasterKey(GPData.getDefaultKey());
+                        keys = PlaintextKeys.defaultKey();
                     } else if (args.has(OPT_ORACLE)) {
                         keys = PythiaKeys.ask(card.getATR().getBytes(), GPData.fetchCPLC(channel), GPData.fetchKeyInfoTemplate(channel));
                     } else {
                         PlaintextKeys keyz;
                         if (args.has(OPT_KEY)) {
-                            GPKey k = new GPKey(HexUtils.stringToBin((String) args.valueOf(OPT_KEY)));
+                            byte[] k = HexUtils.stringToBin((String) args.valueOf(OPT_KEY));
+                            byte[] kcv = null;
+
                             if (args.has(OPT_KCV)) {
-                                byte[] given = HexUtils.stringToBin((String) args.valueOf(OPT_KCV));
-                                byte[] expected = k.getKCV();
-                                if (expected.length == 0) {
-                                    fail("Don't know how to calculate KCV for the key"); // FIXME: all keys are RAW currently
-                                }
-                                // Check KCV
-                                if (!Arrays.equals(given, expected)) {
-                                    fail("KCV does not match, expected " + HexUtils.bin2hex(expected) + " but given " + HexUtils.bin2hex(given));
-                                }
+                                kcv = HexUtils.stringToBin((String) args.valueOf(OPT_KCV));
                             }
-                            keyz = PlaintextKeys.fromMasterKey(k);
+
+                            keyz = PlaintextKeys.fromMasterKey(k, kcv);
                         } else {
                             Optional<SecureChannelParameters> params = SecureChannelParameters.fromEnvironment();
                             // XXX: better checks for exclusive key options
                             if (args.has(OPT_KEY_MAC) && args.has(OPT_KEY_ENC) && args.has(OPT_KEY_DEK)) {
-                                GPKey enc = new GPKey(HexUtils.stringToBin((String) args.valueOf(OPT_KEY_ENC)));
-                                GPKey mac = new GPKey(HexUtils.stringToBin((String) args.valueOf(OPT_KEY_MAC)));
-                                GPKey dek = new GPKey(HexUtils.stringToBin((String) args.valueOf(OPT_KEY_DEK)));
+                                byte[] enc = HexUtils.stringToBin((String) args.valueOf(OPT_KEY_ENC));
+                                byte[] mac = HexUtils.stringToBin((String) args.valueOf(OPT_KEY_MAC));
+                                byte[] dek = HexUtils.stringToBin((String) args.valueOf(OPT_KEY_DEK));
                                 keyz = PlaintextKeys.fromKeys(enc, mac, dek);
                             } else if (params.isPresent()) {
-                                keyz = (PlaintextKeys) params.get().getSessionKeys();
+                                keyz = (PlaintextKeys) params.get().getCardKeys();
                             } else {
                                 if (needsAuthentication(args)) {
-                                    System.out.println("Warning: no keys given, using default test key " + HexUtils.bin2hex(GPData.defaultKeyBytes));
+                                    System.out.println("Warning: no keys given, using default test key " + HexUtils.bin2hex(PlaintextKeys.defaultKeyBytes));
                                 }
-                                keyz = PlaintextKeys.fromMasterKey(GPData.getDefaultKey());
+                                keyz = PlaintextKeys.defaultKey();
                             }
                         }
 
@@ -706,7 +700,6 @@ public final class GPTool extends GPCommandLineInterface {
                         // --unlock
                         if (args.has(OPT_UNLOCK)) {
                             // Write default keys
-                            List<GPKey> newkeys = new ArrayList<>();
                             final boolean replace;
                             final int kv;
                             // Factory keys
@@ -719,24 +712,17 @@ public final class GPTool extends GPCommandLineInterface {
                                 replace = true;
                             }
 
-                            // FIXME: new key must adhere to currently used SCP version.
-                            GPKey new_key = new GPKey(GPData.defaultKeyBytes, gp.getSCPVersion() == 3 ? Type.AES : Type.DES3);
-
-                            // XXX: ID handling ?
-                            newkeys.add(new GPKey(kv, 1, new_key));
-                            newkeys.add(new GPKey(kv, 2, new_key));
-                            newkeys.add(new GPKey(kv, 3, new_key));
-
-                            gp.putKeys(newkeys, replace);
-
-                            System.out.println("Default " + new_key.toString() + " set as master key for " + gp.getAID());
+                            PlaintextKeys new_key = PlaintextKeys.defaultKey();
+                            new_key.setVersion(kv);
+                            gp.putKeys(new_key, replace);
+                            System.out.println("Default " + HexUtils.bin2hex(PlaintextKeys.defaultKeyBytes) + " set as master key for " + gp.getAID());
                         }
 
                         // --lock
                         if (args.has(OPT_LOCK) || (args.has(OPT_LOCK_ENC) && args.has(OPT_LOCK_MAC) && args.has(OPT_LOCK_DEK))) {
                             // By default we try to change an existing key
                             boolean replace = true;
-                            List<GPKey> current = gp.getKeyInfoTemplate();
+                            List<GPKeyInfo> current = gp.getKeyInfoTemplate();
 
                             // By default use key version 1
                             int new_version = 1;
@@ -751,34 +737,25 @@ public final class GPTool extends GPCommandLineInterface {
                                 }
                             }
 
+                            // Get key value or values
+                            PlaintextKeys newKeys;
+                            if (args.has(OPT_LOCK_ENC) && args.has(OPT_LOCK_MAC) && args.has(OPT_LOCK_DEK)) {
+                                byte[] enc = HexUtils.stringToBin((String) args.valueOf(OPT_LOCK_ENC));
+                                byte[] mac = HexUtils.stringToBin((String) args.valueOf(OPT_LOCK_MAC));
+                                byte[] dek = HexUtils.stringToBin((String) args.valueOf(OPT_LOCK_DEK));
+                                newKeys = PlaintextKeys.fromKeys(enc, mac, dek);
+                            } else {
+                                newKeys = PlaintextKeys.fromMasterKey(HexUtils.stringToBin((String) args.valueOf(OPT_LOCK)));
+                            }
+
                             // If a specific new key version is specified, use that instead.
                             if (args.has(OPT_NEW_KEY_VERSION)) {
                                 new_version = GPUtils.intValue((String) args.valueOf(OPT_NEW_KEY_VERSION));
                                 replace = false;
                                 System.out.println("New version: " + new_version);
                             }
-
-                            // Get key value or values
-                            List<GPKey> updatekeys = new ArrayList<>();
-                            if (args.has(OPT_LOCK_ENC) && args.has(OPT_LOCK_MAC) && args.has(OPT_LOCK_DEK)) {
-                                updatekeys.add(new GPKey(new_version, 1, new GPKey(HexUtils.stringToBin((String) args.valueOf(OPT_LOCK_ENC)))));
-                                updatekeys.add(new GPKey(new_version, 2, new GPKey(HexUtils.stringToBin((String) args.valueOf(OPT_LOCK_MAC)))));
-                                updatekeys.add(new GPKey(new_version, 3, new GPKey(HexUtils.stringToBin((String) args.valueOf(OPT_LOCK_DEK)))));
-                            } else {
-                                GPKey nk = new GPKey(HexUtils.stringToBin((String) args.valueOf(OPT_LOCK)));
-                                // We currently use the same key, diversification is missing
-                                updatekeys.add(new GPKey(new_version, 1, nk));
-                                updatekeys.add(new GPKey(new_version, 2, nk));
-                                updatekeys.add(new GPKey(new_version, 3, nk));
-                            }
-
-                            // XXX: this is uggely
-                            Type t = gp.getSCPVersion() == 3 ? Type.AES : Type.DES3;
-                            for (GPKey k : updatekeys) {
-                                k.become(t);
-                            }
-
-                            gp.putKeys(updatekeys, replace);
+                            newKeys.setVersion(new_version);
+                            gp.putKeys(newKeys, replace);
 
                             if (args.has(OPT_LOCK)) {
                                 System.out.println("Card locked with: " + HexUtils.bin2hex(HexUtils.stringToBin((String) args.valueOf(OPT_LOCK))));

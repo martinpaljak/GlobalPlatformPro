@@ -24,12 +24,17 @@ import apdu4j.ResponseAPDU;
 
 import javax.crypto.Cipher;
 import javax.crypto.NoSuchPaddingException;
+import javax.crypto.spec.SecretKeySpec;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.security.Key;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.EnumSet;
+
+import static pro.javacard.gp.GPCardKeys.KeyPurpose.MAC;
+
 
 class SCP0102Wrapper extends SecureChannelWrapper {
 
@@ -43,7 +48,7 @@ class SCP0102Wrapper extends SecureChannelWrapper {
     private boolean postAPDU = false;
 
 
-    SCP0102Wrapper(GPSessionKeyProvider sessionKeys, int scp, EnumSet<GlobalPlatform.APDUMode> securityLevel, byte[] icv, byte[] ricv, int bs) {
+    SCP0102Wrapper(GPSessionKeys sessionKeys, int scp, EnumSet<GlobalPlatform.APDUMode> securityLevel, byte[] icv, byte[] ricv, int bs) {
         this.blockSize = bs;
         this.sessionKeys = sessionKeys;
         this.icv = icv;
@@ -132,13 +137,16 @@ class SCP0102Wrapper extends SecureChannelWrapper {
                 if (icv == null) {
                     icv = new byte[8];
                 } else if (icvEnc) {
-                    Cipher c = null;
+                    Cipher c;
+                    byte[] key = sessionKeys.getKeyFor(MAC);
                     if (scp == 1) {
                         c = Cipher.getInstance(GPCrypto.DES3_ECB_CIPHER);
-                        c.init(Cipher.ENCRYPT_MODE, sessionKeys.getKeyFor(GPSessionKeyProvider.KeyPurpose.MAC).getKeyAs(GPKey.Type.DES3));
+                        Key k = new SecretKeySpec(GPCrypto.resizeDES(key, 24), "DESede");
+                        c.init(Cipher.ENCRYPT_MODE, k);
                     } else {
                         c = Cipher.getInstance(GPCrypto.DES_ECB_CIPHER);
-                        c.init(Cipher.ENCRYPT_MODE, sessionKeys.getKeyFor(GPSessionKeyProvider.KeyPurpose.MAC).getKeyAs(GPKey.Type.DES));
+                        Key k = new SecretKeySpec(GPCrypto.resizeDES(key, 8), "DES");
+                        c.init(Cipher.ENCRYPT_MODE, k);
                     }
                     // encrypts the future ICV ?
                     icv = c.doFinal(icv);
@@ -156,9 +164,9 @@ class SCP0102Wrapper extends SecureChannelWrapper {
                 t.write(origData);
 
                 if (scp == 1) {
-                    icv = GPCrypto.mac_3des(sessionKeys.getKeyFor(GPSessionKeyProvider.KeyPurpose.MAC), t.toByteArray(), icv);
+                    icv = GPCrypto.mac_3des(sessionKeys.getKeyFor(MAC), t.toByteArray(), icv);
                 } else if (scp == 2) {
-                    icv = GPCrypto.mac_des_3des(sessionKeys.getKeyFor(GPSessionKeyProvider.KeyPurpose.MAC), t.toByteArray(), icv);
+                    icv = GPCrypto.mac_des_3des(sessionKeys.getKeyFor(MAC), t.toByteArray(), icv);
                 }
 
                 if (postAPDU) {
@@ -184,7 +192,8 @@ class SCP0102Wrapper extends SecureChannelWrapper {
                 newLc += t.size() - origData.length;
 
                 Cipher c = Cipher.getInstance(GPCrypto.DES3_CBC_CIPHER);
-                c.init(Cipher.ENCRYPT_MODE, sessionKeys.getKeyFor(GPSessionKeyProvider.KeyPurpose.ENC).getKeyAs(GPKey.Type.DES3), GPCrypto.iv_null_8);
+                Key k = new SecretKeySpec(GPCrypto.resizeDES(sessionKeys.getKeyFor(GPCardKeys.KeyPurpose.ENC), 24), "DESede");
+                c.init(Cipher.ENCRYPT_MODE, k, GPCrypto.iv_null_8);
                 newData = c.doFinal(t.toByteArray());
                 t.reset();
             }
@@ -224,7 +233,7 @@ class SCP0102Wrapper extends SecureChannelWrapper {
             rMac.write(response.getSW1());
             rMac.write(response.getSW2());
 
-            ricv = GPCrypto.mac_des_3des(sessionKeys.getKeyFor(GPSessionKeyProvider.KeyPurpose.RMAC), GPCrypto.pad80(rMac.toByteArray(), 8), ricv);
+            ricv = GPCrypto.mac_des_3des(sessionKeys.getKeyFor(GPCardKeys.KeyPurpose.RMAC), GPCrypto.pad80(rMac.toByteArray(), 8), ricv);
 
             byte[] actualMac = new byte[8];
             System.arraycopy(response.getData(), respLen, actualMac, 0, 8);

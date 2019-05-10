@@ -24,15 +24,15 @@ package pro.javacard.gp;
 // Providers are free to derive session keys based on hardware backed master keys
 // PlaintextKeys provides card keys, that are ... plaintext (not backed by hardware)
 
-public abstract class GPSessionKeyProvider {
+import apdu4j.HexUtils;
 
-    // returns true if keys can probably be made
-    public abstract boolean init(byte[] atr, byte[] cplc, byte[] kinfo);
+import java.security.GeneralSecurityException;
+import java.util.Arrays;
+import java.util.List;
 
-    // Any can be null, if N/A for SCP version
-    public abstract void calculate(int scp, byte[] kdd, byte[] host_challenge, byte[] card_challenge, byte[] ssc) throws GPException;
+public abstract class GPCardKeys {
 
-    public abstract GPKey getKeyFor(KeyPurpose p);
+    GPSecureChannel scp;
 
     public abstract int getID();
 
@@ -53,5 +53,31 @@ public abstract class GPSessionKeyProvider {
         public byte getValue() {
             return (byte) (value & 0xFF);
         }
+
+        public static List<KeyPurpose> cardKeys() {
+            return Arrays.asList(ENC, MAC, DEK);
+        }
+    }
+
+    // Encrypt data with static card DEK
+    public abstract byte[] encrypt(byte[] data);
+
+    // Encrypt a key with card (or session) DEK
+    public abstract byte[] encryptKey(GPCardKeys key, KeyPurpose p) throws GeneralSecurityException;
+
+    // Get session keys for given session data
+    public abstract GPSessionKeys getSessionKeys(byte[] kdd);
+
+    // Get KCV of card key
+    public abstract byte[] kcv(KeyPurpose p);
+
+    // Diversify card keys automatically, based on INITIALIZE UPDATE response
+    public GPCardKeys diversify(GPSecureChannel scp, byte[] kdd) {
+        return this;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("KCV-s ENC=%s MAC=%s DEK=%s for %s", HexUtils.bin2hex(kcv(KeyPurpose.ENC)), HexUtils.bin2hex(kcv(KeyPurpose.MAC)), HexUtils.bin2hex(kcv(KeyPurpose.DEK)), scp);
     }
 }

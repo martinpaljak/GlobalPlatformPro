@@ -29,14 +29,14 @@ public class SecureChannelParameters {
 
     private AID aid;
 
-    private GPSessionKeyProvider sessionKeyProvider;
+    private GPCardKeys cardKeys;
 
     public Optional<AID> getAID() {
         return Optional.ofNullable(aid);
     }
 
-    public GPSessionKeyProvider getSessionKeys() {
-        return sessionKeyProvider;
+    public GPCardKeys getCardKeys() {
+        return cardKeys;
     }
 
     public static Optional<SecureChannelParameters> fromEnvironment() {
@@ -47,12 +47,12 @@ public class SecureChannelParameters {
         SecureChannelParameters params = new SecureChannelParameters();
 
         if (env.containsKey("GP_KEY_ENC") && env.containsKey("GP_KEY_MAC") && env.containsKey("GP_KEY_DEK")) {
-            GPKey enc = new GPKey(HexUtils.stringToBin(env.get("GP_KEY_ENC")));
-            GPKey mac = new GPKey(HexUtils.stringToBin(env.get("GP_KEY_MAC")));
-            GPKey dek = new GPKey(HexUtils.stringToBin(env.get("GP_KEY_DEK")));
-            params.sessionKeyProvider = PlaintextKeys.fromKeys(enc, mac, dek);
+            byte[] enc = HexUtils.stringToBin(env.get("GP_KEY_ENC"));
+            byte[] mac = HexUtils.stringToBin(env.get("GP_KEY_MAC"));
+            byte[] dek = HexUtils.stringToBin(env.get("GP_KEY_DEK"));
+            params.cardKeys = PlaintextKeys.fromKeys(enc, mac, dek);
             if (env.containsKey("GP_KEY_VERSION")) {
-                ((PlaintextKeys) params.sessionKeyProvider).setVersion(GPUtils.intValue(env.get("GP_KEY_VERSION")));
+                ((PlaintextKeys) params.cardKeys).setVersion(GPUtils.intValue(env.get("GP_KEY_VERSION")));
             }
             if (env.containsKey("GP_AID")) {
                 params.aid = AID.fromString(env.get("GP_AID"));

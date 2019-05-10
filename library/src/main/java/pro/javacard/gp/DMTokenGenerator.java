@@ -37,16 +37,16 @@ public class DMTokenGenerator {
             newData.write(apdu.getData());
 
             if (key == null) {
-                logger.debug("No private key for token generation provided");
+                logger.trace("No private key for token generation provided");
                 if (apdu.getINS() != (INS_DELETE & 0xFF))
                     newData.write(0); // No token
             } else {
                 if (apdu.getINS() == (INS_DELETE & 0xFF)) {
                     // See GP 2.3.1 Table 11-23
-                    logger.debug("Adding tag 0x9E before Delete Token");
+                    logger.trace("Adding tag 0x9E before Delete Token");
                     newData.write(0x9E);
                 }
-                logger.debug("Using private key for token generation (" + algorithm + ")");
+                logger.trace("Using private key for token generation (" + algorithm + ")");
                 byte[] token = calculateToken(apdu, key);
                 newData.write(token.length);
                 newData.write(token);

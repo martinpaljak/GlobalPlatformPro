@@ -33,7 +33,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.EnumSet;
 
-import static pro.javacard.gp.GPCardKeys.KeyPurpose.MAC;
+import static pro.javacard.gp.GPCardKeys.KeyPurpose.*;
 
 
 class SCP0102Wrapper extends SecureChannelWrapper {
@@ -138,10 +138,10 @@ class SCP0102Wrapper extends SecureChannelWrapper {
                     icv = new byte[8];
                 } else if (icvEnc) {
                     Cipher c;
-                    byte[] key = sessionKeys.getKeyFor(MAC);
+                    byte[] key = sessionKeys.get(MAC);
                     if (scp == 1) {
                         c = Cipher.getInstance(GPCrypto.DES3_ECB_CIPHER);
-                        Key k = new SecretKeySpec(GPCrypto.resizeDES(key, 24), "DESede");
+                        Key k = GPCrypto.des3key(key);
                         c.init(Cipher.ENCRYPT_MODE, k);
                     } else {
                         c = Cipher.getInstance(GPCrypto.DES_ECB_CIPHER);
@@ -164,9 +164,9 @@ class SCP0102Wrapper extends SecureChannelWrapper {
                 t.write(origData);
 
                 if (scp == 1) {
-                    icv = GPCrypto.mac_3des(sessionKeys.getKeyFor(MAC), t.toByteArray(), icv);
+                    icv = GPCrypto.mac_3des(sessionKeys.get(MAC), t.toByteArray(), icv);
                 } else if (scp == 2) {
-                    icv = GPCrypto.mac_des_3des(sessionKeys.getKeyFor(MAC), t.toByteArray(), icv);
+                    icv = GPCrypto.mac_des_3des(sessionKeys.get(MAC), t.toByteArray(), icv);
                 }
 
                 if (postAPDU) {
@@ -192,7 +192,7 @@ class SCP0102Wrapper extends SecureChannelWrapper {
                 newLc += t.size() - origData.length;
 
                 Cipher c = Cipher.getInstance(GPCrypto.DES3_CBC_CIPHER);
-                Key k = new SecretKeySpec(GPCrypto.resizeDES(sessionKeys.getKeyFor(GPCardKeys.KeyPurpose.ENC), 24), "DESede");
+                Key k = GPCrypto.des3key(sessionKeys.get(ENC));
                 c.init(Cipher.ENCRYPT_MODE, k, GPCrypto.iv_null_8);
                 newData = c.doFinal(t.toByteArray());
                 t.reset();
@@ -233,7 +233,7 @@ class SCP0102Wrapper extends SecureChannelWrapper {
             rMac.write(response.getSW1());
             rMac.write(response.getSW2());
 
-            ricv = GPCrypto.mac_des_3des(sessionKeys.getKeyFor(GPCardKeys.KeyPurpose.RMAC), GPCrypto.pad80(rMac.toByteArray(), 8), ricv);
+            ricv = GPCrypto.mac_des_3des(sessionKeys.get(RMAC), GPCrypto.pad80(rMac.toByteArray(), 8), ricv);
 
             byte[] actualMac = new byte[8];
             System.arraycopy(response.getData(), respLen, actualMac, 0, 8);

@@ -17,24 +17,22 @@ public class TestDMTokenGenerator {
     private PrivateKey key;
 
     @BeforeClass
-    public void setUp() {
+    public void setUp() throws Exception {
         try (FileInputStream fin = new FileInputStream(new File("src/test/resources/test-private.pem"))) {
             key = GPCrypto.pem2PrivateKey(fin);
-        } catch (Exception e) {
-            e.printStackTrace();
         }
     }
 
     @Test
-    public void testApplyToken() {
+    public void testApplyToken() throws Exception {
         CommandAPDU command = new CommandAPDU(CLA_GP, INS_INSTALL, 0x02, 0x00, new byte[]{0});
         DMTokenGenerator dmHandler = new DMTokenGenerator(key);
         command = dmHandler.applyToken(command);
-        Assert.assertTrue(command.getData().length > 1);
+        Assert.assertTrue(command.getData().length > 1); // FIXME: test for value of token content and signature
     }
 
     @Test
-    public void testApplyEmptyToken() {
+    public void testApplyEmptyToken() throws Exception {
         CommandAPDU command = new CommandAPDU(CLA_GP, INS_INSTALL, 0x02, 0x00, new byte[]{0});
         DMTokenGenerator dmHandler = new DMTokenGenerator(null);
         command = dmHandler.applyToken(command);

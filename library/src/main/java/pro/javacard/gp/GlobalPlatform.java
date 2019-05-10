@@ -497,9 +497,9 @@ public class GlobalPlatform {
         byte[] my_card_cryptogram = null;
         byte[] cntx = GPUtils.concatenate(host_challenge, card_challenge);
         if (secureChannel == GPSecureChannel.SCP01 || secureChannel == GPSecureChannel.SCP02) {
-            my_card_cryptogram = GPCrypto.mac_3des_nulliv(sessionKeys.getKeyFor(GPCardKeys.KeyPurpose.ENC), cntx);
+            my_card_cryptogram = GPCrypto.mac_3des_nulliv(sessionKeys.get(GPCardKeys.KeyPurpose.ENC), cntx);
         } else {
-            my_card_cryptogram = GPCrypto.scp03_kdf(sessionKeys.getKeyFor(GPCardKeys.KeyPurpose.MAC), (byte) 0x00, cntx, 64);
+            my_card_cryptogram = GPCrypto.scp03_kdf(sessionKeys.get(GPCardKeys.KeyPurpose.MAC), (byte) 0x00, cntx, 64);
         }
 
         // This is the main check for possible successful authentication.
@@ -519,10 +519,10 @@ public class GlobalPlatform {
         // Calculate host cryptogram and initialize SCP wrapper
         byte[] host_cryptogram = null;
         if (scpMajorVersion == 1 || scpMajorVersion == 2) {
-            host_cryptogram = GPCrypto.mac_3des_nulliv(sessionKeys.getKeyFor(GPCardKeys.KeyPurpose.ENC), GPUtils.concatenate(card_challenge, host_challenge));
+            host_cryptogram = GPCrypto.mac_3des_nulliv(sessionKeys.get(GPCardKeys.KeyPurpose.ENC), GPUtils.concatenate(card_challenge, host_challenge));
             wrapper = new SCP0102Wrapper(sessionKeys, scpVersion, EnumSet.of(APDUMode.MAC), null, null, blockSize);
         } else {
-            host_cryptogram = GPCrypto.scp03_kdf(sessionKeys.getKeyFor(GPCardKeys.KeyPurpose.MAC), (byte) 0x01, cntx, 64);
+            host_cryptogram = GPCrypto.scp03_kdf(sessionKeys.get(GPCardKeys.KeyPurpose.MAC), (byte) 0x01, cntx, 64);
             wrapper = new SCP03Wrapper(sessionKeys, scpVersion, EnumSet.of(APDUMode.MAC), null, null, blockSize);
         }
 
@@ -543,33 +543,51 @@ public class GlobalPlatform {
         }
     }
 
+    // Pipe through secure channel
     public ResponseAPDU transmit(CommandAPDU command) throws IOException {
         try {
-            CommandAPDU wc = wrapper.wrap(command);
-            ResponseAPDU wr = channel.transmit(wc);
-            return wrapper.unwrap(wr);
+            // TODO: BIBO pretty printer
+            //logger.trace("PT> {}", HexUtils.bin2hex(command.getBytes()));
+            ResponseAPDU unwrapped = wrapper.unwrap(channel.transmit(wrapper.wrap(command)));
+            //logger.trace("PT < {}", HexUtils.bin2hex(unwrapped.getBytes()));
+            return unwrapped;
         } catch (GPException e) {
             throw new IOException("Secure channel failure: " + e.getMessage(), e);
         }
     }
 
+    // given a LV APDU content, pretty-print into log
     private ResponseAPDU transmitLV(CommandAPDU command) throws IOException {
-        logger.trace("Payload: ");
-        // TODO - Next line causes exception at java.util.Arrays.copyOfRange in trace_lv if data has token appended
-        //GPUtils.trace_lv(command.getData(), logger);
+        logger.trace("LV payload: ");
+        try {
+            GPUtils.trace_lv(command.getData(), logger);
+        } catch (Exception e) {
+            logger.error("Invalid LV: {}" + HexUtils.bin2hex(command.getData()));
+        }
         return transmit(command);
     }
 
-    private ResponseAPDU transmitDM(CommandAPDU command) throws IOException {
-        command = tokenGenerator.applyToken(command);
-        return transmitLV(command);
+    private ResponseAPDU transmitTLV(CommandAPDU command) throws IOException {
+        logger.trace("TLV payload: ");
+        try {
+            GPUtils.trace_tlv(command.getData(), logger);
+        } catch (Exception e) {
+            logger.error("Invalid TLV: {}" + HexUtils.bin2hex(command.getData()));
+        }
+        return transmit(command);
     }
 
-
-    public int getSCPVersion() {
-        return scpMajorVersion;
+    private CommandAPDU tokenize(CommandAPDU command) throws IOException {
+        try {
+            command = tokenGenerator.applyToken(command);
+            return command;
+        } catch (GeneralSecurityException e) {
+            logger.error("Can not apply token: " + e.getMessage(), e);
+            throw new GPException("Can not apply DM token", e);
+        }
     }
 
+    // TODO: clean up this mess
     public void loadCapFile(CAPFile cap, AID targetDomain) throws IOException, GPException {
         if (targetDomain == null)
             targetDomain = sdAID;
@@ -627,7 +645,8 @@ public class GlobalPlatform {
         }
 
         CommandAPDU command = new CommandAPDU(CLA_GP, INS_INSTALL, P1_INSTALL_FOR_LOAD, 0x00, bo.toByteArray());
-        ResponseAPDU response = transmitDM(command);
+        command = tokenize(command);
+        ResponseAPDU response = transmitLV(command);
         GPException.check(response, "INSTALL [for load] failed");
 
         // Construct load block
@@ -675,7 +694,8 @@ public class GlobalPlatform {
 
         byte[] data = buildInstallData(packageAID, appletAID, instanceAID, privileges, installParams);
         CommandAPDU command = new CommandAPDU(CLA_GP, INS_INSTALL, P1_INSTALL_AND_MAKE_SELECTABLE, 0x00, data);
-        ResponseAPDU response = transmitDM(command);
+        command = tokenize(command);
+        ResponseAPDU response = transmitLV(command);
         GPException.check(response, "INSTALL [for install and make selectable] failed");
         dirty = true;
     }
@@ -690,7 +710,8 @@ public class GlobalPlatform {
 
         byte[] data = buildInstallData(packageAID, appletAID, instanceAID, privileges, installParams);
         CommandAPDU command = new CommandAPDU(CLA_GP, INS_INSTALL, P1_INSTALL_FOR_INSTALL, 0x00, data);
-        ResponseAPDU response = transmitDM(command);
+        command = tokenize(command);
+        ResponseAPDU response = transmitLV(command);
         GPException.check(response, "INSTALL [for install] failed");
         dirty = true;
     }
@@ -752,7 +773,8 @@ public class GlobalPlatform {
         }
 
         CommandAPDU command = new CommandAPDU(CLA_GP, INS_INSTALL, 0x10, 0x00, bo.toByteArray());
-        ResponseAPDU response = transmitDM(command);
+        command = tokenize(command);
+        ResponseAPDU response = transmitLV(command);
         GPException.check(response, "INSTALL [for extradition] failed");
         dirty = true;
     }
@@ -847,7 +869,8 @@ public class GlobalPlatform {
         }
 
         CommandAPDU command = new CommandAPDU(CLA_GP, INS_INSTALL, 0x08, 0x00, bo.toByteArray());
-        ResponseAPDU response = transmitDM(command);
+        command = tokenize(command);
+        ResponseAPDU response = transmitLV(command);
         GPException.check(response, "INSTALL [for make selectable] failed");
         dirty = true;
     }
@@ -881,8 +904,9 @@ public class GlobalPlatform {
             throw new RuntimeException(ioe);
         }
         CommandAPDU command = new CommandAPDU(CLA_GP, INS_DELETE, 0x00, deleteDeps ? 0x80 : 0x00, bo.toByteArray());
-        ResponseAPDU response = transmitDM(command);
-        GPException.check(response, "Deletion failed");
+        command = tokenize(command);
+        ResponseAPDU response = transmitTLV(command);
+        GPException.check(response, "DELETE failed");
         dirty = true;
     }
 

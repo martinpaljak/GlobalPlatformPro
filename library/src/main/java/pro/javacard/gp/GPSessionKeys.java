@@ -1,10 +1,9 @@
 package pro.javacard.gp;
 
 import apdu4j.HexUtils;
+import pro.javacard.gp.GPCardKeys.KeyPurpose;
 
 import java.security.GeneralSecurityException;
-
-import static pro.javacard.gp.GPCardKeys.KeyPurpose;
 
 public class GPSessionKeys {
     GPCardKeys cardKeys;
@@ -21,16 +20,16 @@ public class GPSessionKeys {
         this.rmac = rmac;
     }
 
-    // Encrypts, either with session DEK (SCP02) or card DEK (SCP01 and SCP03)
-    public byte[] encrypt(byte[] data) {
+    // Encrypts padded data, either with session DEK (SCP02) or card DEK (SCP01 and SCP03)
+    public byte[] encrypt(byte[] data) throws GeneralSecurityException {
         return cardKeys.encrypt(data);
     }
 
-    public byte[] encryptKey(GPCardKeys other, GPCardKeys.KeyPurpose p) throws GeneralSecurityException {
+    public byte[] encryptKey(GPCardKeys other, KeyPurpose p) throws GeneralSecurityException {
         return cardKeys.encryptKey(other, p);
     }
 
-    public byte[] getKeyFor(KeyPurpose p) {
+    public byte[] get(KeyPurpose p) {
         switch (p) {
             case ENC:
                 return enc.clone();
@@ -45,6 +44,6 @@ public class GPSessionKeys {
 
     @Override
     public String toString() {
-        return String.format("ENC=%s MAC=%s, card keys=%s", HexUtils.bin2hex(enc), HexUtils.bin2hex(mac), cardKeys.toString());
+        return String.format("ENC=%s MAC=%s RMAC=%s, card keys=%s", HexUtils.bin2hex(enc), HexUtils.bin2hex(mac), rmac == null ? "N/A" : HexUtils.bin2hex(rmac), cardKeys.toString());
     }
 }

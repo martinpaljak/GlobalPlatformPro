@@ -27,7 +27,6 @@ import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
-import javax.crypto.spec.SecretKeySpec;
 import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
@@ -38,17 +37,17 @@ import java.util.HashMap;
 import java.util.Map;
 
 // Handles plaintext card keys.
-// Supports diversification of card keys with some known algorithms.
+// Supports diversification of card keys with a few known algorithms.
 public class PlaintextKeys extends GPCardKeys {
-    // After diversify() we know for which protocol we have keys for
+    private static final Logger logger = LoggerFactory.getLogger(PlaintextKeys.class);
 
+    // After diversify() we know for which protocol we have keys for, unless known before
     static final byte[] defaultKeyBytes = HexUtils.hex2bin("404142434445464748494A4B4C4D4E4F");
 
     // Derivation constants
     public static final Map<KeyPurpose, byte[]> SCP02_CONSTANTS;
     public static final Map<KeyPurpose, Byte> SCP03_CONSTANTS;
     public static final Map<KeyPurpose, byte[]> SCP03_KDF_CONSTANTS;
-    private static final Logger logger = LoggerFactory.getLogger(PlaintextKeys.class);
 
     static {
         HashMap<KeyPurpose, byte[]> scp2 = new HashMap<>();
@@ -81,7 +80,7 @@ public class PlaintextKeys extends GPCardKeys {
     // Holds card-specific keys. They shall be diversified in-place, as needed
     private HashMap<KeyPurpose, byte[]> cardKeys = new HashMap<>();
 
-    // Holds session-specific keys
+    // Holds a copy of session-specific keys
     private HashMap<KeyPurpose, byte[]> sessionKeys = new HashMap<>();
 
     private PlaintextKeys(byte[] enc, byte[] mac, byte[] dek, Diversification d) {
@@ -124,12 +123,10 @@ public class PlaintextKeys extends GPCardKeys {
         return new PlaintextKeys(enc, mac, dek, Diversification.NONE);
     }
 
-    // Currently only support 3DES methods
     // Purpose defines the magic constants for diversification
     public static byte[] diversify(byte[] k, KeyPurpose usage, byte[] kdd, Diversification method) throws GPException {
         try {
             final byte[] kv;
-
             if (method == Diversification.KDF3) {
                 return GPCrypto.scp03_kdf(k, new byte[]{}, GPUtils.concatenate(SCP03_KDF_CONSTANTS.get(usage), kdd), k.length);
             } else {
@@ -142,8 +139,7 @@ public class PlaintextKeys extends GPCardKeys {
                     throw new IllegalStateException("Unknown diversification method");
 
                 Cipher cipher = Cipher.getInstance(GPCrypto.DES3_ECB_CIPHER);
-                cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(GPCrypto.resizeDES(k, 24), "DESede"));
-
+                cipher.init(Cipher.ENCRYPT_MODE, GPCrypto.des3key(k));
                 return cipher.doFinal(kv);
             }
         } catch (BadPaddingException | InvalidKeyException | IllegalBlockSizeException e) {
@@ -199,22 +195,15 @@ public class PlaintextKeys extends GPCardKeys {
     }
 
     @Override
-    public byte[] encrypt(byte[] data) {
-        //TODO
-        if (1 == 1)
-            throw new RuntimeException("Not implemented");
-        if (scp == GPSecureChannel.SCP02)
-            throw new GPException("SCP02 DEK is session-based");
-
-        if (scp == GPSecureChannel.SCP01) {
-
-        }
-
-        if (scp == GPSecureChannel.SCP03) {
-
-        }
-
-        return new byte[0];
+    // data must be padded by caller
+    public byte[] encrypt(byte[] data) throws GeneralSecurityException {
+        if (scp == GPSecureChannel.SCP02) {
+            return GPCrypto.dek_encrypt_des(sessionKeys.get(KeyPurpose.DEK), data);
+        } else if (scp == GPSecureChannel.SCP01) {
+            return GPCrypto.dek_encrypt_des(cardKeys.get(KeyPurpose.DEK), data);
+        } else if (scp == GPSecureChannel.SCP03) {
+            return GPCrypto.dek_encrypt_aes(cardKeys.get(KeyPurpose.DEK), data);
+        } else throw new IllegalStateException("Unknown SCP version");
     }
 
     @Override
@@ -246,21 +235,22 @@ public class PlaintextKeys extends GPCardKeys {
 
     @Override
     public GPSessionKeys getSessionKeys(byte[] kdd) {
-        // Calculate session keys
-        for (Map.Entry<KeyPurpose, byte[]> e : cardKeys.entrySet()) {
+        // Calculate session keys (ENC-MAC-DEK)
+        for (KeyPurpose p : KeyPurpose.cardKeys()) {
             switch (scp) {
                 case SCP01:
-                    sessionKeys.put(e.getKey(), deriveSessionKeySCP01(e.getValue(), e.getKey(), kdd));
+                    sessionKeys.put(p, deriveSessionKeySCP01(cardKeys.get(p), p, kdd));
                     break;
                 case SCP02:
-                    sessionKeys.put(e.getKey(), deriveSessionKeySCP02(e.getValue(), e.getKey(), kdd));
-                    // FIXME: RMAC missing
+                    sessionKeys.put(p, deriveSessionKeySCP02(cardKeys.get(p), p, kdd));
+                    if (p == KeyPurpose.MAC) {
+                        sessionKeys.put(KeyPurpose.RMAC, deriveSessionKeySCP02(cardKeys.get(p), KeyPurpose.RMAC, kdd));
+                    }
                     break;
                 case SCP03:
-                    sessionKeys.put(e.getKey(), deriveSessionKeySCP03(e.getValue(), e.getKey(), kdd));
-                    // Also make a RMAC key
-                    if (e.getKey() == KeyPurpose.MAC) {
-                        sessionKeys.put(KeyPurpose.RMAC, deriveSessionKeySCP03(e.getValue(), KeyPurpose.RMAC, kdd));
+                    sessionKeys.put(p, deriveSessionKeySCP03(cardKeys.get(p), p, kdd));
+                    if (p == KeyPurpose.MAC) {
+                        sessionKeys.put(KeyPurpose.RMAC, deriveSessionKeySCP03(cardKeys.get(p), KeyPurpose.RMAC, kdd));
                     }
                     break;
                 default:
@@ -283,12 +273,6 @@ public class PlaintextKeys extends GPCardKeys {
     }
 
     private byte[] deriveSessionKeySCP01(byte[] cardKey, KeyPurpose p, byte[] kdd) {
-        // RMAC is not supported
-        if (!(p == KeyPurpose.ENC || p == KeyPurpose.MAC || p == KeyPurpose.DEK)) {
-            throw new IllegalArgumentException("SCP 01 has only ENC, MAC, DEK: " + p);
-        }
-
-        // DEK is not session based.
         if (p == KeyPurpose.DEK)
             return cardKey;
 
@@ -300,7 +284,7 @@ public class PlaintextKeys extends GPCardKeys {
 
         try {
             Cipher cipher = Cipher.getInstance(GPCrypto.DES3_ECB_CIPHER);
-            cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(GPCrypto.resizeDES(cardKey, 24), "DESede"));
+            cipher.init(Cipher.ENCRYPT_MODE, GPCrypto.des3key(cardKey));
             return cipher.doFinal(derivationData);
         } catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
             throw new IllegalStateException("Can not calculate session keys", e);
@@ -310,15 +294,12 @@ public class PlaintextKeys extends GPCardKeys {
     }
 
     private byte[] deriveSessionKeySCP02(byte[] cardKey, KeyPurpose p, byte[] sequence) {
-        if (p != KeyPurpose.ENC && p != KeyPurpose.MAC && p != KeyPurpose.DEK && p != KeyPurpose.RMAC) {
-            throw new IllegalArgumentException("SCP02 has only ENC, MAC, DEK, RMAC: " + p);
-        }
         try {
             Cipher cipher = Cipher.getInstance(GPCrypto.DES3_CBC_CIPHER);
             byte[] derivationData = new byte[16];
             System.arraycopy(sequence, 0, derivationData, 2, 2);
             System.arraycopy(SCP02_CONSTANTS.get(p), 0, derivationData, 0, 2);
-            cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(GPCrypto.resizeDES(cardKey, 24), "DESede"), GPCrypto.iv_null_8);
+            cipher.init(Cipher.ENCRYPT_MODE, GPCrypto.des3key(cardKey), GPCrypto.iv_null_8);
             return cipher.doFinal(derivationData);
         } catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
             throw new IllegalStateException("Session keys calculation failed.", e);

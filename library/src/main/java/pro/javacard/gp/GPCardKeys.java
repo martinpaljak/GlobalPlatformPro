@@ -60,7 +60,7 @@ public abstract class GPCardKeys {
     }
 
     // Encrypt data with static card DEK
-    public abstract byte[] encrypt(byte[] data);
+    public abstract byte[] encrypt(byte[] data) throws GeneralSecurityException;
 
     // Encrypt a key with card (or session) DEK
     public abstract byte[] encryptKey(GPCardKeys key, KeyPurpose p) throws GeneralSecurityException;

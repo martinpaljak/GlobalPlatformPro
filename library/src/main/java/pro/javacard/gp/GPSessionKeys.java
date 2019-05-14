@@ -15,9 +15,9 @@ public class GPSessionKeys {
 
     public GPSessionKeys(GPCardKeys cardKeys, byte[] enc, byte[] mac, byte[] rmac) {
         this.cardKeys = cardKeys;
-        this.enc = enc;
-        this.mac = mac;
-        this.rmac = rmac;
+        this.enc = enc.clone();
+        this.mac = mac.clone();
+        this.rmac = rmac.clone();
     }
 
     // Encrypts padded data, either with session DEK (SCP02) or card DEK (SCP01 and SCP03)

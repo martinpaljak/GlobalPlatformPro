@@ -265,7 +265,9 @@ public class PlaintextKeys extends GPCardKeys {
     public byte[] kcv(KeyPurpose p) {
         if (scp == GPSecureChannel.SCP03)
             return GPCrypto.kcv_aes(cardKeys.get(p));
-        return GPCrypto.kcv_3des(cardKeys.get(p));
+        else if (scp == GPSecureChannel.SCP01 || scp == GPSecureChannel.SCP02)
+            return GPCrypto.kcv_3des(cardKeys.get(p));
+        else throw new IllegalStateException("Don't know which protocol to use fo KCV!");
     }
 
     public void setVersion(int version) {

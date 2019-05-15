@@ -32,7 +32,7 @@ import java.util.List;
 
 public abstract class GPCardKeys {
 
-    GPSecureChannel scp;
+    protected GPSecureChannel scp;
 
     public abstract int getID();
 
@@ -73,6 +73,7 @@ public abstract class GPCardKeys {
 
     // Diversify card keys automatically, based on INITIALIZE UPDATE response
     public GPCardKeys diversify(GPSecureChannel scp, byte[] kdd) {
+        this.scp = scp;
         return this;
     }
 

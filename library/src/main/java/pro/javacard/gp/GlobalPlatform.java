@@ -104,7 +104,7 @@ public class GlobalPlatform {
     private SecureChannelWrapper wrapper = null;
     private APDUBIBO channel;
     private GPRegistry registry = null;
-    private DMTokenGenerator tokenGenerator;
+    private DMTokenGenerator tokenGenerator = new DMTokenGenerator(null);
     private boolean dirty = true; // True if registry is dirty.
 
     /*

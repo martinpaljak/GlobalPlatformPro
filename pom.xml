@@ -1,13 +1,15 @@
 <?xml version="1.0"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.github.martinpaljak</groupId>
         <artifactId>javacard</artifactId>
-        <version>18.10.04</version>
+        <version>19.05.09</version>
     </parent>
-    <artifactId>globalplatformpro</artifactId>
-    <packaging>jar</packaging>
+    <version>19.05.16</version>
+    <artifactId>gppro</artifactId>
+    <packaging>pom</packaging>
     <name>GlobalPlatformPro</name>
     <url>https://github.com/martinpaljak/GlobalPlatformPro</url>
     <description>Manage applets and keys on JavaCard-s like a pro</description>
@@ -23,70 +25,11 @@
         <url>https://github.com/martinpaljak/GlobalPlatformPro</url>
         <developerConnection>scm:git:git@github.com:martinpaljak/globalplatformpro.git</developerConnection>
     </scm>
-    <dependencies>
-        <!-- For PC/SC reader access -->
-        <dependency>
-            <groupId>com.github.martinpaljak</groupId>
-            <artifactId>apdu4j</artifactId>
-            <version>18.10.04</version>
-        </dependency>
-        <!-- For CAP file parsing -->
-        <dependency>
-            <groupId>com.github.martinpaljak</groupId>
-            <artifactId>capfile</artifactId>
-            <version>18.10.04</version>
-        </dependency>
-        <!-- For JSON handling -->
-        <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
-            <version>2.8.4</version>
-        </dependency>
-        <!-- For HTTP handling -->
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient</artifactId>
-            <version>${httpclient.version}</version>
-        </dependency>
-        <!-- For logging in the command line tool -->
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
-            <version>${slf4j.version}</version>
-            <optional>true</optional>
-        </dependency>
-        <!-- For logging -->
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>${slf4j.version}</version>
-        </dependency>
-        <!-- For crypto in SCP03 -->
-        <dependency>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bcpkix-jdk15on</artifactId>
-            <version>${bc.version}</version>
-        </dependency>
-        <!-- For command line parsing -->
-        <dependency>
-            <groupId>net.sf.jopt-simple</groupId>
-            <artifactId>jopt-simple</artifactId>
-            <version>${jopt.version}</version>
-            <optional>true</optional>
-        </dependency>
-        <!-- For TLV handling -->
-        <dependency>
-            <groupId>com.payneteasy</groupId>
-            <artifactId>ber-tlv</artifactId>
-            <version>${bertlv.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.12</version>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
+    <modules>
+        <module>tool</module>
+        <module>library</module>
+    </modules>
+
     <build>
         <resources>
             <resource>
@@ -115,41 +58,18 @@
                     <outputFile>target/generated-resources/pro/javacard/gp/pro_version.txt</outputFile>
                     <arguments>
                         <argument>-c</argument>
-                        <argument>[ "x$GPPRO_VERSION" = "x" ] &amp;&amp; git describe --tags --always --long --dirty || echo "$GPPRO_VERSION"</argument>
+                        <argument>[ "x$GPPRO_VERSION" = "x" ] &amp;&amp; git describe --tags --always --long --dirty ||
+                            echo "$GPPRO_VERSION"
+                        </argument>
                     </arguments>
                 </configuration>
             </plugin>
+
+
+            <!-- Reproducible -->
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>3.0.0</version>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <finalName>gp</finalName>
-                            <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>pro.javacard.gp.GPTool</mainClass>
-                                </transformer>
-                            </transformers>
-                            <filters>
-                                <filter>
-                                    <artifact>*:*</artifact>
-                                    <excludes>
-                                        <exclude>META-INF/*.SF</exclude>
-                                        <exclude>META-INF/*.DSA</exclude>
-                                        <exclude>META-INF/*.RSA</exclude>
-                                        <exclude>META-INF/maven/**</exclude>
-                                    </excludes>
-                                </filter>
-                            </filters>
-                        </configuration>
-                    </execution>
-                </executions>
+                <groupId>io.github.zlika</groupId>
+                <artifactId>reproducible-build-maven-plugin</artifactId>
             </plugin>
         </plugins>
     </build>

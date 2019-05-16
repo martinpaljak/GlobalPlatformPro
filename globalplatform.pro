@@ -1,7 +1,7 @@
 -libraryjars  <java.home>/lib/rt.jar
 -libraryjars  <java.home>/lib/jce.jar
 
--injars target/gp.jar
+-injars tool/target/gp.jar
 -keep public class pro.javacard.gp.GPTool {
     public static void main(java.lang.String[]);
 }

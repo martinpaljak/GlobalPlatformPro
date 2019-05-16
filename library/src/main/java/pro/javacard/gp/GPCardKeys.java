@@ -68,7 +68,7 @@ public abstract class GPCardKeys {
     // Get session keys for given session data
     public abstract GPSessionKeys getSessionKeys(byte[] kdd);
 
-    // Get KCV of card key
+    // Get KCV of a card key
     public abstract byte[] kcv(KeyPurpose p);
 
     // Diversify card keys automatically, based on INITIALIZE UPDATE response

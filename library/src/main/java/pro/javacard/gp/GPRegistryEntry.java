@@ -22,15 +22,75 @@ package pro.javacard.gp;
 import apdu4j.HexUtils;
 import pro.javacard.AID;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.stream.Collectors;
 
 public class GPRegistryEntry {
 
-    protected AID aid;
-    protected int lifecycle;
-    protected Kind kind;
-    protected AID domain; // Associated security domain
+    AID aid;
+    int lifecycle;
+    Kind kind;
+    AID domain; // Associated security domain
+
+    // Apps and Domains
+    private Privileges privileges = new Privileges();
+    private AID loadfile; // source
+
+    // Packages
+    private byte[] version;
+    private List<AID> modules = new ArrayList<>();
+
+
+    public Privileges getPrivileges() {
+        return privileges;
+    }
+
+    void setPrivileges(Privileges privs) {
+        privileges = privs;
+    }
+
+    public AID getLoadFile() {
+        return loadfile;
+    }
+
+    public void setLoadFile(AID aid) {
+        this.loadfile = aid;
+    }
+
+
+    public byte[] getVersion() {
+        if (version == null)
+            return null;
+        return version.clone();
+    }
+
+    void setVersion(byte[] v) {
+        version = v.clone();
+    }
+
+    public String getVersionString() {
+        if (version == null) {
+            return "<null>";
+        }
+        if (version.length == 2) {
+            return version[0] + "." + version[1];
+        }
+        return "<unknown format " + HexUtils.bin2hex(version) + ">";
+    }
+
+    public void addModule(AID aid) {
+        modules.add(aid);
+    }
+
+    public List<AID> getModules() {
+        List<AID> r = new ArrayList<>();
+        r.addAll(modules);
+        return r;
+    }
+
 
     static String getLifeCycleString(Kind kind, int lifeCycleState) {
         switch (kind) {
@@ -187,7 +247,7 @@ public class GPRegistryEntry {
         ContactlessActivation,
         ContactlessSelfActivation;
 
-        public static Privilege lookup(String v) {
+        public static Privilege     lookup(String v) {
             for (Privilege d : Privilege.values()) {
                 if (d.name().equalsIgnoreCase(v)) {
                     return d;
@@ -202,9 +262,7 @@ public class GPRegistryEntry {
 
         public static Privileges set(Privilege... privs) {
             Privileges p = new Privileges();
-            for (Privilege pv : privs) {
-                p.add(pv);
-            }
+            Arrays.stream(privs).forEach(v -> p.add(v));
             return p;
         }
 

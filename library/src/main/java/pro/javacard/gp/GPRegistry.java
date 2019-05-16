@@ -57,11 +57,8 @@ public class GPRegistry implements Iterable<GPRegistryEntry> {
      */
     public void add(GPRegistryEntry entry) {
         // "fix" the kind at a single location.
-        if (entry instanceof GPRegistryEntryApp) {
-            GPRegistryEntryApp app = (GPRegistryEntryApp) entry;
-            if (app.getPrivileges().has(Privilege.SecurityDomain) && entry.getType() == Kind.Application) {
-                entry.setType(Kind.SecurityDomain);
-            }
+        if (entry.getPrivileges().has(Privilege.SecurityDomain) && entry.getType() == Kind.Application) {
+            entry.setType(Kind.SecurityDomain);
         }
         // XXX Legacy, combined with logic in GlobalPlatform.getStatus()
         GPRegistryEntry existing = entries.get(entry.getAID());
@@ -85,11 +82,11 @@ public class GPRegistry implements Iterable<GPRegistryEntry> {
     /*
      * Returns a list of all packages in this registry.
      */
-    public List<GPRegistryEntryPkg> allPackages() {
-        List<GPRegistryEntryPkg> res = new ArrayList<GPRegistryEntryPkg>();
+    public List<GPRegistryEntry> allPackages() {
+        List<GPRegistryEntry> res = new ArrayList<>();
         for (GPRegistryEntry e : entries.values()) {
             if (e.isPackage()) {
-                res.add((GPRegistryEntryPkg) e);
+                res.add(e);
             }
         }
         return res;
@@ -123,8 +120,8 @@ public class GPRegistry implements Iterable<GPRegistryEntry> {
         return res;
     }
 
-    public GPRegistryEntryApp getDomain(AID aid) {
-        for (GPRegistryEntryApp e : allDomains()) {
+    public GPRegistryEntry getDomain(AID aid) {
+        for (GPRegistryEntry e : allDomains()) {
             if (e.aid.equals(aid))
                 return e;
         }
@@ -134,28 +131,28 @@ public class GPRegistry implements Iterable<GPRegistryEntry> {
     /*
      * Returns a list of all applets in this registry.
      */
-    public List<GPRegistryEntryApp> allApplets() {
-        List<GPRegistryEntryApp> res = new ArrayList<GPRegistryEntryApp>();
+    public List<GPRegistryEntry> allApplets() {
+        List<GPRegistryEntry> res = new ArrayList<>();
         for (GPRegistryEntry e : entries.values()) {
             if (e.isApplet()) {
-                res.add((GPRegistryEntryApp) e);
+                res.add(e);
             }
         }
         return res;
     }
 
-    public List<GPRegistryEntryApp> allDomains() {
-        List<GPRegistryEntryApp> res = new ArrayList<>();
+    public List<GPRegistryEntry> allDomains() {
+        List<GPRegistryEntry> res = new ArrayList<>();
         for (GPRegistryEntry e : entries.values()) {
             if (e.isDomain()) {
-                res.add((GPRegistryEntryApp) e);
+                res.add(e);
             }
         }
         return res;
     }
 
     public AID getDefaultSelectedAID() {
-        for (GPRegistryEntryApp e : allApplets()) {
+        for (GPRegistryEntry e : allApplets()) {
             if (e.getPrivileges().has(Privilege.CardReset)) {
                 return e.getAID();
             }
@@ -166,12 +163,12 @@ public class GPRegistry implements Iterable<GPRegistryEntry> {
     public AID getDefaultSelectedPackageAID() {
         AID defaultAID = getDefaultSelectedAID();
         if (defaultAID != null) {
-            for (GPRegistryEntryPkg e : allPackages()) {
+            for (GPRegistryEntry e : allPackages()) {
                 if (e.getModules().contains(defaultAID))
                     return e.getAID();
             }
             // Did not get a hit. Loop packages and look for prefixes
-            for (GPRegistryEntryPkg e : allPackages()) {
+            for (GPRegistryEntry e : allPackages()) {
                 if (defaultAID.toString().startsWith(e.getAID().toString()))
                     return e.getAID();
             }
@@ -180,8 +177,8 @@ public class GPRegistry implements Iterable<GPRegistryEntry> {
     }
 
     // Shorthand
-    public GPRegistryEntryApp getISD() {
-        for (GPRegistryEntryApp a : allDomains()) {
+    public GPRegistryEntry getISD() {
+        for (GPRegistryEntry a : allDomains()) {
             if (a.getType() == Kind.IssuerSecurityDomain) {
                 return a;
             }
@@ -201,7 +198,7 @@ public class GPRegistry implements Iterable<GPRegistryEntry> {
                 byte privileges = data[offset++];
 
                 if (type == Kind.IssuerSecurityDomain || type == Kind.Application) {
-                    GPRegistryEntryApp app = new GPRegistryEntryApp();
+                    GPRegistryEntry app = new GPRegistryEntry();
                     app.setType(type);
                     app.setAID(aid);
                     app.setPrivileges(Privileges.fromByte(privileges));
@@ -211,7 +208,7 @@ public class GPRegistry implements Iterable<GPRegistryEntry> {
                     if (privileges != 0x00) {
                         throw new GPDataException("Privileges of Load File is not 0x00");
                     }
-                    GPRegistryEntryPkg pkg = new GPRegistryEntryPkg();
+                    GPRegistryEntry pkg = new GPRegistryEntry();
                     pkg.setAID(aid);
                     pkg.setLifeCycle(lifecycle);
                     pkg.setType(type);
@@ -240,59 +237,48 @@ public class GPRegistry implements Iterable<GPRegistryEntry> {
         GPUtils.trace_tlv(data, logger);
 
         for (BerTlv t : tlvs.findAll(new BerTag(0xE3))) {
-            GPRegistryEntryApp app = new GPRegistryEntryApp();
-            GPRegistryEntryPkg pkg = new GPRegistryEntryPkg();
+            GPRegistryEntry e = new GPRegistryEntry();
             if (t.isConstructed()) {
                 BerTlv aid = t.find(new BerTag(0x4f));
                 if (aid != null) {
                     AID aidv = new AID(aid.getBytesValue());
-                    app.setAID(aidv);
-                    pkg.setAID(aidv);
+                    e.setAID(aidv);
                 }
                 BerTlv lifecycletag = t.find(new BerTag(0x9F, 0x70));
                 if (lifecycletag != null) {
-                    app.setLifeCycle(lifecycletag.getBytesValue()[0] & 0xFF);
-                    pkg.setLifeCycle(lifecycletag.getBytesValue()[0] & 0xFF);
+                    e.setLifeCycle(lifecycletag.getBytesValue()[0] & 0xFF);
                 }
 
                 BerTlv privstag = t.find(new BerTag(0xC5));
                 if (privstag != null) {
                     Privileges privs = Privileges.fromBytes(privstag.getBytesValue());
-                    app.setPrivileges(privs);
+                    e.setPrivileges(privs);
                 }
                 for (BerTlv cf : t.findAll(new BerTag(0xCF))) {
-                    logger.debug("CF=" + cf.getHexValue() + " for " + app.aid);
+                    logger.debug("CF=" + cf.getHexValue() + " for " + e.aid);
                     // FIXME: how to expose?
                 }
 
                 BerTlv loadfiletag = t.find(new BerTag(0xC4));
                 if (loadfiletag != null) {
-                    app.setLoadFile(new AID(loadfiletag.getBytesValue()));
+                    e.setLoadFile(new AID(loadfiletag.getBytesValue()));
                 }
                 BerTlv versiontag = t.find(new BerTag(0xCE));
                 if (versiontag != null) {
-                    pkg.setVersion(versiontag.getBytesValue());
+                    e.setVersion(versiontag.getBytesValue());
                 }
 
                 for (BerTlv lf : t.findAll(new BerTag(0x84))) {
-                    pkg.addModule(new AID(lf.getBytesValue()));
+                    e.addModule(new AID(lf.getBytesValue()));
                 }
 
                 BerTlv domaintag = t.find(new BerTag(0xCC));
                 if (domaintag != null) {
-                    app.setDomain(new AID(domaintag.getBytesValue()));
-                    pkg.setDomain(new AID(domaintag.getBytesValue()));
+                    e.setDomain(new AID(domaintag.getBytesValue()));
                 }
             }
-
-            // Construct entry
-            if (type == Kind.ExecutableLoadFile) {
-                pkg.setType(type);
-                add(pkg);
-            } else {
-                app.setType(type);
-                add(app);
-            }
+            e.setType(type);
+            add(e);
         }
     }
 

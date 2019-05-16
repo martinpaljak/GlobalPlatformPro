@@ -659,7 +659,7 @@ public final class GPTool extends GPCommandLineInterface {
                         // --secure-card
                         if (args.has(OPT_SECURE_CARD)) {
                             // Skip INITIALIZED
-                            GPRegistryEntryApp isd = gp.getRegistry().getISD();
+                            GPRegistryEntry isd = gp.getRegistry().getISD();
                             if (isd == null) {
                                 GPCommands.listRegistry(gp.getRegistry(), System.out, true);
                                 fail("ISD is null");
@@ -755,6 +755,8 @@ public final class GPTool extends GPCommandLineInterface {
                                 System.out.println("New version: " + new_version);
                             }
                             newKeys.setVersion(new_version);
+                            newKeys.diversify(gp.scpVersion, null); // FIXME: put scp02 keys with scp03
+
                             gp.putKeys(newKeys, replace);
 
                             if (args.has(OPT_LOCK)) {
@@ -793,9 +795,6 @@ public final class GPTool extends GPCommandLineInterface {
                         }
                     }
                 } catch (GPException e) {
-                    //if (args.has(OPT_DEBUG)) {
-                    //    e.printStackTrace(System.err);
-                    // }
                     // All unhandled GP exceptions halt the program unless it is run with -force
                     if (!args.has(OPT_FORCE)) {
                         fail(e.getMessage());
@@ -854,6 +853,7 @@ public final class GPTool extends GPCommandLineInterface {
         }
     }
 
+    @Deprecated
     private static PrivateKey getRSAPrivateKey(String path) throws IOException {
         try (FileInputStream fin = new FileInputStream(new File(path))) {
             PrivateKey key = GPCrypto.pem2PrivateKey(fin);
@@ -905,6 +905,7 @@ public final class GPTool extends GPCommandLineInterface {
         }
     }
 
+    // TODO: apdu4j has this covered
     private static boolean ignoreReader(String name) {
         String ignore = System.getenv("GP_READER_IGNORE");
         if (ignore != null) {
@@ -936,12 +937,7 @@ public final class GPTool extends GPCommandLineInterface {
                 OPT_STORE_DATA_BLOB, OPT_STORE_DATA, OPT_INITIALIZE_CARD, OPT_SECURE_CARD, OPT_RENAME_ISD, OPT_SET_PERSO, OPT_SET_PRE_PERSO, OPT_MOVE,
                 OPT_PUT_KEY, OPT_ACR_AID, OPT_ACR_LIST};
 
-        for (String s : yes) {
-            if (args.has(s)) {
-                return true;
-            }
-        }
-        return false;
+        return Arrays.stream(yes).anyMatch(str -> args.has(str));
     }
 
     public static void fail(String msg) {

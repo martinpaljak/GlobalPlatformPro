@@ -263,11 +263,21 @@ public class PlaintextKeys extends GPCardKeys {
 
     @Override
     public byte[] kcv(KeyPurpose p) {
+        byte[] k = cardKeys.get(p);
+
         if (scp == GPSecureChannel.SCP03)
-            return GPCrypto.kcv_aes(cardKeys.get(p));
+            return GPCrypto.kcv_aes(k);
         else if (scp == GPSecureChannel.SCP01 || scp == GPSecureChannel.SCP02)
-            return GPCrypto.kcv_3des(cardKeys.get(p));
-        else throw new IllegalStateException("Don't know which protocol to use fo KCV!");
+            return GPCrypto.kcv_3des(k);
+        else {
+            if (k.length == 16) {
+                logger.warn("Don't know how to calculate KCV, defaulting to SCP02");
+                return GPCrypto.kcv_3des(k);
+            } else {
+                logger.warn("Don't know how to calculate KCV, defaulting to SCP03");
+                return GPCrypto.kcv_aes(k);
+            }
+        }
     }
 
     public void setVersion(int version) {
@@ -348,6 +358,7 @@ public class PlaintextKeys extends GPCardKeys {
     }
 
     @Override
+    @Deprecated
     public int getID() {
         return id;
     }

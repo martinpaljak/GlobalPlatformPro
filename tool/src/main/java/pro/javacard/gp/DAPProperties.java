@@ -25,7 +25,7 @@ public class DAPProperties {
         }
 
         // Check if DAP block is required
-        for (GPRegistryEntryApp e : gp.getRegistry().allDomains()) {
+        for (GPRegistryEntry e : gp.getRegistry().allDomains()) {
             if (e.getPrivileges().has(GPRegistryEntry.Privilege.MandatedDAPVerification))
                 required = true;
         }

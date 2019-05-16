@@ -95,8 +95,7 @@ public class GlobalPlatform {
 
     // (I)SD AID
     private AID sdAID;
-    // Either 1 or 2 or 3
-    private int scpMajorVersion = 0;
+    GPSecureChannel scpVersion;
     private int scpKeyVersion = 0;
 
     private int blockSize = 255;
@@ -104,7 +103,7 @@ public class GlobalPlatform {
     private SecureChannelWrapper wrapper = null;
     private APDUBIBO channel;
     private GPRegistry registry = null;
-    private DMTokenGenerator tokenGenerator = new DMTokenGenerator(null);
+    private DMTokenGenerator tokenizer = new DMTokenGenerator(null);
     private boolean dirty = true; // True if registry is dirty.
 
     /*
@@ -229,7 +228,7 @@ public class GlobalPlatform {
     }
 
     public void setDMTokenGenerator(DMTokenGenerator tokenGenerator) {
-        this.tokenGenerator = tokenGenerator;
+        this.tokenizer = tokenGenerator;
     }
 
     public AID getAID() {
@@ -405,12 +404,12 @@ public class GlobalPlatform {
         scpKeyVersion = update_response[offset] & 0xFF;
         offset++;
         // Get major SCP version from Key Information field in response
-        scpMajorVersion = update_response[offset];
+        this.scpVersion = GPSecureChannel.valueOf(update_response[offset] & 0xFF).orElseThrow(() -> new GPDataException("Invalid SCP version", update_response));
         offset++;
 
         // get the protocol "i" parameter, if SCP03
         int scp_i = -1;
-        if (scpMajorVersion == 3) {
+        if (this.scpVersion == GPSecureChannel.SCP03) {
             scp_i = update_response[offset];
             offset++;
         }
@@ -426,65 +425,39 @@ public class GlobalPlatform {
         // FIXME: detect if got to end
         logger.debug("Host challenge: " + HexUtils.bin2hex(host_challenge));
         logger.debug("Card challenge: " + HexUtils.bin2hex(card_challenge));
-        logger.debug("Card reports SCP0{}{} with key version {}", scpMajorVersion, (scpMajorVersion == 3 ? " i=" + String.format("%02x", scp_i) : ""), String.format("%d (0x%02X)", scpKeyVersion, scpKeyVersion));
+        logger.debug("Card reports {}{} with key version {}", this.scpVersion, (this.scpVersion == GPSecureChannel.SCP03 ? " i=" + String.format("%02x", scp_i) : ""), String.format("%d (0x%02X)", scpKeyVersion, scpKeyVersion));
 
         // Verify response
         // If using explicit key version, it must match.
         if ((keys.getVersion() > 0) && (scpKeyVersion != keys.getVersion())) {
             throw new GPException("Key version mismatch: " + keys.getVersion() + " != " + scpKeyVersion);
         }
-
-        // FIXME: the whole SCP vs variants thing is broken in API and implementation
-        // Set default SCP version based on major version, if not explicitly known.
-        if (scpVersion != scpMajorVersion && scpVersion != SCP_ANY) {
-            logger.debug("Overriding SCP version: card reports " + scpMajorVersion + " but user requested " + scpVersion);
-            scpMajorVersion = scpVersion;
-        }
-
-        GPSecureChannel secureChannel;
-        // Set version for SC wrappers
-        switch (scpMajorVersion) {
-            case 1:
-                scpVersion = SCP_01_05;
-                secureChannel = GPSecureChannel.SCP01;
-                break;
-            case 2:
-                secureChannel = GPSecureChannel.SCP02;
-                scpVersion = SCP_02_15;
-                break;
-            case 3:
-                secureChannel = GPSecureChannel.SCP03;
-                scpVersion = 3; // FIXME: the symbolic numbering of versions needs to be fixed.
-                break;
-            default:
-                throw new GPException("Invalid SCP major version reported by card: " + scpMajorVersion);
-        }
-        logger.debug("Will do SCP0{}", scpMajorVersion);
+        logger.debug("Will do SCP0{}", this.scpVersion);
 
         // Remove RMAC if SCP01 TODO: this should be generic sanitizer somewhere
-        if (scpMajorVersion == 1 && securityLevel.contains(APDUMode.RMAC)) {
+        if (this.scpVersion == GPSecureChannel.SCP01 && securityLevel.contains(APDUMode.RMAC)) {
             logger.debug("SCP01 does not support RMAC, removing.");
             securityLevel.remove(APDUMode.RMAC);
         }
 
         // Extract ssc
         byte[] seq = null;
-        if (scpMajorVersion == 2) {
+        if (this.scpVersion == GPSecureChannel.SCP02) {
             seq = Arrays.copyOfRange(update_response, 12, 14);
-        } else if (scpMajorVersion == 3) {
+        } else if (this.scpVersion == GPSecureChannel.SCP03) {
             if (update_response.length == 32) {
                 seq = Arrays.copyOfRange(update_response, 29, 32);
             }
         }
 
         // Give the card key a chance to be automatically diverisifed based on KDD
-        GPCardKeys cardKeys = keys.diversify(secureChannel, diversification_data);
+        GPCardKeys cardKeys = keys.diversify(this.scpVersion, diversification_data);
 
         logger.info("Diversified card keys: {}", cardKeys);
 
         // Derive session keys
         byte[] kdd;
-        if (secureChannel == GPSecureChannel.SCP02) {
+        if (this.scpVersion == GPSecureChannel.SCP02) {
             kdd = seq.clone();
         } else {
             kdd = GPUtils.concatenate(host_challenge, card_challenge);
@@ -496,7 +469,7 @@ public class GlobalPlatform {
         // Verify card cryptogram
         byte[] my_card_cryptogram = null;
         byte[] cntx = GPUtils.concatenate(host_challenge, card_challenge);
-        if (secureChannel == GPSecureChannel.SCP01 || secureChannel == GPSecureChannel.SCP02) {
+        if (this.scpVersion == GPSecureChannel.SCP01 || this.scpVersion == GPSecureChannel.SCP02) {
             my_card_cryptogram = GPCrypto.mac_3des_nulliv(sessionKeys.get(GPCardKeys.KeyPurpose.ENC), cntx);
         } else {
             my_card_cryptogram = GPCrypto.scp03_kdf(sessionKeys.get(GPCardKeys.KeyPurpose.MAC), (byte) 0x00, cntx, 64);
@@ -518,7 +491,7 @@ public class GlobalPlatform {
 
         // Calculate host cryptogram and initialize SCP wrapper
         byte[] host_cryptogram = null;
-        if (scpMajorVersion == 1 || scpMajorVersion == 2) {
+        if (this.scpVersion == GPSecureChannel.SCP01 || this.scpVersion == GPSecureChannel.SCP02) {
             host_cryptogram = GPCrypto.mac_3des_nulliv(sessionKeys.get(GPCardKeys.KeyPurpose.ENC), GPUtils.concatenate(card_challenge, host_challenge));
             wrapper = new SCP0102Wrapper(sessionKeys, scpVersion, EnumSet.of(APDUMode.MAC), null, null, blockSize);
         } else {
@@ -535,7 +508,7 @@ public class GlobalPlatform {
         wrapper.setSecurityLevel(securityLevel);
 
         // FIXME: ugly stuff, ugly...
-        if (scpMajorVersion != 3) {
+        if (this.scpVersion != GPSecureChannel.SCP03) {
             SCP0102Wrapper w = (SCP0102Wrapper) wrapper;
             if (securityLevel.contains(APDUMode.RMAC)) {
                 w.setRMACIV(w.getIV());
@@ -579,7 +552,7 @@ public class GlobalPlatform {
 
     private CommandAPDU tokenize(CommandAPDU command) throws IOException {
         try {
-            command = tokenGenerator.applyToken(command);
+            command = tokenizer.applyToken(command);
             return command;
         } catch (GeneralSecurityException e) {
             logger.error("Can not apply token: " + e.getMessage(), e);
@@ -620,7 +593,7 @@ public class GlobalPlatform {
         }
 
         // FIXME: hash type handling needs to be sensible.
-        boolean isHashRequired = dap != null || tokenGenerator.hasKey();
+        boolean isHashRequired = dap != null || tokenizer.hasKey();
         byte[] hash = isHashRequired ? cap.getLoadFileDataHash(hashFunction) : new byte[0];
         byte[] code = cap.getCode();
         // FIXME: parameters are optional for load
@@ -952,7 +925,7 @@ public class GlobalPlatform {
                 baos.write(cgram);
                 baos.write(check.length);
                 baos.write(check);
-            } else {
+            } else if (other.scp == GPSecureChannel.SCP01 || other.scp == GPSecureChannel.SCP02) {
                 // Encrypt key with DEK
                 byte[] cgram = dek.encryptKey(other, p);
                 baos.write(0x80); // 3DES

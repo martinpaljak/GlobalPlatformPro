@@ -66,11 +66,10 @@ public class GPCommands {
                 out.println(tab + "Parent:  " + e.getDomain());
             }
             if (e.getType() == GPRegistryEntry.Kind.ExecutableLoadFile) {
-                GPRegistryEntryPkg pkg = (GPRegistryEntryPkg) e;
-                if (pkg.getVersion() != null) {
-                    out.println(tab + "Version: " + pkg.getVersionString());
+                if (e.getVersion() != null) {
+                    out.println(tab + "Version: " + e.getVersionString());
                 }
-                for (AID a : pkg.getModules()) {
+                for (AID a : e.getModules()) {
                     out.print(tab + "Applet:  " + HexUtils.bin2hex(a.getBytes()));
                     if (verbose) {
                         out.println(" (" + GPUtils.byteArrayToReadableString(a.getBytes()) + ")");
@@ -79,12 +78,11 @@ public class GPCommands {
                     }
                 }
             } else {
-                GPRegistryEntryApp app = (GPRegistryEntryApp) e;
-                if (app.getLoadFile() != null) {
-                    out.println(tab + "From:    " + app.getLoadFile());
+                if (e.getLoadFile() != null) {
+                    out.println(tab + "From:    " + e.getLoadFile());
                 }
                 //if (!app.getPrivileges().isEmpty()) {
-                out.println(tab + "Privs:   " + app.getPrivileges());
+                out.println(tab + "Privs:   " + e.getPrivileges());
                 //}
             }
             out.println();

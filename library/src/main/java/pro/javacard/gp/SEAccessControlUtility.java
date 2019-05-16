@@ -41,7 +41,7 @@ public final class SEAccessControlUtility {
      * Send Access Control rule GET DATA.
      */
     private static ResponseAPDU sendAcrGetData(final APDUBIBO channel, final byte P1) throws IOException, GPException {
-        CommandAPDU list = new CommandAPDU(GlobalPlatform.CLA_GP, GlobalPlatform.INS_GET_DATA, 0xFF, P1, 256);
+        CommandAPDU list = new CommandAPDU(GPSession.CLA_GP, GPSession.INS_GET_DATA, 0xFF, P1, 256);
 
         ResponseAPDU response = channel.transmit(list);
 
@@ -59,7 +59,7 @@ public final class SEAccessControlUtility {
     /*
      * List access rules.
      */
-    public static void acrList(final GlobalPlatform gp) throws IOException, GPException {
+    public static void acrList(final GPSession gp) throws IOException, GPException {
         try {
             gp.select(SEAccessControl.ACR_AID);
 
@@ -81,7 +81,7 @@ public final class SEAccessControlUtility {
     /*
      * Add an access rule.
      */
-    public static void acrAdd(final GlobalPlatform gp, final AID araAid, final AID aid, final byte[] hash, final byte[] rules) throws IOException, GPException {
+    public static void acrAdd(final GPSession gp, final AID araAid, final AID aid, final byte[] hash, final byte[] rules) throws IOException, GPException {
         SEAccessControl.RefArDo refArDo = new SEAccessControl.RefArDo(aid, hash, rules);
         SEAccessControl.StoreArDo storeArDo = new SEAccessControl.StoreArDo(refArDo);
         acrStore(gp, araAid, storeArDo.toTlv());
@@ -90,7 +90,7 @@ public final class SEAccessControlUtility {
     /*
      * Send store data for access rule.
      */
-    public static void acrStore(final GlobalPlatform gp, final AID araAid, final BerTlv data) throws IOException, GPException {
+    public static void acrStore(final GPSession gp, final AID araAid, final BerTlv data) throws IOException, GPException {
         try {
             //0x90 is for getting BER-TLV data (Secure Element Access Control v1.0 p36)
             gp.personalizeSingle(araAid, new BerTlvBuilder().addBerTlv(data).buildArray(), (byte) 0x90);
@@ -106,7 +106,7 @@ public final class SEAccessControlUtility {
     /*
      * Delete an access rule by AID/HASH.
      */
-    public static void acrDelete(final GlobalPlatform gp, final AID araAid, final AID aid, final byte[] hash) throws IOException, GPException {
+    public static void acrDelete(final GPSession gp, final AID araAid, final AID aid, final byte[] hash) throws IOException, GPException {
         BerTlv request;
 
         if (hash != null) {

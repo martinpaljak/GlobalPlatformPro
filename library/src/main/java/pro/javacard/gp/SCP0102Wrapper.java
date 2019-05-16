@@ -48,7 +48,7 @@ class SCP0102Wrapper extends SecureChannelWrapper {
     private boolean postAPDU = false;
 
 
-    SCP0102Wrapper(GPSessionKeys sessionKeys, int scp, EnumSet<GlobalPlatform.APDUMode> securityLevel, byte[] icv, byte[] ricv, int bs) {
+    SCP0102Wrapper(GPSessionKeys sessionKeys, int scp, EnumSet<GPSession.APDUMode> securityLevel, byte[] icv, byte[] ricv, int bs) {
         this.blockSize = bs;
         this.sessionKeys = sessionKeys;
         this.icv = icv;
@@ -68,22 +68,22 @@ class SCP0102Wrapper extends SecureChannelWrapper {
     public void setSCPVersion(int scp) {
         // Major version of wrapper
         this.scp = 2;
-        if (scp < GlobalPlatform.SCP_02_04) {
+        if (scp < GPSession.SCP_02_04) {
             this.scp = 1;
         }
 
         // modes
-        if ((scp == GlobalPlatform.SCP_01_15) || (scp == GlobalPlatform.SCP_02_14) || (scp == GlobalPlatform.SCP_02_15) || (scp == GlobalPlatform.SCP_02_1A) || (scp == GlobalPlatform.SCP_02_1B)) {
+        if ((scp == GPSession.SCP_01_15) || (scp == GPSession.SCP_02_14) || (scp == GPSession.SCP_02_15) || (scp == GPSession.SCP_02_1A) || (scp == GPSession.SCP_02_1B)) {
             icvEnc = true;
         } else {
             icvEnc = false;
         }
-        if ((scp == GlobalPlatform.SCP_01_05) || (scp == GlobalPlatform.SCP_01_15) || (scp == GlobalPlatform.SCP_02_04) || (scp == GlobalPlatform.SCP_02_05) || (scp == GlobalPlatform.SCP_02_14) || (scp == GlobalPlatform.SCP_02_15)) {
+        if ((scp == GPSession.SCP_01_05) || (scp == GPSession.SCP_01_15) || (scp == GPSession.SCP_02_04) || (scp == GPSession.SCP_02_05) || (scp == GPSession.SCP_02_14) || (scp == GPSession.SCP_02_15)) {
             preAPDU = true;
         } else {
             preAPDU = false;
         }
-        if ((scp == GlobalPlatform.SCP_02_0A) || (scp == GlobalPlatform.SCP_02_0B) || (scp == GlobalPlatform.SCP_02_1A) || (scp == GlobalPlatform.SCP_02_1B)) {
+        if ((scp == GPSession.SCP_02_0A) || (scp == GPSession.SCP_02_0B) || (scp == GPSession.SCP_02_1A) || (scp == GPSession.SCP_02_1B)) {
             postAPDU = true;
         } else {
             postAPDU = false;

@@ -686,9 +686,9 @@ public class SEAccessControl {
     }
 
     public static class AcrListFetcher {
-        final GlobalPlatform gp;
+        final GPSession gp;
 
-        public AcrListFetcher(GlobalPlatform gp) {
+        public AcrListFetcher(GPSession gp) {
             this.gp = gp;
         }
 

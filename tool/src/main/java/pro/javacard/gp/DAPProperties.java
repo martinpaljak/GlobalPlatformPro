@@ -13,7 +13,7 @@ public class DAPProperties {
     private AID dapDomain = null;
     private boolean required = false;
 
-    public DAPProperties(OptionSet args, GlobalPlatform gp) throws IOException, GPException {
+    public DAPProperties(OptionSet args, GPSession gp) throws IOException, GPException {
         // Override target and check for DAP
         if (args.has(OPT_TO)) {
             targetDomain = AID.fromString(args.valueOf(OPT_TO));

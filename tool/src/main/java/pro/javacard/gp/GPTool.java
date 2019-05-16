@@ -29,8 +29,8 @@ import pro.javacard.AID;
 import pro.javacard.CAPFile;
 import pro.javacard.gp.GPRegistryEntry.Privilege;
 import pro.javacard.gp.GPRegistryEntry.Privileges;
-import pro.javacard.gp.GlobalPlatform.APDUMode;
-import pro.javacard.gp.GlobalPlatform.GPSpec;
+import pro.javacard.gp.GPSession.APDUMode;
+import pro.javacard.gp.GPSession.GPSpec;
 
 import javax.crypto.Cipher;
 import javax.smartcardio.*;
@@ -67,7 +67,7 @@ public final class GPTool extends GPCommandLineInterface {
         }
 
         if (args.has(OPT_VERSION) || args.has(OPT_VERBOSE) || args.has(OPT_DEBUG) || args.has(OPT_INFO)) {
-            String version = GlobalPlatform.getVersion();
+            String version = GPSession.getVersion();
             // Append host information
             version += "\nRunning on " + System.getProperty("os.name");
             version += " " + System.getProperty("os.version");
@@ -226,14 +226,14 @@ public final class GPTool extends GPCommandLineInterface {
                     Map<String, String> env = System.getenv();
 
                     // GlobalPlatform specific
-                    final GlobalPlatform gp;
+                    final GPSession gp;
                     if (args.has(OPT_SDAID)) {
-                        gp = GlobalPlatform.connect(channel, AID.fromString(args.valueOf(OPT_SDAID)));
+                        gp = GPSession.connect(channel, AID.fromString(args.valueOf(OPT_SDAID)));
                     } else if (env.containsKey("GP_AID")) {
-                        gp = GlobalPlatform.connect(channel, AID.fromString(env.get("GP_AID")));
+                        gp = GPSession.connect(channel, AID.fromString(env.get("GP_AID")));
                     } else {
                         // Oracle only applies if no other arguments given
-                        gp = GlobalPlatform.discover(channel);
+                        gp = GPSession.discover(channel);
                         // FIXME: would like to get AID from oracle as well.
                     }
 
@@ -324,7 +324,7 @@ public final class GPTool extends GPCommandLineInterface {
 
                     // Authenticate, only if needed
                     if (needsAuthentication(args)) {
-                        EnumSet<APDUMode> mode = GlobalPlatform.defaultMode.clone();
+                        EnumSet<APDUMode> mode = GPSession.defaultMode.clone();
                         // Override default mode if needed.
                         if (args.has(OPT_SC_MODE)) {
                             mode.clear();
@@ -823,7 +823,7 @@ public final class GPTool extends GPCommandLineInterface {
         System.exit(0);
     }
 
-    private static void calculateDapPropertiesAndLoadCap(OptionSet args, GlobalPlatform gp, CAPFile capFile) throws GPException, IOException {
+    private static void calculateDapPropertiesAndLoadCap(OptionSet args, GPSession gp, CAPFile capFile) throws GPException, IOException {
         try {
             DAPProperties dap = new DAPProperties(args, gp);
             loadCapAccordingToDapRequirement(args, gp, dap.getTargetDomain(), dap.getDapDomain(), dap.isRequired(), capFile);
@@ -843,7 +843,7 @@ public final class GPTool extends GPCommandLineInterface {
         }
     }
 
-    private static void loadCapAccordingToDapRequirement(OptionSet args, GlobalPlatform gp, AID targetDomain, AID dapDomain, boolean dapRequired, CAPFile cap) throws IOException, GPException {
+    private static void loadCapAccordingToDapRequirement(OptionSet args, GPSession gp, AID targetDomain, AID dapDomain, boolean dapRequired, CAPFile cap) throws IOException, GPException {
         // XXX: figure out right signature type in a better way
         if (dapRequired) {
             byte[] dap = args.has(OPT_SHA256) ? cap.getMetaInfEntry(CAPFile.DAP_RSA_V1_SHA256_FILE) : cap.getMetaInfEntry(CAPFile.DAP_RSA_V1_SHA1_FILE);

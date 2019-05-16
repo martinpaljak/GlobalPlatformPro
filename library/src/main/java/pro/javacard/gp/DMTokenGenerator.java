@@ -11,7 +11,7 @@ import java.security.GeneralSecurityException;
 import java.security.PrivateKey;
 import java.security.Signature;
 
-import static pro.javacard.gp.GlobalPlatform.INS_DELETE;
+import static pro.javacard.gp.GPSession.INS_DELETE;
 
 public class DMTokenGenerator {
     private static final Logger logger = LoggerFactory.getLogger(DMTokenGenerator.class);

@@ -32,7 +32,7 @@ import pro.javacard.AID;
 import pro.javacard.gp.GPRegistryEntry.Kind;
 import pro.javacard.gp.GPRegistryEntry.Privilege;
 import pro.javacard.gp.GPRegistryEntry.Privileges;
-import pro.javacard.gp.GlobalPlatform.GPSpec;
+import pro.javacard.gp.GPSession.GPSpec;
 
 import java.util.ArrayList;
 import java.util.Iterator;

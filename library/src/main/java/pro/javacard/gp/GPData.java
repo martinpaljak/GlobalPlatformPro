@@ -37,7 +37,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static pro.javacard.gp.GlobalPlatform.CLA_GP;
+import static pro.javacard.gp.GPSession.CLA_GP;
 
 // Various constants from GP specification and other sources
 // Methods to pretty-print those structures and constants.
@@ -290,14 +290,14 @@ public final class GPData {
         }
     }
 
-    public static GlobalPlatform.GPSpec oid2version(byte[] bytes) throws GPDataException {
+    public static GPSession.GPSpec oid2version(byte[] bytes) throws GPDataException {
         String oid = oid2string(bytes);
         if (oid.equals("1.2.840.114283.2.2.1.1")) {
-            return GlobalPlatform.GPSpec.GP211;
+            return GPSession.GPSpec.GP211;
         } else if (oid.equals("1.2.840.114283.2.2.2")) {
-            return GlobalPlatform.GPSpec.GP22;
+            return GPSession.GPSpec.GP22;
         } else if (oid.equals("1.2.840.114283.2.2.2.1")) {
-            return GlobalPlatform.GPSpec.GP22; // No need to make a difference
+            return GPSession.GPSpec.GP22; // No need to make a difference
         } else {
             throw new GPDataException("Unknown GP version OID: " + oid, bytes);
         }

@@ -54,8 +54,8 @@ import static pro.javacard.gp.GPCardKeys.KeyPurpose;
  * Does secure channel and low-level translation of GP* objects to APDU-s and arguments
  * NOT thread-safe
  */
-public class GlobalPlatform {
-    private static final Logger logger = LoggerFactory.getLogger(GlobalPlatform.class);
+public class GPSession {
+    private static final Logger logger = LoggerFactory.getLogger(GPSession.class);
 
     private static final String LFDBH_SHA1 = "SHA1";
     public static final int SCP_ANY = 0;
@@ -109,7 +109,7 @@ public class GlobalPlatform {
     /*
      * Maintaining locks to the underlying hardware is the duty of the caller
      */
-    public GlobalPlatform(APDUBIBO channel, AID sdAID) {
+    public GPSession(APDUBIBO channel, AID sdAID) {
         if (channel == null) {
             throw new IllegalArgumentException("A card session is required");
         }
@@ -118,7 +118,7 @@ public class GlobalPlatform {
     }
 
     // Try to find GlobalPlatform from a card
-    public static GlobalPlatform discover(APDUBIBO channel) throws GPException, IOException {
+    public static GPSession discover(APDUBIBO channel) throws GPException, IOException {
         if (channel == null)
             throw new IllegalArgumentException("channel is null");
 
@@ -170,14 +170,14 @@ public class GlobalPlatform {
             if (isdaid != null && isdaid.getBytesValue().length > 0) {
                 AID detectedAID = new AID(isdaid.getBytesValue());
                 logger.debug("Auto-detected ISD: " + detectedAID);
-                return new GlobalPlatform(channel, detectedAID);
+                return new GPSession(channel, detectedAID);
             }
         }
         throw new GPDataException("Could not auto-detect ISD AID", response.getData());
     }
 
     // Establishes connection to a specific AID (selects it)
-    public static GlobalPlatform connect(APDUBIBO channel, AID sdAID) throws IOException, GPException {
+    public static GPSession connect(APDUBIBO channel, AID sdAID) throws IOException, GPException {
         if (channel == null) {
             throw new IllegalArgumentException("A card session is required");
         }
@@ -186,7 +186,7 @@ public class GlobalPlatform {
         }
 
         logger.debug("(I)SD AID: " + sdAID);
-        GlobalPlatform gp = new GlobalPlatform(channel, sdAID);
+        GPSession gp = new GPSession(channel, sdAID);
         gp.select(sdAID);
         return gp;
     }
@@ -195,7 +195,7 @@ public class GlobalPlatform {
      * Get the version and build information of the library.
      */
     public static String getVersion() {
-        try (InputStream versionfile = GlobalPlatform.class.getResourceAsStream("pro_version.txt")) {
+        try (InputStream versionfile = GPSession.class.getResourceAsStream("pro_version.txt")) {
             String version = "unknown-development";
             if (versionfile != null) {
                 try (BufferedReader vinfo = new BufferedReader(new InputStreamReader(versionfile, StandardCharsets.US_ASCII))) {

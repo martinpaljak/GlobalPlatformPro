@@ -126,7 +126,7 @@ public class PythiaKeys {
             SSLSocketFactory factory = ssl.getSocketFactory();
             HttpsURLConnection con = (HttpsURLConnection) url.openConnection();
             con.setSSLSocketFactory(factory);
-            con.setRequestProperty("User-Agent", "GlobalPlatformPro/" + GlobalPlatform.getVersion());
+            con.setRequestProperty("User-Agent", "GlobalPlatformPro/" + GPSession.getVersion());
 
             OracleHint[] hints;
             try (InputStreamReader in = new InputStreamReader(con.getInputStream(), StandardCharsets.UTF_8)) {

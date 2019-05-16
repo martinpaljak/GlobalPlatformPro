@@ -9,8 +9,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.security.PrivateKey;
 
-import static pro.javacard.gp.GlobalPlatform.CLA_GP;
-import static pro.javacard.gp.GlobalPlatform.INS_INSTALL;
+import static pro.javacard.gp.GPSession.CLA_GP;
+import static pro.javacard.gp.GPSession.INS_INSTALL;
 
 public class TestDMTokenGenerator {
 

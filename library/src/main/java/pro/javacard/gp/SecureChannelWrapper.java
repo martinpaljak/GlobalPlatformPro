@@ -33,11 +33,11 @@ abstract class SecureChannelWrapper {
     protected boolean renc = false;
 
 
-    public void setSecurityLevel(EnumSet<GlobalPlatform.APDUMode> securityLevel) {
-        mac = securityLevel.contains(GlobalPlatform.APDUMode.MAC);
-        enc = securityLevel.contains(GlobalPlatform.APDUMode.ENC);
-        rmac = securityLevel.contains(GlobalPlatform.APDUMode.RMAC);
-        renc = securityLevel.contains(GlobalPlatform.APDUMode.RENC);
+    public void setSecurityLevel(EnumSet<GPSession.APDUMode> securityLevel) {
+        mac = securityLevel.contains(GPSession.APDUMode.MAC);
+        enc = securityLevel.contains(GPSession.APDUMode.ENC);
+        rmac = securityLevel.contains(GPSession.APDUMode.RMAC);
+        renc = securityLevel.contains(GPSession.APDUMode.RENC);
     }
 
     protected int getBlockSize() {

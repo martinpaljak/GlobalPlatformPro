@@ -7,7 +7,7 @@
         <artifactId>javacard</artifactId>
         <version>19.05.09</version>
     </parent>
-    <version>19.05.08.1</version>
+    <version>19.05.16</version>
     <artifactId>gppro</artifactId>
     <packaging>pom</packaging>
     <name>GlobalPlatformPro</name>

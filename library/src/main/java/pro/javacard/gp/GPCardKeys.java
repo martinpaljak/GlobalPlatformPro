@@ -38,7 +38,7 @@ public abstract class GPCardKeys {
 
     public abstract int getVersion();
 
-    // Session keys are used for various purposes
+    // Keys are used for various purposes
     public enum KeyPurpose {
         // ID is as used in diversification/derivation
         // That is - one based.
@@ -54,6 +54,7 @@ public abstract class GPCardKeys {
             return (byte) (value & 0xFF);
         }
 
+        // RMAC is derived, but not loaded to the card
         public static List<KeyPurpose> cardKeys() {
             return Arrays.asList(ENC, MAC, DEK);
         }

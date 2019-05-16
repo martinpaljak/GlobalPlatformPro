@@ -235,7 +235,7 @@ public class PlaintextKeys extends GPCardKeys {
 
     @Override
     public GPSessionKeys getSessionKeys(byte[] kdd) {
-        // Calculate session keys (ENC-MAC-DEK)
+        // Calculate session keys (ENC-MAC-DEK[-RMAC])
         for (KeyPurpose p : KeyPurpose.cardKeys()) {
             switch (scp) {
                 case SCP01:
@@ -254,7 +254,7 @@ public class PlaintextKeys extends GPCardKeys {
                     }
                     break;
                 default:
-                    throw new GPException("Illegal SCP");
+                    throw new IllegalStateException("Illegal SCP");
 
             }
         }
@@ -358,7 +358,6 @@ public class PlaintextKeys extends GPCardKeys {
     }
 
     @Override
-    @Deprecated
     public int getID() {
         return id;
     }

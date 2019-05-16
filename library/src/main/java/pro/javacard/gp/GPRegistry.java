@@ -72,12 +72,8 @@ public class GPRegistry implements Iterable<GPRegistryEntry> {
         return entries.stream().map(e -> e.getAID()).collect(Collectors.toList());
     }
 
-    public GPRegistryEntry getDomain(AID aid) {
-        for (GPRegistryEntry e : allDomains()) {
-            if (e.aid.equals(aid))
-                return e;
-        }
-        return null;
+    public Optional<GPRegistryEntry> getDomain(AID aid) {
+        return allDomains().stream().filter(e -> e.aid.equals(aid)).reduce(onlyOne());
     }
 
     public List<GPRegistryEntry> allApplets() {
@@ -94,11 +90,9 @@ public class GPRegistry implements Iterable<GPRegistryEntry> {
 
     public Optional<AID> getDefaultSelectedPackageAID() {
         Optional<AID> defaultAID = getDefaultSelectedAID();
-
         if (defaultAID.isPresent()) {
             return allPackages().stream().filter(e -> e.getModules().contains(defaultAID.get())).map(e -> e.getAID()).reduce(onlyOne());
         }
-
         return defaultAID;
     }
 
@@ -117,22 +111,20 @@ public class GPRegistry implements Iterable<GPRegistryEntry> {
                 offset += len;
                 int lifecycle = (data[offset++] & 0xFF);
                 byte privileges = data[offset++];
+                GPRegistryEntry e = new GPRegistryEntry();
 
                 if (type == Kind.IssuerSecurityDomain || type == Kind.Application) {
-                    GPRegistryEntry app = new GPRegistryEntry();
-                    app.setType(type);
-                    app.setAID(aid);
-                    app.setPrivileges(Privileges.fromByte(privileges));
-                    app.setLifeCycle(lifecycle);
-                    add(app);
+                    e.setType(type);
+                    e.setAID(aid);
+                    e.setPrivileges(Privileges.fromByte(privileges));
+                    e.setLifeCycle(lifecycle);
                 } else if (type == Kind.ExecutableLoadFile) {
                     if (privileges != 0x00) {
                         throw new GPDataException("Privileges of Load File is not 0x00");
                     }
-                    GPRegistryEntry pkg = new GPRegistryEntry();
-                    pkg.setAID(aid);
-                    pkg.setLifeCycle(lifecycle);
-                    pkg.setType(type);
+                    e.setAID(aid);
+                    e.setLifeCycle(lifecycle);
+                    e.setType(type);
                     // Modules TODO: remove
                     if (spec != GPSpec.OP201 && p1 != 0x20) {
                         int num = data[offset++];
@@ -140,11 +132,11 @@ public class GPRegistry implements Iterable<GPRegistryEntry> {
                             len = data[offset++] & 0xFF;
                             aid = new AID(data, offset, len);
                             offset += len;
-                            pkg.addModule(aid);
+                            e.addModule(aid);
                         }
                     }
-                    add(pkg);
                 }
+                add(e);
             }
         } catch (ArrayIndexOutOfBoundsException e) {
             throw new GPDataException("Invalid response to GET STATUS", e);

@@ -34,90 +34,42 @@ import pro.javacard.gp.GPRegistryEntry.Privilege;
 import pro.javacard.gp.GPRegistryEntry.Privileges;
 import pro.javacard.gp.GPSession.GPSpec;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
+import java.util.*;
+import java.util.function.BinaryOperator;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
-
-/**
- * Convenience class managing a vector of {@link GPRegistryEntry
- * AIDRegistryEntries} with search functionality.
- * <p>
- * Implements {@code Iterable<GPRegistryEntry} to permit foreach loops such as
- * {@code for(GPRegistryEntry e : registry) ...}.
- */
 public class GPRegistry implements Iterable<GPRegistryEntry> {
     private static final Logger logger = LoggerFactory.getLogger(GPRegistry.class);
     boolean tags = true; // XXX (visibility) true if newer tags format should be used for parsing, false otherwise
-    LinkedHashMap<AID, GPRegistryEntry> entries = new LinkedHashMap<>();
+    ArrayList<GPRegistryEntry> entries = new ArrayList<>();
 
-    /*
-     * Add one entry to this registry.
-     */
     public void add(GPRegistryEntry entry) {
         // "fix" the kind at a single location.
         if (entry.getPrivileges().has(Privilege.SecurityDomain) && entry.getType() == Kind.Application) {
             entry.setType(Kind.SecurityDomain);
         }
-        // XXX Legacy, combined with logic in GlobalPlatform.getStatus()
-        GPRegistryEntry existing = entries.get(entry.getAID());
-        if (existing != null && existing.getType() != entry.getType()) {
-            // OP201 cards list the ISD AID as load file.
-            // FIXME: different types with same AID.
-            logger.warn("Duplicate entry! " + existing + " vs " + entry);
-            return;
-        }
-        entries.put(entry.getAID(), entry);
+        entries.add(entry);
     }
 
-    /*
-     * Returns an iterator that iterates over all entries in this registry.
-     */
     public Iterator<GPRegistryEntry> iterator() {
-        return entries.values().iterator();
+        return entries.iterator();
     }
 
-
-    /*
-     * Returns a list of all packages in this registry.
-     */
     public List<GPRegistryEntry> allPackages() {
-        List<GPRegistryEntry> res = new ArrayList<>();
-        for (GPRegistryEntry e : entries.values()) {
-            if (e.isPackage()) {
-                res.add(e);
-            }
-        }
-        return res;
+        return entries.stream().filter(e -> e.isPackage()).collect(Collectors.toList());
     }
 
     public List<AID> allPackageAIDs() {
-        List<AID> res = new ArrayList<AID>();
-        for (GPRegistryEntry e : entries.values()) {
-            if (e.isPackage()) {
-                res.add(e.getAID());
-            }
-        }
-        return res;
+        return allPackages().stream().map(e -> e.getAID()).collect(Collectors.toList());
     }
 
     public List<AID> allAppletAIDs() {
-        List<AID> res = new ArrayList<AID>();
-        for (GPRegistryEntry e : entries.values()) {
-            if (e.isApplet()) {
-                res.add(e.getAID());
-            }
-        }
-        return res;
+        return allApplets().stream().map(e -> e.getAID()).collect(Collectors.toList());
     }
 
     public List<AID> allAIDs() {
-        List<AID> res = new ArrayList<AID>();
-        for (GPRegistryEntry e : entries.values()) {
-            res.add(e.getAID());
-        }
-        return res;
+        return entries.stream().map(e -> e.getAID()).collect(Collectors.toList());
     }
 
     public GPRegistryEntry getDomain(AID aid) {
@@ -128,63 +80,32 @@ public class GPRegistry implements Iterable<GPRegistryEntry> {
         return null;
     }
 
-    /*
-     * Returns a list of all applets in this registry.
-     */
     public List<GPRegistryEntry> allApplets() {
-        List<GPRegistryEntry> res = new ArrayList<>();
-        for (GPRegistryEntry e : entries.values()) {
-            if (e.isApplet()) {
-                res.add(e);
-            }
-        }
-        return res;
+        return entries.stream().filter(e -> e.isApplet()).collect(Collectors.toList());
     }
 
     public List<GPRegistryEntry> allDomains() {
-        List<GPRegistryEntry> res = new ArrayList<>();
-        for (GPRegistryEntry e : entries.values()) {
-            if (e.isDomain()) {
-                res.add(e);
-            }
-        }
-        return res;
+        return entries.stream().filter(e -> e.isDomain()).collect(Collectors.toList());
     }
 
-    public AID getDefaultSelectedAID() {
-        for (GPRegistryEntry e : allApplets()) {
-            if (e.getPrivileges().has(Privilege.CardReset)) {
-                return e.getAID();
-            }
-        }
-        return null;
+    public Optional<AID> getDefaultSelectedAID() {
+        return allApplets().stream().filter(e -> e.hasPrivilege(Privilege.CardReset)).map(e -> e.getAID()).reduce(onlyOne());
     }
 
-    public AID getDefaultSelectedPackageAID() {
-        AID defaultAID = getDefaultSelectedAID();
-        if (defaultAID != null) {
-            for (GPRegistryEntry e : allPackages()) {
-                if (e.getModules().contains(defaultAID))
-                    return e.getAID();
-            }
-            // Did not get a hit. Loop packages and look for prefixes
-            for (GPRegistryEntry e : allPackages()) {
-                if (defaultAID.toString().startsWith(e.getAID().toString()))
-                    return e.getAID();
-            }
+    public Optional<AID> getDefaultSelectedPackageAID() {
+        Optional<AID> defaultAID = getDefaultSelectedAID();
+
+        if (defaultAID.isPresent()) {
+            return allPackages().stream().filter(e -> e.getModules().contains(defaultAID.get())).map(e -> e.getAID()).reduce(onlyOne());
         }
-        return null;
+
+        return defaultAID;
     }
 
     // Shorthand
-    public GPRegistryEntry getISD() {
-        for (GPRegistryEntry a : allDomains()) {
-            if (a.getType() == Kind.IssuerSecurityDomain) {
-                return a;
-            }
-        }
-        // Could happen if the registry is a view from SSD
-        return null;
+    public Optional<GPRegistryEntry> getISD() {
+        // Could be empty if registry is a view from SSD
+        return allDomains().stream().filter(e -> e.getType() == Kind.IssuerSecurityDomain).reduce(onlyOne());
     }
 
     private void populate_legacy(int p1, byte[] data, Kind type, GPSpec spec) throws GPDataException {
@@ -289,5 +210,15 @@ public class GPRegistry implements Iterable<GPRegistryEntry> {
         } else {
             populate_legacy(p1, data, type, spec);
         }
+    }
+
+    public static <T> BinaryOperator<T> onlyOne() {
+        return onlyOne(() -> new GPException("Expected only one "));
+    }
+
+    public static <T, E extends RuntimeException> BinaryOperator<T> onlyOne(Supplier<E> exception) {
+        return (e, o) -> {
+            throw exception.get();
+        };
     }
 }

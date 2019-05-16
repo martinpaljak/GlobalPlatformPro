@@ -89,11 +89,12 @@ public class TestParseTags {
        byte[] r = HexUtils.hex2bin("E3144F07A00000015100009F700107C50180EA028000");
        GPRegistry g = new GPRegistry();
        g.parse(0x80, r, GPRegistryEntry.Kind.IssuerSecurityDomain, GPSession.GPSpec.GP22);
+       GPRegistryEntry isd = g.getISD().orElseThrow(() -> new Exception("No ISD"));
        Assert.assertEquals(1, g.allAIDs().size());
-       Assert.assertEquals(AID.fromString("A0000001510000"), g.getISD().getAID());
-       Assert.assertEquals(1, g.getISD().getPrivileges().size());
-       Assert.assertTrue(g.getISD().getPrivileges().has(GPRegistryEntry.Privilege.SecurityDomain));
-       Assert.assertEquals(GPData.initializedStatus, g.getISD().getLifeCycle());
+       Assert.assertEquals(AID.fromString("A0000001510000"), isd.getAID());
+       Assert.assertEquals(1, isd.getPrivileges().size());
+       Assert.assertTrue(isd.getPrivileges().has(GPRegistryEntry.Privilege.SecurityDomain));
+       Assert.assertEquals(GPData.initializedStatus, isd.getLifeCycle());
    }
 
 

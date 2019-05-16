@@ -83,8 +83,8 @@ abstract class GPCommandLineInterface {
     protected final static String OPT_SET_PRE_PERSO = "set-pre-perso";
     protected final static String OPT_SET_PERSO = "set-perso";
     protected final static String OPT_SHA256 = "sha256";
-    protected final static String OPT_STORE_DATA_BLOB = "store-data";
-    protected final static String OPT_STORE_DATA = "store-data-chunk";
+    protected final static String OPT_STORE_DATA = "store-data";
+    protected final static String OPT_STORE_DATA_CHUNK = "store-data-chunk";
     protected final static String OPT_TERMINALS = "terminals";
     protected final static String OPT_TERMINATE = "terminate";
     protected final static String OPT_TODAY = "today";
@@ -159,8 +159,8 @@ abstract class GPCommandLineInterface {
         parser.accepts(OPT_SET_PERSO, "Set Perso data in CPLC").withRequiredArg().describedAs("data");
         parser.accepts(OPT_TODAY, "Set date to today when updating CPLC");
 
-        parser.accepts(OPT_STORE_DATA_BLOB, "STORE DATA blob").withRequiredArg().describedAs("data");
-        parser.accepts(OPT_STORE_DATA, "Send STORE DATA commands").withRequiredArg().describedAs("data");
+        parser.accepts(OPT_STORE_DATA, "STORE DATA blob").withRequiredArg().describedAs("data");
+        parser.accepts(OPT_STORE_DATA_CHUNK, "Send STORE DATA commands").withRequiredArg().describedAs("data");
 
         parser.accepts(OPT_TOKEN_KEY, "Path to private key used in Delegated Management token generation").withRequiredArg().describedAs("path");
 

@@ -61,6 +61,10 @@ public class GPRegistryEntry {
     }
 
 
+    public boolean hasPrivilege(Privilege p) {
+        return privileges.has(p);
+    }
+
     public byte[] getVersion() {
         if (version == null)
             return null;
@@ -96,11 +100,11 @@ public class GPRegistryEntry {
         switch (kind) {
             case IssuerSecurityDomain:
                 switch (lifeCycleState) {
-                    case 0x1:
+                    case 0x01:
                         return "OP_READY";
-                    case 0x7:
+                    case 0x07:
                         return "INITIALIZED";
-                    case 0xF:
+                    case 0x0F:
                         return "SECURED";
                     case 0x7F:
                         return "CARD_LOCKED";
@@ -196,9 +200,7 @@ public class GPRegistryEntry {
     }
 
     public String toString() {
-        StringBuffer result = new StringBuffer();
-        result.append("AID: " + aid + ", " + lifecycle + ", Kind: " + kind.toShortString());
-        return result.toString();
+        return String.format("%s: %s, %s", kind.toShortString(), HexUtils.bin2hex(aid.getBytes()), lifecycle);
     }
 
     public String getLifeCycleString() {
@@ -247,7 +249,7 @@ public class GPRegistryEntry {
         ContactlessActivation,
         ContactlessSelfActivation;
 
-        public static Privilege     lookup(String v) {
+        public static Privilege lookup(String v) {
             for (Privilege d : Privilege.values()) {
                 if (d.name().equalsIgnoreCase(v)) {
                     return d;

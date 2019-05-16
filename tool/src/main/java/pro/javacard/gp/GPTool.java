@@ -357,9 +357,11 @@ public final class GPTool extends GPCommandLineInterface {
                             GPRegistry reg = gp.getRegistry();
 
                             // DWIM: assume that default selected is the one to be deleted
-                            if (args.has(OPT_DEFAULT) && reg.getDefaultSelectedAID() != null) {
-                                if (reg.getDefaultSelectedPackageAID() != null) {
-                                    gp.deleteAID(reg.getDefaultSelectedPackageAID(), true);
+                            if (args.has(OPT_DEFAULT)) {
+                                Optional<AID> def = reg.getDefaultSelectedAID();
+
+                                if (def.isPresent()) {
+                                    gp.deleteAID(def.get(), false);
                                 } else {
                                     System.err.println("Could not identify default selected application!");
                                 }
@@ -480,8 +482,8 @@ public final class GPTool extends GPCommandLineInterface {
                             Privileges privs = getInstPrivs(args);
 
                             // Remove existing default app
-                            if (args.has(OPT_FORCE) && (reg.getDefaultSelectedAID() != null && privs.has(Privilege.CardReset))) {
-                                gp.deleteAID(reg.getDefaultSelectedAID(), false);
+                            if (args.has(OPT_FORCE) && (reg.getDefaultSelectedAID().isPresent() && privs.has(Privilege.CardReset))) {
+                                gp.deleteAID(reg.getDefaultSelectedAID().get(), false);
                             }
 
                             // warn
@@ -582,8 +584,8 @@ public final class GPTool extends GPCommandLineInterface {
 
                         // --store-data <XX>
                         // This will split the data, if necessary
-                        if (args.has(OPT_STORE_DATA_BLOB)) {
-                            List<byte[]> blobs = args.valuesOf(OPT_STORE_DATA_BLOB).stream().map(e -> HexUtils.stringToBin((String) e)).collect(Collectors.toList());
+                        if (args.has(OPT_STORE_DATA)) {
+                            List<byte[]> blobs = args.valuesOf(OPT_STORE_DATA).stream().map(e -> HexUtils.stringToBin((String) e)).collect(Collectors.toList());
                             for (byte[] blob : blobs) {
                                 if (args.has(OPT_APPLET)) {
                                     gp.personalize(AID.fromString(args.valueOf(OPT_APPLET)), blob, 0x01);
@@ -595,8 +597,8 @@ public final class GPTool extends GPCommandLineInterface {
 
                         // --store-data-chunk
                         // This will collect the chunks and send them one by one
-                        if (args.has(OPT_STORE_DATA)) {
-                            List<byte[]> blobs = args.valuesOf(OPT_STORE_DATA).stream().map(e -> HexUtils.stringToBin((String) e)).collect(Collectors.toList());
+                        if (args.has(OPT_STORE_DATA_CHUNK)) {
+                            List<byte[]> blobs = args.valuesOf(OPT_STORE_DATA_CHUNK).stream().map(e -> HexUtils.stringToBin((String) e)).collect(Collectors.toList());
                             if (args.has(OPT_APPLET)) {
                                 gp.personalize(AID.fromString(args.valueOf(OPT_APPLET)), blobs, 0x01);
                             } else {
@@ -659,11 +661,7 @@ public final class GPTool extends GPCommandLineInterface {
                         // --secure-card
                         if (args.has(OPT_SECURE_CARD)) {
                             // Skip INITIALIZED
-                            GPRegistryEntry isd = gp.getRegistry().getISD();
-                            if (isd == null) {
-                                GPCommands.listRegistry(gp.getRegistry(), System.out, true);
-                                fail("ISD is null");
-                            }
+                            GPRegistryEntry isd = gp.getRegistry().getISD().orElseThrow(() -> new GPException("ISD is null"));
                             if (isd.getLifeCycle() != GPData.initializedStatus) {
                                 if (args.has(OPT_FORCE)) {
                                     System.out.println("Note: forcing status to INITIALIZED");
@@ -934,7 +932,7 @@ public final class GPTool extends GPCommandLineInterface {
         String[] yes = new String[]{OPT_LIST, OPT_LOAD, OPT_INSTALL, OPT_DELETE, OPT_DELETE_KEY, OPT_CREATE,
                 OPT_ACR_ADD, OPT_ACR_DELETE, OPT_LOCK, OPT_UNLOCK, OPT_LOCK_ENC, OPT_LOCK_MAC, OPT_LOCK_DEK, OPT_MAKE_DEFAULT,
                 OPT_UNINSTALL, OPT_SECURE_APDU, OPT_DOMAIN, OPT_LOCK_CARD, OPT_UNLOCK_CARD, OPT_LOCK_APPLET, OPT_UNLOCK_APPLET,
-                OPT_STORE_DATA_BLOB, OPT_STORE_DATA, OPT_INITIALIZE_CARD, OPT_SECURE_CARD, OPT_RENAME_ISD, OPT_SET_PERSO, OPT_SET_PRE_PERSO, OPT_MOVE,
+                OPT_STORE_DATA, OPT_STORE_DATA_CHUNK, OPT_INITIALIZE_CARD, OPT_SECURE_CARD, OPT_RENAME_ISD, OPT_SET_PERSO, OPT_SET_PRE_PERSO, OPT_MOVE,
                 OPT_PUT_KEY, OPT_ACR_AID, OPT_ACR_LIST};
 
         return Arrays.stream(yes).anyMatch(str -> args.has(str));

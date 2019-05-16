@@ -147,23 +147,28 @@ public final class GPData {
                 for (BerTlv v : caps.getValues()) {
                     BerTlv t = v.find(new BerTag(0xA0));
                     if (t != null) {
-                        int scp = t.find(new BerTag(0x80)).getIntValue();
-                        byte[] is = t.find(new BerTag(0x81)).getBytesValue();
-                        System.out.format("Supports: SCP%02X", scp);
-                        for (int i = 0; i < is.length; i++) {
-                            System.out.format(" i=%02X", is[i]);
-                        }
-                        BerTlv keylens = t.find(new BerTag(0x82));
-                        if (keylens != null) {
-                            System.out.print(" with");
-                            if ((keylens.getIntValue() & 0x01) == 0x01) {
-                                System.out.print(" AES-128");
+                        BerTlv scp = t.find(new BerTag(0x80));
+                        if (scp != null) {
+                            System.out.format("Supports: SCP%02X", scp.getIntValue());
+                            BerTlv is = t.find(new BerTag(0x81));
+                            if (is != null) {
+                                byte[] isv = is.getBytesValue();
+                                for (int i = 0; i < isv.length; i++) {
+                                    System.out.format(" i=%02X", isv[i]);
+                                }
                             }
-                            if ((keylens.getIntValue() & 0x02) == 0x02) {
-                                System.out.print(" AES-196");
-                            }
-                            if ((keylens.getIntValue() & 0x04) == 0x04) {
-                                System.out.print(" AES-256");
+                            BerTlv keylens = t.find(new BerTag(0x82));
+                            if (keylens != null) {
+                                System.out.print(" with");
+                                if ((keylens.getIntValue() & 0x01) == 0x01) {
+                                    System.out.print(" AES-128");
+                                }
+                                if ((keylens.getIntValue() & 0x02) == 0x02) {
+                                    System.out.print(" AES-196");
+                                }
+                                if ((keylens.getIntValue() & 0x04) == 0x04) {
+                                    System.out.print(" AES-256");
+                                }
                             }
                         }
                         System.out.println();

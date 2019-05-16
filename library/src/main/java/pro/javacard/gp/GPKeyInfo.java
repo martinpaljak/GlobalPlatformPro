@@ -66,6 +66,8 @@ public final class GPKeyInfo {
     // GP 2.2.1 11.3.3.1 and 11.1.8
     public static List<GPKeyInfo> parseTemplate(byte[] data) throws GPException {
         List<GPKeyInfo> r = new ArrayList<>();
+        if (data == null || data.length == 0)
+            return r;
 
         BerTlvParser parser = new BerTlvParser();
         BerTlvs tlvs = parser.parse(data);

@@ -432,7 +432,7 @@ public class GPSession {
         if ((keys.getVersion() > 0) && (scpKeyVersion != keys.getVersion())) {
             throw new GPException("Key version mismatch: " + keys.getVersion() + " != " + scpKeyVersion);
         }
-        logger.debug("Will do SCP0{}", this.scpVersion);
+        logger.debug("Will do {}", this.scpVersion);
 
         // Remove RMAC if SCP01 TODO: this should be generic sanitizer somewhere
         if (this.scpVersion == GPSecureChannel.SCP01 && securityLevel.contains(APDUMode.RMAC)) {
@@ -493,7 +493,7 @@ public class GPSession {
         byte[] host_cryptogram = null;
         if (this.scpVersion == GPSecureChannel.SCP01 || this.scpVersion == GPSecureChannel.SCP02) {
             host_cryptogram = GPCrypto.mac_3des_nulliv(sessionKeys.get(GPCardKeys.KeyPurpose.ENC), GPUtils.concatenate(card_challenge, host_challenge));
-            wrapper = new SCP0102Wrapper(sessionKeys, scpVersion, EnumSet.of(APDUMode.MAC), null, null, blockSize);
+            wrapper = new SCP0102Wrapper(sessionKeys, scpVersion, this.scpVersion, EnumSet.of(APDUMode.MAC), null, null, blockSize);
         } else {
             host_cryptogram = GPCrypto.scp03_kdf(sessionKeys.get(GPCardKeys.KeyPurpose.MAC), (byte) 0x01, cntx, 64);
             wrapper = new SCP03Wrapper(sessionKeys, scpVersion, EnumSet.of(APDUMode.MAC), null, null, blockSize);

@@ -70,11 +70,14 @@ class SCP0102Wrapper extends SecureChannelWrapper {
         if (scpVersion == GPSecureChannel.SCP01) {
             this.scp = 1;
         }
-        // Add this so in case of scp any, the LC is augmented in mac case
+        
+        // Add this so in case of scp any, we define it as the most common ones:
+        // In case of SCP01 -> ICV no enc and Pre APDU
+        // In case of SCP02 -> ICV enc, and Pre APDU
         if ((scpVersion == GPSecureChannel.SCP01) && (scp == 0)) {
             scp = GPSession.SCP_01_05;
         } else if ((scpVersion == GPSecureChannel.SCP02) && (scp == 0)) {
-            scp = GPSession.SCP_02_05;
+            scp = GPSession.SCP_02_15;
         }
 
         // modes

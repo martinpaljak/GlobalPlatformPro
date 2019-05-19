@@ -48,12 +48,11 @@ class SCP0102Wrapper extends SecureChannelWrapper {
     private boolean postAPDU = false;
 
 
-    SCP0102Wrapper(GPSessionKeys sessionKeys, int scp, EnumSet<GPSession.APDUMode> securityLevel, byte[] icv, byte[] ricv, int bs) {
-        this.blockSize = bs;
+    SCP0102Wrapper(GPSessionKeys sessionKeys, int scp, GPSecureChannel scpVersion, EnumSet<GPSession.APDUMode> securityLevel, byte[] icv, byte[] ricv, int bs) {        this.blockSize = bs;
         this.sessionKeys = sessionKeys;
         this.icv = icv;
         this.ricv = ricv;
-        setSCPVersion(scp);
+        setSCPVersion(scp, scpVersion);
         setSecurityLevel(securityLevel);
     }
 
@@ -65,11 +64,17 @@ class SCP0102Wrapper extends SecureChannelWrapper {
         return (byte) ((b | mask) & 0xFF);
     }
 
-    public void setSCPVersion(int scp) {
+    public void setSCPVersion(int scp, GPSecureChannel scpVersion) {
         // Major version of wrapper
         this.scp = 2;
-        if (scp < GPSession.SCP_02_04) {
+        if (scpVersion == GPSecureChannel.SCP01) {
             this.scp = 1;
+        }
+        // Add this so in case of scp any, the LC is augmented in mac case
+        if ((scpVersion == GPSecureChannel.SCP01) && (scp == 0)) {
+            scp = GPSession.SCP_01_05;
+        } else if ((scpVersion == GPSecureChannel.SCP02) && (scp == 0)) {
+            scp = GPSession.SCP_02_05;
         }
 
         // modes

@@ -42,7 +42,7 @@ public final class GPKeyInfo {
     private int length = -1;
 
     // Called when parsing KeyInfo template
-    private GPKeyInfo(int version, int id, int length, int type) {
+    GPKeyInfo(int version, int id, int length, int type) {
         this.version = version;
         this.id = id;
         this.length = length;

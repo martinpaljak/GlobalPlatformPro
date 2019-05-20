@@ -50,6 +50,7 @@ abstract class GPCommandLineInterface {
     protected final static String OPT_INSTALL = "install";
     protected final static String OPT_KCV = "kcv";
     protected final static String OPT_KDF3 = "kdf3";
+    protected final static String OPT_KDF = "kdf";
     protected final static String OPT_KEY = "key";
     protected final static String OPT_KEYS = "keys";
     protected final static String OPT_KEY_ENC = "key-enc";
@@ -64,6 +65,8 @@ abstract class GPCommandLineInterface {
     protected final static String OPT_LOCK_ENC = "lock-enc";
     protected final static String OPT_LOCK_MAC = "lock-mac";
     protected final static String OPT_LOCK_DEK = "lock-dek";
+    protected final static String OPT_LOCK_KDF = "lock-kdf";
+
     protected final static String OPT_LOCK_APPLET = "lock-applet";
     protected final static String OPT_LOCK_CARD = "lock-card";
     protected final static String OPT_MAKE_DEFAULT = "make-default";
@@ -176,15 +179,17 @@ abstract class GPCommandLineInterface {
 
         // Key options
         parser.accepts(OPT_KEY, "Specify master key").withRequiredArg().describedAs("key");
+        parser.accepts(OPT_KDF, "Use KDF with master key").withRequiredArg().describedAs("kdf");
+
         parser.accepts(OPT_KCV, "Specify master key check value").withRequiredArg().describedAs("KCV");
 
         parser.accepts(OPT_KEY_MAC, "Specify card MAC key").withRequiredArg().describedAs("key");
         parser.accepts(OPT_KEY_ENC, "Specify card ENC key").withRequiredArg().describedAs("key");
         parser.accepts(OPT_KEY_DEK, "Specify card DEK key").withRequiredArg().describedAs("key");
 
-        parser.accepts(OPT_EMV, "Use EMV diversification");
-        parser.accepts(OPT_VISA2, "Use VISA2 diversification");
-        parser.accepts(OPT_KDF3, "Use SCP03 KDF diversification");
+        parser.accepts(OPT_EMV, "Use EMV KDF");
+        parser.accepts(OPT_VISA2, "Use VISA2 KDF");
+        parser.accepts(OPT_KDF3, "Use SCP03 KDF KDF");
 
         parser.accepts(OPT_ORACLE, "Use an oracle for keying information").withOptionalArg().describedAs("URL");
 
@@ -193,6 +198,8 @@ abstract class GPCommandLineInterface {
         parser.accepts(OPT_PUT_KEY, "Put a new key").withRequiredArg().describedAs("PEM file");
 
         parser.accepts(OPT_LOCK, "Set new key").withRequiredArg().describedAs("key");
+        parser.accepts(OPT_LOCK_KDF, "Use KDF with lock key").withRequiredArg().describedAs("kdf");
+
         parser.accepts(OPT_LOCK_ENC, "Set new ENC key").withRequiredArg().describedAs("key");
         parser.accepts(OPT_LOCK_MAC, "Set new MAC key").withRequiredArg().describedAs("key");
         parser.accepts(OPT_LOCK_DEK, "Set new DEK key").withRequiredArg().describedAs("key");

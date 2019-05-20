@@ -25,19 +25,21 @@ import apdu4j.ResponseAPDU;
 import java.util.EnumSet;
 
 abstract class SecureChannelWrapper {
-    protected int blockSize = 255;
-    protected GPSessionKeys sessionKeys = null;
-    protected boolean mac = false;
-    protected boolean enc = false;
-    protected boolean rmac = false;
-    protected boolean renc = false;
+    protected final int blockSize;
+    protected final GPSessionKeys sessionKeys;
+    protected final boolean mac;
+    protected final boolean enc;
+    protected final boolean rmac; // could be sessions
+    protected final boolean renc;
 
 
-    public void setSecurityLevel(EnumSet<GPSession.APDUMode> securityLevel) {
+    protected SecureChannelWrapper( GPSessionKeys keys, EnumSet<GPSession.APDUMode> securityLevel, int bs) {
         mac = securityLevel.contains(GPSession.APDUMode.MAC);
         enc = securityLevel.contains(GPSession.APDUMode.ENC);
         rmac = securityLevel.contains(GPSession.APDUMode.RMAC);
         renc = securityLevel.contains(GPSession.APDUMode.RENC);
+        sessionKeys = keys;
+        blockSize = bs;
     }
 
     protected int getBlockSize() {
@@ -49,7 +51,7 @@ abstract class SecureChannelWrapper {
         return res;
     }
 
-    protected abstract CommandAPDU wrap(CommandAPDU command) throws GPException;
+    abstract CommandAPDU wrap(CommandAPDU command) throws GPException;
 
-    protected abstract ResponseAPDU unwrap(ResponseAPDU response) throws GPException;
+    abstract ResponseAPDU unwrap(ResponseAPDU response) throws GPException;
 }

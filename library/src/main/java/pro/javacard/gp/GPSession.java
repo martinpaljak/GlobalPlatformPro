@@ -359,7 +359,7 @@ public class GPSession {
     /*
      * Establishes a secure channel to the security domain.
      */
-    public void openSecureChannel(GPCardKeys keys, byte[] host_challenge, int scpVersion, EnumSet<APDUMode> securityLevel)
+    public void openSecureChannel(GPCardKeys keys, GPSecureChannel scp, byte[] host_challenge, EnumSet<APDUMode> securityLevel)
             throws IOException, GPException {
 
         // ENC requires MAC
@@ -377,8 +377,7 @@ public class GPSession {
 
         // P1 key version (all)
         // P2 either key ID (SCP01) or 0 (SCP02)
-        // TODO: use it here for KeyID?
-        CommandAPDU initUpdate = new CommandAPDU(CLA_GP, INS_INITIALIZE_UPDATE, keys.getVersion(), scpVersion == 1 ? keys.getID() : 0, host_challenge, 256);
+        CommandAPDU initUpdate = new CommandAPDU(CLA_GP, INS_INITIALIZE_UPDATE, keys.getKeyInfo().getVersion(), scp == GPSecureChannel.SCP01 ? keys.getKeyInfo().getID() : 0, host_challenge, 256);
 
         ResponseAPDU response = channel.transmit(initUpdate);
         int sw = response.getSW();
@@ -429,10 +428,10 @@ public class GPSession {
 
         // Verify response
         // If using explicit key version, it must match.
-        if ((keys.getVersion() > 0) && (scpKeyVersion != keys.getVersion())) {
-            throw new GPException("Key version mismatch: " + keys.getVersion() + " != " + scpKeyVersion);
+        GPKeyInfo keyInfo = keys.getKeyInfo();
+        if ((keyInfo.getVersion() > 0) && (scpKeyVersion != keyInfo.getVersion())) {
+            throw new GPException("Key version mismatch: " + keyInfo.getVersion() + " != " + scpKeyVersion);
         }
-        logger.debug("Will do SCP0{}", this.scpVersion);
 
         // Remove RMAC if SCP01 TODO: this should be generic sanitizer somewhere
         if (this.scpVersion == GPSecureChannel.SCP01 && securityLevel.contains(APDUMode.RMAC)) {
@@ -467,7 +466,7 @@ public class GPSession {
         logger.info("Session keys: {}", sessionKeys);
 
         // Verify card cryptogram
-        byte[] my_card_cryptogram = null;
+        byte[] my_card_cryptogram;
         byte[] cntx = GPUtils.concatenate(host_challenge, card_challenge);
         if (this.scpVersion == GPSecureChannel.SCP01 || this.scpVersion == GPSecureChannel.SCP02) {
             my_card_cryptogram = GPCrypto.mac_3des_nulliv(sessionKeys.get(GPCardKeys.KeyPurpose.ENC), cntx);
@@ -490,13 +489,22 @@ public class GPSession {
         }
 
         // Calculate host cryptogram and initialize SCP wrapper
-        byte[] host_cryptogram = null;
-        if (this.scpVersion == GPSecureChannel.SCP01 || this.scpVersion == GPSecureChannel.SCP02) {
-            host_cryptogram = GPCrypto.mac_3des_nulliv(sessionKeys.get(GPCardKeys.KeyPurpose.ENC), GPUtils.concatenate(card_challenge, host_challenge));
-            wrapper = new SCP0102Wrapper(sessionKeys, scpVersion, EnumSet.of(APDUMode.MAC), null, null, blockSize);
-        } else {
-            host_cryptogram = GPCrypto.scp03_kdf(sessionKeys.get(GPCardKeys.KeyPurpose.MAC), (byte) 0x01, cntx, 64);
-            wrapper = new SCP03Wrapper(sessionKeys, scpVersion, EnumSet.of(APDUMode.MAC), null, null, blockSize);
+        final byte[] host_cryptogram;
+        switch (scpVersion) {
+            case SCP01:
+                host_cryptogram = GPCrypto.mac_3des_nulliv(sessionKeys.get(GPCardKeys.KeyPurpose.ENC), GPUtils.concatenate(card_challenge, host_challenge));
+                wrapper = new SCP01Wrapper(sessionKeys, EnumSet.of(APDUMode.MAC), blockSize);
+                break;
+            case SCP02:
+                host_cryptogram = GPCrypto.mac_3des_nulliv(sessionKeys.get(GPCardKeys.KeyPurpose.ENC), GPUtils.concatenate(card_challenge, host_challenge));
+                wrapper = new SCP02Wrapper(sessionKeys, EnumSet.of(APDUMode.MAC), blockSize);
+                break;
+            case SCP03:
+                host_cryptogram = GPCrypto.scp03_kdf(sessionKeys.get(GPCardKeys.KeyPurpose.MAC), (byte) 0x01, cntx, 64);
+                wrapper = new SCP03Wrapper(sessionKeys, EnumSet.of(APDUMode.MAC), blockSize);
+                break;
+            default:
+                throw new IllegalStateException("Unknown SCP");
         }
 
         logger.debug("Calculated host cryptogram: " + HexUtils.bin2hex(host_cryptogram));
@@ -504,16 +512,6 @@ public class GPSession {
         CommandAPDU externalAuthenticate = new CommandAPDU(CLA_MAC, ISO7816.INS_EXTERNAL_AUTHENTICATE_82, P1, 0, host_cryptogram);
         response = transmit(externalAuthenticate);
         GPException.check(response, "External authenticate failed");
-
-        wrapper.setSecurityLevel(securityLevel);
-
-        // FIXME: ugly stuff, ugly...
-        if (this.scpVersion != GPSecureChannel.SCP03) {
-            SCP0102Wrapper w = (SCP0102Wrapper) wrapper;
-            if (securityLevel.contains(APDUMode.RMAC)) {
-                w.setRMACIV(w.getIV());
-            }
-        }
     }
 
     // Pipe through secure channel
@@ -914,24 +912,23 @@ public class GPSession {
     private byte[] encodeKey(GPSessionKeys dek, GPCardKeys other, KeyPurpose p) {
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            // FIXME: 3DES over SCP03
             if (other.scp == GPSecureChannel.SCP03) {
-                //	baos.write(0xFF);
                 byte[] cgram = dek.encryptKey(other, p);
                 byte[] check = other.kcv(p);
                 baos.write(0x88); // AES
                 baos.write(cgram.length + 1);
-                //baos.write(key.getLength()); // FIXME: KeyInfo
-                baos.write(16); // FIXME: KeyInfo
+                baos.write(other.getKeyInfo().getLength());
                 baos.write(cgram);
                 baos.write(check.length);
                 baos.write(check);
             } else if (other.scp == GPSecureChannel.SCP01 || other.scp == GPSecureChannel.SCP02) {
-                // Encrypt key with DEK
                 byte[] cgram = dek.encryptKey(other, p);
+                byte[] kcv = other.kcv(p);
+
                 baos.write(0x80); // 3DES
                 baos.write(cgram.length); // Length
                 baos.write(cgram);
-                byte[] kcv = other.kcv(p);
                 baos.write(kcv.length);
                 baos.write(kcv);
             }
@@ -978,22 +975,22 @@ public class GPSession {
         // Construct APDU
         int P1 = 0x00; // New key in single command unless replace
         if (replace) {
-            P1 = keys.getVersion();
+            P1 = keys.getKeyInfo().getVersion();
         }
         // int P2 = keys.get(0).getID();
         int P2 = 0x01;
         P2 |= 0x80; // More than one key
 
         ByteArrayOutputStream bo = new ByteArrayOutputStream();
-        try {
-            // New key version
-            bo.write(keys.getVersion());
-            // Key data
-            for (KeyPurpose p : KeyPurpose.cardKeys()) {
-                bo.write(encodeKey(sessionKeys, keys, p));
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+
+        // XXX: make this more obvious
+        keys = keys.diversify(sessionKeys.cardKeys.scp, sessionKeys.cardKeys.kdd);
+
+        // New key version
+        bo.write(keys.getKeyInfo().getVersion());
+        // Key data
+        for (KeyPurpose p : KeyPurpose.cardKeys()) {
+            bo.write(encodeKey(sessionKeys, keys, p));
         }
 
         CommandAPDU command = new CommandAPDU(CLA_GP, INS_PUT_KEY, P1, P2, bo.toByteArray());

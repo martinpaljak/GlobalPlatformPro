@@ -20,7 +20,10 @@
 package pro.javacard.gp;
 
 import apdu4j.CommandAPDU;
+import apdu4j.HexUtils;
 import apdu4j.ResponseAPDU;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.crypto.Cipher;
 import javax.crypto.NoSuchPaddingException;
@@ -28,33 +31,28 @@ import javax.crypto.spec.SecretKeySpec;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
-import java.security.Key;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.EnumSet;
 
 import static pro.javacard.gp.GPCardKeys.KeyPurpose.*;
 
-
-class SCP0102Wrapper extends SecureChannelWrapper {
+// SCP02 15 - CMAC on modified APDU, ICV zero, ICV encryption, no RMAC (55 = well-known random)
+class SCP02Wrapper extends SecureChannelWrapper {
+    private static final Logger logger = LoggerFactory.getLogger(SCP02Wrapper.class);
 
     private final ByteArrayOutputStream rMac = new ByteArrayOutputStream();
     private byte[] icv = null;
     private byte[] ricv = null;
-    private int scp = 0;
-    private boolean icvEnc = false;
 
-    private boolean preAPDU = false;
+    private boolean icvEnc = false;
+    private boolean macModifiedAPDU = false;
     private boolean postAPDU = false;
 
 
-    SCP0102Wrapper(GPSessionKeys sessionKeys, int scp, EnumSet<GPSession.APDUMode> securityLevel, byte[] icv, byte[] ricv, int bs) {
-        this.blockSize = bs;
-        this.sessionKeys = sessionKeys;
-        this.icv = icv;
-        this.ricv = ricv;
-        setSCPVersion(scp);
-        setSecurityLevel(securityLevel);
+    SCP02Wrapper(GPSessionKeys sessionKeys, EnumSet<GPSession.APDUMode> securityLevel, int bs) {
+        super(sessionKeys, securityLevel, bs);
+        setVariant(0x55);
     }
 
     private static byte clearBits(byte b, byte mask) {
@@ -65,37 +63,9 @@ class SCP0102Wrapper extends SecureChannelWrapper {
         return (byte) ((b | mask) & 0xFF);
     }
 
-    public void setSCPVersion(int scp) {
-        // Major version of wrapper
-        this.scp = 2;
-        if (scp < GPSession.SCP_02_04) {
-            this.scp = 1;
-        }
-
-        // modes
-        if ((scp == GPSession.SCP_01_15) || (scp == GPSession.SCP_02_14) || (scp == GPSession.SCP_02_15) || (scp == GPSession.SCP_02_1A) || (scp == GPSession.SCP_02_1B)) {
-            icvEnc = true;
-        } else {
-            icvEnc = false;
-        }
-        if ((scp == GPSession.SCP_01_05) || (scp == GPSession.SCP_01_15) || (scp == GPSession.SCP_02_04) || (scp == GPSession.SCP_02_05) || (scp == GPSession.SCP_02_14) || (scp == GPSession.SCP_02_15)) {
-            preAPDU = true;
-        } else {
-            preAPDU = false;
-        }
-        if ((scp == GPSession.SCP_02_0A) || (scp == GPSession.SCP_02_0B) || (scp == GPSession.SCP_02_1A) || (scp == GPSession.SCP_02_1B)) {
-            postAPDU = true;
-        } else {
-            postAPDU = false;
-        }
-    }
-
-    public byte[] getIV() {
-        return icv;
-    }
-
-    public void setRMACIV(byte[] iv) {
-        ricv = iv;
+    public void setVariant(int i) {
+        icvEnc = true;
+        macModifiedAPDU = true;
     }
 
     public CommandAPDU wrap(CommandAPDU command) throws GPException {
@@ -134,25 +104,18 @@ class SCP0102Wrapper extends SecureChannelWrapper {
             }
 
             if (mac) {
+                // This conditional is hard to read, but external update ICV MUST be always 0 and this assures it.
                 if (icv == null) {
                     icv = new byte[8];
                 } else if (icvEnc) {
-                    Cipher c;
                     byte[] key = sessionKeys.get(MAC);
-                    if (scp == 1) {
-                        c = Cipher.getInstance(GPCrypto.DES3_ECB_CIPHER);
-                        Key k = GPCrypto.des3key(key);
-                        c.init(Cipher.ENCRYPT_MODE, k);
-                    } else {
-                        c = Cipher.getInstance(GPCrypto.DES_ECB_CIPHER);
-                        Key k = new SecretKeySpec(GPCrypto.resizeDES(key, 8), "DES");
-                        c.init(Cipher.ENCRYPT_MODE, k);
-                    }
+                    Cipher c = Cipher.getInstance(GPCrypto.DES_ECB_CIPHER);
+                    c.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(GPCrypto.resizeDES(key, 8), "DES"));
                     // encrypts the future ICV ?
                     icv = c.doFinal(icv);
                 }
 
-                if (preAPDU) {
+                if (macModifiedAPDU) {
                     newCLA = setBits((byte) newCLA, (byte) 0x04);
                     newLc = newLc + 8;
                 }
@@ -163,11 +126,9 @@ class SCP0102Wrapper extends SecureChannelWrapper {
                 t.write(newLc);
                 t.write(origData);
 
-                if (scp == 1) {
-                    icv = GPCrypto.mac_3des(sessionKeys.get(MAC), t.toByteArray(), icv);
-                } else if (scp == 2) {
-                    icv = GPCrypto.mac_des_3des(sessionKeys.get(MAC), t.toByteArray(), icv);
-                }
+
+                logger.debug("MAC input: {}", HexUtils.bin2hex(t.toByteArray()));
+                icv = GPCrypto.mac_des_3des(sessionKeys.get(MAC), t.toByteArray(), icv);
 
                 if (postAPDU) {
                     newCLA = setBits((byte) newCLA, (byte) 0x04);
@@ -178,25 +139,16 @@ class SCP0102Wrapper extends SecureChannelWrapper {
             }
 
             if (enc && (origLc > 0)) {
-                if (scp == 1) {
-                    t.write(origLc);
-                    t.write(origData);
-                    if ((t.size() % 8) != 0) {
-                        byte[] x = GPCrypto.pad80(t.toByteArray(), 8);
-                        t.reset();
-                        t.write(x);
-                    }
-                } else {
-                    t.write(GPCrypto.pad80(origData, 8));
-                }
+                t.write(GPCrypto.pad80(origData, 8));
                 newLc += t.size() - origData.length;
 
                 Cipher c = Cipher.getInstance(GPCrypto.DES3_CBC_CIPHER);
-                Key k = GPCrypto.des3key(sessionKeys.get(ENC));
-                c.init(Cipher.ENCRYPT_MODE, k, GPCrypto.iv_null_8);
+                c.init(Cipher.ENCRYPT_MODE, GPCrypto.des3key(sessionKeys.get(ENC)), GPCrypto.iv_null_8);
                 newData = c.doFinal(t.toByteArray());
                 t.reset();
             }
+
+            // Construct new APDU
             t.write(newCLA);
             t.write(origINS);
             t.write(origP1);
@@ -225,7 +177,7 @@ class SCP0102Wrapper extends SecureChannelWrapper {
     public ResponseAPDU unwrap(ResponseAPDU response) throws GPException {
         if (rmac) {
             if (response.getData().length < 8) {
-                throw new RuntimeException("Wrong response length (too short).");
+                throw new GPException("Wrong response length (too short).");
             }
             int respLen = response.getData().length - 8;
             rMac.write(respLen);

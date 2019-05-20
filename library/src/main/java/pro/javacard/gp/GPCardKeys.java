@@ -33,10 +33,9 @@ import java.util.List;
 public abstract class GPCardKeys {
 
     protected GPSecureChannel scp;
+    protected byte[] kdd;
 
-    public abstract int getID();
-
-    public abstract int getVersion();
+    public abstract GPKeyInfo getKeyInfo();
 
     // Keys are used for various purposes
     public enum KeyPurpose {
@@ -75,7 +74,13 @@ public abstract class GPCardKeys {
     // Diversify card keys automatically, based on INITIALIZE UPDATE response
     public GPCardKeys diversify(GPSecureChannel scp, byte[] kdd) {
         this.scp = scp;
+        this.kdd = kdd.clone();
         return this;
+    }
+
+    // Return key derivation data for this keyset
+    public byte[] getKDD() {
+        return kdd;
     }
 
     @Override

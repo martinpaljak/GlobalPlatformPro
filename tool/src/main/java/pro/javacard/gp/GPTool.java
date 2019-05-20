@@ -31,6 +31,7 @@ import pro.javacard.gp.GPRegistryEntry.Privilege;
 import pro.javacard.gp.GPRegistryEntry.Privileges;
 import pro.javacard.gp.GPSession.APDUMode;
 import pro.javacard.gp.GPSession.GPSpec;
+import pro.javacard.gp.PlaintextKeys.Diversification;
 
 import javax.crypto.Cipher;
 import javax.smartcardio.*;
@@ -292,11 +293,13 @@ public final class GPTool extends GPCommandLineInterface {
 
                         // "gp -l -emv" should still work
                         if (args.has(OPT_VISA2)) {
-                            keyz.setDiversifier(PlaintextKeys.Diversification.VISA2);
+                            keyz.setDiversifier(Diversification.VISA2);
                         } else if (args.has(OPT_EMV)) {
-                            keyz.setDiversifier(PlaintextKeys.Diversification.EMV);
+                            keyz.setDiversifier(Diversification.EMV);
                         } else if (args.has(OPT_KDF3)) {
-                            keyz.setDiversifier(PlaintextKeys.Diversification.KDF3);
+                            keyz.setDiversifier(Diversification.KDF3);
+                        } else if (args.has(OPT_KDF)) {
+                            keyz.setDiversifier(getDiversificationOrFail(args, OPT_KDF));
                         }
 
                         if (args.has(OPT_KEY_VERSION)) {
@@ -334,7 +337,7 @@ public final class GPTool extends GPCommandLineInterface {
                         }
 
                         // IMPORTANT PLACE. Possibly brick the card now, if keys don't match.
-                        gp.openSecureChannel(keys, null, 0, mode);
+                        gp.openSecureChannel(keys, null, null, mode);
 
                         // --secure-apdu or -s
                         if (args.has(OPT_SECURE_APDU)) {
@@ -744,6 +747,10 @@ public final class GPTool extends GPCommandLineInterface {
                                 newKeys = PlaintextKeys.fromKeys(enc, mac, dek);
                             } else {
                                 newKeys = PlaintextKeys.fromMasterKey(HexUtils.stringToBin((String) args.valueOf(OPT_LOCK)));
+                                if (args.has(OPT_LOCK_KDF)) {
+                                    // XXX: should do diversification here explicitly. Expose card keys and kdd
+                                    newKeys.setDiversifier(getDiversificationOrFail(args, OPT_LOCK_KDF));
+                                }
                             }
 
                             // If a specific new key version is specified, use that instead.
@@ -753,7 +760,6 @@ public final class GPTool extends GPCommandLineInterface {
                                 System.out.println("New version: " + new_version);
                             }
                             newKeys.setVersion(new_version);
-                            newKeys.diversify(gp.scpVersion, null); // FIXME: put scp02 keys with scp03
 
                             gp.putKeys(newKeys, replace);
 
@@ -877,6 +883,13 @@ public final class GPTool extends GPCommandLineInterface {
             privs.add(Privilege.CardTerminate);
         }
         return privs;
+    }
+
+    static Diversification getDiversificationOrFail(OptionSet args, String v) {
+        Diversification kdf = Diversification.lookup(args.valueOf(v).toString().trim());
+        if (kdf == null)
+            fail("Invalid KDF: " + args.valueOf(v) + "\nvalid values: " + Arrays.asList(Diversification.values()).stream().map(i -> i.toString()).collect(Collectors.joining("\n")));
+        return kdf;
     }
 
     private static Privileges addPrivs(Privileges privs, String v) {

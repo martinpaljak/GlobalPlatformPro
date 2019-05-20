@@ -41,14 +41,8 @@ class SCP03Wrapper extends SecureChannelWrapper {
     byte[] chaining_value = new byte[16];
     byte[] encryption_counter = new byte[16];
 
-    SCP03Wrapper(GPSessionKeys sessionKeys, int scp, EnumSet<GPSession.APDUMode> securityLevel, byte[] icv, byte[] ricv, int bs) {
-        this.sessionKeys = sessionKeys;
-        this.blockSize = bs;
-        // initialize chaining value.
-        System.arraycopy(GPCrypto.null_bytes_16, 0, chaining_value, 0, GPCrypto.null_bytes_16.length);
-        // initialize encryption counter.
-        System.arraycopy(GPCrypto.null_bytes_16, 0, encryption_counter, 0, GPCrypto.null_bytes_16.length);
-        setSecurityLevel(securityLevel);
+    SCP03Wrapper(GPSessionKeys sessionKeys, EnumSet<GPSession.APDUMode> securityLevel, int bs) {
+        super(sessionKeys, securityLevel, bs);
     }
 
     @Override

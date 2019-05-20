@@ -74,8 +74,7 @@ public class PlaintextKeys extends GPCardKeys {
     Diversification diversifier;
 
     // Keyset version
-    private int version = 0;
-    private int id = 0;
+    private int version = 0x00;
 
     // Holds card-specific keys. They shall be diversified in-place, as needed
     private HashMap<KeyPurpose, byte[]> cardKeys = new HashMap<>();
@@ -190,8 +189,14 @@ public class PlaintextKeys extends GPCardKeys {
     }
 
     @Override
-    public int getVersion() {
-        return version;
+    public GPKeyInfo getKeyInfo() {
+        byte[] aKey = cardKeys.get(KeyPurpose.ENC);
+        final int type; // XXX: have constants somewhere
+        if (aKey.length > 16 || scp == GPSecureChannel.SCP03)
+            type = 0x88;
+        else
+            type = 0x80;
+        return new GPKeyInfo(version, 0x01, aKey.length, type);
     }
 
     @Override
@@ -331,7 +336,8 @@ public class PlaintextKeys extends GPCardKeys {
 
     @Override
     public GPCardKeys diversify(GPSecureChannel scp, byte[] kdd) {
-        this.scp = scp;
+        super.diversify(scp, kdd);
+
         // Do nothing
         if (diversifier == Diversification.NONE)
             return this;
@@ -357,17 +363,21 @@ public class PlaintextKeys extends GPCardKeys {
         return String.format("ENC=%s (KCV: %s) MAC=%s (KCV: %s) DEK=%s (KCV: %s) for %s", enc, enc_kcv, mac, mac_kcv, dek, dek_kcv, scp);
     }
 
-    @Override
-    public int getID() {
-        return id;
-    }
-
     public void setDiversifier(Diversification diversifier) {
         this.diversifier = diversifier;
     }
 
     // diversification methods
     public enum Diversification {
-        NONE, VISA2, EMV, KDF3
+        NONE, VISA2, EMV, KDF3;
+
+        public static Diversification lookup(String v) {
+            for (Diversification d : Diversification.values()) {
+                if (d.name().equalsIgnoreCase(v)) {
+                    return d;
+                }
+            }
+            return null;
+        }
     }
 }

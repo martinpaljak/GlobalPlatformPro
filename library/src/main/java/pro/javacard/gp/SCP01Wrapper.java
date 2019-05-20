@@ -35,7 +35,7 @@ import static pro.javacard.gp.GPCardKeys.KeyPurpose.*;
 // SCP01 05 - no ICV encryption 15 - ICV encryption (
 class SCP01Wrapper extends SecureChannelWrapper {
     private boolean icvEnc = false;
-    private boolean preAPDU = false;
+    private boolean preAPDU = true;
     private boolean postAPDU = false;
 
     byte[] icv = null;

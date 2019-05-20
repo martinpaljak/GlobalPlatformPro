@@ -80,7 +80,7 @@ public abstract class GPCardKeys {
 
     // Return key derivation data for this keyset
     public byte[] getKDD() {
-        return kdd;
+        return kdd.clone();
     }
 
     @Override

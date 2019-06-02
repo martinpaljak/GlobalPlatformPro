@@ -4,7 +4,6 @@ workflow "New workflow" {
 }
 
 action "docker" {
-  uses = "docker"
-  runs = "ubuntu:18.04"
-  args = "uptime"
+  uses = "docker://ubuntu:18.04"
+  runs = "uptime"
 }

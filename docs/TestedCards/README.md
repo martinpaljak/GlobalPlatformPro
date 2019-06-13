@@ -9,7 +9,7 @@ TIP: When ordering cards online, always make sure that you ask for cards with de
 
 ## Supported cards (with a confirmed shop link, in no particular order)
 * [SmartCafe Expert 3.2 72K JavaCard 2.2.1/GlobalPlatform 2.1.1 12€](http://www.smartcardfocus.com/shop/ilp/id~521/SmartCafe_Expert_3_2_72K/p/index.shtml)
- * Virgin cars require unlocking with "-emv"
+ * Virgin cards require unlocking with "-emv"
   * and other products with same name but different EEPROM + connectivity:
   * http://www.smartcardfocus.com/shop/ilp/id~684/smartcafe-expert-6-0-80k-dual-/p/index.shtml
   * http://www.smartcardfocus.com/shop/ilp/id~521/smartcafe-expert-3-2-72k/p/index.shtml
@@ -24,7 +24,7 @@ TIP: When ordering cards online, always make sure that you ask for cards with de
 
 * Gemalto
   * [GEMALTO IDCORE 10 - GEMALTO TOP IM GX4 JavaCard 2.2.1/GlobalPlatform 2.0.1 16€] (http://www.cryptoshop.com/gemalto-idcore-10-gemalto-top-im-gx4.html) 
-  * Virgin cars require unlocking with "-visa2 -key <motherkey>"
+  * Virgin cards require unlocking with "-visa2 -key <motherkey>"
   * Instead of a reasonable error code a failed transaction is returned on errors.
   * [GEMALTO IDCORE 3010 CC / TOP DM CC 25€](http://www.cryptoshop.com/gemalto-top-dm-cc.html)
 * Feitian JavaCard-s

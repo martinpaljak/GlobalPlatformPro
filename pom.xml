@@ -64,8 +64,6 @@
                     </arguments>
                 </configuration>
             </plugin>
-
-
             <!-- Reproducible -->
             <plugin>
                 <groupId>io.github.zlika</groupId>

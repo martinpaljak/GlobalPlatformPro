@@ -99,6 +99,45 @@
                     </execution>
                 </executions>
             </plugin>
+            <!-- Package for Windows -->
+            <plugin>
+                <groupId>com.akathist.maven.plugins.launch4j</groupId>
+                <artifactId>launch4j-maven-plugin</artifactId>
+                <version>1.7.25</version>
+                <executions>
+                    <execution>
+                        <id>gp-exe</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>launch4j</goal>
+                        </goals>
+                        <configuration>
+                            <headerType>console</headerType>
+                            <outfile>target/gp.exe</outfile>
+                            <jar>target/gp.jar</jar>
+                            <errTitle>GlobalPlatformPro</errTitle>
+                            <classPath>
+                                <mainClass>pro.javacard.gp.GPTool</mainClass>
+                            </classPath>
+                            <jre>
+                                <minVersion>1.8.0</minVersion>
+                            </jre>
+                            <versionInfo>
+                                <fileVersion>${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}.${parsedVersion.buildNumber}</fileVersion>
+                                <txtFileVersion>${project.version}</txtFileVersion>
+                                <fileDescription>GlobalPlatformPro</fileDescription>
+                                <copyright>(C) 2015 - 2019 Martin Paljak and contributors (LGPL+MIT)</copyright>
+                                <productVersion>${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}.${parsedVersion.buildNumber}</productVersion>
+                                <txtProductVersion>${project.version}</txtProductVersion>
+                                <productName>GlobalPlatformPro</productName>
+                                <internalName>gppro</internalName>
+                                <originalFilename>gp.exe</originalFilename>
+                            </versionInfo>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
         </plugins>
     </build>
 </project>

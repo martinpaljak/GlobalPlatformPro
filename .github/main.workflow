@@ -22,6 +22,6 @@ action "on-tag" {
 action "release" {
   needs = "on-tag"
   uses = "martinpaljak/actions/deploy-release@master"
-  args = "tool/target/gp.jar"
+  args = "tool/target/gp.jar tool/target/gp.exe"
   secrets = ["GITHUB_TOKEN"]
 }

@@ -3,11 +3,18 @@ workflow "Default workflow for pushes" {
   resolves = "release"
 }
 
+action "mvn-11" {
+  uses = "docker://maven:3.6.1-jdk-11"
+  runs = "mvn"
+  args = "-U -B verify"
+}
+
 action "mvn" {
+  needs = "mvn-11"
   uses = "docker://maven:3.6.1-jdk-8"
   # uses = "docker://martinpaljak/gppro-build"
   runs = "mvn"
-  args = "-U -B verify"
+  args = "-U -B clean verify"
 }
 
 

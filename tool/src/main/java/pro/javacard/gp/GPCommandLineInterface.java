@@ -99,7 +99,6 @@ abstract class GPCommandLineInterface {
     protected final static String OPT_VERBOSE = "verbose";
     protected final static String OPT_VERSION = "version";
     protected final static String OPT_VISA2 = "visa2";
-    protected final static String OPT_ORACLE = "oracle";
     protected final static String OPT_ACR_LIST = "acr-list";
     protected final static String OPT_ACR_LIST_ARAM = "acr-list-aram";
     protected final static String OPT_ACR_ADD = "acr-add";
@@ -190,8 +189,6 @@ abstract class GPCommandLineInterface {
         parser.accepts(OPT_EMV, "Use EMV KDF");
         parser.accepts(OPT_VISA2, "Use VISA2 KDF");
         parser.accepts(OPT_KDF3, "Use SCP03 KDF KDF");
-
-        parser.accepts(OPT_ORACLE, "Use an oracle for keying information").withOptionalArg().describedAs("URL");
 
         parser.accepts(OPT_KEY_ID, "Specify key ID").withRequiredArg();
         parser.accepts(OPT_KEY_VERSION, "Specify key version").withRequiredArg();

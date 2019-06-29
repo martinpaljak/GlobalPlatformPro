@@ -26,6 +26,7 @@ import joptsimple.OptionSet;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.stream.Collectors;
 
 abstract class GPCommandLineInterface {
     protected final static String OPT_ALLOW_TO = "allow-to";
@@ -231,6 +232,12 @@ abstract class GPCommandLineInterface {
             }
             System.err.println();
             parser.printHelpOn(System.err);
+            System.exit(1);
+        }
+
+        if (args.nonOptionArguments().size() > 0) {
+            parser.printHelpOn(System.out);
+            System.err.println("Invalid non-option arguments: " + String.join(" ", args.nonOptionArguments().stream().map(e -> e.toString()).collect(Collectors.toList())));
             System.exit(1);
         }
 

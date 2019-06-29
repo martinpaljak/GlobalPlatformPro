@@ -22,10 +22,7 @@ package pro.javacard.gp;
 import apdu4j.HexUtils;
 import pro.javacard.AID;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class GPRegistryEntry {
@@ -69,6 +66,20 @@ public class GPRegistryEntry {
         if (version == null)
             return null;
         return version.clone();
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (other instanceof GPRegistryEntry) {
+            GPRegistryEntry o = (GPRegistryEntry) other;
+            return o.kind.equals(this.kind) && o.aid.equals(this.aid);
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(aid, kind);
     }
 
     void setVersion(byte[] v) {

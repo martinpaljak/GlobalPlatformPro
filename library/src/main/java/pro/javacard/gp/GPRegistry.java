@@ -49,7 +49,11 @@ public class GPRegistry implements Iterable<GPRegistryEntry> {
         if (entry.getPrivileges().has(Privilege.SecurityDomain) && entry.getType() == Kind.Application) {
             entry.setType(Kind.SecurityDomain);
         }
-        entries.add(entry);
+        if (!entries.contains(entry)) {
+            entries.add(entry);
+        } else {
+            logger.debug("Registry already contains {}", entry);
+        }
     }
 
     public Iterator<GPRegistryEntry> iterator() {

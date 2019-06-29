@@ -1098,15 +1098,18 @@ public class GPSession {
         data = getConcatenatedStatus(registry, 0x40, new byte[]{0x4F, 0x00});
         registry.parse(0x40, data, Kind.Application, spec);
 
-        // Load files
-        data = getConcatenatedStatus(registry, 0x20, new byte[]{0x4F, 0x00});
-        registry.parse(0x20, data, Kind.ExecutableLoadFile, spec);
-
+        // Load files with modules is better than just load files. Registry does not allow to update
+        // existing entries
         if (spec != GPSpec.OP201) { // TODO: remove
             // Load files with modules
             data = getConcatenatedStatus(registry, 0x10, new byte[]{0x4F, 0x00});
             registry.parse(0x10, data, Kind.ExecutableLoadFile, spec);
         }
+
+        // Load files
+        data = getConcatenatedStatus(registry, 0x20, new byte[]{0x4F, 0x00});
+        registry.parse(0x20, data, Kind.ExecutableLoadFile, spec);
+
         return registry;
     }
 

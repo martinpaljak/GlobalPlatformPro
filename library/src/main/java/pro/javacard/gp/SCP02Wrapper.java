@@ -127,7 +127,7 @@ class SCP02Wrapper extends SecureChannelWrapper {
                 t.write(origData);
 
 
-                logger.debug("MAC input: {}", HexUtils.bin2hex(t.toByteArray()));
+                logger.trace("MAC input: {}", HexUtils.bin2hex(t.toByteArray()));
                 icv = GPCrypto.mac_des_3des(sessionKeys.get(MAC), t.toByteArray(), icv);
 
                 if (postAPDU) {

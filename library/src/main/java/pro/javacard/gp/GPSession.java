@@ -512,6 +512,8 @@ public class GPSession {
         CommandAPDU externalAuthenticate = new CommandAPDU(CLA_MAC, ISO7816.INS_EXTERNAL_AUTHENTICATE_82, P1, 0, host_cryptogram);
         response = transmit(externalAuthenticate);
         GPException.check(response, "External authenticate failed");
+        // After opening the session with MAC mode, set it to target level
+        wrapper.setSecurityLevel(securityLevel);
     }
 
     // Pipe through secure channel

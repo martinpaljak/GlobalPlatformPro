@@ -260,8 +260,6 @@ public final class GPTool extends GPCommandLineInterface {
                         // keys come from custom provider
                         fail("Not yet implemented");
                         keys = PlaintextKeys.defaultKey();
-                    } else if (args.has(OPT_ORACLE)) {
-                        keys = PythiaKeys.ask(card.getATR().getBytes(), GPData.fetchCPLC(channel), GPData.fetchKeyInfoTemplate(channel));
                     } else {
                         PlaintextKeys keyz;
                         if (args.has(OPT_KEY)) {

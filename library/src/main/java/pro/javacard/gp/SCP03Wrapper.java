@@ -56,7 +56,7 @@ class SCP03Wrapper extends SecureChannelWrapper {
 
             // Encrypt if needed
             if (enc) {
-                cla = 0x84;
+                cla |= 0x4;
                 // Counter shall always be incremented
                 GPCrypto.buffer_increment(encryption_counter);
                 if (command.getData().length > 0) {
@@ -73,12 +73,12 @@ class SCP03Wrapper extends SecureChannelWrapper {
             }
             // Calculate C-MAC
             if (mac) {
-                cla = 0x84;
+                cla |= 0x4;
                 lc = lc + 8;
 
                 ByteArrayOutputStream bo = new ByteArrayOutputStream();
                 bo.write(chaining_value);
-                bo.write(cla);
+                bo.write(0x84);
                 bo.write(command.getINS());
                 bo.write(command.getP1());
                 bo.write(command.getP2());

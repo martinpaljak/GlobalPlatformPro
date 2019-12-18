@@ -602,16 +602,17 @@ public class SEAccessControl {
             return Arrays.copyOf(data, data.length);
         }
 
+        public void addData(final byte[] source) {
+            System.arraycopy(source, 0, data, currentIndex, source.length);
+            currentIndex += source.length;
+        }
+
         public int getLength() {
             return length;
         }
 
         public int getCurrentIndex() {
             return currentIndex;
-        }
-
-        public void setCurrentIndex(int index) {
-            this.currentIndex = index;
         }
     }
 
@@ -662,8 +663,7 @@ public class SEAccessControl {
                 System.arraycopy(data, offset, berData, 0, data.length - offset);
                 return new BerTlvData(berData, length, data.length - offset);
             } else if (previousData != null) {
-                System.arraycopy(data, 0, previousData.getData(), previousData.currentIndex, data.length);
-                previousData.setCurrentIndex(data.length + previousData.currentIndex);
+                previousData.addData(data);
                 return previousData;
             } else {
                 throw new GPDataException("ACR get data : bad response format (GET_DATA)");

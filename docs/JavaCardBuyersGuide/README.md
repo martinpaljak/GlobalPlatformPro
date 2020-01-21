@@ -24,10 +24,11 @@ Known manufacturers of JavaCard compatible smart cards, in alphabetical order:
  * [Feitian](http://www.ftsafe.com/)
  * [Gemalto](http://www.gemalto.com/)
  * [Giesecke & Devrient](http://www.gi-de.com/)
+ * [Idemia](http://www.idemia.com/) (merger of Oberthur + Morpho)
  * [Infineon](http://www.infineon.com/)
  * [Morpho](http://www.morpho.com/) (merged with Oberthur, now Idemia)
  * [NXP (JCOP)](http://www.nxp.com/)
- * [Oberthur](http://www.oberthur.com/) (merged with Oberthur, now Idemia)
+ * [Oberthur](http://www.oberthur.com/) (merged with Morpho, now Idemia)
   
 
 ## Shops that sell JavaCard-s

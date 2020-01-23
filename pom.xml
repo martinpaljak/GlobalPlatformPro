@@ -4,8 +4,8 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.github.martinpaljak</groupId>
-        <artifactId>javacard</artifactId>
-        <version>19.06.19</version>
+        <artifactId>metacard</artifactId>
+        <version>20.01.14</version>
     </parent>
     <version>19.06.16</version>
     <artifactId>gppro</artifactId>

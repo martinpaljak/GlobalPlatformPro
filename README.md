@@ -1,4 +1,4 @@
-[![Actions Status](https://wdp9fww0r9.execute-api.us-west-2.amazonaws.com/production/badge/martinpaljak/GlobalPlatformPro)](https://wdp9fww0r9.execute-api.us-west-2.amazonaws.com/production/results/martinpaljak/GlobalPlatformPro) [![Coverity status](https://scan.coverity.com/projects/4020/badge.svg?flat=1)](https://scan.coverity.com/projects/4020/) [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.martinpaljak/globalplatformpro/badge.svg)](https://mvnrepository.com/artifact/com.github.martinpaljak/globalplatformpro) [![Latest release](https://img.shields.io/github/release/martinpaljak/GlobalPlatformPro.svg)](https://github.com/martinpaljak/GlobalPlatformPro/releases/latest) [![LGPL-3.0 licensed](https://img.shields.io/badge/license-LGPL-blue.svg)](https://github.com/martinpaljak/GlobalPlatformPro/blob/master/LICENSE)
+[![Build Status](https://github.com/martinpaljak/globalplatformpro/workflows/Release%20CI/badge.svg)](https://github.com/martinpaljak/globalplatformpro/workflows) [![Coverity status](https://scan.coverity.com/projects/4020/badge.svg?flat=1)](https://scan.coverity.com/projects/4020/) [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.martinpaljak/globalplatformpro/badge.svg)](https://mvnrepository.com/artifact/com.github.martinpaljak/globalplatformpro) [![Latest release](https://img.shields.io/github/release/martinpaljak/GlobalPlatformPro.svg)](https://github.com/martinpaljak/GlobalPlatformPro/releases/latest) [![LGPL-3.0 licensed](https://img.shields.io/badge/license-LGPL-blue.svg)](https://github.com/martinpaljak/GlobalPlatformPro/blob/master/LICENSE)
 # GlobalPlatformPro
 _&nbsp;&nbsp; from [JavaCard.pro](https://javacard.pro)_
 
@@ -23,7 +23,7 @@ Building JavaCard applets is equally pleasing with [ant-javacard](https://github
 ```shell
 git clone https://github.com/martinpaljak/GlobalPlatformPro
 cd GlobalPlatformPro
-mvn package && ant
+mvn package
 ```
 
 ## NEWS
@@ -32,7 +32,7 @@ mvn package && ant
 
 ### Usage
 
-*Beware: [until v0.5 is released](https://github.com/martinpaljak/GlobalPlatformPro/milestones), both command line and Java API are subject to change without notice. Check back often.*
+*Beware: both command line and Java API are subject to change without notice. Check back often.*
 
 #### Warning about correct keying
 

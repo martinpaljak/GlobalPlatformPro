@@ -41,7 +41,7 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
-            <version>1.7.25</version>
+            <version>1.7.30</version>
             <optional>true</optional>
         </dependency>
         <!-- For logging -->
@@ -79,8 +79,7 @@
                         <configuration>
                             <finalName>gp</finalName>
                             <transformers>
-                                <transformer
-                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>pro.javacard.gp.GPTool</mainClass>
                                 </transformer>
                             </transformers>

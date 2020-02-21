@@ -889,6 +889,7 @@ public class GPSession {
         //bo.write(0xd0);
         //bo.write(1);
         bo.write(0xd2);
+        bo.write(1); // length
         bo.write(keyver);
 
 //		bo.write(0xd0);

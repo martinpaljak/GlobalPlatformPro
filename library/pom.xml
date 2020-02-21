@@ -42,7 +42,7 @@
         <dependency>
             <groupId>com.payneteasy</groupId>
             <artifactId>ber-tlv</artifactId>
-            <version>1.0-10</version>
+            <version>1.0-9</version>
         </dependency>
         <!-- For tests -->
         <dependency>

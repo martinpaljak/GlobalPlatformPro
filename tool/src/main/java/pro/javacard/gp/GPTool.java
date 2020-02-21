@@ -120,7 +120,7 @@ public final class GPTool extends GPCommandLineInterface {
                     cap.dump(System.out);
                     if (args.specs().size() == 2) {
                         // Exit after --cap <file> --info
-                        System.exit(0);
+                        return 0;
                     }
                 }
             }

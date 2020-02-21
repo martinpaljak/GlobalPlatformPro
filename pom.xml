@@ -5,7 +5,7 @@
     <parent>
         <groupId>com.github.martinpaljak</groupId>
         <artifactId>metacard</artifactId>
-        <version>20.01.14</version>
+        <version>20.02.19</version>
     </parent>
     <version>20.01.23</version>
     <artifactId>gppro</artifactId>
@@ -25,11 +25,16 @@
         <url>https://github.com/martinpaljak/GlobalPlatformPro</url>
         <developerConnection>scm:git:git@github.com:martinpaljak/globalplatformpro.git</developerConnection>
     </scm>
+    <repositories>
+        <repository>
+            <id>javacard-pro</id>
+            <url>https://javacard.pro/maven/</url>
+        </repository>
+    </repositories>
     <modules>
         <module>tool</module>
         <module>library</module>
     </modules>
-
     <build>
         <resources>
             <resource>

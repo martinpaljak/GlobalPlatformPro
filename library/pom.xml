@@ -18,25 +18,19 @@
         <dependency>
             <groupId>com.github.martinpaljak</groupId>
             <artifactId>apdu4j-core</artifactId>
-            <version>19.05.08</version>
+            <version>2020b1</version>
         </dependency>
         <!-- For CAP file parsing -->
         <dependency>
             <groupId>com.github.martinpaljak</groupId>
             <artifactId>capfile</artifactId>
-            <version>19.03.04</version>
+            <version>20.02.19</version>
         </dependency>
         <!-- For logging -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>1.7.30</version>
-        </dependency>
-        <!-- For JSON handling -->
-        <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
-            <version>2.8.6</version>
         </dependency>
         <!-- For crypto in SCP03 -->
         <dependency>
@@ -48,13 +42,13 @@
         <dependency>
             <groupId>com.payneteasy</groupId>
             <artifactId>ber-tlv</artifactId>
-            <version>1.0-9</version>
+            <version>1.0-10</version>
         </dependency>
-        <!-- For tests  -->
+        <!-- For tests -->
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
-            <version>6.14.3</version>
+            <version>7.1.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

@@ -43,7 +43,6 @@ abstract class GPCommandLineInterface {
     protected final static String OPT_DELETE_KEY = "delete-key";
     protected final static String OPT_DOMAIN = "domain";
     protected final static String OPT_MOVE = "move";
-    protected final static String OPT_DUMP = "dump";
     protected final static String OPT_EMV = "emv";
     protected final static String OPT_FORCE = "force";
     protected final static String OPT_INFO = "info";
@@ -79,7 +78,6 @@ abstract class GPCommandLineInterface {
     protected final static String OPT_PUT_KEY = "put-key";
     protected final static String OPT_READER = "reader";
     protected final static String OPT_RENAME_ISD = "rename-isd";
-    protected final static String OPT_REPLAY = "replay";
     protected final static String OPT_SC_MODE = "mode";
     protected final static String OPT_SDAID = "sdaid";
     protected final static String OPT_SECURE_APDU = "secure-apdu";
@@ -89,7 +87,6 @@ abstract class GPCommandLineInterface {
     protected final static String OPT_SHA256 = "sha256";
     protected final static String OPT_STORE_DATA = "store-data";
     protected final static String OPT_STORE_DATA_CHUNK = "store-data-chunk";
-    protected final static String OPT_TERMINALS = "terminals";
     protected final static String OPT_TERMINATE = "terminate";
     protected final static String OPT_TODAY = "today";
     protected final static String OPT_TO = "to";
@@ -100,6 +97,7 @@ abstract class GPCommandLineInterface {
     protected final static String OPT_VERBOSE = "verbose";
     protected final static String OPT_VERSION = "version";
     protected final static String OPT_VISA2 = "visa2";
+    // TODO: extract SEAC to a separate utility
     protected final static String OPT_ACR_LIST = "acr-list";
     protected final static String OPT_ACR_LIST_ARAM = "acr-list-aram";
     protected final static String OPT_ACR_ADD = "acr-add";
@@ -125,11 +123,6 @@ abstract class GPCommandLineInterface {
         parser.acceptsAll(Arrays.asList("a", OPT_APDU), "Send raw APDU (hex)").withRequiredArg().describedAs("APDU");
         parser.acceptsAll(Arrays.asList("s", OPT_SECURE_APDU), "Send raw APDU (hex) via SCP").withRequiredArg().describedAs("APDU");
         parser.acceptsAll(Arrays.asList("f", OPT_FORCE), "Force operation");
-        parser.accepts(OPT_DUMP, "Dump APDU communication to <File>").withRequiredArg().ofType(File.class);
-        parser.accepts(OPT_REPLAY, "Replay APDU responses from <File>").withRequiredArg().ofType(File.class);
-
-        // Special options
-        parser.accepts(OPT_TERMINALS, "Use PC/SC provider from <jar:class>").withRequiredArg();
 
         // Applet operation options
         parser.accepts(OPT_CAP, "Use a CAP file as source").withRequiredArg().ofType(File.class);

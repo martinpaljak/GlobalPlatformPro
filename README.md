@@ -2,7 +2,7 @@
 [![Latest release](https://img.shields.io/github/release/martinpaljak/GlobalPlatformPro.svg)](https://github.com/martinpaljak/GlobalPlatformPro/releases/latest)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.martinpaljak/globalplatformpro/badge.svg)](https://mvnrepository.com/artifact/com.github.martinpaljak/globalplatformpro)
 [![LGPL-3.0 licensed](https://img.shields.io/badge/license-LGPL-blue.svg)](https://github.com/martinpaljak/GlobalPlatformPro/blob/master/LICENSE) 
-![LGTM Grade](https://img.shields.io/lgtm/grade/java/github/martinpaljak/GlobalPlatformPro)
+[![LGTM Grade](https://img.shields.io/lgtm/grade/java/github/martinpaljak/GlobalPlatformPro)](https://lgtm.com/projects/g/martinpaljak/GlobalPlatformPro/context:java)
 
 # GlobalPlatformPro
 _&nbsp;&nbsp; from [JavaCard.pro](https://javacard.pro)_

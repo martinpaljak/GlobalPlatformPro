@@ -1,4 +1,9 @@
-[![Build Status](https://github.com/martinpaljak/globalplatformpro/workflows/Release%20CI/badge.svg)](https://github.com/martinpaljak/globalplatformpro/workflows) [![Coverity status](https://scan.coverity.com/projects/4020/badge.svg?flat=1)](https://scan.coverity.com/projects/4020/) [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.martinpaljak/globalplatformpro/badge.svg)](https://mvnrepository.com/artifact/com.github.martinpaljak/globalplatformpro) [![Latest release](https://img.shields.io/github/release/martinpaljak/GlobalPlatformPro.svg)](https://github.com/martinpaljak/GlobalPlatformPro/releases/latest) [![LGPL-3.0 licensed](https://img.shields.io/badge/license-LGPL-blue.svg)](https://github.com/martinpaljak/GlobalPlatformPro/blob/master/LICENSE)
+[![Build Status](https://github.com/martinpaljak/globalplatformpro/workflows/Release%20CI/badge.svg)](https://github.com/martinpaljak/globalplatformpro/workflows)
+[![Latest release](https://img.shields.io/github/release/martinpaljak/GlobalPlatformPro.svg)](https://github.com/martinpaljak/GlobalPlatformPro/releases/latest)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.martinpaljak/globalplatformpro/badge.svg)](https://mvnrepository.com/artifact/com.github.martinpaljak/globalplatformpro)
+[![LGPL-3.0 licensed](https://img.shields.io/badge/license-LGPL-blue.svg)](https://github.com/martinpaljak/GlobalPlatformPro/blob/master/LICENSE) 
+![LGTM Grade](https://img.shields.io/lgtm/grade/java/github/martinpaljak/GlobalPlatformPro)
+
 # GlobalPlatformPro
 _&nbsp;&nbsp; from [JavaCard.pro](https://javacard.pro)_
 

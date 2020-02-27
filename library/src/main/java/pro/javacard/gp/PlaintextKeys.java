@@ -167,11 +167,11 @@ public class PlaintextKeys extends GPCardKeys {
         System.arraycopy(kdd, 0, data, 0, 4);
         System.arraycopy(kdd, 8, data, 4, 2);
         data[6] = (byte) 0xF0;
-        data[7] = 0x01;
+        data[7] = key.getValue();
         System.arraycopy(kdd, 0, data, 8, 4);
         System.arraycopy(kdd, 8, data, 12, 2);
         data[14] = (byte) 0x0F;
-        data[15] = 0x01;
+        data[15] = key.getValue();
         return data;
     }
 

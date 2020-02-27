@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.*;
@@ -340,7 +341,7 @@ public final class GPTool extends GPCommandLineInterface {
                 }
 
                 // --put-key <keyfile.pem>
-                // Load a RSA public key (for DAP purposes)
+                // Load a public key (for DAP purposes)
                 if (args.has(OPT_PUT_KEY)) {
                     int keyVersion = 0x73; // Default DAP version
                     if (args.has(OPT_NEW_KEY_VERSION)) {
@@ -352,6 +353,10 @@ public final class GPTool extends GPCommandLineInterface {
                         PublicKey key = GPCrypto.pem2PublicKey(fin);
                         if (key instanceof RSAPublicKey) {
                             gp.putKey((RSAPublicKey) key, keyVersion);
+                        } else if (key instanceof ECPublicKey) {
+                            gp.putKey((ECPublicKey) key, keyVersion);
+                        } else {
+                            fail("Unknown key type: " + key.getAlgorithm());
                         }
                     }
                 }

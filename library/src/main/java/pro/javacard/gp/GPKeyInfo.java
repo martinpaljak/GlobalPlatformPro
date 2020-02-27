@@ -55,6 +55,8 @@ public final class GPKeyInfo {
             this.type = Type.AES;
         } else if (type == 0xA1 || type == 0xA0) {
             this.type = Type.RSAPUB;
+        } else if (type == 0xB0) {
+            this.type = Type.ECPUB;
         } else if (type == 0x85) {
             this.type = Type.PSK;
         } else {
@@ -166,12 +168,14 @@ public final class GPKeyInfo {
     }
 
     public enum Type {
-        DES3, AES, RSAPUB, PSK;
+        DES3, AES, RSAPUB, ECPUB, PSK;
 
         @Override
         public String toString() {
             if (this.name().equals("RSAPUB"))
                 return "RSA";
+            if (this.name().equals("ECPUB"))
+                return "EC";
             return super.toString();
         }
     }

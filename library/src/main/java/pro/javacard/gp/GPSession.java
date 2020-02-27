@@ -31,6 +31,7 @@ import com.payneteasy.tlv.BerTag;
 import com.payneteasy.tlv.BerTlv;
 import com.payneteasy.tlv.BerTlvParser;
 import com.payneteasy.tlv.BerTlvs;
+import org.bouncycastle.asn1.x9.ECNamedCurveTable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pro.javacard.AID;
@@ -44,6 +45,7 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.PrivateKey;
+import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.*;
 
@@ -986,8 +988,16 @@ public class GPSession {
 
         ByteArrayOutputStream bo = new ByteArrayOutputStream();
 
-        // XXX: make this more obvious
-        keys = keys.diversify(sessionKeys.cardKeys.scp, sessionKeys.cardKeys.kdd);
+        // FIXME: make this more obvious
+        int keyver = keys.getKeyInfo().getVersion();
+        // Only SCP02 via SCP03 is possible
+        if (keyver >= 0x20 && keyver <= 0x2F)
+            keys = keys.diversify(GPSecureChannel.SCP02, sessionKeys.cardKeys.kdd);
+        else if (keyver >= 0x30 && keyver <= 0x3F)
+            keys = keys.diversify(GPSecureChannel.SCP03, sessionKeys.cardKeys.kdd);
+        else
+            keys = keys.diversify(sessionKeys.cardKeys.scp, sessionKeys.cardKeys.kdd);
+
 
         // New key version
         bo.write(keys.getKeyInfo().getVersion());
@@ -1025,6 +1035,30 @@ public class GPSession {
         ResponseAPDU response = transmit(command);
         GPException.check(response, "PUT KEY failed");
     }
+
+    // Puts an EC public key for DAP purposes FIXME: P-256
+    public void putKey(ECPublicKey pubkey, int version) throws IOException, GPException {
+        ByteArrayOutputStream bo = new ByteArrayOutputStream();
+
+        try {
+            bo.write(version); // DAP key Version number
+            bo.write(0xB0); // EC Public key
+            byte[] key = ECNamedCurveTable.getByName("secp256r1").getCurve().createPoint(pubkey.getW().getAffineX(), pubkey.getW().getAffineY()).getEncoded(false);
+            bo.write(key.length);
+            bo.write(key);
+            bo.write(0xF0);
+            bo.write(0x01);
+            bo.write(0x00); // P-256
+            bo.write(0x00); // No KCV
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        CommandAPDU command = new CommandAPDU(CLA_GP, INS_PUT_KEY, 0x00, 0x01, bo.toByteArray());
+        ResponseAPDU response = transmit(command);
+        GPException.check(response, "PUT KEY failed");
+    }
+
 
     public GPRegistry getRegistry() throws GPException, IOException {
         if (dirty) {

@@ -114,9 +114,9 @@ public class GPUtils {
     }
 
     // Encodes APDU LC value, which has either length of 1 byte or 3 bytes (for extended length APDUs)
-    // If LC is bigger than fits in one byte (255), LC must be encoded in three bytes
-    public static byte[] encodeLcLength(int lc) {
-        if (lc > 255) {
+    // If LC or LE is bigger than fits in one byte (255), LC must be encoded in three bytes
+    public static byte[] encodeLcLength(int lc, int le) {
+        if (lc > 255 || le > 255) {
             byte[] lc_ba = ByteBuffer.allocate(4).putInt(lc).array();
             return Arrays.copyOfRange(lc_ba, 1, 4);
         } else

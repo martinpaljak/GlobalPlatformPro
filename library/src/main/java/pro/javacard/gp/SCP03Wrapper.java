@@ -82,7 +82,7 @@ class SCP03Wrapper extends SecureChannelWrapper {
                 bo.write(command.getINS());
                 bo.write(command.getP1());
                 bo.write(command.getP2());
-                bo.write(GPUtils.encodeLcLength(lc));
+                bo.write(GPUtils.encodeLcLength(lc, command.getNe()));
                 bo.write(data);
                 byte[] cmac_input = bo.toByteArray();
                 byte[] cmac = GPCrypto.scp03_mac(sessionKeys.get(GPCardKeys.KeyPurpose.MAC), cmac_input, 128);

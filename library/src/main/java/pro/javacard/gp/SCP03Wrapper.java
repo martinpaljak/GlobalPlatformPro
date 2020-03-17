@@ -78,7 +78,7 @@ class SCP03Wrapper extends SecureChannelWrapper {
 
                 ByteArrayOutputStream bo = new ByteArrayOutputStream();
                 bo.write(chaining_value);
-                bo.write(0x84);
+                bo.write(cla);
                 bo.write(command.getINS());
                 bo.write(command.getP1());
                 bo.write(command.getP2());

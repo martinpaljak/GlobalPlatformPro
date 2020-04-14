@@ -1,21 +1,23 @@
-on: pull_request
+on:
+  push:
+    branches:
+    - master
+  pull_request:
+    branches:
+    - master
 name: PR check
 jobs:
-  mvn-java-11:
+  build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        java: [ 8, 11, 14 ]
+    name: Java ${{ matrix.java }}
     steps:
-    - uses: actions/checkout@master
-    - name: mvn-java-11
-      uses: docker://maven:3.6.3-jdk-11
-      with:
-        entrypoint: mvn
-        args: -U -B verify
-  mvn-java-8:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@master
-    - name: mvn-java-8
-      uses: docker://maven:3.6.3-jdk-8
-      with:
-        entrypoint: mvn
-        args: -U -B verify
+      - name: Check out code
+        uses: actions/checkout@master
+      - name: Setup java
+        uses: actions/setup-java@master
+        with:
+          java-version: ${{ matrix.java }}
+      - run: mvn -B verify

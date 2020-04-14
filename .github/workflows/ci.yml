@@ -5,7 +5,7 @@ on:
   pull_request:
     branches:
     - master
-name: PR check
+name: Continuous Integration
 jobs:
   build:
     runs-on: ubuntu-latest

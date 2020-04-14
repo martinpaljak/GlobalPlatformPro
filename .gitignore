@@ -1,12 +1,5 @@
-/bin/
-/build/
 *~
-/lib/*.jar
-/gp.jar
-/openkms-gp.jar
 /javadoc
-/gp.exe
-/ext/launch4j
-/target
+target
 /.idea
 *.iml

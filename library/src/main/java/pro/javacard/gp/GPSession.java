@@ -1059,6 +1059,26 @@ public class GPSession {
         GPException.check(response, "PUT KEY failed");
     }
 
+    // Puts a 3DES key
+    public void putKey(byte[] key, int version, boolean replace) throws IOException, GPException {
+        ByteArrayOutputStream bo = new ByteArrayOutputStream();
+
+	PlaintextKeys newKey = PlaintextKeys.fromMasterKey(key);
+	newKey.scp = GPSecureChannel.SCP02;
+	byte[] cgram = encodeKey(sessionKeys, newKey, KeyPurpose.DEK);
+
+        try {
+            bo.write(version); // key Version number
+	    bo.write(cgram);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        CommandAPDU command = new CommandAPDU(CLA_GP, INS_PUT_KEY, replace ? version : 0x00, 0x01, bo.toByteArray());
+        ResponseAPDU response = transmit(command);
+        GPException.check(response, "PUT KEY failed");
+    }
+
     public GPRegistry getRegistry() throws GPException, IOException {
         if (dirty) {
             registry = getStatus();

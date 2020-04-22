@@ -371,6 +371,25 @@ public final class GPTool extends GPCommandLineInterface {
                     }
                 }
 
+                // --put-des-key <key>
+                // --replace-des-key <key>
+                if (args.has(OPT_PUT_3DES_KEY) || args.has(OPT_REPLACE_3DES_KEY)) {
+		    boolean replace;
+                    byte[] key;
+		    if (args.has(OPT_PUT_3DES_KEY)) {
+		        replace = false;
+                        key = HexUtils.stringToBin((String) args.valueOf(OPT_PUT_3DES_KEY));
+		    } else {
+		        replace = true;
+                        key = HexUtils.stringToBin((String) args.valueOf(OPT_REPLACE_3DES_KEY));
+		    }
+                    int keyVersion = 0x73; // Default DAP version
+                    if (args.has(OPT_NEW_KEY_VERSION)) {
+                        keyVersion = GPUtils.intValue(args.valueOf(OPT_NEW_KEY_VERSION).toString());
+                    }
+                    gp.putKey(key, keyVersion, replace);
+                }
+
                 // --install <applet.cap> (--applet <aid> --create <aid> --privs <privs> --params <params>)
                 if (args.has(OPT_INSTALL)) {
                     final File capfile;
@@ -864,7 +883,7 @@ public final class GPTool extends GPCommandLineInterface {
                 OPT_ACR_ADD, OPT_ACR_DELETE, OPT_LOCK, OPT_UNLOCK, OPT_LOCK_ENC, OPT_LOCK_MAC, OPT_LOCK_DEK, OPT_MAKE_DEFAULT,
                 OPT_UNINSTALL, OPT_SECURE_APDU, OPT_DOMAIN, OPT_LOCK_CARD, OPT_UNLOCK_CARD, OPT_LOCK_APPLET, OPT_UNLOCK_APPLET,
                 OPT_STORE_DATA, OPT_STORE_DATA_CHUNK, OPT_INITIALIZE_CARD, OPT_SECURE_CARD, OPT_RENAME_ISD, OPT_SET_PERSO, OPT_SET_PRE_PERSO, OPT_MOVE,
-                OPT_PUT_KEY, OPT_REPLACE_KEY, OPT_ACR_AID, OPT_ACR_LIST};
+                OPT_PUT_KEY, OPT_REPLACE_KEY, OPT_PUT_3DES_KEY, OPT_REPLACE_3DES_KEY, OPT_ACR_AID, OPT_ACR_LIST};
 
         return Arrays.stream(yes).anyMatch(str -> args.has(str));
     }

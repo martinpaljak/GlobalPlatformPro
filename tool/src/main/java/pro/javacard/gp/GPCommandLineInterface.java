@@ -78,6 +78,7 @@ abstract class GPCommandLineInterface {
     protected final static String OPT_PUT_KEY = "put-key";
     protected final static String OPT_READER = "reader";
     protected final static String OPT_RENAME_ISD = "rename-isd";
+    protected final static String OPT_REPLACE_KEY = "replace-key";
     protected final static String OPT_SC_MODE = "mode";
     protected final static String OPT_SDAID = "sdaid";
     protected final static String OPT_SECURE_APDU = "secure-apdu";
@@ -187,6 +188,7 @@ abstract class GPCommandLineInterface {
         parser.accepts(OPT_KEY_ID, "Specify key ID").withRequiredArg();
         parser.accepts(OPT_KEY_VERSION, "Specify key version").withRequiredArg();
         parser.accepts(OPT_PUT_KEY, "Put a new key").withRequiredArg().describedAs("PEM file");
+        parser.accepts(OPT_REPLACE_KEY, "Replace a key").withRequiredArg().describedAs("PEM file");
 
         parser.accepts(OPT_LOCK, "Set new key").withRequiredArg().describedAs("key");
         parser.accepts(OPT_LOCK_KDF, "Use KDF with lock key").withRequiredArg().describedAs("kdf");

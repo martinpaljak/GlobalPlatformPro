@@ -341,20 +341,30 @@ public final class GPTool extends GPCommandLineInterface {
                 }
 
                 // --put-key <keyfile.pem>
-                // Load a public key (for DAP purposes)
-                if (args.has(OPT_PUT_KEY)) {
+                // --replace-key <keyfile.pem>
+                // Load/change a public key (for DAP purposes)
+                if (args.has(OPT_PUT_KEY) || args.has(OPT_REPLACE_KEY)) {
+		    boolean replace;
+		    String keyFile;
+		    if (args.has(OPT_PUT_KEY)) {
+		        replace = false;
+		        keyFile = args.valueOf(OPT_PUT_KEY).toString();
+		    } else {
+		        replace = true;
+		        keyFile = args.valueOf(OPT_REPLACE_KEY).toString();
+		    }
                     int keyVersion = 0x73; // Default DAP version
                     if (args.has(OPT_NEW_KEY_VERSION)) {
                         keyVersion = GPUtils.intValue(args.valueOf(OPT_NEW_KEY_VERSION).toString());
                     }
 
-                    try (FileInputStream fin = new FileInputStream(new File(args.valueOf(OPT_PUT_KEY).toString()))) {
+                    try (FileInputStream fin = new FileInputStream(new File(keyFile))) {
                         // Get public key
                         PublicKey key = GPCrypto.pem2PublicKey(fin);
                         if (key instanceof RSAPublicKey) {
-                            gp.putKey((RSAPublicKey) key, keyVersion);
+                            gp.putKey((RSAPublicKey) key, keyVersion, replace);
                         } else if (key instanceof ECPublicKey) {
-                            gp.putKey((ECPublicKey) key, keyVersion);
+                            gp.putKey((ECPublicKey) key, keyVersion, replace);
                         } else {
                             fail("Unknown key type: " + key.getAlgorithm());
                         }
@@ -854,7 +864,7 @@ public final class GPTool extends GPCommandLineInterface {
                 OPT_ACR_ADD, OPT_ACR_DELETE, OPT_LOCK, OPT_UNLOCK, OPT_LOCK_ENC, OPT_LOCK_MAC, OPT_LOCK_DEK, OPT_MAKE_DEFAULT,
                 OPT_UNINSTALL, OPT_SECURE_APDU, OPT_DOMAIN, OPT_LOCK_CARD, OPT_UNLOCK_CARD, OPT_LOCK_APPLET, OPT_UNLOCK_APPLET,
                 OPT_STORE_DATA, OPT_STORE_DATA_CHUNK, OPT_INITIALIZE_CARD, OPT_SECURE_CARD, OPT_RENAME_ISD, OPT_SET_PERSO, OPT_SET_PRE_PERSO, OPT_MOVE,
-                OPT_PUT_KEY, OPT_ACR_AID, OPT_ACR_LIST};
+                OPT_PUT_KEY, OPT_REPLACE_KEY, OPT_ACR_AID, OPT_ACR_LIST};
 
         return Arrays.stream(yes).anyMatch(str -> args.has(str));
     }

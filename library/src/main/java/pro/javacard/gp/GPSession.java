@@ -1013,7 +1013,7 @@ public class GPSession {
 
 
     // Puts a RSA public key for DAP purposes (format 1)
-    public void putKey(RSAPublicKey pubkey, int version) throws IOException, GPException {
+    public void putKey(RSAPublicKey pubkey, int version, boolean replace) throws IOException, GPException {
         ByteArrayOutputStream bo = new ByteArrayOutputStream();
 
         try {
@@ -1031,13 +1031,13 @@ public class GPSession {
             throw new RuntimeException(e);
         }
 
-        CommandAPDU command = new CommandAPDU(CLA_GP, INS_PUT_KEY, 0x00, 0x01, bo.toByteArray());
+        CommandAPDU command = new CommandAPDU(CLA_GP, INS_PUT_KEY, replace ? version : 0x00, 0x01, bo.toByteArray());
         ResponseAPDU response = transmit(command);
         GPException.check(response, "PUT KEY failed");
     }
 
     // Puts an EC public key for DAP purposes FIXME: P-256
-    public void putKey(ECPublicKey pubkey, int version) throws IOException, GPException {
+    public void putKey(ECPublicKey pubkey, int version, boolean replace) throws IOException, GPException {
         ByteArrayOutputStream bo = new ByteArrayOutputStream();
 
         try {
@@ -1054,11 +1054,10 @@ public class GPSession {
             throw new RuntimeException(e);
         }
 
-        CommandAPDU command = new CommandAPDU(CLA_GP, INS_PUT_KEY, 0x00, 0x01, bo.toByteArray());
+        CommandAPDU command = new CommandAPDU(CLA_GP, INS_PUT_KEY, replace ? version : 0x00, 0x01, bo.toByteArray());
         ResponseAPDU response = transmit(command);
         GPException.check(response, "PUT KEY failed");
     }
-
 
     public GPRegistry getRegistry() throws GPException, IOException {
         if (dirty) {

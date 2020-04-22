@@ -139,8 +139,9 @@ public class GPUtils {
 
     static void trace_lv(byte[] data, Logger l) {
         for (int i = 0; i < data.length; ) {
-            l.trace(String.format("[%02X] %s", data[i] & 0xFF, HexUtils.bin2hex(Arrays.copyOfRange(data, i + 1, i + 1 + data[i]))));
-            i += 1 + data[i];
+            int d = data[i] & 0xFF;
+            l.trace(String.format("[%02X] %s", d, HexUtils.bin2hex(Arrays.copyOfRange(data, i + 1, i + 1 + d))));
+            i += 1 + d;
         }
     }
 

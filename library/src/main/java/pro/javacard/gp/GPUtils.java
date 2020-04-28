@@ -137,10 +137,11 @@ public class GPUtils {
         return positive(bytes);
     }
 
-    static void trace_lv(byte[] data, Logger l) {
+    static void trace_lv(byte[] data, Logger logger) {
         for (int i = 0; i < data.length; ) {
-            l.trace(String.format("[%02X] %s", data[i] & 0xFF, HexUtils.bin2hex(Arrays.copyOfRange(data, i + 1, i + 1 + data[i]))));
-            i += 1 + data[i];
+            int l= data[i] & 0xFF;
+            logger.trace(String.format("[%02X] %s", l, HexUtils.bin2hex(Arrays.copyOfRange(data, i + 1, i + 1 + l))));
+            i += 1 + l;
         }
     }
 

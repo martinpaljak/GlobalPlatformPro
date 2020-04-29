@@ -78,6 +78,7 @@ abstract class GPCommandLineInterface {
     protected final static String OPT_PUT_KEY = "put-key";
     protected final static String OPT_READER = "reader";
     protected final static String OPT_RENAME_ISD = "rename-isd";
+    protected final static String OPT_REPLACE_KEY = "replace-key";
     protected final static String OPT_SC_MODE = "mode";
     protected final static String OPT_SDAID = "sdaid";
     protected final static String OPT_SECURE_APDU = "secure-apdu";
@@ -164,7 +165,7 @@ abstract class GPCommandLineInterface {
         parser.accepts(OPT_RENAME_ISD, "Rename ISD").withRequiredArg().describedAs("new AID");
 
         parser.accepts(OPT_DELETE, "Delete applet/package").withOptionalArg().describedAs("AID");
-        parser.accepts(OPT_DELETE_KEY, "Delete key with version").withRequiredArg();
+        parser.accepts(OPT_DELETE_KEY, "Delete key with version").withRequiredArg().describedAs("key version");
 
         parser.accepts(OPT_CREATE, "Create new instance of an applet").withRequiredArg().describedAs("AID");
         parser.accepts(OPT_APPLET, "Applet AID").withRequiredArg().describedAs("AID");
@@ -186,7 +187,9 @@ abstract class GPCommandLineInterface {
 
         parser.accepts(OPT_KEY_ID, "Specify key ID").withRequiredArg();
         parser.accepts(OPT_KEY_VERSION, "Specify key version").withRequiredArg();
-        parser.accepts(OPT_PUT_KEY, "Put a new key").withRequiredArg().describedAs("PEM file");
+        parser.accepts(OPT_PUT_KEY, "Put a new key").withRequiredArg().describedAs("PEM file or key");
+        parser.accepts(OPT_REPLACE_KEY, "Put a new key, forcing replace").withRequiredArg().describedAs("PEM file or key");
+        parser.accepts(OPT_NEW_KEY_VERSION, "Key version for the new key").requiredIf(OPT_PUT_KEY, OPT_REPLACE_KEY).withRequiredArg().describedAs("key version");
 
         parser.accepts(OPT_LOCK, "Set new key").withRequiredArg().describedAs("key");
         parser.accepts(OPT_LOCK_KDF, "Use KDF with lock key").withRequiredArg().describedAs("kdf");
@@ -196,7 +199,6 @@ abstract class GPCommandLineInterface {
         parser.accepts(OPT_LOCK_DEK, "Set new DEK key").withRequiredArg().describedAs("key");
 
         parser.accepts(OPT_UNLOCK, "Set default key for card key");
-        parser.accepts(OPT_NEW_KEY_VERSION, "Key version for the new key").withRequiredArg();
 
         // GP SE access rules
         parser.accepts(OPT_ACR_AID, "ARA-C applet AID").withRequiredArg().describedAs("AID");

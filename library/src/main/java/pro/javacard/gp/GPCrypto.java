@@ -145,7 +145,7 @@ public final class GPCrypto {
             Cipher cipher1 = Cipher.getInstance(DES_CBC_CIPHER);
             cipher1.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(resizeDES(key, 8), "DES"), new IvParameterSpec(iv));
             Cipher cipher2 = Cipher.getInstance(DES3_CBC_CIPHER);
-            cipher2.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(resizeDES(key, 24), "DESede"), new IvParameterSpec(iv));
+            cipher2.init(Cipher.ENCRYPT_MODE, des3key(key), new IvParameterSpec(iv));
 
             byte[] result = new byte[8];
             byte[] temp;
@@ -153,7 +153,7 @@ public final class GPCrypto {
             if (length > 8) {
                 temp = cipher1.doFinal(text, offset, length - 8);
                 System.arraycopy(temp, temp.length - 8, result, 0, 8);
-                cipher2.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(resizeDES(key, 24), "DESede"), new IvParameterSpec(result));
+                cipher2.init(Cipher.ENCRYPT_MODE, des3key(key), new IvParameterSpec(result));
             }
             temp = cipher2.doFinal(text, (offset + length) - 8, 8);
             System.arraycopy(temp, temp.length - 8, result, 0, 8);
@@ -211,7 +211,7 @@ public final class GPCrypto {
     public static byte[] kcv_aes(byte[] key) {
         try {
             Cipher c = Cipher.getInstance(AES_CBC_CIPHER);
-            c.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key, "AES"), iv_null_16);
+            c.init(Cipher.ENCRYPT_MODE, aeskey(key), iv_null_16);
             byte[] cv = c.doFinal(one_bytes_16);
             return Arrays.copyOfRange(cv, 0, 3);
         } catch (GeneralSecurityException e) {

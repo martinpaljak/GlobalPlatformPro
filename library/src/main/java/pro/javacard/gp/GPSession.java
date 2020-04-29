@@ -40,10 +40,12 @@ import pro.javacard.gp.GPRegistryEntry.Kind;
 import pro.javacard.gp.GPRegistryEntry.Privilege;
 import pro.javacard.gp.GPRegistryEntry.Privileges;
 
+import javax.crypto.SecretKey;
 import java.io.*;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
+import java.security.Key;
 import java.security.PrivateKey;
 import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPublicKey;
@@ -369,7 +371,7 @@ public class GPSession {
             securityLevel.add(APDUMode.MAC);
         }
 
-        logger.info("Using card master keys: {}", keys);
+        logger.info("Using card master keys with version: {}", keys.getKeyInfo().getVersion());
         // DWIM: Generate host challenge
         if (host_challenge == null) {
             host_challenge = new byte[8];
@@ -920,13 +922,13 @@ public class GPSession {
             // FIXME: 3DES over SCP03
             if (other.scp == GPSecureChannel.SCP03) {
                 byte[] cgram = dek.encryptKey(other, p);
-                byte[] check = other.kcv(p);
+                byte[] kcv = other.kcv(p);
                 baos.write(0x88); // AES
                 baos.write(cgram.length + 1);
                 baos.write(other.getKeyInfo().getLength());
                 baos.write(cgram);
-                baos.write(check.length);
-                baos.write(check);
+                baos.write(kcv.length);
+                baos.write(kcv);
             } else if (other.scp == GPSecureChannel.SCP01 || other.scp == GPSecureChannel.SCP02) {
                 byte[] cgram = dek.encryptKey(other, p);
                 byte[] kcv = other.kcv(p);
@@ -1012,15 +1014,13 @@ public class GPSession {
     }
 
 
-    // Puts a RSA public key for DAP purposes (format 1)
-    public void putKey(RSAPublicKey pubkey, int version) throws IOException, GPException {
+    byte[] encodeRSAKey(RSAPublicKey key) {
         ByteArrayOutputStream bo = new ByteArrayOutputStream();
-
         try {
-            bo.write(version); // DAP key Version number
+            byte[] modulus = GPUtils.positive(key.getModulus());
+            byte[] exponent = GPUtils.positive(key.getPublicExponent());
+
             bo.write(0xA1); // Modulus
-            byte[] modulus = GPUtils.positive(pubkey.getModulus());
-            byte[] exponent = GPUtils.positive(pubkey.getPublicExponent());
             bo.write(modulus.length);
             bo.write(modulus);
             bo.write(0xA0);
@@ -1030,20 +1030,17 @@ public class GPSession {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-
-        CommandAPDU command = new CommandAPDU(CLA_GP, INS_PUT_KEY, 0x00, 0x01, bo.toByteArray());
-        ResponseAPDU response = transmit(command);
-        GPException.check(response, "PUT KEY failed");
+        return bo.toByteArray();
     }
 
-    // Puts an EC public key for DAP purposes FIXME: P-256
-    public void putKey(ECPublicKey pubkey, int version) throws IOException, GPException {
+    // FIXME: other curves
+    byte[] encodeECKey(ECPublicKey pubkey) {
         ByteArrayOutputStream bo = new ByteArrayOutputStream();
 
         try {
-            bo.write(version); // DAP key Version number
-            bo.write(0xB0); // EC Public key
             byte[] key = ECNamedCurveTable.getByName("secp256r1").getCurve().createPoint(pubkey.getW().getAffineX(), pubkey.getW().getAffineY()).getEncoded(false);
+
+            bo.write(0xB0); // EC Public key
             bo.write(key.length);
             bo.write(key);
             bo.write(0xF0);
@@ -1053,8 +1050,31 @@ public class GPSession {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+        return bo.toByteArray();
+    }
 
-        CommandAPDU command = new CommandAPDU(CLA_GP, INS_PUT_KEY, 0x00, 0x01, bo.toByteArray());
+    // Puts a RSA public key for DAP purposes (format 1)
+    public void putKey(Key key, int version, boolean replace) throws IOException, GPException {
+        ByteArrayOutputStream bo = new ByteArrayOutputStream();
+
+        bo.write(version); // Key Version number
+
+        if (key instanceof RSAPublicKey) {
+            bo.write(encodeRSAKey((RSAPublicKey) key));
+        } else if (key instanceof ECPublicKey) {
+            bo.write(encodeECKey((ECPublicKey) key));
+        } else if (key instanceof SecretKey) {
+            SecretKey sk = (SecretKey) key;
+            if (sk.getAlgorithm() == "DESede") {
+                // XXX: this is ugly, re-think how to fit it with plaintext keys.
+                PlaintextKeys newKey = PlaintextKeys.fromMasterKey(Arrays.copyOf(sk.getEncoded(), 16));
+                newKey.scp = GPSecureChannel.SCP02;
+                bo.write(encodeKey(sessionKeys, newKey, KeyPurpose.DEK));
+            } else
+                throw new IllegalArgumentException("Only 3DES symmetric keys are supported: " + sk.getAlgorithm());
+        }
+
+        CommandAPDU command = new CommandAPDU(CLA_GP, INS_PUT_KEY, replace ? version : 0x00, 0x01, bo.toByteArray(), 256);
         ResponseAPDU response = transmit(command);
         GPException.check(response, "PUT KEY failed");
     }

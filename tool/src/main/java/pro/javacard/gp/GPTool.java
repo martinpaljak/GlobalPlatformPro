@@ -37,12 +37,12 @@ import javax.smartcardio.TerminalFactory;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPrivateKey;
-import java.security.interfaces.RSAPublicKey;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -340,24 +340,28 @@ public final class GPTool extends GPCommandLineInterface {
                     }
                 }
 
-                // --put-key <keyfile.pem>
-                // Load a public key (for DAP purposes)
-                if (args.has(OPT_PUT_KEY)) {
-                    int keyVersion = 0x73; // Default DAP version
-                    if (args.has(OPT_NEW_KEY_VERSION)) {
-                        keyVersion = GPUtils.intValue(args.valueOf(OPT_NEW_KEY_VERSION).toString());
-                    }
-
-                    try (FileInputStream fin = new FileInputStream(new File(args.valueOf(OPT_PUT_KEY).toString()))) {
-                        // Get public key
-                        PublicKey key = GPCrypto.pem2PublicKey(fin);
-                        if (key instanceof RSAPublicKey) {
-                            gp.putKey((RSAPublicKey) key, keyVersion);
-                        } else if (key instanceof ECPublicKey) {
-                            gp.putKey((ECPublicKey) key, keyVersion);
-                        } else {
-                            fail("Unknown key type: " + key.getAlgorithm());
+                // --put-key <keyfile.pem or hex> or --replace-key <keyfile.pem or hex>
+                // Load a public key or a plaintext symmetric key (for DAP purposes)
+                if (args.has(OPT_PUT_KEY) || args.has(OPT_REPLACE_KEY)) {
+                    final String kv = args.has(OPT_PUT_KEY) ? args.valueOf(OPT_PUT_KEY).toString() : args.valueOf(OPT_REPLACE_KEY).toString();
+                    // Default to DAP version
+                    final int keyVersion = GPUtils.intValue(args.valueOf(OPT_NEW_KEY_VERSION).toString());
+                    // Check for presence (thus replace)
+                    List<GPKeyInfo> current = gp.getKeyInfoTemplate();
+                    boolean replace = current.stream().filter(p -> p.getVersion() == keyVersion).count() == 1 || args.has(OPT_REPLACE_KEY);
+                    // Check if file or string
+                    if (Files.exists(Paths.get(kv))) {
+                        try (FileInputStream fin = new FileInputStream(kv)) {
+                            // Get public key
+                            PublicKey key = GPCrypto.pem2PublicKey(fin);
+                            gp.putKey(key, keyVersion, replace);
+                        } catch (IllegalArgumentException e) {
+                            fail("Unknown key type: " + e.getMessage());
                         }
+                    } else {
+                        // Interpret as raw key
+                        byte[] k = HexUtils.hex2bin(kv);
+                        gp.putKey(GPCrypto.des3key(k), keyVersion, replace);
                     }
                 }
 
@@ -854,7 +858,7 @@ public final class GPTool extends GPCommandLineInterface {
                 OPT_ACR_ADD, OPT_ACR_DELETE, OPT_LOCK, OPT_UNLOCK, OPT_LOCK_ENC, OPT_LOCK_MAC, OPT_LOCK_DEK, OPT_MAKE_DEFAULT,
                 OPT_UNINSTALL, OPT_SECURE_APDU, OPT_DOMAIN, OPT_LOCK_CARD, OPT_UNLOCK_CARD, OPT_LOCK_APPLET, OPT_UNLOCK_APPLET,
                 OPT_STORE_DATA, OPT_STORE_DATA_CHUNK, OPT_INITIALIZE_CARD, OPT_SECURE_CARD, OPT_RENAME_ISD, OPT_SET_PERSO, OPT_SET_PRE_PERSO, OPT_MOVE,
-                OPT_PUT_KEY, OPT_ACR_AID, OPT_ACR_LIST};
+                OPT_PUT_KEY, OPT_REPLACE_KEY, OPT_ACR_AID, OPT_ACR_LIST};
 
         return Arrays.stream(yes).anyMatch(str -> args.has(str));
     }

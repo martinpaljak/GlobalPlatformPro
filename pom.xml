@@ -5,7 +5,7 @@
     <parent>
         <groupId>com.github.martinpaljak</groupId>
         <artifactId>metacard</artifactId>
-        <version>20.04.13</version>
+        <version>20.06.04</version>
     </parent>
     <version>20.04.15-SNAPSHOT</version>
     <artifactId>gppro</artifactId>
@@ -25,6 +25,7 @@
         <url>https://github.com/martinpaljak/GlobalPlatformPro</url>
         <developerConnection>scm:git:git@github.com:martinpaljak/globalplatformpro.git</developerConnection>
     </scm>
+    <!-- Always pick up private deps -->
     <repositories>
         <repository>
             <id>javacard-pro</id>
@@ -50,14 +51,6 @@
                 <artifactId>spotbugs-maven-plugin</artifactId>
                 <configuration>
                     <excludeFilterFile>spotbugs.xml</excludeFilterFile>
-                </configuration>
-            </plugin>
-            <!-- TODO: move to metacard -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <configuration>
-                    <source>8</source>
                 </configuration>
             </plugin>
             <plugin>

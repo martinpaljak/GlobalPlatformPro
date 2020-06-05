@@ -9,9 +9,7 @@ import org.testng.annotations.Test;
 import static pro.javacard.gp.GPCardKeys.KeyPurpose.ENC;
 import static pro.javacard.gp.PlaintextKeys.SCP03_KDF_CONSTANTS;
 
-
 public class TestSCP03 {
-    final static Logger logger = LoggerFactory.getLogger(TestSCP03.class);
 
     @Test
     public void testKDF3() {

@@ -145,7 +145,7 @@ class SCP03Wrapper extends SecureChannelWrapper {
                 }
 
                 ByteArrayOutputStream o = new ByteArrayOutputStream();
-                o.write(response.getBytes(), 0, respLen);
+                o.write(response.getData(), 0, respLen);
                 o.write(response.getSW1());
                 o.write(response.getSW2());
                 response = new ResponseAPDU(o.toByteArray());

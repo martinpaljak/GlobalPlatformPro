@@ -40,9 +40,13 @@ class SCP03Wrapper extends SecureChannelWrapper {
     // Both are block size length
     byte[] chaining_value = new byte[16];
     byte[] encryption_counter = new byte[16];
+    boolean workaroundBuggyEncCounter = false;
 
     SCP03Wrapper(GPSessionKeys sessionKeys, EnumSet<GPSession.APDUMode> securityLevel, int bs) {
         super(sessionKeys, securityLevel, bs);
+	if (System.getProperty("globalplatformpro.scp03.buggycounterworkaround") != null) {
+		workaroundBuggyEncCounter = true;
+	}
     }
 
     @Override
@@ -57,9 +61,18 @@ class SCP03Wrapper extends SecureChannelWrapper {
             // Encrypt if needed
             if (enc) {
                 cla |= 0x4;
-                // Counter shall always be incremented
-                GPCrypto.buffer_increment(encryption_counter);
+                // Encryption counter shall always be incremented for each C-APDU issued, per GP 2.2, Amendment D v1.1.1 and later, section 6.2.6
+		// Explicitly, the spec states that the counter shall increment even if there is no data segment to be encrypted.
+		// Unfortunately, some products which implement SCP03 do not correctly implement the specification, incrementing their counter
+		// only when receiving a C-APDU with encrypted data.  System property globalplatformpro.scp03.buggycounterworkaround, if defined,
+		// causes the SCP03 wrapper logic match those broken implementations.
+                if (!workaroundBuggyEncCounter) {
+                    GPCrypto.buffer_increment(encryption_counter);
+                }
                 if (command.getData().length > 0) {
+                    if (workaroundBuggyEncCounter) {
+                        GPCrypto.buffer_increment(encryption_counter);
+                    }
                     byte[] d = GPCrypto.pad80(command.getData(), 16);
                     // Encrypt with S-ENC, after increasing the counter
                     Cipher c = Cipher.getInstance(GPCrypto.AES_CBC_CIPHER);

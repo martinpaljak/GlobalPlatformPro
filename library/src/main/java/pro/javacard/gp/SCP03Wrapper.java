@@ -120,7 +120,16 @@ class SCP03Wrapper extends SecureChannelWrapper {
         try {
             if (rmac) {
                 if (response.getData().length < 8) {
-                    throw new RuntimeException("Wrong response length (too short)."); // FIXME: bad exception
+                    // Per GP 2.2, Amendment D, v1.1.1(+), all non-error R-APDUs must have a MAC.
+                    // R-APDUs representing an error status shall not have a data segment or MAC.
+                    if ( ( (response.getSW1() == 0x90) && (response.getSW2() == 0x00) ) || (response.getSW1() == 0x62) || (response.getSW2() == 0x63) ) {
+                        // These are the statuses considered non-error by said section of the spec.
+                        // As we can not have a MAC, throw exception.
+                        throw new GPException("Received R-APDU without authentication data in RMAC session.");
+                    }
+                    // A response with an error status word in an RMAC session will be neither MAC'ed nor encrypted.
+                    // We therefore return unaltered.
+                    return response;
                 }
                 int respLen = response.getData().length - 8;
 

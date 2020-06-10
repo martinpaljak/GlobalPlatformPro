@@ -529,9 +529,9 @@ public class GPSession {
     public ResponseAPDU transmit(CommandAPDU command) throws IOException {
         try {
             // TODO: BIBO pretty printer
-            //logger.trace("PT> {}", HexUtils.bin2hex(command.getBytes()));
+            logger.info("PT>> {}", HexUtils.bin2hex(command.getBytes()));
             ResponseAPDU unwrapped = wrapper.unwrap(channel.transmit(wrapper.wrap(command)));
-            //logger.trace("PT < {}", HexUtils.bin2hex(unwrapped.getBytes()));
+            logger.info("PT<< {}", HexUtils.bin2hex(unwrapped.getBytes()));
             return unwrapped;
         } catch (GPException e) {
             throw new IOException("Secure channel failure: " + e.getMessage(), e);

@@ -40,10 +40,17 @@ class SCP03Wrapper extends SecureChannelWrapper {
     // Both are block size length
     byte[] chaining_value = new byte[16];
     byte[] encryption_counter = new byte[16];
+    boolean scp03EncCounterWorkaround = false;
 
     SCP03Wrapper(GPSessionKeys sessionKeys, EnumSet<GPSession.APDUMode> securityLevel, int bs) {
         super(sessionKeys, securityLevel, bs);
     }
+
+    SCP03Wrapper(GPSessionKeys sessionKeys, EnumSet<GPSession.APDUMode> securityLevel, int bs, boolean scp03EncCounterWorkaround) {
+        super(sessionKeys, securityLevel, bs);
+        this.scp03EncCounterWorkaround = scp03EncCounterWorkaround;
+    }
+
 
     @Override
     protected CommandAPDU wrap(CommandAPDU command) throws GPException {
@@ -57,9 +64,15 @@ class SCP03Wrapper extends SecureChannelWrapper {
             // Encrypt if needed
             if (enc) {
                 cla |= 0x4;
-                // Counter shall always be incremented
-                GPCrypto.buffer_increment(encryption_counter);
+                // Counter shall always be incremented, except when workaround must handle a gaffe in existing product.
+                if (!scp03EncCounterWorkaround) {
+			GPCrypto.buffer_increment(encryption_counter);
+		}
                 if (command.getData().length > 0) {
+		    if (scp03EncCounterWorkaround) {
+			// Some product only increment the encryption counter upon receipt of C-APDUs with data segments.
+			GPCrypto.buffer_increment(encryption_counter);
+		    }
                     byte[] d = GPCrypto.pad80(command.getData(), 16);
                     // Encrypt with S-ENC, after increasing the counter
                     Cipher c = Cipher.getInstance(GPCrypto.AES_CBC_CIPHER);

@@ -95,6 +95,7 @@ public class GPSession {
     public static final byte P1_LAST_BLOCK = (byte) 0x80;
 
     protected boolean strict = true;
+    protected boolean scp03EncCounterWorkaround = false;
     GPSpec spec = GPSpec.GP211;
 
     // (I)SD AID
@@ -221,6 +222,10 @@ public class GPSession {
 
     public void setStrict(boolean strict) {
         this.strict = strict;
+    }
+
+    public void setScp03EncCounterWorkaround(boolean scp03EncCounterWorkaround) {
+        this.scp03EncCounterWorkaround = scp03EncCounterWorkaround;
     }
 
     public void setBlockSize(int size) {
@@ -505,7 +510,7 @@ public class GPSession {
                 break;
             case SCP03:
                 host_cryptogram = GPCrypto.scp03_kdf(sessionKeys.get(GPCardKeys.KeyPurpose.MAC), (byte) 0x01, cntx, 64);
-                wrapper = new SCP03Wrapper(sessionKeys, EnumSet.of(APDUMode.MAC), blockSize);
+                wrapper = new SCP03Wrapper(sessionKeys, EnumSet.of(APDUMode.MAC), blockSize, scp03EncCounterWorkaround);
                 break;
             default:
                 throw new IllegalStateException("Unknown SCP");

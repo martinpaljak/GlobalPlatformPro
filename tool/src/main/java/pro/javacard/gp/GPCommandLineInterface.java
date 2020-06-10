@@ -107,6 +107,7 @@ abstract class GPCommandLineInterface {
     protected final static String OPT_ACR_RULE = "acr-rule";
     protected final static String OPT_ACR_CERT_HASH = "acr-hash";
     protected final static String OPT_TOKEN_KEY = "token-key";
+    protected final static String OPT_SCP03_ENC_CTR_WORKAROUND = "scp03-workaround";
     // TODO - include token "as is" with -token
 
     protected static OptionSet parseArguments(String[] argv) throws IOException {
@@ -215,6 +216,8 @@ abstract class GPCommandLineInterface {
         parser.accepts(OPT_OP201, "Enable OpenPlatform 2.0.1 mode");
 
         parser.accepts(OPT_SDAID, "ISD AID").withRequiredArg().describedAs("AID");
+	
+	parser.accepts(OPT_SCP03_ENC_CTR_WORKAROUND, "Workaround buggy behavior in some SCP03 on-card implementations regarding encryption counter.");
 
         // Parse arguments
         try {

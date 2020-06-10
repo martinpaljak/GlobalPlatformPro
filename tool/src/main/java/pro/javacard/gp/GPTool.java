@@ -179,11 +179,6 @@ public final class GPTool extends GPCommandLineInterface {
                 GPData.dump(channel);
             }
 
-	    // Handle flag for SCP03 Encryption Counter workaround
-	    if (args.has(OPT_SCP03_ENC_CTR_WORKAROUND)) {
-		gp.setScp03EncCounterWorkaround(true);
-	    }
-
             // Normally assume a single master key
             final GPCardKeys keys;
 

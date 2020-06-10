@@ -40,7 +40,7 @@ class SCP03Wrapper extends SecureChannelWrapper {
     // Both are block size length
     byte[] chaining_value = new byte[16];
     byte[] encryption_counter = new byte[16];
-    boolean workaroundBuggyEncCounter = System.getProperty("globalplatformpro.scp03.buggycounterworkaround","false").equalsIgnoreCase("false") ? false : true;
+    boolean workaroundBuggyEncCounter = System.getProperty("globalplatformpro.scp03.buggycounterworkaround","false").equalsIgnoreCase("true") ? true : false;
 
     SCP03Wrapper(GPSessionKeys sessionKeys, EnumSet<GPSession.APDUMode> securityLevel, int bs) {
         super(sessionKeys, securityLevel, bs);

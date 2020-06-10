@@ -120,10 +120,10 @@ class SCP03Wrapper extends SecureChannelWrapper {
         try {
             if (rmac) {
                 if (response.getData().length < 8) {
-                    // Per GP 2.2, Amendment D, v1.1.1(+), all non-error R-APDUs must have a MAC.
+                    // Per GP 2.2, Amendment D, v1.1.1(+), section 6.2.5, all non-error R-APDUs must have a MAC.
                     // R-APDUs representing an error status shall not have a data segment or MAC.
-                    if ( ( (response.getSW1() == 0x90) && (response.getSW2() == 0x00) ) || (response.getSW1() == 0x62) || (response.getSW2() == 0x63) ) {
-                        // These are the statuses considered non-error by said section of the spec.
+                    if ( (response.getSW() == 0x9000) || (response.getSW1() == 0x62) || (response.getSW1() == 0x63) ) {
+                        // These are the statuses considered non-error by section 6.2.5 of the spec.
                         // As we can not have a MAC, throw exception.
                         throw new GPException("Received R-APDU without authentication data in RMAC session.");
                     }

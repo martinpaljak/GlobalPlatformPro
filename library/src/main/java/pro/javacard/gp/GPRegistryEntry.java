@@ -91,7 +91,7 @@ public class GPRegistryEntry {
             return "<null>";
         }
         if (version.length == 2) {
-            return version[0] + "." + version[1];
+            return (version[0] & 0xFF) + "." + (version[1] & 0xFF);
         }
         return "<unknown format " + HexUtils.bin2hex(version) + ">";
     }

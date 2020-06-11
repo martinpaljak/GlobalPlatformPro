@@ -38,9 +38,12 @@ import static pro.javacard.gp.GPCardKeys.KeyPurpose.RMAC;
 
 class SCP03Wrapper extends SecureChannelWrapper {
     // Both are block size length
-    byte[] chaining_value = new byte[16];
-    byte[] encryption_counter = new byte[16];
-    boolean workaroundBuggyEncCounter = System.getProperty("globalplatformpro.scp03.buggycounterworkaround","false").equalsIgnoreCase("true") ? true : false;
+    private byte[] chaining_value = new byte[16];
+    private byte[] encryption_counter = new byte[16];
+
+    static final String COUNTER_WORKAROUND = "globalplatformpro.scp03.buggycounterworkaround";
+    private String buggyCounterEnv = System.getenv().getOrDefault(COUNTER_WORKAROUND.replace(".", "_").toUpperCase(), "false");
+    private boolean counterIsBuggy = System.getProperty(COUNTER_WORKAROUND, buggyCounterEnv).equalsIgnoreCase("true");
 
     SCP03Wrapper(GPSessionKeys sessionKeys, EnumSet<GPSession.APDUMode> securityLevel, int bs) {
         super(sessionKeys, securityLevel, bs);
@@ -59,17 +62,15 @@ class SCP03Wrapper extends SecureChannelWrapper {
             if (enc) {
                 cla |= 0x4;
                 // Encryption counter shall always be incremented for each C-APDU issued, per GP 2.2, Amendment D v1.1.1 and later, section 6.2.6
-		// Explicitly, the spec states that the counter shall increment even if there is no data segment to be encrypted.
-		// Unfortunately, some products which implement SCP03 do not correctly implement the specification, incrementing their counter
-		// only when receiving a C-APDU with encrypted data.  System property globalplatformpro.scp03.buggycounterworkaround, if defined,
-		// causes the SCP03 wrapper logic match those broken implementations.
-                if (!workaroundBuggyEncCounter) {
+                // Explicitly, the spec states that the counter shall increment even if there is no data segment to be encrypted.
+                // Unfortunately, some products which implement SCP03 do not correctly implement the specification, incrementing their counter
+                // only when receiving a C-APDU with encrypted data.  System property globalplatformpro.scp03.buggycounterworkaround, if defined,
+                // causes the SCP03 wrapper logic match those broken implementations.
+                // We increment the counter if it is not buggy or if there is a payload with a buggy counter
+                if (!counterIsBuggy || command.getData().length > 0) {
                     GPCrypto.buffer_increment(encryption_counter);
                 }
                 if (command.getData().length > 0) {
-                    if (workaroundBuggyEncCounter) {
-                        GPCrypto.buffer_increment(encryption_counter);
-                    }
                     byte[] d = GPCrypto.pad80(command.getData(), 16);
                     // Encrypt with S-ENC, after increasing the counter
                     Cipher c = Cipher.getInstance(GPCrypto.AES_CBC_CIPHER);
@@ -132,7 +133,7 @@ class SCP03Wrapper extends SecureChannelWrapper {
                 if (response.getData().length < 8) {
                     // Per GP 2.2, Amendment D, v1.1.1(+), section 6.2.5, all non-error R-APDUs must have a MAC.
                     // R-APDUs representing an error status shall not have a data segment or MAC.
-                    if ( (response.getSW() == 0x9000) || (response.getSW1() == 0x62) || (response.getSW1() == 0x63) ) {
+                    if (response.getSW() == 0x9000 || response.getSW1() == 0x62 || response.getSW1() == 0x63) {
                         // These are the statuses considered non-error by section 6.2.5 of the spec.
                         // As we can not have a MAC, throw exception.
                         throw new GPException("Received R-APDU without authentication data in RMAC session.");

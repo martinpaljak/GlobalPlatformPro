@@ -40,8 +40,8 @@ class SCP01Wrapper extends SecureChannelWrapper {
 
     byte[] icv = null;
 
-    SCP01Wrapper(GPSessionKeys sessionKeys, EnumSet<GPSession.APDUMode> securityLevel, int bs) {
-        super(sessionKeys, securityLevel, bs);
+    SCP01Wrapper(byte[] enc, byte[] mac, byte []rmac, EnumSet<GPSession.APDUMode> securityLevel, int bs) {
+        super(enc, mac, rmac, securityLevel, bs);
         setVariant(0x15);
     }
 
@@ -82,7 +82,7 @@ class SCP01Wrapper extends SecureChannelWrapper {
                     icv = new byte[8];
                 } else if (icvEnc) {
                     Cipher c = Cipher.getInstance(GPCrypto.DES3_ECB_CIPHER);
-                    c.init(Cipher.ENCRYPT_MODE, GPCrypto.des3key(sessionKeys.get(MAC)));
+                    c.init(Cipher.ENCRYPT_MODE, GPCrypto.des3key(macKey));
                     icv = c.doFinal(icv);
                 }
 
@@ -97,7 +97,7 @@ class SCP01Wrapper extends SecureChannelWrapper {
                 t.write(newLc);
                 t.write(origData);
 
-                icv = GPCrypto.mac_3des(sessionKeys.get(MAC), t.toByteArray(), icv);
+                icv = GPCrypto.mac_3des(macKey, t.toByteArray(), icv);
 
                 if (postAPDU) {
                     newCLA = setBits((byte) newCLA, (byte) 0x04);
@@ -121,7 +121,7 @@ class SCP01Wrapper extends SecureChannelWrapper {
                 newLc += t.size() - origData.length;
 
                 Cipher c = Cipher.getInstance(GPCrypto.DES3_CBC_CIPHER);
-                c.init(Cipher.ENCRYPT_MODE, GPCrypto.des3key(sessionKeys.get(ENC)), GPCrypto.iv_null_8);
+                c.init(Cipher.ENCRYPT_MODE, GPCrypto.des3key(encKey), GPCrypto.iv_null_8);
                 newData = c.doFinal(t.toByteArray());
                 t.reset();
             }

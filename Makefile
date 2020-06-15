@@ -17,3 +17,6 @@ install: ~/.apdu4j/plugins/gp.jar
 
 clean:
 	./mvnw clean
+
+test:
+	./mvnw verify

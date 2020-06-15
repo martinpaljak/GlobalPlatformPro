@@ -50,8 +50,8 @@ class SCP02Wrapper extends SecureChannelWrapper {
     private boolean postAPDU = false;
 
 
-    SCP02Wrapper(GPSessionKeys sessionKeys, EnumSet<GPSession.APDUMode> securityLevel, int bs) {
-        super(sessionKeys, securityLevel, bs);
+    SCP02Wrapper(byte[] enc, byte[] mac, byte[]rmac, EnumSet<GPSession.APDUMode> securityLevel, int bs) {
+        super(enc, mac, rmac, securityLevel, bs);
         setVariant(0x55);
     }
 
@@ -108,9 +108,8 @@ class SCP02Wrapper extends SecureChannelWrapper {
                 if (icv == null) {
                     icv = new byte[8];
                 } else if (icvEnc) {
-                    byte[] key = sessionKeys.get(MAC);
                     Cipher c = Cipher.getInstance(GPCrypto.DES_ECB_CIPHER);
-                    c.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(GPCrypto.resizeDES(key, 8), "DES"));
+                    c.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(GPCrypto.resizeDES(macKey, 8), "DES"));
                     // encrypts the future ICV ?
                     icv = c.doFinal(icv);
                 }
@@ -128,7 +127,7 @@ class SCP02Wrapper extends SecureChannelWrapper {
 
 
                 logger.trace("MAC input: {}", HexUtils.bin2hex(t.toByteArray()));
-                icv = GPCrypto.mac_des_3des(sessionKeys.get(MAC), t.toByteArray(), icv);
+                icv = GPCrypto.mac_des_3des(macKey, t.toByteArray(), icv);
 
                 if (postAPDU) {
                     newCLA = setBits((byte) newCLA, (byte) 0x04);
@@ -143,7 +142,7 @@ class SCP02Wrapper extends SecureChannelWrapper {
                 newLc += t.size() - origData.length;
 
                 Cipher c = Cipher.getInstance(GPCrypto.DES3_CBC_CIPHER);
-                c.init(Cipher.ENCRYPT_MODE, GPCrypto.des3key(sessionKeys.get(ENC)), GPCrypto.iv_null_8);
+                c.init(Cipher.ENCRYPT_MODE, GPCrypto.des3key(encKey), GPCrypto.iv_null_8);
                 newData = c.doFinal(t.toByteArray());
                 t.reset();
             }
@@ -185,7 +184,7 @@ class SCP02Wrapper extends SecureChannelWrapper {
             rMac.write(response.getSW1());
             rMac.write(response.getSW2());
 
-            ricv = GPCrypto.mac_des_3des(sessionKeys.get(RMAC), GPCrypto.pad80(rMac.toByteArray(), 8), ricv);
+            ricv = GPCrypto.mac_des_3des(rmacKey, GPCrypto.pad80(rMac.toByteArray(), 8), ricv);
 
             byte[] actualMac = new byte[8];
             System.arraycopy(response.getData(), respLen, actualMac, 0, 8);

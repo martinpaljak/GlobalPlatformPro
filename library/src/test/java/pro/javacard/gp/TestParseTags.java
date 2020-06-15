@@ -14,10 +14,11 @@ public class TestParseTags {
     final static Logger logger = LoggerFactory.getLogger(TestParseTags.class);
 
     @Test
-    public void testSomething() throws Exception {
+    public void testParsePaertialIsd() throws Exception {
         byte[] data = HexUtils.hex2bin("E3464F08A0000000030000009F700101C5039EFE80CF0140CF0141CF0142CF0143CF0180CF0181CF0182CF0183C40BD276000005AAFFCAFE0001CE020001CC08A000000003000000");
         GPRegistry reg = new GPRegistry();
         reg.parse(0x80, data, GPRegistryEntry.Kind.IssuerSecurityDomain, GPSession.GPSpec.GP22);
+        GPCommands.listRegistry(reg, System.out, true);
     }
 
     @Test
@@ -32,7 +33,6 @@ public class TestParseTags {
     public void testPrintCardCapabilities() throws  Exception {
         byte[] data = HexUtils.hex2bin("6735A00E8001038106001020306070820107A007800102810215558103FF9E0082031E160083010284018F8502FF028602FF028702FF02");
         GPData.pretty_print_card_capabilities(data);
-
     }
 
     @Test
@@ -40,38 +40,6 @@ public class TestParseTags {
         // Broken - double 0x67
         byte[] data = HexUtils.hex2bin("673A6738A006800102810155A00A8001038102001082010781039EFE8082031E03008301028504010208408602040887040102084088050102030405");
         GPData.pretty_print_card_capabilities(data);
-    }
-
-
-
-    @Test
-    public void testOracle() throws Exception {
-        byte[] atr = HexUtils.hex2bin("664C734A06072A864886FC6B01600C060A2A864886FC6B02020101630906072A864886FC6B03640B06092A864886FC6B040215650B06092B8510864864020103660C060A2B060104012A026E0102");
-        byte[] cplc = HexUtils.hex2bin("664C734A06072A864886FC6B01600C060A2A864886FC6B02020101630906072A864886FC6B03640B06092A864886FC6B040215650B06092B8510864864020103660C060A2B060104012A026E0102");
-        byte[] kinfo = HexUtils.hex2bin("664C734A06072A864886FC6B01600C060A2A864886FC6B02020101630906072A864886FC6B03640B06092A864886FC6B040215650B06092B8510864864020103660C060A2B060104012A026E0102");
-
-        //CardOracle.ask("https://javacard.pro/pythia", atr, cplc, kinfo, new AID("A000000151000000"));
-    }
-
-    @Test
-    public void testRSAKeyTemplate() throws Exception {
-        byte[] t = HexUtils.hex2bin("E020C00401018820C00402018820C00403018820C0060170A180A003C00401718010");
-        List<GPKeyInfo> kl = GPKeyInfo.parseTemplate(t);
-        GPKeyInfo.print(kl, System.out);
-    }
-
-    @Test
-    public void testExtendedRSAKeyTemplate() throws Exception {
-        byte[] t = HexUtils.hex2bin("E021C00401018010C00402018010C00403018010C00D0173FFA10080A0000301840100");
-        List<GPKeyInfo> kl = GPKeyInfo.parseTemplate(t);
-        GPKeyInfo.print(kl, System.out);
-    }
-
-    @Test
-    public void testExtendedKeyTypeTemplateWithZeroLengths() throws Exception {
-        byte[] t = HexUtils.hex2bin("E081B0C00A0120FF80001001000100C00A0220FF80001001000100C00A0320FF80001001000100C00A0101FF80001001000100C00A0201FF80001001000100C00A0301FF80001001000100C00A0102FF88001001000100C00E0202FF880010FF10000101000100C00A0302FF88001001000100C00A0103FF88001001000100C00E0203FF880010FF10000101000100C00A0303FF88001001000100C00A1403FF85001001000100C00A1503FF88001001000100");
-        List<GPKeyInfo> kl = GPKeyInfo.parseTemplate(t);
-        GPKeyInfo.print(kl, System.out);
     }
 
     @Test

@@ -45,8 +45,8 @@ class SCP03Wrapper extends SecureChannelWrapper {
     private String buggyCounterEnv = System.getenv().getOrDefault(COUNTER_WORKAROUND.replace(".", "_").toUpperCase(), "false");
     private boolean counterIsBuggy = System.getProperty(COUNTER_WORKAROUND, buggyCounterEnv).equalsIgnoreCase("true");
 
-    SCP03Wrapper(GPSessionKeys sessionKeys, EnumSet<GPSession.APDUMode> securityLevel, int bs) {
-        super(sessionKeys, securityLevel, bs);
+    SCP03Wrapper(byte[] enc, byte[] mac, byte[] rmac, EnumSet<GPSession.APDUMode> securityLevel, int bs) {
+        super(enc, mac, rmac, securityLevel, bs);
     }
 
     @Override
@@ -74,10 +74,10 @@ class SCP03Wrapper extends SecureChannelWrapper {
                     byte[] d = GPCrypto.pad80(command.getData(), 16);
                     // Encrypt with S-ENC, after increasing the counter
                     Cipher c = Cipher.getInstance(GPCrypto.AES_CBC_CIPHER);
-                    c.init(Cipher.ENCRYPT_MODE, GPCrypto.aeskey(sessionKeys.get(ENC)), GPCrypto.iv_null_16);
+                    c.init(Cipher.ENCRYPT_MODE, GPCrypto.aeskey(encKey), GPCrypto.iv_null_16);
                     byte[] iv = c.doFinal(encryption_counter);
                     // Now encrypt the data with S-ENC.
-                    c.init(Cipher.ENCRYPT_MODE, GPCrypto.aeskey(sessionKeys.get(ENC)), new IvParameterSpec(iv));
+                    c.init(Cipher.ENCRYPT_MODE, GPCrypto.aeskey(encKey), new IvParameterSpec(iv));
                     data = c.doFinal(d);
                     lc = data.length;
                 }
@@ -96,7 +96,7 @@ class SCP03Wrapper extends SecureChannelWrapper {
                 bo.write(GPUtils.encodeLcLength(lc, command.getNe()));
                 bo.write(data);
                 byte[] cmac_input = bo.toByteArray();
-                byte[] cmac = GPCrypto.scp03_mac(sessionKeys.get(GPCardKeys.KeyPurpose.MAC), cmac_input, 128);
+                byte[] cmac = GPCrypto.scp03_mac(macKey, cmac_input, 128);
                 // Set new chaining value
                 System.arraycopy(cmac, 0, chaining_value, 0, chaining_value.length);
                 // 8 bytes for actual mac
@@ -155,7 +155,7 @@ class SCP03Wrapper extends SecureChannelWrapper {
 
                 byte[] cmac_input = bo.toByteArray();
 
-                byte[] cmac = GPCrypto.scp03_mac(sessionKeys.get(RMAC), cmac_input, 128);
+                byte[] cmac = GPCrypto.scp03_mac(rmacKey, cmac_input, 128);
 
                 // 8 bytes for actual mac
                 byte[] resp_mac = Arrays.copyOf(cmac, 8);
@@ -175,10 +175,10 @@ class SCP03Wrapper extends SecureChannelWrapper {
                 byte[] response_encryption_counter = Arrays.copyOf(encryption_counter, encryption_counter.length);
                 response_encryption_counter[0] = (byte) 0x80;
                 Cipher c = Cipher.getInstance(GPCrypto.AES_CBC_CIPHER);
-                c.init(Cipher.ENCRYPT_MODE, GPCrypto.aeskey(sessionKeys.get(ENC)), GPCrypto.iv_null_16);
+                c.init(Cipher.ENCRYPT_MODE, GPCrypto.aeskey(encKey), GPCrypto.iv_null_16);
                 byte[] iv = c.doFinal(response_encryption_counter);
                 // Now decrypt the data with S-ENC, with the new IV
-                c.init(Cipher.DECRYPT_MODE, GPCrypto.aeskey(sessionKeys.get(ENC)), new IvParameterSpec(iv));
+                c.init(Cipher.DECRYPT_MODE, GPCrypto.aeskey(encKey), new IvParameterSpec(iv));
                 byte[] data = c.doFinal(response.getData());
                 ByteArrayOutputStream o = new ByteArrayOutputStream();
                 o.write(GPCrypto.unpad80(data));

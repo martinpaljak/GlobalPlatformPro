@@ -26,16 +26,21 @@ import java.util.EnumSet;
 
 abstract class SecureChannelWrapper {
     protected final int blockSize;
-    protected final GPSessionKeys sessionKeys;
+    protected byte[] encKey;
+    protected byte[] macKey;
+    protected byte[] rmacKey;
     protected boolean mac;
     protected boolean enc;
     protected boolean rmac; // could be sessions
     protected boolean renc;
 
 
-    protected SecureChannelWrapper(GPSessionKeys keys, EnumSet<GPSession.APDUMode> securityLevel, int bs) {
+    protected SecureChannelWrapper(byte[] enc, byte[] mac, byte[] rmac, EnumSet<GPSession.APDUMode> securityLevel, int bs) {
         setSecurityLevel(securityLevel);
-        sessionKeys = keys;
+        encKey = enc.clone();
+        macKey = mac.clone();
+        if (rmac != null)
+            rmacKey = rmac.clone();
         blockSize = bs;
     }
 

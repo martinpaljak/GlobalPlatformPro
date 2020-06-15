@@ -28,48 +28,72 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 // Encapsulates key metadata
 public final class GPKeyInfo {
     private static final Logger logger = LoggerFactory.getLogger(GPKeyInfo.class);
 
-    private Type type;
+    private GPKey type;
+    private List<GPKeyInfoElement> elements;
     private int version = 0; // 1..7f
     private int id = -1; // 0..7f
     private int length = -1;
+    private int access = -1; // bit field
+    private int usage = -1; // bit field
 
     // Called when parsing KeyInfo template
-    GPKeyInfo(int version, int id, int length, int type) {
+    public GPKeyInfo(int version, int id, int length, GPKey type) {
         this.version = version;
         this.id = id;
         this.length = length;
-        // FIXME: these values should be encapsulated somewhere
-        // FIXME: 0x81 is actually reserved according to GP
-        // GP 2.2.1 11.1.8 Key Type Coding
-        if (type == 0x80 || type == 0x81 || type == 0x82) {
-            this.type = Type.DES3;
-        } else if (type == 0x88) {
-            this.type = Type.AES;
-        } else if (type == 0xA1 || type == 0xA0) {
-            this.type = Type.RSAPUB;
-        } else if (type == 0xB0) {
-            this.type = Type.ECPUB;
-        } else if (type == 0x85) {
-            this.type = Type.PSK;
-        } else {
-            throw new UnsupportedOperationException(String.format("Only AES, 3DES, PSK and RSA public keys are supported currently: 0x%02X", type));
-        }
+        this.type = type;
     }
+
+    public GPKeyInfo(int version, int id, List<GPKeyInfoElement> elements, int access, int usage) {
+        this.version = version;
+        this.id = id;
+        List<GPKeyInfoElement> valid = elements.stream().filter(GPKeyInfoElement::isValid).collect(Collectors.toList());
+
+        if (elements.size() != valid.size()) {
+            HashSet<GPKeyInfoElement> unknown = new HashSet<>(elements);
+            unknown.removeAll(valid);
+            logger.warn("Unknown elements ignored: " + unknown);
+        }
+        if (valid.size() == 0) {
+            throw new IllegalArgumentException("No key elements!");
+        } else if (valid.size() == 1) {
+            this.length = elements.get(0).keyLength;
+            this.type = elements.get(0).key;
+        } else {
+            // FIXME: reduce here RSA to a single public key
+            Optional<GPKeyInfoElement> rsa = valid.stream().filter(e -> e.key == GPKey.RSA_PUB_N).findFirst();
+            if (rsa.isPresent()) {
+                this.length = rsa.get().keyLength;
+                this.type = GPKey.RSA_PUB_N;
+            } else {
+                logger.error("Multiple unsupported elements in key info:  {} ", elements);
+                throw new GPDataException("Multiple unsupported elements in key info template");
+            }
+        }
+        this.elements = elements;
+
+        // FIXME: handle them as optionals here
+        this.access = access;
+        this.usage = usage;
+    }
+
 
     // GP 2.1.1 9.3.3.1
     // GP 2.2.1 11.3.3.1 and 11.1.8
     public static List<GPKeyInfo> parseTemplate(byte[] data) throws GPException {
         List<GPKeyInfo> r = new ArrayList<>();
-        if (data == null || data.length == 0)
+
+        if (data == null || data.length == 0) {
+            logger.warn("Template is null or zero length");
             return r;
+        }
 
         BerTlvParser parser = new BerTlvParser();
         BerTlvs tlvs = parser.parse(data);
@@ -78,7 +102,7 @@ public final class GPKeyInfo {
         BerTlv keys = tlvs.find(new BerTag(0xE0));
         if (keys != null && keys.isConstructed()) {
             for (BerTlv key : keys.findAll(new BerTag(0xC0))) {
-                byte[] tmpl = key.getBytesValue();
+                final byte[] tmpl = key.getBytesValue();
                 if (tmpl.length == 0) {
                     // Fresh SSD with an empty template.
                     logger.info("Key template has zero length (empty). Skipping.");
@@ -90,23 +114,28 @@ public final class GPKeyInfo {
                 int offset = 0;
                 int id = tmpl[offset++] & 0xFF;
                 int version = tmpl[offset++] & 0xFF;
-                int type = tmpl[offset++] & 0xFF;
-                boolean extended = type == 0xFF;
-                if (extended) {
-                    // extended key type, use second byte
-                    type = tmpl[offset++] & 0xFF;
+
+                // Check if extended template
+                boolean extended = tmpl[offset] == (byte) 0xFF;
+
+                // With extended, last 4 or 5 bytes are access and usage
+                ArrayList<GPKeyInfoElement> elements = new ArrayList<>();
+                // Except for some buggy cards, that return extended elements mixed with basic elements.
+                for (; offset + (extended ? 4 : 0) < tmpl.length; ) {
+                    GPKeyInfoElement element = extended ? GPKeyInfoElement.fromExtendedBytes(tmpl, offset) : new GPKeyInfoElement(tmpl, offset);
+                    elements.add(element);
+                    logger.debug("Parsed {}", element);
+                    offset += element.templateLength;
                 }
-                // parse length
-                int length = tmpl[offset++] & 0xFF;
+
                 if (extended) {
-                    length = length << 8 | tmpl[offset++] & 0xFF;
+                    // FIXME: Mandatory access and usage
+                    logger.warn("Access and Usage not parsed: " + HexUtils.bin2hex(Arrays.copyOfRange(tmpl, offset, tmpl.length)));
+                    r.add(new GPKeyInfo(version, id, elements, -1, -1));
+                } else {
+                    // FIXME: default values in spec
+                    r.add(new GPKeyInfo(version, id, elements, -1, -1));
                 }
-                if (extended) {
-                    // XXX usage and access is not shown currently
-                    logger.warn("Extended format not parsed: " + HexUtils.bin2hex(Arrays.copyOfRange(tmpl, tmpl.length - 4, tmpl.length)));
-                }
-                // XXX: RSAPUB keys have two components A1 and A0, gets called with A1 and A0 (exponent) discarded
-                r.add(new GPKeyInfo(version, id, length, type));
             }
         }
         return r;
@@ -119,20 +148,20 @@ public final class GPKeyInfo {
         for (GPKeyInfo k : list) {
             // Descriptive text about the key
             final String nice;
-            if (k.getType() == Type.RSAPUB && k.getLength() > 0) {
+            if (k.getType() == GPKey.RSA_PUB_E || k.getType() == GPKey.RSA_PUB_N && k.getLength() > 0) {
                 nice = "(RSA-" + k.getLength() * 8 + " public)";
-            } else if (k.getType() == Type.AES && k.getLength() > 0) {
+            } else if (k.getType() == GPKey.AES && k.getLength() > 0) {
                 nice = "(AES-" + k.getLength() * 8 + ")";
             } else {
+                // TODO: 70, 71, 73 descriptions
                 nice = "";
             }
-
             // Detect unaddressable factory keys
             if (k.getVersion() == 0x00 || k.getVersion() == 0xFF)
                 factory_keys = true;
 
             // print
-            out.println(String.format("Version: %3d (0x%02X) ID: %3d (0x%02X) type: %-4s length: %3d %s", k.getVersion(), k.getVersion(), k.getID(), k.getID(), k.getType(), k.getLength(), nice));
+            out.println(String.format("Version: %3d (0x%02X) ID: %3d (0x%02X) type: %-12s length: %3d %s", k.getVersion(), k.getVersion(), k.getID(), k.getID(), k.getType(), k.getLength(), nice));
         }
         if (factory_keys) {
             out.println("Key version suggests factory keys");
@@ -152,7 +181,7 @@ public final class GPKeyInfo {
         return length;
     }
 
-    public Type getType() {
+    public GPKey getType() {
         return type;
     }
 
@@ -167,70 +196,157 @@ public final class GPKeyInfo {
         return s.toString();
     }
 
-    public enum Type {
-        DES3, AES, RSAPUB, ECPUB, PSK;
+
+    public static class GPKeyInfoElement {
+        final GPKey key;
+        final int keyLength;
+        final int templateLength;
+
+
+        public static GPKeyInfoElement fromExtendedBytes(byte[] buf, int offset) {
+            final int templateLength;
+            if (buf[offset] != (byte) 0xFF) {
+                logger.warn("Extended key element not starting with 0xFF!");
+                templateLength = 3;
+            } else {
+                offset++; // Valid 0xFF as extended indicator
+                templateLength = 4;
+            }
+            return new GPKeyInfoElement(GPKey.get(buf[offset++] & 0xFF).get(), (buf[offset++] << 8) + (buf[offset++] & 0xFF), templateLength);
+        }
+
+        GPKeyInfoElement(GPKey element, int elementLength, int templateLength) {
+            this.key = element;
+            this.templateLength = templateLength;
+            this.keyLength = elementLength;
+        }
+
+        public GPKeyInfoElement(byte[] buf, int offset) {
+            if (buf[offset] == (byte) 0xFF) {
+                logger.trace("Parsing E {}", HexUtils.bin2hex(Arrays.copyOfRange(buf, offset, offset + 4)));
+                // extended length
+                key = GPKey.get(buf[++offset] & 0xFF).get();
+                keyLength = (buf[++offset] << 8) + (buf[++offset] & 0xFF);
+                templateLength = 4;
+            } else {
+                logger.trace("Parsing B {}", HexUtils.bin2hex(Arrays.copyOfRange(buf, offset, offset + 2)));
+                key = GPKey.get(buf[offset++] & 0xFF).get();
+                // Page 162 of GP 2.3.1 "the indicated length shall be set to '00' (meaning ‘greater than or equal to 256 bytes’)"
+                int l = buf[offset++] & 0xFF;
+                keyLength = l == 0x00 ? 256 : l;
+                templateLength = 2;
+            }
+        }
+
+        public static boolean isValid(GPKeyInfoElement e) {
+            return e.key != GPKey.PRIVATE && e.key != GPKey.RFU_ASYMMETRICAL && e.key != GPKey.RFU_SYMMETRICAL;
+        }
 
         @Override
         public String toString() {
-            if (this.name().equals("RSAPUB"))
-                return "RSA";
-            if (this.name().equals("ECPUB"))
-                return "EC";
-            return super.toString();
+            return "GPKeyInfoElement{" +
+                    "key=" + key +
+                    ", keyLength=" + keyLength +
+                    ", templateLength=" + templateLength +
+                    '}';
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            GPKeyInfoElement that = (GPKeyInfoElement) o;
+            return keyLength == that.keyLength &&
+                    templateLength == that.templateLength &&
+                    key == that.key;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(key, keyLength, templateLength);
         }
     }
 
-
     // GP 2.1.1 9.1.6
-    // GP 2.2.1 11.1.8
-    public static String type2str(int type) {
-        if ((0x00 <= type) && (type <= 0x7f))
-            return "Reserved for private use";
-        // symmetric
-        if (0x80 == type)
-            return "DES - mode (ECB/CBC) implicitly known";
-        if (0x81 == type)
-            return "Reserved (Triple DES)";
-        if (0x82 == type)
-            return "Triple DES in CBC mode";
-        if (0x83 == type)
-            return "DES in ECB mode";
-        if (0x84 == type)
-            return "DES in CBC mode";
-        if (0x85 == type)
-            return "Pre-Shared Key for Transport Layer Security";
-        if (0x88 == type)
-            return "AES (16, 24, or 32 long keys)";
-        if (0x90 == type)
-            return "HMAC-SHA1 - length of HMAC is implicitly known";
-        if (0x91 == type)
-            return "MAC-SHA1-160 - length of HMAC is 160 bits";
-        if (type == 0x86 || type == 0x87 || ((0x89 <= type) && (type <= 0x8F)) || ((0x92 <= type) && (type <= 0x9F)))
-            return "RFU (asymmetric algorithms)";
-        // asymmetric
-        if (0xA0 == type)
-            return "RSA Public Key - public exponent e component (clear text)";
-        if (0xA1 == type)
-            return "RSA Public Key - modulus N component (clear text)";
-        if (0xA2 == type)
-            return "RSA Private Key - modulus N component";
-        if (0xA3 == type)
-            return "RSA Private Key - private exponent d component";
-        if (0xA4 == type)
-            return "RSA Private Key - Chinese Remainder P component";
-        if (0xA5 == type)
-            return "RSA Private Key - Chinese Remainder Q component";
-        if (0xA6 == type)
-            return "RSA Private Key - Chinese Remainder PQ component";
-        if (0xA7 == type)
-            return "RSA Private Key - Chinese Remainder DP1 component";
-        if (0xA8 == type)
-            return "RSA Private Key - Chinese Remainder DQ1 component";
-        if ((0xA9 <= type) && (type <= 0xFE))
-            return "RFU (asymmetric algorithms)";
-        if (0xFF == type)
-            return "Extended Format";
+    // GP 2.2.1/2.3.1 11.1.8
+    public enum GPKey {
+        // Special
+        PRIVATE(0x00, "Reserved for private use"),
+        EXTENDED(0xFF, "Extended format"),
+        RFU_SYMMETRICAL(0x86, "RFU (symmetric algorithm)"),
+        RFU_ASYMMETRICAL(0xA9, "RFU (asymmetric algorithm)"),
+        // Symmetrical
+        DES3(0x80, "DES - mode (ECB/CBC) implicitly known"),
+        DES3_RESERVED(0x81, "Reserved (Triple DES)"),
+        DES3_CBC(0x82, "Triple DES in CBC mode"),
+        DES_ECB(0x83, "DES in ECB mode"),
+        DES_CBC(0x84, "DES in CBC mode"),
+        PSK_TLS(0x85, "Pre-Shared Key for Transport Layer Security"),
+        AES(0x88, "AES (16, 24, or 32 long keys)"),
+        HMAC_SHA1(0x90, "HMAC-SHA1 - length of HMAC is implicitly known"),
+        HMAC_SHA1_160(0x91, "MAC-SHA1-160 - length of HMAC is 160 bits"),
+        // Asymmetrical
+        RSA_PUB_E(0xA0, "RSA Public Key - public exponent e component (clear text)"),
+        RSA_PUB_N(0xA1, "RSA Public Key - modulus N component (clear text)"),
+        RSA_PRIV_N(0xA2, "RSA Private Key - modulus N component"),
+        RSA_PRIV_D(0xA3, "RSA Private Key - private exponent d component"),
+        RSA_PRIV_P(0xA4, "RSA Private Key - Chinese Remainder P component"),
+        RSA_PRIV_Q(0xA5, "RSA Private Key - Chinese Remainder Q component"),
+        RSA_PRIV_PQ(0xA6, "RSA Private Key - Chinese Remainder PQ component"),
+        RSA_PRIV_DP1(0xA7, "RSA Private Key - Chinese Remainder DP1 component"),
+        RSA_PRIV_DQ1(0xA8, "RSA Private Key - Chinese Remainder DQ1 component"),
+        EC_PUB(0xB0, "ECC public key"),
+        EC_PRIV(0xB1, "ECC private key"),
+        EC_FIELD_P(0xB2, "ECC field parameter P (field specification)"),
+        EC_FIELD_A(0xB3, "ECC field parameter A (first coefficient)"),
+        EC_FIELD_B(0xB4, "ECC field parameter B (second coefficient)"),
+        EC_FIELD_G(0xB5, "ECC field parameter G (generator)"),
+        EC_FIELD_N(0xB6, "ECC field parameter N (order of generator)"),
+        EC_FIELD_K(0xB7, "ECC field parameter k (cofactor of order of generator)"),
+        EC_PARAM_REF(0xF0, "ECC key parameters reference");
 
-        return "UNKNOWN";
+
+        private final int type;
+        private final String description;
+
+        GPKey(int type, String desc) {
+            this.type = type;
+            this.description = desc;
+        }
+
+        public int getType() {
+            return this.type;
+        }
+
+        public String getDescription() {
+            return this.description;
+        }
+
+        public static Optional<GPKey> get(int type) {
+            final GPKey result;
+            if ((0x00 <= type) && (type <= 0x7f))
+                result = PRIVATE;
+            else if (type == 0x86 || type == 0x87 || ((0x89 <= type) && (type <= 0x8F)) || ((0x92 <= type) && (type <= 0x9F)))
+                result = RFU_SYMMETRICAL;
+            else if ((0xA9 <= type) && (type <= 0xAF))
+                result = RFU_ASYMMETRICAL;
+            else if ((0xB8 <= type) && (type <= 0xEF))
+                result = RFU_ASYMMETRICAL;
+            else if ((0xF1 <= type) && (type <= 0xFE))
+                result = RFU_ASYMMETRICAL;
+            else
+                return Arrays.asList(values()).stream().filter(e -> e.type == type).findFirst();
+            return Optional.ofNullable(result);
+        }
+
+        public String typeName() {
+            if (this == DES3 || this == DES3_RESERVED) {
+                return "3DES";
+            } else if (this == RSA_PUB_N || this == RSA_PUB_E) {
+                return "RSA";
+            } else if (this == EC_PUB) {
+                return "EC";
+            } else return name();
+        }
     }
 }

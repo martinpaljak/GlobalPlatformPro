@@ -51,6 +51,7 @@
             <version>7.1.0</version>
             <scope>test</scope>
         </dependency>
+        <!-- For logging in tests -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>

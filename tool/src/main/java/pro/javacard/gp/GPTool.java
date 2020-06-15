@@ -680,7 +680,7 @@ public final class GPTool extends GPCommandLineInterface {
                     } else {
                         newKeys = PlaintextKeys.fromMasterKey(HexUtils.stringToBin((String) args.valueOf(OPT_LOCK)));
                         if (args.has(OPT_LOCK_KDF)) {
-                            // XXX: should do diversification here explicitly. Expose card keys and kdd
+                            // FIXME: should do diversification here explicitly. Expose card keys and kdd
                             newKeys.setDiversifier(getDiversificationOrFail(args, OPT_LOCK_KDF));
                         }
                     }
@@ -688,6 +688,7 @@ public final class GPTool extends GPCommandLineInterface {
                     // If a specific new key version is specified, use that instead.
                     if (args.has(OPT_NEW_KEY_VERSION)) {
                         new_version = GPUtils.intValue((String) args.valueOf(OPT_NEW_KEY_VERSION));
+                        // FIXME: unless exists
                         replace = false;
                         System.out.println("New version: " + new_version);
                     }

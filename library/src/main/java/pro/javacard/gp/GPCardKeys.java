@@ -19,21 +19,25 @@
  */
 package pro.javacard.gp;
 
-// Provides a interface for session keys. Session keys are derived from card keys
-// Session keys are PLAINTEXT keys.
-// Providers are free to derive session keys based on hardware backed master keys
-// PlaintextKeys provides card keys, that are ... plaintext (not backed by hardware)
-
 import apdu4j.HexUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.security.GeneralSecurityException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
+
+// Provides a interface for session keys. Session keys are derived from card keys
+// Session keys are PLAINTEXT keys.
+// Providers are free to derive session keys based on hardware backed master keys
+// PlaintextKeys provides card keys, that are ... plaintext (not backed by hardware)
 public abstract class GPCardKeys {
-
-    protected GPSecureChannel scp;
-    protected byte[] kdd;
+    private static final Logger logger = LoggerFactory.getLogger(GPCardKeys.class);
+    protected GPSecureChannel scp; // The actual SCP version, to know how to handle DEK
+    protected byte[] kdd; // The key derivation data that was used to get the keys in question. May be empty (no derivation)
 
     public abstract GPKeyInfo getKeyInfo();
 
@@ -59,32 +63,35 @@ public abstract class GPCardKeys {
         }
     }
 
-    // Encrypt data with static card DEK
-    public abstract byte[] encrypt(byte[] data) throws GeneralSecurityException;
+    // Encrypt data with card DEK (session DEK in case of SCP02)
+    public abstract byte[] encrypt(byte[] data, byte[] sessionContext) throws GeneralSecurityException;
 
-    // Encrypt a key with card (or session) DEK
-    public abstract byte[] encryptKey(GPCardKeys key, KeyPurpose p) throws GeneralSecurityException;
+    // Encrypt another key with card DEK (session DEK in case of SCP02)
+    public abstract byte[] encryptKey(GPCardKeys key, KeyPurpose p, byte[] sessionContext) throws GeneralSecurityException;
 
     // Get session keys for given session data
-    public abstract GPSessionKeys getSessionKeys(byte[] kdd);
+    public abstract Map<KeyPurpose, byte[]> getSessionKeys(byte[] sessionContext);
 
     // Get KCV of a card key
     public abstract byte[] kcv(KeyPurpose p);
 
     // Diversify card keys automatically, based on INITIALIZE UPDATE response
     public GPCardKeys diversify(GPSecureChannel scp, byte[] kdd) {
-        this.scp = scp;
+        this.scp = scp; // We know for sure what is the type of the key.
+        if (this.kdd != null && !Arrays.equals(this.kdd, kdd)) {
+            logger.warn("KDD-s don't match: {} vs {}", HexUtils.bin2hex(this.kdd), HexUtils.bin2hex(kdd));
+        }
         this.kdd = kdd.clone();
         return this;
     }
 
     // Return key derivation data for this keyset
-    public byte[] getKDD() {
-        return kdd.clone();
+    public Optional<byte[]> getKDD() {
+        return Optional.ofNullable(kdd.clone());
     }
 
     @Override
     public String toString() {
-        return String.format("KCV-s ENC=%s MAC=%s DEK=%s for %s", HexUtils.bin2hex(kcv(KeyPurpose.ENC)), HexUtils.bin2hex(kcv(KeyPurpose.MAC)), HexUtils.bin2hex(kcv(KeyPurpose.DEK)), scp);
+        return String.format("KCV-s (%s) ENC=%s MAC=%s DEK=%s", scp, HexUtils.bin2hex(kcv(KeyPurpose.ENC)), HexUtils.bin2hex(kcv(KeyPurpose.MAC)), HexUtils.bin2hex(kcv(KeyPurpose.DEK)));
     }
 }

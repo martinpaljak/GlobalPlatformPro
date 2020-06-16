@@ -317,7 +317,6 @@ public class PlaintextKeys extends GPCardKeys {
                     break;
                 default:
                     throw new IllegalStateException("Illegal SCP");
-
             }
         }
         return sessionKeys;

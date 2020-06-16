@@ -23,6 +23,7 @@ import apdu4j.CommandAPDU;
 import apdu4j.HexUtils;
 import apdu4j.ResponseAPDU;
 import pro.javacard.AID;
+import pro.javacard.WellKnownAID;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -57,7 +58,7 @@ public class GPCommands {
             AID aid = e.getAID();
             out.print(e.getType().toShortString() + ": " + HexUtils.bin2hex(aid.getBytes()) + " (" + e.getLifeCycleString() + ")");
             if (e.getType() != GPRegistryEntry.Kind.IssuerSecurityDomain && verbose) {
-                out.println(" (" + GPUtils.byteArrayToReadableString(aid.getBytes()) + ")");
+                out.println(" (" + WellKnownAID.getName(aid).orElse(GPUtils.byteArrayToReadableString(aid.getBytes())) + ")");
             } else {
                 out.println();
             }
@@ -72,7 +73,7 @@ public class GPCommands {
                 for (AID a : e.getModules()) {
                     out.print(tab + "Applet:  " + HexUtils.bin2hex(a.getBytes()));
                     if (verbose) {
-                        out.println(" (" + GPUtils.byteArrayToReadableString(a.getBytes()) + ")");
+                        out.println(" (" + WellKnownAID.getName(a).orElse(GPUtils.byteArrayToReadableString(a.getBytes())) + ")");
                     } else {
                         out.println();
                     }

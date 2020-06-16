@@ -474,10 +474,10 @@ public class GPSession {
 
         Map<KeyPurpose, byte[]> _sessionKeys = cardKeys.getSessionKeys(sessionContext);
 
-        byte[] macKey = _sessionKeys.get(KeyPurpose.ENC);
-        byte[] encKey = _sessionKeys.get(KeyPurpose.MAC);
+        byte[] encKey = _sessionKeys.get(KeyPurpose.ENC);
+        byte[] macKey = _sessionKeys.get(KeyPurpose.MAC);
         byte[] rmacKey = _sessionKeys.get(KeyPurpose.RMAC);
-        logger.info("Session keys: {}", _sessionKeys);
+        logger.info("Session keys: ENC={} MAC={} RMAC={}", HexUtils.bin2hex(_sessionKeys.get(KeyPurpose.ENC)), HexUtils.bin2hex(_sessionKeys.get(KeyPurpose.MAC)), HexUtils.bin2hex(_sessionKeys.get(KeyPurpose.RMAC)));
 
         // Verify card cryptogram
         byte[] my_card_cryptogram;
@@ -495,8 +495,8 @@ public class GPSession {
                 System.err.println("Read more from https://github.com/martinpaljak/GlobalPlatformPro/wiki/Keys");
             }
             giveStrictWarning("Card cryptogram invalid!" +
-                    "\nCard: " + HexUtils.bin2hex(card_cryptogram) +
-                    "\nHost: " + HexUtils.bin2hex(my_card_cryptogram) +
+                    "\nReceived: " + HexUtils.bin2hex(card_cryptogram) +
+                    "\nExpected: " + HexUtils.bin2hex(my_card_cryptogram) +
                     "\n!!! DO NOT RE-TRY THE SAME COMMAND/KEYS OR YOU MAY BRICK YOUR CARD !!!");
         } else {
             logger.debug("Verified card cryptogram: " + HexUtils.bin2hex(my_card_cryptogram));

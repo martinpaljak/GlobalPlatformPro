@@ -281,7 +281,7 @@ public class GPRegistryEntry {
 
         // TODO: implement GP 2.2 table 6.2
         // TODO: bitmasks as symbolics, KAT tests
-        // See GP 2.2.1 Tables 11-7, 11-8, 11-9
+        // See GP 2.2.1 11.1.2 Tables 11-7, 11-8, 11-9
         // See GP 2.1.1 Table 9-7 (matches 2.2 Table 11-7)
         public static Privileges fromBytes(byte[] data) throws GPDataException {
             if (data.length != 1 && data.length != 3) {
@@ -323,7 +323,7 @@ public class GPRegistryEntry {
                     p.privs.add(Privilege.AuthorizedManagement);
                 }
                 if ((b2 & 0x20) == 0x20) {
-                    p.privs.add(Privilege.TokenVerification); // XXX: mismatch in spec
+                    p.privs.add(Privilege.TokenVerification); // NOTE: mismatch in spec "Token Management"
                 }
                 if ((b2 & 0x10) == 0x10) {
                     p.privs.add(Privilege.GlobalDelete);
@@ -355,7 +355,7 @@ public class GPRegistryEntry {
                 }
                 if ((b3 & 0xF) != 0x0) {
                     // RFU
-                    throw new GPDataException("RFU bits set in privileges!");
+                    throw new GPDataException("RFU bits set in privileges: " + HexUtils.bin2hex(data));
                 }
             }
             return p;
@@ -393,7 +393,7 @@ public class GPRegistryEntry {
                 b1 |= 0xC1;
             }
 
-            // Fits in one byte
+            // Fits in one byte, for backwards compatibility
             if (p.isEmpty()) {
                 return new byte[]{(byte) (b1 & 0xFF)};
             }

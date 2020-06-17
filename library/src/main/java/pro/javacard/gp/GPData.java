@@ -326,46 +326,14 @@ public final class GPData {
 
     public static final class CPLC {
 
-        private HashMap<Field, byte[]> values = new HashMap<>();
+        private LinkedHashMap<Field, byte[]> values = new LinkedHashMap<>();
 
         private CPLC(byte[] data) {
             int offset = 0;
-            values.put(Field.ICFabricator, Arrays.copyOfRange(data, offset, offset + 2));
-            offset += 2;
-            values.put(Field.ICType, Arrays.copyOfRange(data, offset, offset + 2));
-            offset += 2;
-            values.put(Field.OperatingSystemID, Arrays.copyOfRange(data, offset, offset + 2));
-            offset += 2;
-            values.put(Field.OperatingSystemReleaseDate, Arrays.copyOfRange(data, offset, offset + 2));
-            offset += 2;
-            values.put(Field.OperatingSystemReleaseLevel, Arrays.copyOfRange(data, offset, offset + 2));
-            offset += 2;
-            values.put(Field.ICFabricationDate, Arrays.copyOfRange(data, offset, offset + 2));
-            offset += 2;
-            values.put(Field.ICSerialNumber, Arrays.copyOfRange(data, offset, offset + 4));
-            offset += 4;
-            values.put(Field.ICBatchIdentifier, Arrays.copyOfRange(data, offset, offset + 2));
-            offset += 2;
-            values.put(Field.ICModuleFabricator, Arrays.copyOfRange(data, offset, offset + 2));
-            offset += 2;
-            values.put(Field.ICModulePackagingDate, Arrays.copyOfRange(data, offset, offset + 2));
-            offset += 2;
-            values.put(Field.ICCManufacturer, Arrays.copyOfRange(data, offset, offset + 2));
-            offset += 2;
-            values.put(Field.ICEmbeddingDate, Arrays.copyOfRange(data, offset, offset + 2));
-            offset += 2;
-            values.put(Field.ICPrePersonalizer, Arrays.copyOfRange(data, offset, offset + 2));
-            offset += 2;
-            values.put(Field.ICPrePersonalizationEquipmentDate, Arrays.copyOfRange(data, offset, offset + 2));
-            offset += 2;
-            values.put(Field.ICPrePersonalizationEquipmentID, Arrays.copyOfRange(data, offset, offset + 4));
-            offset += 4;
-            values.put(Field.ICPersonalizer, Arrays.copyOfRange(data, offset, offset + 2));
-            offset += 2;
-            values.put(Field.ICPersonalizationDate, Arrays.copyOfRange(data, offset, offset + 2));
-            offset += 2;
-            values.put(Field.ICPersonalizationEquipmentID, Arrays.copyOfRange(data, offset, offset + 4));
-            offset += 4;
+            for (Field f: Field.values()) {
+                values.put(f, Arrays.copyOfRange(data, offset, offset + f.len));
+                offset += f.len;
+            }
         }
 
         public static CPLC fromBytes(byte[] data) throws GPDataException {
@@ -392,24 +360,29 @@ public final class GPData {
         }
 
         public enum Field {
-            ICFabricator,
-            ICType,
-            OperatingSystemID,
-            OperatingSystemReleaseDate,
-            OperatingSystemReleaseLevel,
-            ICFabricationDate,
-            ICSerialNumber,
-            ICBatchIdentifier,
-            ICModuleFabricator,
-            ICModulePackagingDate,
-            ICCManufacturer,
-            ICEmbeddingDate,
-            ICPrePersonalizer,
-            ICPrePersonalizationEquipmentDate,
-            ICPrePersonalizationEquipmentID,
-            ICPersonalizer,
-            ICPersonalizationDate,
-            ICPersonalizationEquipmentID
+            ICFabricator(2),
+            ICType(2),
+            OperatingSystemID(2),
+            OperatingSystemReleaseDate(2),
+            OperatingSystemReleaseLevel(2),
+            ICFabricationDate(2),
+            ICSerialNumber(4),
+            ICBatchIdentifier(2),
+            ICModuleFabricator(2),
+            ICModulePackagingDate(2),
+            ICCManufacturer(2),
+            ICEmbeddingDate(2),
+            ICPrePersonalizer(2),
+            ICPrePersonalizationEquipmentDate(2),
+            ICPrePersonalizationEquipmentID(4),
+            ICPersonalizer(2),
+            ICPersonalizationDate(2),
+            ICPersonalizationEquipmentID(4);
+
+            private final int len;
+            Field(int len) {
+                this.len = len;
+            }
         }
 
         public static String toDate(byte[] v) throws GPDataException {

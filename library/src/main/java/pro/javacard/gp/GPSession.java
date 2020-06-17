@@ -203,13 +203,6 @@ public class GPSession {
         }
     }
 
-    public static byte[] getLoadParams(boolean loadParam, byte[] code) {
-        return loadParam
-                ? new byte[]{(byte) 0xEF, 0x04, (byte) 0xC6, 0x02, (byte) ((code.length & 0xFF00) >> 8), (byte) (code.length & 0xFF)}
-                : new byte[0];
-    }
-
-
     public void setStrict(boolean strict) {
         this.strict = strict;
     }
@@ -561,28 +554,28 @@ public class GPSession {
     public void loadCapFile(CAPFile cap, AID targetDomain) throws IOException, GPException {
         if (targetDomain == null)
             targetDomain = sdAID;
-        loadCapFile(cap, targetDomain, false, false, null, null, LFDBH_SHA1);
+        loadCapFile(cap, targetDomain, false, null, null, LFDBH_SHA1);
     }
 
     public void loadCapFile(CAPFile cap, AID targetDomain, String hashFunction) throws IOException, GPException {
         if (targetDomain == null)
             targetDomain = sdAID;
-        loadCapFile(cap, targetDomain, false, false, null, null, hashFunction);
+        loadCapFile(cap, targetDomain, false, null, null, hashFunction);
     }
 
     public void loadCapFile(CAPFile cap, AID targetDomain, byte[] dap, String hash) throws IOException, GPException {
         if (targetDomain == null)
             targetDomain = sdAID;
-        loadCapFile(cap, targetDomain, false, false, targetDomain, dap, hash);
+        loadCapFile(cap, targetDomain, false, targetDomain, dap, hash);
     }
 
     public void loadCapFile(CAPFile cap, AID targetDomain, AID dapdomain, byte[] dap, String hashFunction) throws IOException, GPException {
         if (targetDomain == null)
             targetDomain = sdAID;
-        loadCapFile(cap, targetDomain, false, false, dapdomain, dap, hashFunction);
+        loadCapFile(cap, targetDomain, false, dapdomain, dap, hashFunction);
     }
 
-    private void loadCapFile(CAPFile cap, AID targetDomain, boolean includeDebug, boolean loadParam, AID dapDomain, byte[] dap, String hashFunction)
+    private void loadCapFile(CAPFile cap, AID targetDomain, boolean includeDebug, AID dapDomain, byte[] dap, String hashFunction)
             throws GPException, IOException {
 
         if (getRegistry().allAIDs().contains(cap.getPackageAID())) {
@@ -593,8 +586,7 @@ public class GPSession {
         boolean isHashRequired = dap != null || !(tokenizer instanceof DMTokenizer.NULLTokenizer);
         byte[] hash = isHashRequired ? cap.getLoadFileDataHash(hashFunction) : new byte[0];
         byte[] code = cap.getCode();
-        // FIXME: parameters are optional for load
-        byte[] loadParams = getLoadParams(loadParam, code);
+        byte[] loadParams = new byte[0];
 
         ByteArrayOutputStream bo = new ByteArrayOutputStream();
 

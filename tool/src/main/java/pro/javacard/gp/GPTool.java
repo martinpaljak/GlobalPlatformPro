@@ -49,12 +49,16 @@ import java.util.stream.Collectors;
 // Does the CLI parameter parsing and associated execution
 public final class GPTool extends GPCommandLineInterface {
 
-    private boolean isVerbose = false;
+    private static boolean isVerbose = false;
 
     // To keep basic gp.jar together with apdu4j app, this is just a minimalist wrapper
     public static void main(String[] argv) {
         try {
             OptionSet args = parseArguments(argv);
+            if (isVerbose) {
+                System.out.println("# " + String.join(" ", System.getenv().entrySet().stream().filter(e -> e.getKey().startsWith("GP_")).map(e -> String.format("%s=%s", e.getKey(), e.getValue())).collect(Collectors.toList())));
+                System.out.println("# " + String.join(" ", argv));
+            }
             TerminalFactory tf = TerminalManager.getTerminalFactory();
             String reader = (String) args.valueOf(OPT_READER);
             if (reader == null)
@@ -73,6 +77,7 @@ public final class GPTool extends GPCommandLineInterface {
         }
     }
 
+    // For running in apdu4j mode
     public int run(BIBO bibo, String[] argv) {
         try {
             OptionSet args = parseArguments(argv);

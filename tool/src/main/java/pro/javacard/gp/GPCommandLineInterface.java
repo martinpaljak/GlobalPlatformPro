@@ -106,8 +106,9 @@ abstract class GPCommandLineInterface {
     protected final static String OPT_ACR_DELETE = "acr-delete";
     protected final static String OPT_ACR_RULE = "acr-rule";
     protected final static String OPT_ACR_CERT_HASH = "acr-hash";
-    protected final static String OPT_TOKEN_KEY = "token-key";
-    // TODO - include token "as is" with -token
+    // Delegated management
+    protected final static String OPT_DM_KEY = "dm-key";
+    protected final static String OPT_DM_TOKEN = "dm-token";
 
     protected static OptionSet parseArguments(String[] argv) throws IOException {
         OptionSet args = null;
@@ -159,7 +160,8 @@ abstract class GPCommandLineInterface {
         parser.accepts(OPT_STORE_DATA, "STORE DATA blob").withRequiredArg().describedAs("data");
         parser.accepts(OPT_STORE_DATA_CHUNK, "Send STORE DATA commands").withRequiredArg().describedAs("data");
 
-        parser.accepts(OPT_TOKEN_KEY, "Path to private key used in Delegated Management token generation").withRequiredArg().describedAs("path");
+        parser.accepts(OPT_DM_KEY, "Delegated Management key").withRequiredArg().describedAs("path or hex");
+        parser.accepts(OPT_DM_TOKEN, "Delegated Management token").withRequiredArg().describedAs("hex");
 
         parser.accepts(OPT_MAKE_DEFAULT, "Make AID the default").withRequiredArg().describedAs("AID");
         parser.accepts(OPT_RENAME_ISD, "Rename ISD").withRequiredArg().describedAs("new AID");

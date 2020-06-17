@@ -91,12 +91,23 @@ public class PlaintextKeys extends GPCardKeys {
         return fromEnvironment(System.getenv(), "GP_KEY");
     }
 
+    static void validKey(byte[] k) {
+        if (k.length != 16 && k.length != 24 && k.length != 32) {
+            throw new IllegalArgumentException(String.format("Invalid key length %d: %s", k.length, HexUtils.bin2hex(k)));
+        }
+    }
+
     public static Optional<PlaintextKeys> fromStrings(String enc, String mac, String dek, String mk, String div, String kdd, String ver) {
         if (enc != null && mac != null && dek != null) {
             logger.debug("Using three individual keys");
             byte[] encbytes = HexUtils.stringToBin(enc);
             byte[] macbytes = HexUtils.stringToBin(mac);
             byte[] dekbytes = HexUtils.stringToBin(dek);
+
+            validKey(encbytes);
+            validKey(macbytes);
+            validKey(dekbytes);
+
             PlaintextKeys keys = PlaintextKeys.fromKeys(encbytes, macbytes, dekbytes);
             if (ver != null) {
                 keys.setVersion(GPUtils.intValue(ver));
@@ -110,6 +121,7 @@ public class PlaintextKeys extends GPCardKeys {
         } else if (mk != null) {
             logger.info("Using a master key");
             byte[] master = HexUtils.stringToBin(mk);
+            validKey(master);
             PlaintextKeys keys = PlaintextKeys.fromMasterKey(master);
             if (div != null) {
                 Optional<Diversification> d = Optional.ofNullable(Diversification.lookup(div));
@@ -247,7 +259,7 @@ public class PlaintextKeys extends GPCardKeys {
 
     @Override
     public GPKeyInfo getKeyInfo() {
-        // all keys are of smae length
+        // all keys are of same length
         byte[] aKey = cardKeys.get(KeyPurpose.ENC);
         final GPKeyInfo.GPKey type;
         if (aKey.length > 16 || scp == GPSecureChannel.SCP03)
@@ -274,14 +286,15 @@ public class PlaintextKeys extends GPCardKeys {
         if (!(key instanceof PlaintextKeys))
             throw new IllegalArgumentException(getClass().getName() + " can only handle " + getClass().getName());
         PlaintextKeys other = (PlaintextKeys) key;
-        logger.debug("Encrypting {} value {} with {}", p, HexUtils.bin2hex(other.cardKeys.get(p)), HexUtils.bin2hex(cardKeys.get(KeyPurpose.DEK)));
         switch (scp) {
             case SCP01:
+                logger.debug("Encrypting {} value (KCV={}) with DEK (KCV={})", p, HexUtils.bin2hex(other.kcv(p)), HexUtils.bin2hex(kcv(KeyPurpose.DEK)));
                 return GPCrypto.dek_encrypt_des(cardKeys.get(KeyPurpose.DEK), other.cardKeys.get(p));
             case SCP02:
-                logger.debug("Encrypting {} value {} with {}", p, HexUtils.bin2hex(other.cardKeys.get(p)), HexUtils.bin2hex(sessionKeys.get(KeyPurpose.DEK)));
+                logger.debug("Encrypting {} value (KCV={}) with S-DEK (KCV={})", p, HexUtils.bin2hex(other.kcv(p)), HexUtils.bin2hex(GPCrypto.kcv_3des(sessionKeys.get(KeyPurpose.DEK))));
                 return GPCrypto.dek_encrypt_des(sessionKeys.get(KeyPurpose.DEK), other.cardKeys.get(p));
             case SCP03:
+                logger.debug("Encrypting {} value (KCV={}) with DEK (KCV={})", p, HexUtils.bin2hex(other.kcv(p)), HexUtils.bin2hex(kcv(KeyPurpose.DEK)));
                 byte[] otherkey = other.cardKeys.get(p);
                 // Pad with random
                 int n = otherkey.length % 16 + 1;

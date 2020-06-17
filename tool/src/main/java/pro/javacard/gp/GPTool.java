@@ -68,6 +68,7 @@ public final class GPTool extends GPCommandLineInterface {
             System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "trace");
         }
     }
+
     // To keep basic gp.jar together with apdu4j app, this is just a minimalist wrapper
     public static void main(String[] argv) {
         try {
@@ -173,10 +174,13 @@ public final class GPTool extends GPCommandLineInterface {
                 gp = GPSession.discover(channel);
             }
 
-            if (args.has(OPT_TOKEN_KEY)) {
-                gp.setDMTokenGenerator(new DMTokenGenerator(getRSAPrivateKey(args.valueOf(OPT_TOKEN_KEY).toString())));
-            } else {
-                gp.setDMTokenGenerator(new DMTokenGenerator(null));
+            // Delegated management
+            if (args.has(OPT_DM_KEY)) {
+                RSAPrivateKey pkey = (RSAPrivateKey) GPCrypto.pem2PrivateKey(Files.newInputStream(Paths.get(args.valueOf(OPT_DM_KEY).toString())));
+                gp.setTokenizer(DMTokenizer.forPrivateKey(pkey));
+            } else if (args.has(OPT_DM_TOKEN)) {
+                byte[] token = HexUtils.stringToBin(args.valueOf(OPT_DM_TOKEN).toString());
+                gp.setTokenizer(DMTokenizer.forToken(token));
             }
 
             // Don't do sanity checks, just run asked commands

@@ -106,16 +106,16 @@ public final class GPTool extends GPCommandLineInterface {
             if (args.has(OPT_VERSION) || args.has(OPT_VERBOSE) || args.has(OPT_DEBUG) || args.has(OPT_INFO)) {
                 String version = GPSession.getVersion();
                 // Append host information
-                version += "\nRunning on " + System.getProperty("os.name");
+                version += "\n# Running on " + System.getProperty("os.name");
                 version += " " + System.getProperty("os.version");
                 version += " " + System.getProperty("os.arch");
                 version += ", Java " + System.getProperty("java.version");
                 version += " by " + System.getProperty("java.vendor");
-                System.out.println("GlobalPlatformPro " + version);
+                System.out.println("# GlobalPlatformPro " + version);
 
                 // Test for unlimited crypto
                 if (Cipher.getMaxAllowedKeyLength("AES") == 128) {
-                    System.out.println("Unlimited crypto policy is NOT installed!");
+                    System.err.println("Unlimited crypto policy is NOT installed!");
                 }
             }
 

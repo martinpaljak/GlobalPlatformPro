@@ -156,7 +156,7 @@ abstract class GPCommandLineInterface {
         parser.accepts(OPT_STORE_DATA_CHUNK, "Send STORE DATA commands").withRequiredArg().describedAs("data");
 
         parser.accepts(OPT_DM_KEY, "Delegated Management key").withRequiredArg().describedAs("path or hex");
-        parser.accepts(OPT_DM_TOKEN, "Delegated Management token").withRequiredArg().describedAs("hex");
+        parser.accepts(OPT_DM_TOKEN, "Delegated Management token").availableUnless(OPT_DM_KEY).withRequiredArg().describedAs("hex");
 
         parser.accepts(OPT_MAKE_DEFAULT, "Make AID the default").withRequiredArg().describedAs("AID");
         parser.accepts(OPT_RENAME_ISD, "Rename ISD").withRequiredArg().describedAs("new AID");
@@ -168,15 +168,16 @@ abstract class GPCommandLineInterface {
         parser.accepts(OPT_APPLET, "Applet AID").withRequiredArg().describedAs("AID");
         parser.acceptsAll(Arrays.asList(OPT_PACKAGE, "pkg"), "Package AID").withRequiredArg().describedAs("AID");
 
-        // Key options
+        // Key options. Would like to have "mutually required" here, but not possible
+        parser.accepts(OPT_KEY_ENC, "Specify card ENC key").withRequiredArg().describedAs("key");
+        parser.accepts(OPT_KEY_MAC, "Specify card MAC key").withRequiredArg().describedAs("key");
+        parser.accepts(OPT_KEY_DEK, "Specify card DEK key").withRequiredArg().describedAs("key");
+
         parser.accepts(OPT_KEY, "Specify master key").withRequiredArg().describedAs("key");
         parser.accepts(OPT_KDF, "Use KDF with master key").withRequiredArg().describedAs("kdf");
 
         parser.accepts(OPT_KCV, "Specify master key check value").withRequiredArg().describedAs("KCV");
 
-        parser.accepts(OPT_KEY_MAC, "Specify card MAC key").withRequiredArg().describedAs("key");
-        parser.accepts(OPT_KEY_ENC, "Specify card ENC key").withRequiredArg().describedAs("key");
-        parser.accepts(OPT_KEY_DEK, "Specify card DEK key").withRequiredArg().describedAs("key");
 
         parser.accepts(OPT_EMV, "Use EMV KDF");
         parser.accepts(OPT_VISA2, "Use VISA2 KDF");
@@ -202,7 +203,7 @@ abstract class GPCommandLineInterface {
         parser.accepts(OPT_BS, "maximum APDU payload size").withRequiredArg().ofType(Integer.class).describedAs("bytes");
         parser.accepts(OPT_OP201, "Enable OpenPlatform 2.0.1 mode");
 
-        parser.accepts(OPT_SDAID, "ISD AID").withRequiredArg().describedAs("AID");
+        parser.accepts(OPT_SDAID, "ISD AID").availableUnless(OPT_CONNECT).withRequiredArg().describedAs("AID");
 
         // Parse arguments
         try {

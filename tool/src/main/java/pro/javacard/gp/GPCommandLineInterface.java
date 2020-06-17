@@ -35,6 +35,7 @@ abstract class GPCommandLineInterface {
     protected final static String OPT_APPLET = "applet"; // can always be shortened, so -app is valid
     protected final static String OPT_BS = "bs";
     protected final static String OPT_CAP = "cap";
+    protected final static String OPT_CONNECT = "connect";
     protected final static String OPT_CREATE = "create";
     protected final static String OPT_DAP_DOMAIN = "dap-domain";
     protected final static String OPT_DEBUG = "debug";
@@ -110,6 +111,7 @@ abstract class GPCommandLineInterface {
         // Generic options
         parser.acceptsAll(Arrays.asList("V", OPT_VERSION), "Show information about the program");
         parser.acceptsAll(Arrays.asList("h", "?", "help"), "Shows this help").forHelp();
+        parser.acceptsAll(Arrays.asList("c", OPT_CONNECT), "Connect to app/domain").withRequiredArg().describedAs("AID");
         parser.acceptsAll(Arrays.asList("d", OPT_DEBUG), "Show PC/SC and APDU trace");
         parser.acceptsAll(Arrays.asList("v", OPT_VERBOSE), "Be verbose about operations");
         parser.acceptsAll(Arrays.asList("r", OPT_READER), "Use specific reader").withRequiredArg();

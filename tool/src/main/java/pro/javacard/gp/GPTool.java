@@ -783,18 +783,6 @@ public final class GPTool extends GPCommandLineInterface {
         }
     }
 
-    @Deprecated
-    private static PrivateKey getRSAPrivateKey(String path) throws IOException {
-        try (FileInputStream fin = new FileInputStream(new File(path))) {
-            PrivateKey key = GPCrypto.pem2PrivateKey(fin);
-            if (key instanceof RSAPrivateKey) {
-                return key;
-            } else {
-                throw new RuntimeException("Supplied key at path is not instance of RSAPrivateKey");
-            }
-        }
-    }
-
     // FIXME: get rid
     private static Privileges getInstPrivs(OptionSet args) {
         Privileges privs = new Privileges();
@@ -840,20 +828,6 @@ public final class GPTool extends GPCommandLineInterface {
         } else {
             return new byte[0];
         }
-    }
-
-    // TODO: apdu4j has this covered
-    private static boolean ignoreReader(String name) {
-        String ignore = System.getenv("GP_READER_IGNORE");
-        if (ignore != null) {
-            String[] names = ignore.toLowerCase().split(";");
-            for (String n : names) {
-                if (name.toLowerCase().contains(n)) {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 
     private static List<CAPFile> getCapFileList(OptionSet args, String arg) {

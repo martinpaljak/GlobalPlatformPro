@@ -46,12 +46,17 @@ public abstract class DMTokenizer {
                 throw new IllegalArgumentException("No DM token for APDU: " + apdu);
 
             byte[] token = getToken(apdu);
-            // Handle DELETE and prefix with tag
-            if (apdu.getINS() == 0xE4 && token.length > 0)
-                data.write(0x9E);
 
-            data.write(token.length);
-            data.write(token);
+            if (token.length > 0) {
+                // Handle DELETE and prefix with tag
+                if (apdu.getINS() == 0xE4)
+                    data.write(0x9E);
+                data.write(token.length);
+                data.write(token);
+            } else {
+                if (apdu.getINS() != 0xE4)
+                    data.write(0); // No token in LV chain and not tag in TLV case
+            }
             return new CommandAPDU(apdu.getCLA(), apdu.getINS(), apdu.getP1(), apdu.getP2(), data.toByteArray()); // FIXME: Le handling
         } catch (IOException e) {
             throw new GPException("Could not tokenize APDU: " + e.getMessage(), e);

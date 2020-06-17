@@ -167,7 +167,10 @@ public final class GPTool extends GPCommandLineInterface {
             // GlobalPlatform specific
             final GPSession gp;
             if (args.has(OPT_SDAID)) {
+                System.err.println("# -sdaid is deprecated, use -c/--connect <AID>");
                 gp = GPSession.connect(channel, AID.fromString(args.valueOf(OPT_SDAID)));
+            } else if (args.has(OPT_CONNECT)) {
+                gp = GPSession.connect(channel, AID.fromString(args.valueOf(OPT_CONNECT)));
             } else if (env.containsKey("GP_AID")) {
                 gp = GPSession.connect(channel, AID.fromString(env.get("GP_AID")));
             } else {
@@ -789,7 +792,7 @@ public final class GPTool extends GPCommandLineInterface {
     }
 
     private static boolean needsAuthentication(OptionSet args) {
-        String[] yes = new String[]{OPT_LIST, OPT_LOAD, OPT_INSTALL, OPT_DELETE, OPT_DELETE_KEY, OPT_CREATE,
+        String[] yes = new String[]{OPT_CONNECT, OPT_LIST, OPT_LOAD, OPT_INSTALL, OPT_DELETE, OPT_DELETE_KEY, OPT_CREATE,
                 OPT_LOCK, OPT_UNLOCK, OPT_LOCK_ENC, OPT_LOCK_MAC, OPT_LOCK_DEK, OPT_MAKE_DEFAULT,
                 OPT_UNINSTALL, OPT_SECURE_APDU, OPT_DOMAIN, OPT_LOCK_CARD, OPT_UNLOCK_CARD, OPT_LOCK_APPLET, OPT_UNLOCK_APPLET,
                 OPT_STORE_DATA, OPT_STORE_DATA_CHUNK, OPT_INITIALIZE_CARD, OPT_SECURE_CARD, OPT_RENAME_ISD, OPT_SET_PERSO, OPT_SET_PRE_PERSO, OPT_MOVE,

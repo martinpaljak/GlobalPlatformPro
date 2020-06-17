@@ -51,10 +51,29 @@ public final class GPTool extends GPCommandLineInterface {
 
     private static boolean isVerbose = false;
 
+    static void setupLogging(OptionSet args) {
+        // Set up slf4j simple in a way that pleases us
+        System.setProperty("org.slf4j.simpleLogger.showThreadName", "false");
+        System.setProperty("org.slf4j.simpleLogger.levelInBrackets", "true");
+        System.setProperty("org.slf4j.simpleLogger.showShortLogName", "true");
+
+        if (args.has(OPT_VERBOSE)) {
+            System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "debug");
+            isVerbose = true;
+        } else {
+            System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "warn");
+        }
+
+        if (args.has(OPT_DEBUG)) {
+            System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "trace");
+        }
+    }
     // To keep basic gp.jar together with apdu4j app, this is just a minimalist wrapper
     public static void main(String[] argv) {
         try {
             OptionSet args = parseArguments(argv);
+            setupLogging(args);
+
             if (isVerbose) {
                 System.out.println("# " + String.join(" ", System.getenv().entrySet().stream().filter(e -> e.getKey().startsWith("GP_")).map(e -> String.format("%s=%s", e.getKey(), e.getValue())).collect(Collectors.toList())));
                 System.out.println("# " + String.join(" ", argv));
@@ -81,22 +100,7 @@ public final class GPTool extends GPCommandLineInterface {
     public int run(BIBO bibo, String[] argv) {
         try {
             OptionSet args = parseArguments(argv);
-
-            // Set up slf4j simple in a way that pleases us
-            System.setProperty("org.slf4j.simpleLogger.showThreadName", "false");
-            System.setProperty("org.slf4j.simpleLogger.levelInBrackets", "true");
-            System.setProperty("org.slf4j.simpleLogger.showShortLogName", "true");
-
-            if (args.has(OPT_VERBOSE)) {
-                System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "debug");
-                isVerbose = true;
-            } else {
-                System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "warn");
-            }
-
-            if (args.has(OPT_DEBUG)) {
-                System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "trace");
-            }
+            setupLogging(args);
 
             if (args.has(OPT_VERSION) || args.has(OPT_VERBOSE) || args.has(OPT_DEBUG) || args.has(OPT_INFO)) {
                 String version = GPSession.getVersion();

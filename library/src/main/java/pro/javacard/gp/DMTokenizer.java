@@ -30,6 +30,7 @@ import java.security.GeneralSecurityException;
 import java.security.Signature;
 import java.security.interfaces.RSAPrivateKey;
 
+// NOTE: Thanks goes to Gregor Johannson for initial implementation
 public abstract class DMTokenizer {
     private static final Logger logger = LoggerFactory.getLogger(DMTokenizer.class);
 
@@ -103,7 +104,7 @@ public abstract class DMTokenizer {
                 signer.initSign(privateKey);
                 signer.update(dtbs(apdu));
                 byte[] signature = signer.sign();
-                logger.info("Generated DM token: {}", HexUtils.bin2hex(signature));
+                logger.debug("Generated DM token: {}", HexUtils.bin2hex(signature));
                 return signature;
             } catch (GeneralSecurityException e) {
                 throw new GPException("Can not calculate DM token: " + e.getMessage(), e);

@@ -98,14 +98,7 @@ abstract class GPCommandLineInterface {
     protected final static String OPT_VERBOSE = "verbose";
     protected final static String OPT_VERSION = "version";
     protected final static String OPT_VISA2 = "visa2";
-    // TODO: extract SEAC to a separate utility
-    protected final static String OPT_ACR_LIST = "acr-list";
-    protected final static String OPT_ACR_LIST_ARAM = "acr-list-aram";
-    protected final static String OPT_ACR_ADD = "acr-add";
-    protected final static String OPT_ACR_AID = "acr-aid";
-    protected final static String OPT_ACR_DELETE = "acr-delete";
-    protected final static String OPT_ACR_RULE = "acr-rule";
-    protected final static String OPT_ACR_CERT_HASH = "acr-hash";
+
     // Delegated management
     protected final static String OPT_DM_KEY = "dm-key";
     protected final static String OPT_DM_TOKEN = "dm-token";
@@ -201,15 +194,6 @@ abstract class GPCommandLineInterface {
         parser.accepts(OPT_LOCK_DEK, "Set new DEK key").withRequiredArg().describedAs("key");
 
         parser.accepts(OPT_UNLOCK, "Set default key for card key");
-
-        // GP SE access rules
-        parser.accepts(OPT_ACR_AID, "ARA-C applet AID").withRequiredArg().describedAs("AID");
-        parser.accepts(OPT_ACR_LIST, "List access rules");
-        parser.accepts(OPT_ACR_LIST_ARAM, "List access rules from ARA-M");
-        parser.accepts(OPT_ACR_ADD, "Add an access rule");
-        parser.accepts(OPT_ACR_DELETE, "Delete an access rule");
-        parser.accepts(OPT_ACR_RULE, "Access control rule (can be 0x00(NEVER),0x01(ALWAYS) or an APDU filter").withRequiredArg();
-        parser.accepts(OPT_ACR_CERT_HASH, "Certificate hash").withRequiredArg().describedAs("SHA1");
 
         // General GP options
         parser.accepts(OPT_SC_MODE, "Secure channel to use (mac/enc/clr)").withRequiredArg().describedAs("mac/enc/clr");

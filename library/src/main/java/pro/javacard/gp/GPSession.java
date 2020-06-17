@@ -541,7 +541,7 @@ public class GPSession {
         try {
             GPUtils.trace_tlv(command.getData(), logger);
         } catch (Exception e) {
-            logger.error("Invalid TLV: {}" + HexUtils.bin2hex(command.getData()));
+            logger.error("Invalid TLV: {}", HexUtils.bin2hex(command.getData()));
         }
         return transmit(command);
     }

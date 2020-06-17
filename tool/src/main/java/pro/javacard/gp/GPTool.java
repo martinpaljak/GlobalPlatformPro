@@ -752,7 +752,7 @@ public final class GPTool extends GPCommandLineInterface {
     static Diversification getDiversificationOrFail(OptionSet args, String v) {
         Diversification kdf = Diversification.lookup(args.valueOf(v).toString().trim());
         if (kdf == null)
-            fail("Invalid KDF: " + args.valueOf(v) + "\nvalid values: " + Arrays.asList(Diversification.values()).stream().map(i -> i.toString()).collect(Collectors.joining("\n")));
+            fail("Invalid KDF: " + args.valueOf(v) + "\nValid values are: " + Arrays.asList(Diversification.values()).stream().map(i -> i.toString()).collect(Collectors.joining(", ")));
         return kdf;
     }
 

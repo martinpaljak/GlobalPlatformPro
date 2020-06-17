@@ -3,7 +3,7 @@
  *
  * Copyright (C) 2009 Wojciech Mostowski, woj@cs.ru.nl
  * Copyright (C) 2009 Francois Kooman, F.Kooman@student.science.ru.nl
- * Copyright (C) 2014-2017 Martin Paljak, martin@martinpaljak.net
+ * Copyright (C) 2014-present Martin Paljak, martin@martinpaljak.net
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -63,17 +63,6 @@ public class GPSession {
     private static final Logger logger = LoggerFactory.getLogger(GPSession.class);
 
     private static final String LFDBH_SHA1 = "SHA1";
-    public static final int SCP_ANY = 0;
-    public static final int SCP_01_05 = 1;
-    public static final int SCP_01_15 = 2;
-    public static final int SCP_02_04 = 3;
-    public static final int SCP_02_05 = 4;
-    public static final int SCP_02_0A = 5;
-    public static final int SCP_02_0B = 6;
-    public static final int SCP_02_14 = 7;
-    public static final int SCP_02_15 = 8;
-    public static final int SCP_02_1A = 9;
-    public static final int SCP_02_1B = 10;
     public static final EnumSet<APDUMode> defaultMode = EnumSet.of(APDUMode.MAC);
     // Implementation details
     public static final byte CLA_GP = (byte) 0x80;
@@ -101,7 +90,7 @@ public class GPSession {
     // (I)SD AID
     private AID sdAID;
     GPSecureChannel scpVersion;
-    private int scpKeyVersion = 0;
+    private int scpKeyVersion = 0; // will be set to the key version reported by card
 
     private int blockSize = 255;
     private GPCardKeys cardKeys = null;
@@ -109,7 +98,7 @@ public class GPSession {
     private SecureChannelWrapper wrapper = null;
     private APDUBIBO channel;
     private GPRegistry registry = null;
-    private DMTokenGenerator tokenizer = new DMTokenGenerator(null);
+    private DMTokenizer tokenizer = DMTokenizer.none();
     private boolean dirty = true; // True if registry is dirty.
 
     /*
@@ -233,8 +222,8 @@ public class GPSession {
         this.spec = spec;
     }
 
-    public void setDMTokenGenerator(DMTokenGenerator tokenGenerator) {
-        this.tokenizer = tokenGenerator;
+    public void setTokenizer(DMTokenizer tokenizer) {
+        this.tokenizer = tokenizer;
     }
 
     public AID getAID() {
@@ -564,14 +553,8 @@ public class GPSession {
         return transmit(command);
     }
 
-    private CommandAPDU tokenize(CommandAPDU command) throws IOException {
-        try {
-            command = tokenizer.applyToken(command);
-            return command;
-        } catch (GeneralSecurityException e) {
-            logger.error("Can not apply token: " + e.getMessage(), e);
-            throw new GPException("Can not apply DM token", e);
-        }
+    private CommandAPDU tokenize(CommandAPDU command) {
+        return tokenizer.tokenize(command);
     }
 
     // TODO: clean up this mess
@@ -607,7 +590,7 @@ public class GPSession {
         }
 
         // FIXME: hash type handling needs to be sensible.
-        boolean isHashRequired = dap != null || tokenizer.hasKey();
+        boolean isHashRequired = dap != null || !(tokenizer instanceof DMTokenizer.NULLTokenizer);
         byte[] hash = isHashRequired ? cap.getLoadFileDataHash(hashFunction) : new byte[0];
         byte[] code = cap.getCode();
         // FIXME: parameters are optional for load

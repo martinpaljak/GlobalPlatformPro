@@ -29,7 +29,7 @@ Building JavaCard applets is equally pleasing with [ant-javacard](https://github
 ```shell
 git clone https://github.com/martinpaljak/GlobalPlatformPro
 cd GlobalPlatformPro
-mvn package
+./mvnw package
 ```
 
 ## NEWS
@@ -109,7 +109,6 @@ Command line samples assume default test keys of `40..4F`. If you need a custom 
 ##### Installation options
  * `-default` - makes the applet default selected
  * `-terminate` - gives card lock and card terminate privileges to the applet
- * `-sdomain` - specifies security domain privilege
  * `-params <hex>` - installation parameters for applet
 
 #### Lock / unlock usage
@@ -132,27 +131,6 @@ Command line samples assume default test keys of `40..4F`. If you need a custom 
 
        gp -visa2 -key 47454D5850524553534F53414D504C45 -unlock -mode clr
 
-#### Access Control
-
-SE Access Control commands used to list, add & delete access rules. 
-
- * list access control rules
-
-       gp -acr-list
-
-The following command `-acr-add` & `-acr-delete` require authentication (install for personalization) : 
-
- * add an access control rule to **authorize** (`-acr-rule 01`) apdu access for application signed with certificate hash `53AC1FC8DB794570D0CF2565DBFBE98C266AE07F` for applet with AID `D2760001240102000000000000000000` 
-
-       gp -acr-add -acr-rule 01 -app D2760001240102000000000000000000 -acr-hash 53AC1FC8DB794570D0CF2565DBFBE98C266AE07F
-
- * add an access control rule to **deny** (`-acr-rule 00`) apdu access for application signed with certificate hash `53AC1FC8DB794570D0CF2565DBFBE98C266AE07F` for applet with AID `D2760001240102000000000000000000` 
-
-       gp -acr-add -acr-rule 00 -app D2760001240102000000000000000000 -acr-hash 53AC1FC8DB794570D0CF2565DBFBE98C266AE07F
-
- * delete all access control rule for applet with AID `D2760001240102000000000000000000` 
-
-       gp -acr-delete -app D2760001240102000000000000000000
 
 #### Debugging options
 

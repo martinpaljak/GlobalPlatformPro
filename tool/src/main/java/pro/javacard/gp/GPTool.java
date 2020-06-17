@@ -257,11 +257,6 @@ public final class GPTool extends GPCommandLineInterface {
                 gp.setBlockSize((int) args.valueOf(OPT_BS));
             }
 
-            // list access rules from ARA-M TODO: move to separate util
-            if (args.has(OPT_ACR_LIST_ARAM)) {
-                SEAccessControlUtility.acrList(gp);
-            }
-
             // Authenticate, only if needed
             if (needsAuthentication(args)) {
                 EnumSet<APDUMode> mode = GPSession.defaultMode.clone();
@@ -282,14 +277,6 @@ public final class GPTool extends GPCommandLineInterface {
                         CommandAPDU c = new CommandAPDU(HexUtils.stringToBin((String) s));
                         gp.transmit(c);
                     }
-                }
-
-                // list access rules from ARA-* via STORE DATA
-                if (args.has(OPT_ACR_LIST)) {
-                    SEAccessControl.AcrListFetcher fetcher = new SEAccessControl.AcrListFetcher(gp);
-                    byte[] r = fetcher.get(args.has(OPT_ACR_AID) ? AID.fromString(args.valueOf(OPT_ACR_AID)) : null);
-                    SEAccessControl.AcrListResponse resp = SEAccessControl.AcrListResponse.fromBytes(r);
-                    SEAccessControl.printList(resp.acrList);
                 }
 
                 // --delete <aid> or --delete --default
@@ -554,46 +541,6 @@ public final class GPTool extends GPCommandLineInterface {
                     }
                 }
 
-                if (args.has(OPT_ACR_ADD)) {
-                    AID aid = null;
-                    byte[] hash = null;
-                    AID araAid = SEAccessControl.ACR_AID;
-                    if (args.has(OPT_APPLET))
-                        aid = AID.fromString(args.valueOf(OPT_APPLET));
-                    if (args.has(OPT_ACR_CERT_HASH))
-                        hash = HexUtils.stringToBin((String) args.valueOf(OPT_ACR_CERT_HASH));
-                    if (args.has(OPT_ACR_AID))
-                        araAid = AID.fromString((String) args.valueOf(OPT_ACR_AID));
-                    if (!args.has(OPT_ACR_RULE)) {
-                        System.err.println("Must specify an access rule with -" + OPT_ACR_RULE + " (00, 01 or an apdu filter)");
-                    }
-                    if (hash != null && hash.length != 20) {
-                        fail("certificate hash must be 20 bytes");
-                    }
-                    SEAccessControlUtility.acrAdd(gp, araAid, aid, hash, HexUtils.stringToBin((String) args.valueOf(OPT_ACR_RULE)));
-                }
-
-                // --acr-delete
-                if (args.has(OPT_ACR_DELETE)) {
-                    AID araAid = SEAccessControl.ACR_AID;
-                    if (args.has(OPT_ACR_AID))
-                        araAid = AID.fromString(args.valueOf(OPT_ACR_AID));
-
-                    AID aid = null;
-                    if (args.has(OPT_APPLET)) {
-                        aid = AID.fromString(OPT_APPLET);
-                    }
-
-                    byte[] hash = null;
-                    if (args.has(OPT_ACR_CERT_HASH)) {
-                        hash = HexUtils.stringToBin((String) args.valueOf(OPT_ACR_CERT_HASH));
-                        if (hash.length != 20)
-                            fail("certificate hash must be 20 bytes");
-                    }
-
-                    SEAccessControlUtility.acrDelete(gp, araAid, aid, hash);
-                }
-
                 // --lock-card
                 if (args.has(OPT_LOCK_CARD)) {
                     gp.setCardStatus(GPData.lockedStatus);
@@ -843,10 +790,10 @@ public final class GPTool extends GPCommandLineInterface {
 
     private static boolean needsAuthentication(OptionSet args) {
         String[] yes = new String[]{OPT_LIST, OPT_LOAD, OPT_INSTALL, OPT_DELETE, OPT_DELETE_KEY, OPT_CREATE,
-                OPT_ACR_ADD, OPT_ACR_DELETE, OPT_LOCK, OPT_UNLOCK, OPT_LOCK_ENC, OPT_LOCK_MAC, OPT_LOCK_DEK, OPT_MAKE_DEFAULT,
+                OPT_LOCK, OPT_UNLOCK, OPT_LOCK_ENC, OPT_LOCK_MAC, OPT_LOCK_DEK, OPT_MAKE_DEFAULT,
                 OPT_UNINSTALL, OPT_SECURE_APDU, OPT_DOMAIN, OPT_LOCK_CARD, OPT_UNLOCK_CARD, OPT_LOCK_APPLET, OPT_UNLOCK_APPLET,
                 OPT_STORE_DATA, OPT_STORE_DATA_CHUNK, OPT_INITIALIZE_CARD, OPT_SECURE_CARD, OPT_RENAME_ISD, OPT_SET_PERSO, OPT_SET_PRE_PERSO, OPT_MOVE,
-                OPT_PUT_KEY, OPT_REPLACE_KEY, OPT_ACR_AID, OPT_ACR_LIST};
+                OPT_PUT_KEY, OPT_REPLACE_KEY};
 
         return Arrays.stream(yes).anyMatch(str -> args.has(str));
     }

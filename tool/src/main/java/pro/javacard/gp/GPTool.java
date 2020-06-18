@@ -23,6 +23,7 @@ package pro.javacard.gp;
 import apdu4j.*;
 import apdu4j.terminals.LoggingCardTerminal;
 import joptsimple.OptionSet;
+import joptsimple.OptionSpec;
 import pro.javacard.AID;
 import pro.javacard.CAPFile;
 import pro.javacard.gp.GPRegistryEntry.Privilege;
@@ -40,7 +41,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.util.*;
@@ -80,7 +80,7 @@ public final class GPTool extends GPCommandLineInterface {
                 System.out.println("# " + String.join(" ", argv));
             }
             TerminalFactory tf = TerminalManager.getTerminalFactory();
-            String reader = (String) args.valueOf(OPT_READER);
+            String reader = args.valueOf(OPT_READER);
             if (reader == null)
                 reader = System.getenv("GP_READER");
             Optional<CardTerminal> t = TerminalManager.getInstance(tf.terminals()).dwim(reader, System.getenv("GP_READER_IGNORE"), Collections.emptyList());
@@ -91,8 +91,11 @@ public final class GPTool extends GPCommandLineInterface {
             t = t.map(e -> args.has(OPT_DEBUG) ? LoggingCardTerminal.getInstance(e) : e);
             int ret = new GPTool().run(CardBIBO.wrap(t.get().connect("*")), argv);
             System.exit(ret);
+        } catch (IllegalArgumentException e) {
+            System.err.println("Invalid argument: " + e.getMessage());
         } catch (Exception e) {
             System.err.println("Error: " + e.getMessage());
+            e.getStackTrace();
             System.exit(1);
         }
     }
@@ -156,8 +159,8 @@ public final class GPTool extends GPCommandLineInterface {
                     verbose("Selecting " + target);
                     channel.transmit(new CommandAPDU(0x00, ISO7816.INS_SELECT, 0x04, 0x00, target.getBytes()));
                 }
-                for (Object s : args.valuesOf(OPT_APDU)) {
-                    CommandAPDU c = new CommandAPDU(HexUtils.stringToBin((String) s));
+                for (String s : args.valuesOf(OPT_APDU)) {
+                    CommandAPDU c = new CommandAPDU(HexUtils.stringToBin(s));
                     channel.transmit(c);
                 }
             }
@@ -179,10 +182,10 @@ public final class GPTool extends GPCommandLineInterface {
 
             // Delegated management
             if (args.has(OPT_DM_KEY)) {
-                RSAPrivateKey pkey = (RSAPrivateKey) GPCrypto.pem2PrivateKey(Files.newInputStream(Paths.get(args.valueOf(OPT_DM_KEY).toString())));
+                RSAPrivateKey pkey = (RSAPrivateKey) GPCrypto.pem2PrivateKey(Files.newInputStream(Paths.get(args.valueOf(OPT_DM_KEY))));
                 gp.setTokenizer(DMTokenizer.forPrivateKey(pkey));
             } else if (args.has(OPT_DM_TOKEN)) {
-                byte[] token = HexUtils.stringToBin(args.valueOf(OPT_DM_TOKEN).toString());
+                byte[] token = HexUtils.stringToBin(args.valueOf(OPT_DM_TOKEN));
                 gp.setTokenizer(DMTokenizer.forToken(token));
             }
 
@@ -203,33 +206,15 @@ public final class GPTool extends GPCommandLineInterface {
                 fail("Not yet implemented");
                 keys = PlaintextKeys.defaultKey();
             } else {
-                PlaintextKeys keyz;
-                if (args.has(OPT_KEY)) {
-                    byte[] k = HexUtils.stringToBin((String) args.valueOf(OPT_KEY));
-                    byte[] kcv = null;
+                Optional<PlaintextKeys> envKeys = PlaintextKeys.fromEnvironment();
+                Optional<PlaintextKeys> cliKeys = PlaintextKeys.fromStrings(args.valueOf(OPT_KEY_ENC), args.valueOf(OPT_KEY_MAC), args.valueOf(OPT_KEY_DEK), args.valueOf(OPT_KEY), args.valueOf(OPT_KEY_KDF), null, args.valueOf(OPT_KEY_VERSION));
 
-                    if (args.has(OPT_KCV)) {
-                        kcv = HexUtils.stringToBin((String) args.valueOf(OPT_KCV));
-                    }
-
-                    keyz = PlaintextKeys.fromMasterKey(k, kcv);
-                } else {
-                    Optional<SecureChannelParameters> params = SecureChannelParameters.fromEnvironment();
-                    // XXX: better checks for exclusive key options
-                    if (args.has(OPT_KEY_MAC) && args.has(OPT_KEY_ENC) && args.has(OPT_KEY_DEK)) {
-                        byte[] enc = HexUtils.stringToBin((String) args.valueOf(OPT_KEY_ENC));
-                        byte[] mac = HexUtils.stringToBin((String) args.valueOf(OPT_KEY_MAC));
-                        byte[] dek = HexUtils.stringToBin((String) args.valueOf(OPT_KEY_DEK));
-                        keyz = PlaintextKeys.fromKeys(enc, mac, dek);
-                    } else if (params.isPresent()) {
-                        keyz = (PlaintextKeys) params.get().getCardKeys();
-                    } else {
-                        if (needsAuthentication(args)) {
-                            System.out.println("Warning: no keys given, using default test key " + HexUtils.bin2hex(PlaintextKeys.defaultKeyBytes));
-                        }
-                        keyz = PlaintextKeys.defaultKey();
-                    }
+                if (envKeys.isPresent() && cliKeys.isPresent()) {
+                    System.err.println("Warning: keys set on command line shadow environment!");
+                } else if (!envKeys.isPresent() && !cliKeys.isPresent()) {
+                    System.err.println("Warning: no keys give, defaulting to " + HexUtils.bin2hex(PlaintextKeys.defaultKeyBytes));
                 }
+                PlaintextKeys keyz = cliKeys.map(Optional::of).orElse(envKeys).orElse(PlaintextKeys.defaultKey());
 
                 // "gp -l -emv" should still work
                 if (args.has(OPT_VISA2)) {
@@ -238,12 +223,12 @@ public final class GPTool extends GPCommandLineInterface {
                     keyz.setDiversifier(Diversification.EMV);
                 } else if (args.has(OPT_KDF3)) {
                     keyz.setDiversifier(Diversification.KDF3);
-                } else if (args.has(OPT_KDF)) {
-                    keyz.setDiversifier(getDiversificationOrFail(args, OPT_KDF));
+                } else if (args.has(OPT_KEY_KDF)) {
+                    keyz.setDiversifier(getDiversificationOrFail(args.valueOf(OPT_KEY_KDF)));
                 }
 
                 if (args.has(OPT_KEY_VERSION)) {
-                    keyz.setVersion(GPUtils.intValue((String) args.valueOf(OPT_KEY_VERSION)));
+                    keyz.setVersion(GPUtils.intValue(args.valueOf(OPT_KEY_VERSION)));
                 }
                 keys = keyz;
             }
@@ -266,8 +251,8 @@ public final class GPTool extends GPCommandLineInterface {
                 // Override default mode if needed.
                 if (args.has(OPT_SC_MODE)) {
                     mode.clear();
-                    for (Object s : args.valuesOf(OPT_SC_MODE)) {
-                        mode.add(APDUMode.fromString((String) s));
+                    for (String s : args.valuesOf(OPT_SC_MODE)) {
+                        mode.add(APDUMode.fromString(s));
                     }
                 }
 
@@ -276,8 +261,8 @@ public final class GPTool extends GPCommandLineInterface {
 
                 // --secure-apdu or -s
                 if (args.has(OPT_SECURE_APDU)) {
-                    for (Object s : args.valuesOf(OPT_SECURE_APDU)) {
-                        CommandAPDU c = new CommandAPDU(HexUtils.stringToBin((String) s));
+                    for (String s : args.valuesOf(OPT_SECURE_APDU)) {
+                        CommandAPDU c = new CommandAPDU(HexUtils.stringToBin(s));
                         gp.transmit(c);
                     }
                 }
@@ -346,9 +331,9 @@ public final class GPTool extends GPCommandLineInterface {
                 // --put-key <keyfile.pem or hex> or --replace-key <keyfile.pem or hex>
                 // Load a public key or a plaintext symmetric key (for DAP purposes)
                 if (args.has(OPT_PUT_KEY) || args.has(OPT_REPLACE_KEY)) {
-                    final String kv = args.has(OPT_PUT_KEY) ? args.valueOf(OPT_PUT_KEY).toString() : args.valueOf(OPT_REPLACE_KEY).toString();
+                    final String kv = args.has(OPT_PUT_KEY) ? args.valueOf(OPT_PUT_KEY) : args.valueOf(OPT_REPLACE_KEY);
                     // Default to DAP version
-                    final int keyVersion = GPUtils.intValue(args.valueOf(OPT_NEW_KEY_VERSION).toString());
+                    final int keyVersion = GPUtils.intValue(args.valueOf(OPT_NEW_KEY_VERSION));
                     // Check for presence (thus replace)
                     List<GPKeyInfo> current = gp.getKeyInfoTemplate();
                     boolean replace = current.stream().filter(p -> p.getVersion() == keyVersion).count() == 1 || args.has(OPT_REPLACE_KEY);
@@ -523,7 +508,7 @@ public final class GPTool extends GPCommandLineInterface {
                 // --store-data <XX>
                 // This will split the data, if necessary
                 if (args.has(OPT_STORE_DATA)) {
-                    List<byte[]> blobs = args.valuesOf(OPT_STORE_DATA).stream().map(e -> HexUtils.stringToBin((String) e)).collect(Collectors.toList());
+                    List<byte[]> blobs = args.valuesOf(OPT_STORE_DATA).stream().map(e -> HexUtils.stringToBin(e)).collect(Collectors.toList());
                     for (byte[] blob : blobs) {
                         if (args.has(OPT_APPLET)) {
                             gp.personalize(AID.fromString(args.valueOf(OPT_APPLET)), blob, 0x01);
@@ -536,7 +521,7 @@ public final class GPTool extends GPCommandLineInterface {
                 // --store-data-chunk
                 // This will collect the chunks and send them one by one
                 if (args.has(OPT_STORE_DATA_CHUNK)) {
-                    List<byte[]> blobs = args.valuesOf(OPT_STORE_DATA_CHUNK).stream().map(e -> HexUtils.stringToBin((String) e)).collect(Collectors.toList());
+                    List<byte[]> blobs = args.valuesOf(OPT_STORE_DATA_CHUNK).stream().map(e -> HexUtils.stringToBin(e)).collect(Collectors.toList());
                     if (args.has(OPT_APPLET)) {
                         gp.personalize(AID.fromString(args.valueOf(OPT_APPLET)), blobs, 0x01);
                     } else {
@@ -587,7 +572,7 @@ public final class GPTool extends GPCommandLineInterface {
                 // --delete-key
                 // TODO: make --delete smart enough
                 if (args.has(OPT_DELETE_KEY)) {
-                    int keyver = GPUtils.intValue((String) args.valueOf(OPT_DELETE_KEY));
+                    int keyver = GPUtils.intValue(args.valueOf(OPT_DELETE_KEY));
                     System.out.println("Deleting key " + keyver);
                     gp.deleteKey(keyver);
                 }
@@ -636,21 +621,21 @@ public final class GPTool extends GPCommandLineInterface {
                     // Get key value or values
                     PlaintextKeys newKeys;
                     if (args.has(OPT_LOCK_ENC) && args.has(OPT_LOCK_MAC) && args.has(OPT_LOCK_DEK)) {
-                        byte[] enc = HexUtils.stringToBin((String) args.valueOf(OPT_LOCK_ENC));
-                        byte[] mac = HexUtils.stringToBin((String) args.valueOf(OPT_LOCK_MAC));
-                        byte[] dek = HexUtils.stringToBin((String) args.valueOf(OPT_LOCK_DEK));
+                        byte[] enc = HexUtils.stringToBin(args.valueOf(OPT_LOCK_ENC));
+                        byte[] mac = HexUtils.stringToBin(args.valueOf(OPT_LOCK_MAC));
+                        byte[] dek = HexUtils.stringToBin(args.valueOf(OPT_LOCK_DEK));
                         newKeys = PlaintextKeys.fromKeys(enc, mac, dek);
                     } else {
-                        newKeys = PlaintextKeys.fromMasterKey(HexUtils.stringToBin((String) args.valueOf(OPT_LOCK)));
+                        newKeys = PlaintextKeys.fromMasterKey(HexUtils.stringToBin(args.valueOf(OPT_LOCK)));
                         if (args.has(OPT_LOCK_KDF)) {
                             // FIXME: should do diversification here explicitly. Expose card keys and kdd
-                            newKeys.setDiversifier(getDiversificationOrFail(args, OPT_LOCK_KDF));
+                            newKeys.setDiversifier(getDiversificationOrFail(args.valueOf(OPT_LOCK_KDF)));
                         }
                     }
 
                     // If a specific new key version is specified, use that instead.
                     if (args.has(OPT_NEW_KEY_VERSION)) {
-                        new_version = GPUtils.intValue((String) args.valueOf(OPT_NEW_KEY_VERSION));
+                        new_version = GPUtils.intValue(args.valueOf(OPT_NEW_KEY_VERSION));
                         // FIXME: unless exists
                         replace = false;
                         System.out.println("New version: " + new_version);
@@ -660,7 +645,7 @@ public final class GPTool extends GPCommandLineInterface {
                     gp.putKeys(newKeys, replace);
 
                     if (args.has(OPT_LOCK)) {
-                        System.out.println("Card locked with: " + HexUtils.bin2hex(HexUtils.stringToBin((String) args.valueOf(OPT_LOCK))));
+                        System.out.println("Card locked with: " + HexUtils.bin2hex(HexUtils.stringToBin(args.valueOf(OPT_LOCK))));
                         System.out.println("Write this down, DO NOT FORGET/LOSE IT!");
                     } else {
                         System.out.println("Card locked with new keys.");
@@ -679,7 +664,7 @@ public final class GPTool extends GPCommandLineInterface {
                 }
                 // --set-pre-perso
                 if (args.has(OPT_SET_PRE_PERSO)) {
-                    byte[] payload = HexUtils.stringToBin((String) args.valueOf(OPT_SET_PRE_PERSO));
+                    byte[] payload = HexUtils.stringToBin(args.valueOf(OPT_SET_PRE_PERSO));
                     if (args.has(OPT_TODAY)) {
                         System.arraycopy(GPData.CPLC.today(), 0, payload, 2, 2);
                     }
@@ -687,7 +672,7 @@ public final class GPTool extends GPCommandLineInterface {
                 }
                 // --set-perso
                 if (args.has(OPT_SET_PERSO)) {
-                    byte[] payload = HexUtils.stringToBin((String) args.valueOf(OPT_SET_PERSO));
+                    byte[] payload = HexUtils.stringToBin(args.valueOf(OPT_SET_PERSO));
                     if (args.has(OPT_TODAY)) {
                         System.arraycopy(GPData.CPLC.today(), 0, payload, 2, 2);
                     }
@@ -737,7 +722,7 @@ public final class GPTool extends GPCommandLineInterface {
     private static Privileges getInstPrivs(OptionSet args) {
         Privileges privs = new Privileges();
         if (args.has(OPT_PRIVS)) {
-            addPrivs(privs, (String) args.valueOf(OPT_PRIVS));
+            addPrivs(privs, args.valueOf(OPT_PRIVS));
         }
         if (args.has(OPT_DEFAULT)) {
             privs.add(Privilege.CardReset);
@@ -749,10 +734,10 @@ public final class GPTool extends GPCommandLineInterface {
         return privs;
     }
 
-    static Diversification getDiversificationOrFail(OptionSet args, String v) {
-        Diversification kdf = Diversification.lookup(args.valueOf(v).toString().trim());
+    static Diversification getDiversificationOrFail(String v) {
+        Diversification kdf = Diversification.lookup(v.trim());
         if (kdf == null)
-            fail("Invalid KDF: " + args.valueOf(v) + "\nValid values are: " + Arrays.asList(Diversification.values()).stream().map(i -> i.toString()).collect(Collectors.joining(", ")));
+            fail("Invalid KDF: " + v + "\nValid values are: " + Arrays.asList(Diversification.values()).stream().map(i -> i.toString()).collect(Collectors.joining(", ")));
         return kdf;
     }
 
@@ -773,14 +758,14 @@ public final class GPTool extends GPCommandLineInterface {
 
     private static byte[] getInstParams(OptionSet args) {
         if (args.has(OPT_PARAMS)) {
-            String arg = (String) args.valueOf(OPT_PARAMS);
+            String arg = args.valueOf(OPT_PARAMS);
             return HexUtils.stringToBin(arg);
         } else {
             return new byte[0];
         }
     }
 
-    private static List<CAPFile> getCapFileList(OptionSet args, String arg) {
+    private static List<CAPFile> getCapFileList(OptionSet args, OptionSpec<File> arg) {
         return args.valuesOf(arg).stream().map(e -> {
             try (FileInputStream fin = new FileInputStream((File) e)) {
                 return CAPFile.fromStream(fin);
@@ -792,13 +777,13 @@ public final class GPTool extends GPCommandLineInterface {
     }
 
     private static boolean needsAuthentication(OptionSet args) {
-        String[] yes = new String[]{OPT_CONNECT, OPT_LIST, OPT_LOAD, OPT_INSTALL, OPT_DELETE, OPT_DELETE_KEY, OPT_CREATE,
+        OptionSpec[] yes = new OptionSpec[]{OPT_CONNECT, OPT_LIST, OPT_LOAD, OPT_INSTALL, OPT_DELETE, OPT_DELETE_KEY, OPT_CREATE,
                 OPT_LOCK, OPT_UNLOCK, OPT_LOCK_ENC, OPT_LOCK_MAC, OPT_LOCK_DEK, OPT_MAKE_DEFAULT,
                 OPT_UNINSTALL, OPT_SECURE_APDU, OPT_DOMAIN, OPT_LOCK_CARD, OPT_UNLOCK_CARD, OPT_LOCK_APPLET, OPT_UNLOCK_APPLET,
                 OPT_STORE_DATA, OPT_STORE_DATA_CHUNK, OPT_INITIALIZE_CARD, OPT_SECURE_CARD, OPT_RENAME_ISD, OPT_SET_PERSO, OPT_SET_PRE_PERSO, OPT_MOVE,
                 OPT_PUT_KEY, OPT_REPLACE_KEY};
 
-        return Arrays.stream(yes).anyMatch(str -> args.has(str));
+        return Arrays.stream(yes).anyMatch(args::has);
     }
 
     public static void fail(String msg) {

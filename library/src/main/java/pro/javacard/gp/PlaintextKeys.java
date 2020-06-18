@@ -91,22 +91,23 @@ public class PlaintextKeys extends GPCardKeys {
         return fromEnvironment(System.getenv(), "GP_KEY");
     }
 
-    static void validKey(byte[] k) {
+    static byte[] validateKey(byte[] k) {
         if (k.length != 16 && k.length != 24 && k.length != 32) {
             throw new IllegalArgumentException(String.format("Invalid key length %d: %s", k.length, HexUtils.bin2hex(k)));
         }
+        return k;
     }
 
     public static Optional<PlaintextKeys> fromStrings(String enc, String mac, String dek, String mk, String div, String kdd, String ver) {
+        logger.debug("{} {} {} {} {} {} {}", enc, mac, dek, mk, div, kdd, ver);
+        if ((enc != null || mac != null || dek != null) && (enc == null || mac == null || dek == null || mk != null)) {
+            throw new IllegalArgumentException("Either all or nothing of enc/mac/dek keys must be set, and no mk at the same time!");
+        }
         if (enc != null && mac != null && dek != null) {
             logger.debug("Using three individual keys");
-            byte[] encbytes = HexUtils.stringToBin(enc);
-            byte[] macbytes = HexUtils.stringToBin(mac);
-            byte[] dekbytes = HexUtils.stringToBin(dek);
-
-            validKey(encbytes);
-            validKey(macbytes);
-            validKey(dekbytes);
+            byte[] encbytes = validateKey(HexUtils.stringToBin(enc));
+            byte[] macbytes = validateKey(HexUtils.stringToBin(mac));
+            byte[] dekbytes = validateKey(HexUtils.stringToBin(dek));
 
             PlaintextKeys keys = PlaintextKeys.fromKeys(encbytes, macbytes, dekbytes);
             if (ver != null) {
@@ -120,8 +121,7 @@ public class PlaintextKeys extends GPCardKeys {
             return Optional.of(keys);
         } else if (mk != null) {
             logger.info("Using a master key");
-            byte[] master = HexUtils.stringToBin(mk);
-            validKey(master);
+            byte[] master = validateKey(HexUtils.stringToBin(mk));
             PlaintextKeys keys = PlaintextKeys.fromMasterKey(master);
             if (div != null) {
                 Optional<Diversification> d = Optional.ofNullable(Diversification.lookup(div));
@@ -138,15 +138,17 @@ public class PlaintextKeys extends GPCardKeys {
             if (ver != null) {
                 keys.setVersion(GPUtils.intValue(ver));
             }
+            // TODO: KCV
             return Optional.of(keys);
         } else {
-            logger.error("Either enc/mac/dek or mk must be present!");
+            logger.warn("Either enc/mac/dek or mk must be present!");
             return Optional.empty();
         }
     }
 
     // Returns empty if no variables present, throws illegal argument if variable invalid
     public static Optional<PlaintextKeys> fromEnvironment(Map<String, String> env, String prefix) {
+        logger.debug("Getting keys from environment, prefix=" + prefix);
         String enc = env.get(prefix + "_ENC");
         String mac = env.get(prefix + "_MAC");
         String dek = env.get(prefix + "_DEK");

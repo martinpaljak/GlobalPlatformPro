@@ -23,7 +23,6 @@ import joptsimple.OptionException;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import joptsimple.OptionSpec;
-import sun.tools.jstat.Jstat;
 
 import java.io.File;
 import java.io.IOException;

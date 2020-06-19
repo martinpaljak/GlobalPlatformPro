@@ -99,12 +99,11 @@ public class PlaintextKeys extends GPCardKeys {
     }
 
     public static Optional<PlaintextKeys> fromStrings(String enc, String mac, String dek, String mk, String div, String kdd, String ver) {
-        logger.debug("{} {} {} {} {} {} {}", enc, mac, dek, mk, div, kdd, ver);
         if ((enc != null || mac != null || dek != null) && (enc == null || mac == null || dek == null || mk != null)) {
             throw new IllegalArgumentException("Either all or nothing of enc/mac/dek keys must be set, and no mk at the same time!");
         }
         if (enc != null && mac != null && dek != null) {
-            logger.debug("Using three individual keys");
+            logger.trace("Using three individual keys");
             byte[] encbytes = validateKey(HexUtils.stringToBin(enc));
             byte[] macbytes = validateKey(HexUtils.stringToBin(mac));
             byte[] dekbytes = validateKey(HexUtils.stringToBin(dek));
@@ -120,7 +119,7 @@ public class PlaintextKeys extends GPCardKeys {
             }
             return Optional.of(keys);
         } else if (mk != null) {
-            logger.info("Using a master key");
+            logger.trace("Using a master key");
             byte[] master = validateKey(HexUtils.stringToBin(mk));
             PlaintextKeys keys = PlaintextKeys.fromMasterKey(master);
             if (div != null) {
@@ -141,14 +140,12 @@ public class PlaintextKeys extends GPCardKeys {
             // TODO: KCV
             return Optional.of(keys);
         } else {
-            logger.warn("Either enc/mac/dek or mk must be present!");
             return Optional.empty();
         }
     }
 
     // Returns empty if no variables present, throws illegal argument if variable invalid
     public static Optional<PlaintextKeys> fromEnvironment(Map<String, String> env, String prefix) {
-        logger.debug("Getting keys from environment, prefix=" + prefix);
         String enc = env.get(prefix + "_ENC");
         String mac = env.get(prefix + "_MAC");
         String dek = env.get(prefix + "_DEK");
@@ -156,16 +153,14 @@ public class PlaintextKeys extends GPCardKeys {
         String div = env.get(prefix + "_DIV");
         String kdd = env.get(prefix + "_KDD");
         String ver = env.get(prefix + "_VER");
-
-        return fromStrings(enc, mac, dek, mk, div, kdd, ver);
+        Optional<PlaintextKeys> r = fromStrings(enc, mac, dek, mk, div, kdd, ver);
+        if (r.isPresent())
+            logger.debug("Got keys from environment, prefix=" + prefix);
+        return r;
     }
 
     public static PlaintextKeys fromMasterKey(byte[] master) {
         return derivedFromMasterKey(master, null, Diversification.NONE);
-    }
-
-    public static PlaintextKeys fromMasterKey(byte[] master, byte[] kcv) {
-        return derivedFromMasterKey(master, kcv, Diversification.NONE);
     }
 
     public static PlaintextKeys defaultKey() {
@@ -406,8 +401,8 @@ public class PlaintextKeys extends GPCardKeys {
 
 
     @Override
-    public GPCardKeys diversify(GPSecureChannel scp, byte[] kdd) {
-        // Set SCP and KDD
+    public PlaintextKeys diversify(GPSecureChannel scp, byte[] kdd) {
+        // Set SCP and KDD and diversification state
         super.diversify(scp, kdd);
 
         // Do nothing
@@ -433,7 +428,7 @@ public class PlaintextKeys extends GPCardKeys {
         String dek = HexUtils.bin2hex(cardKeys.get(KeyPurpose.DEK));
         String dek_kcv = HexUtils.bin2hex(kcv(KeyPurpose.DEK));
 
-        return String.format("ENC=%s (KCV: %s) MAC=%s (KCV: %s) DEK=%s (KCV: %s) for %s", enc, enc_kcv, mac, mac_kcv, dek, dek_kcv, scp);
+        return String.format("ENC=%s (KCV: %s) MAC=%s (KCV: %s) DEK=%s (KCV: %s) for %s%s", enc, enc_kcv, mac, mac_kcv, dek, dek_kcv, scp, diversifier == Diversification.NONE ? "" : String.format(" with %s", diversifier));
     }
 
     public void setDiversifier(Diversification diversifier) {

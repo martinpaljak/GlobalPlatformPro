@@ -340,7 +340,7 @@ public final class GPData {
             if (data == null)
                 throw new IllegalArgumentException("data is null");
             if (data.length < 0x2A)
-                throw new GPDataException(String.format("Input can't be valid CPLC if length is only %02X!", data.length));
+                throw new GPDataException(String.format("Input can't be valid CPLC if length is only %02X!", data.length), data);
             // Remove tag, if present
             if (data[0] == (byte) 0x9f && data[1] == (byte) 0x7f && data[2] == (byte) 0x2A)
                 data = Arrays.copyOfRange(data, 3, data.length);
@@ -391,7 +391,7 @@ public final class GPData {
                 int y = Integer.parseInt(sv.substring(0, 1));
                 int d = Integer.parseInt(sv.substring(1, 4));
                 if (d > 366) {
-                    throw new GPDataException("Invalid CPLC date format: " + sv);
+                    throw new GPDataException("Invalid CPLC date format", v);
                 }
                 // Make 0000 show something meaningful
                 if (d == 0) {

@@ -24,6 +24,7 @@ import pro.javacard.AID;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 public class GPRegistryEntry {
 
@@ -260,13 +261,8 @@ public class GPRegistryEntry {
         ContactlessActivation,
         ContactlessSelfActivation;
 
-        public static Privilege lookup(String v) {
-            for (Privilege d : Privilege.values()) {
-                if (d.name().equalsIgnoreCase(v)) {
-                    return d;
-                }
-            }
-            return null;
+        public static Optional<Privilege> lookup(String v) {
+            return Arrays.asList(values()).stream().filter(e -> e.name().equalsIgnoreCase(v)).findFirst();
         }
     }
 
@@ -355,7 +351,7 @@ public class GPRegistryEntry {
                 }
                 if ((b3 & 0xF) != 0x0) {
                     // RFU
-                    throw new GPDataException("RFU bits set in privileges: " + HexUtils.bin2hex(data));
+                    throw new GPDataException("RFU bits set in privileges" , data);
                 }
             }
             return p;

@@ -124,7 +124,7 @@ public final class GPKeyInfo {
                 for (; offset + (extended ? 4 : 0) < tmpl.length; ) {
                     GPKeyInfoElement element = extended ? GPKeyInfoElement.fromExtendedBytes(tmpl, offset) : new GPKeyInfoElement(tmpl, offset);
                     elements.add(element);
-                    logger.debug("Parsed {}", element);
+                    logger.trace("Parsed {}", element);
                     offset += element.templateLength;
                 }
 

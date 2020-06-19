@@ -33,9 +33,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.EnumSet;
 
-import static pro.javacard.gp.GPCardKeys.KeyPurpose.ENC;
-import static pro.javacard.gp.GPCardKeys.KeyPurpose.RMAC;
-
 class SCP03Wrapper extends SecureChannelWrapper {
     // Both are block size length
     private byte[] chaining_value = new byte[16];
@@ -45,8 +42,8 @@ class SCP03Wrapper extends SecureChannelWrapper {
     private String buggyCounterEnv = System.getenv().getOrDefault(COUNTER_WORKAROUND.replace(".", "_").toUpperCase(), "false");
     private boolean counterIsBuggy = System.getProperty(COUNTER_WORKAROUND, buggyCounterEnv).equalsIgnoreCase("true");
 
-    SCP03Wrapper(byte[] enc, byte[] mac, byte[] rmac, EnumSet<GPSession.APDUMode> securityLevel, int bs) {
-        super(enc, mac, rmac, securityLevel, bs);
+    SCP03Wrapper(byte[] enc, byte[] mac, byte[] rmac, int bs) {
+        super(enc, mac, rmac, bs);
     }
 
     @Override

@@ -22,6 +22,10 @@ package pro.javacard.gp;
 
 import apdu4j.*;
 import apdu4j.terminals.LoggingCardTerminal;
+import com.payneteasy.tlv.BerTag;
+import com.payneteasy.tlv.BerTlv;
+import com.payneteasy.tlv.BerTlvParser;
+import com.payneteasy.tlv.BerTlvs;
 import joptsimple.OptionSet;
 import joptsimple.OptionSpec;
 import pro.javacard.AID;
@@ -56,17 +60,17 @@ public final class GPTool extends GPCommandLineInterface {
         System.setProperty("org.slf4j.simpleLogger.showThreadName", "false");
         System.setProperty("org.slf4j.simpleLogger.levelInBrackets", "true");
         System.setProperty("org.slf4j.simpleLogger.showShortLogName", "true");
+        System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "warn");
 
         if (args.has(OPT_VERBOSE)) {
-            System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "debug");
             isVerbose = true;
-        } else {
-            System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "warn");
+            System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "info");
         }
-
-        if (args.has(OPT_DEBUG)) {
+        if (args.has(OPT_DEBUG) && args.has(OPT_VERBOSE))
+            System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "debug");
+        if (args.has(OPT_DEBUG) && System.getenv().containsKey("GP_TRACE"))
             System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "trace");
-        }
+
     }
 
     // To keep basic gp.jar together with apdu4j app, this is just a minimalist wrapper
@@ -95,7 +99,7 @@ public final class GPTool extends GPCommandLineInterface {
             System.err.println("Invalid argument: " + e.getMessage());
         } catch (Exception e) {
             System.err.println("Error: " + e.getMessage());
-            e.getStackTrace();
+            e.printStackTrace();
             System.exit(1);
         }
     }
@@ -125,7 +129,7 @@ public final class GPTool extends GPCommandLineInterface {
             // Load a CAP file, if specified
             CAPFile cap = null;
             if (args.has(OPT_CAP)) {
-                File capfile = (File) args.valueOf(OPT_CAP);
+                File capfile = args.valueOf(OPT_CAP);
                 try (FileInputStream fin = new FileInputStream(capfile)) {
                     cap = CAPFile.fromStream(fin);
                 }
@@ -189,10 +193,6 @@ public final class GPTool extends GPCommandLineInterface {
                 gp.setTokenizer(DMTokenizer.forToken(token));
             }
 
-            // Don't do sanity checks, just run asked commands
-            if (args.has(OPT_FORCE))
-                gp.setStrict(false);
-
             // Extract information
             if (args.has(OPT_INFO)) {
                 GPData.dump(channel);
@@ -212,7 +212,7 @@ public final class GPTool extends GPCommandLineInterface {
                 if (envKeys.isPresent() && cliKeys.isPresent()) {
                     System.err.println("Warning: keys set on command line shadow environment!");
                 } else if (!envKeys.isPresent() && !cliKeys.isPresent()) {
-                    System.err.println("Warning: no keys give, defaulting to " + HexUtils.bin2hex(PlaintextKeys.defaultKeyBytes));
+                    System.err.println("Warning: no keys given, defaulting to " + HexUtils.bin2hex(PlaintextKeys.defaultKeyBytes));
                 }
                 PlaintextKeys keyz = cliKeys.map(Optional::of).orElse(envKeys).orElse(PlaintextKeys.defaultKey());
 
@@ -257,7 +257,11 @@ public final class GPTool extends GPCommandLineInterface {
                 }
 
                 // IMPORTANT PLACE. Possibly brick the card now, if keys don't match.
-                gp.openSecureChannel(keys, null, null, mode);
+                try {
+                    gp.openSecureChannel(keys, null, null, mode);
+                } catch (GPException e) {
+                    fail("Failed to open secure channel: " + e.getMessage() + "\nRead more from https://github.com/martinpaljak/GlobalPlatformPro/wiki/Keys");
+                }
 
                 // --secure-apdu or -s
                 if (args.has(OPT_SECURE_APDU)) {
@@ -323,7 +327,6 @@ public final class GPTool extends GPCommandLineInterface {
                         if (isVerbose) {
                             loadcap.dump(System.out);
                         }
-
                         calculateDapPropertiesAndLoadCap(args, gp, loadcap);
                     }
                 }
@@ -356,7 +359,7 @@ public final class GPTool extends GPCommandLineInterface {
                 // --install <applet.cap> (--applet <aid> --create <aid> --privs <privs> --params <params>)
                 if (args.has(OPT_INSTALL)) {
                     final File capfile;
-                    capfile = (File) args.valueOf(OPT_INSTALL);
+                    capfile = args.valueOf(OPT_INSTALL);
 
                     final CAPFile instcap;
                     try (FileInputStream fin = new FileInputStream(capfile)) {
@@ -404,7 +407,7 @@ public final class GPTool extends GPCommandLineInterface {
 
                     Privileges privs = getInstPrivs(args);
 
-                    // Remove existing default app
+                    // Remove existing default app FIXME: this might be non-obvious
                     if (args.has(OPT_FORCE) && (reg.getDefaultSelectedAID().isPresent() && privs.has(Privilege.CardReset))) {
                         gp.deleteAID(reg.getDefaultSelectedAID().get(), false);
                     }
@@ -426,8 +429,8 @@ public final class GPTool extends GPCommandLineInterface {
                     // Load AID-s from cap if present
                     if (cap != null) {
                         packageAID = cap.getPackageAID();
-                        if (cap.getAppletAIDs().size() != 1) {
-                            throw new IllegalArgumentException("There should be only one applet in CAP. Use --" + OPT_APPLET + " instead.");
+                        if (cap.getAppletAIDs().size() > 1 && !args.has(OPT_APPLET)) {
+                            throw new IllegalArgumentException("There should be only one applet in CAP. Use --" + OPT_APPLET + " to specify one of " + cap.getAppletAIDs());
                         }
                         appletAID = cap.getAppletAIDs().get(0);
                     }
@@ -456,21 +459,30 @@ public final class GPTool extends GPCommandLineInterface {
 
                 // --domain <AID>
                 if (args.has(OPT_DOMAIN)) {
-                    // Arguments check
-                    if ((args.has(OPT_ALLOW_FROM) || args.has(OPT_ALLOW_TO)) && args.has(OPT_PARAMS)) {
-                        fail("SSD extradition options can't be used with SSD installation parameters");
+                    // Validate parameters
+                    BerTlvs parameters = null;
+                    byte[] params;
+                    if (args.has(OPT_PARAMS)) {
+                        params = HexUtils.stringToBin(args.valueOf(OPT_PARAMS));
+                        BerTlvParser parser = new BerTlvParser();
+                        parameters = parser.parse(params); // this throws
+                    } else {
+                        params = new byte[0];
                     }
 
                     // Default AID-s
-                    AID packageAID = new AID("A0000001515350");
-                    AID appletAID = new AID("A000000151535041");
+                    final AID packageAID;
+                    final AID appletAID;
 
                     // Override if necessary
                     if (args.has(OPT_PACKAGE) && args.has(OPT_APPLET)) {
                         packageAID = AID.fromString(args.valueOf(OPT_PACKAGE));
                         appletAID = AID.fromString(args.valueOf(OPT_APPLET));
                     } else {
-                        System.out.println("Note: using default AID-s for SSD instantiation: " + appletAID + " from " + packageAID);
+                        // But query registry for defaults
+                        packageAID = gp.getRegistry().allPackageAIDs().contains(new AID("A0000000035350")) ? new AID("A0000000035350") : new AID("A0000001515350");
+                        appletAID = gp.getRegistry().allPackageAIDs().contains(new AID("A0000000035350")) ? new AID("A000000003535041") : new AID("A000000151535041");
+                        verbose("Note: using detected default AID-s for SSD instantiation: " + appletAID + " from " + packageAID);
                     }
                     AID instanceAID = AID.fromString(args.valueOf(OPT_DOMAIN));
 
@@ -478,19 +490,26 @@ public final class GPTool extends GPCommandLineInterface {
                     Privileges privs = getInstPrivs(args);
                     privs.add(Privilege.SecurityDomain);
 
-                    // Extradition rules
-                    byte[] params = new byte[0];
-                    if (args.has(OPT_PARAMS)) {
-                        params = getInstParams(args);
+                    // By default same SCP
+                    if (parameters.find(new BerTag(0x81)) == null) {
+                        params = GPUtils.concatenate(params, new byte[]{(byte) 0x81, 0x02, gp.getSecureChannel().getValue(), (byte) gp.getSecureChannel().getI()});
                     } else {
-                        if (args.has(OPT_ALLOW_TO)) {
-                            params = GPUtils.concatenate(params, new byte[]{(byte) 0x82, 0x01, 0x20});
-                        }
-                        if (args.has(OPT_ALLOW_FROM)) {
-                            params = GPUtils.concatenate(params, new byte[]{(byte) 0x87, 0x01, 0x20});
-                        }
+                        System.err.println("Notice: 0x81 already in parameters");
                     }
 
+                    // Extradition rules
+                    if (args.has(OPT_ALLOW_TO) && parameters.find(new BerTag(0x82)) == null) {
+                        params = GPUtils.concatenate(params, new byte[]{(byte) 0x82, 0x02, 0x20, 0x20});
+                    } else {
+                        System.err.println("Warning: 0x82 already in parameters, --" + OPT_ALLOW_TO + " not applied");
+                    }
+                    if (args.has(OPT_ALLOW_FROM) && parameters.find(new BerTag(0x87)) == null) {
+                        params = GPUtils.concatenate(params, new byte[]{(byte) 0x87, 0x02, 0x20, 0x20});
+                    } else {
+                        System.err.println("Warning: 0x87 already in parameters, --" + OPT_ALLOW_FROM + " not applied");
+                    }
+
+                    verbose(String.format("Final parameters: %s", HexUtils.bin2hex(params)));
                     // shoot
                     gp.installAndMakeSelectable(packageAID, appletAID, instanceAID, privs, params);
                 }
@@ -544,12 +563,10 @@ public final class GPTool extends GPCommandLineInterface {
                 // --secure-card
                 if (args.has(OPT_SECURE_CARD)) {
                     // Skip INITIALIZED
-                    GPRegistryEntry isd = gp.getRegistry().getISD().orElseThrow(() -> new GPException("ISD is null"));
-                    if (isd.getLifeCycle() != GPData.initializedStatus) {
-                        if (args.has(OPT_FORCE)) {
-                            System.out.println("Note: forcing status to INITIALIZED");
-                            gp.setCardStatus(GPData.initializedStatus);
-                        }
+                    GPRegistryEntry isd = gp.getRegistry().getISD().orElseThrow(() -> new GPException("ISD not present, are you in a subtree?"));
+                    if (isd.getLifeCycle() != GPData.initializedStatus && args.has(OPT_FORCE)) {
+                        System.out.println("Note: forcing status to INITIALIZED");
+                        gp.setCardStatus(GPData.initializedStatus);
                     }
                     gp.setCardStatus(GPData.securedStatus);
                 }
@@ -580,72 +597,78 @@ public final class GPTool extends GPCommandLineInterface {
                 // TODO: Move to GPCommands
                 // --unlock
                 if (args.has(OPT_UNLOCK)) {
+                    List<GPKeyInfo> current = gp.getKeyInfoTemplate();
                     // Write default keys
                     final boolean replace;
                     final int kv;
                     // Factory keys
-                    if (gp.getScpKeyVersion() == 255) {
+                    if (gp.getScpKeyVersion() == 255 || current.size() == 0) {
                         replace = false;
-                        kv = 1;
+                        kv = args.has(OPT_NEW_KEY_VERSION) ? GPUtils.intValue(args.valueOf(OPT_NEW_KEY_VERSION)) : 1;
                     } else {
                         // Replace current key
                         kv = gp.getScpKeyVersion();
                         replace = true;
                     }
-
                     PlaintextKeys new_key = PlaintextKeys.defaultKey();
                     new_key.setVersion(kv);
+                    new_key.diversify(gp.getSecureChannel(), new byte[0]); // Just set the SCP type
                     gp.putKeys(new_key, replace);
-                    System.out.println("Default " + HexUtils.bin2hex(PlaintextKeys.defaultKeyBytes) + " set as master key for " + gp.getAID());
+                    System.out.println("Default " + HexUtils.bin2hex(PlaintextKeys.defaultKeyBytes) + " set as key for " + gp.getAID());
                 }
 
                 // --lock
-                if (args.has(OPT_LOCK) || (args.has(OPT_LOCK_ENC) && args.has(OPT_LOCK_MAC) && args.has(OPT_LOCK_DEK))) {
+                if (args.has(OPT_LOCK) || args.has(OPT_LOCK_ENC) || args.has(OPT_LOCK_MAC) || args.has(OPT_LOCK_DEK)) {
+
+                    PlaintextKeys newKeys = PlaintextKeys.fromStrings(args.valueOf(OPT_LOCK_ENC), args.valueOf(OPT_LOCK_MAC), args.valueOf(OPT_LOCK_DEK), args.valueOf(OPT_LOCK), args.valueOf(OPT_LOCK_KDF), null, args.valueOf(OPT_NEW_KEY_VERSION))
+                            .orElseThrow(() -> new IllegalArgumentException("Can not lock without keys :)"));
+
                     // By default we try to change an existing key
                     boolean replace = true;
                     List<GPKeyInfo> current = gp.getKeyInfoTemplate();
-
+                    System.out.println(current);
                     // By default use key version 1
-                    int new_version = 1;
-                    // If there are keys present, check the existing version
-                    if (current.size() > 0) {
-                        if (current.get(0).getVersion() == 255) {
-                            // Factory keys, add keyset with version one.
+                    final int keyver;
+                    if (args.has(OPT_NEW_KEY_VERSION)) {
+                        keyver = GPUtils.intValue(args.valueOf(OPT_NEW_KEY_VERSION));
+                        // Key version is indicated, check if already present on card
+                        if (current.stream().filter(e -> (e.getVersion() == keyver)).count() > 0) {
+                            replace = false;
+                        }
+                    } else {
+                        if (current.size() == 0 || gp.getScpKeyVersion() == 255) {
+                            keyver = 1;
                             replace = false;
                         } else {
-                            // Existing keys, change the present version
-                            new_version = current.get(0).getVersion();
+                            keyver = gp.getScpKeyVersion();
                         }
                     }
+                    newKeys.setVersion(keyver);
+                    verbose("Keyset version: " + newKeys.getKeyInfo().getVersion());
 
-                    // Get key value or values
-                    PlaintextKeys newKeys;
-                    if (args.has(OPT_LOCK_ENC) && args.has(OPT_LOCK_MAC) && args.has(OPT_LOCK_DEK)) {
-                        byte[] enc = HexUtils.stringToBin(args.valueOf(OPT_LOCK_ENC));
-                        byte[] mac = HexUtils.stringToBin(args.valueOf(OPT_LOCK_MAC));
-                        byte[] dek = HexUtils.stringToBin(args.valueOf(OPT_LOCK_DEK));
-                        newKeys = PlaintextKeys.fromKeys(enc, mac, dek);
-                    } else {
-                        newKeys = PlaintextKeys.fromMasterKey(HexUtils.stringToBin(args.valueOf(OPT_LOCK)));
-                        if (args.has(OPT_LOCK_KDF)) {
-                            // FIXME: should do diversification here explicitly. Expose card keys and kdd
-                            newKeys.setDiversifier(getDiversificationOrFail(args.valueOf(OPT_LOCK_KDF)));
-                        }
-                    }
+                    // Only SCP02 via SCP03 should be possible, but cards vary
+                    byte[] kdd = newKeys.getKDD().orElseGet(() -> keys.getKDD().get());
 
-                    // If a specific new key version is specified, use that instead.
-                    if (args.has(OPT_NEW_KEY_VERSION)) {
-                        new_version = GPUtils.intValue(args.valueOf(OPT_NEW_KEY_VERSION));
-                        // FIXME: unless exists
-                        replace = false;
-                        System.out.println("New version: " + new_version);
+                    System.out.println("Looking at key version");
+                    if (keyver >= 0x10 && keyver <= 0x1F)
+                        newKeys.diversify(GPSecureChannel.SCP01, kdd);
+                    else if (keyver >= 0x20 && keyver <= 0x2F)
+                        newKeys.diversify(GPSecureChannel.SCP02, kdd);
+                    else if (keyver >= 0x30 && keyver <= 0x3F)
+                        newKeys.diversify(GPSecureChannel.SCP03, kdd);
+                    else
+                        newKeys.diversify(gp.getSecureChannel(), kdd);
+
+                    if (newKeys.diversifier != Diversification.NONE) {
+                        verbose("Diversified keys: " + newKeys);
                     }
-                    newKeys.setVersion(new_version);
 
                     gp.putKeys(newKeys, replace);
 
                     if (args.has(OPT_LOCK)) {
-                        System.out.println("Card locked with: " + HexUtils.bin2hex(HexUtils.stringToBin(args.valueOf(OPT_LOCK))));
+                        System.out.println(gp.getAID() + " locked with: " + HexUtils.bin2hex(HexUtils.stringToBin(args.valueOf(OPT_LOCK))));
+                        if (newKeys.diversifier != Diversification.NONE)
+                            System.out.println("Keys were diversified with " + newKeys.diversifier + " and " + HexUtils.bin2hex(kdd));
                         System.out.println("Write this down, DO NOT FORGET/LOSE IT!");
                     } else {
                         System.out.println("Card locked with new keys.");
@@ -718,18 +741,11 @@ public final class GPTool extends GPCommandLineInterface {
         }
     }
 
-    // FIXME: get rid
     private static Privileges getInstPrivs(OptionSet args) {
         Privileges privs = new Privileges();
         if (args.has(OPT_PRIVS)) {
-            addPrivs(privs, args.valueOf(OPT_PRIVS));
-        }
-        if (args.has(OPT_DEFAULT)) {
-            privs.add(Privilege.CardReset);
-        }
-        if (args.has(OPT_TERMINATE)) {
-            privs.add(Privilege.CardLock);
-            privs.add(Privilege.CardTerminate);
+            for (String s : args.valueOf(OPT_PRIVS).split(","))
+                privs.add(Privilege.lookup(s.trim()).orElseThrow(() -> new IllegalArgumentException("Unknown privilege: " + s.trim())));
         }
         return privs;
     }
@@ -739,21 +755,6 @@ public final class GPTool extends GPCommandLineInterface {
         if (kdf == null)
             fail("Invalid KDF: " + v + "\nValid values are: " + Arrays.asList(Diversification.values()).stream().map(i -> i.toString()).collect(Collectors.joining(", ")));
         return kdf;
-    }
-
-    private static Privileges addPrivs(Privileges privs, String v) {
-        if (v == null)
-            return privs;
-        String[] parts = v.split(",");
-        for (String s : parts) {
-            Privilege p = Privilege.lookup(s.trim());
-            if (p == null) {
-                throw new IllegalArgumentException("Unknown privilege: " + s.trim());
-            } else {
-                privs.add(p);
-            }
-        }
-        return privs;
     }
 
     private static byte[] getInstParams(OptionSet args) {
@@ -767,7 +768,7 @@ public final class GPTool extends GPCommandLineInterface {
 
     private static List<CAPFile> getCapFileList(OptionSet args, OptionSpec<File> arg) {
         return args.valuesOf(arg).stream().map(e -> {
-            try (FileInputStream fin = new FileInputStream((File) e)) {
+            try (FileInputStream fin = new FileInputStream(e)) {
                 return CAPFile.fromStream(fin);
             } catch (IOException x) {
                 fail("Could not read CAP: " + x.getMessage());

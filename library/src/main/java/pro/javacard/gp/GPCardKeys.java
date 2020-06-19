@@ -38,6 +38,7 @@ public abstract class GPCardKeys {
     private static final Logger logger = LoggerFactory.getLogger(GPCardKeys.class);
     protected GPSecureChannel scp; // The actual SCP version, to know how to handle DEK
     protected byte[] kdd; // The key derivation data that was used to get the keys in question. May be empty (no derivation)
+    private boolean diversified = false;
 
     public abstract GPKeyInfo getKeyInfo();
 
@@ -77,17 +78,21 @@ public abstract class GPCardKeys {
 
     // Diversify card keys automatically, based on INITIALIZE UPDATE response
     public GPCardKeys diversify(GPSecureChannel scp, byte[] kdd) {
+        logger.info("Diversification!");
+        if (diversified)
+            throw new IllegalStateException("Keys already diversified!");
         this.scp = scp; // We know for sure what is the type of the key.
         if (this.kdd != null && !Arrays.equals(this.kdd, kdd)) {
             logger.warn("KDD-s don't match: {} vs {}", HexUtils.bin2hex(this.kdd), HexUtils.bin2hex(kdd));
         }
         this.kdd = kdd.clone();
+        diversified = true;
         return this;
     }
 
     // Return key derivation data for this keyset
     public Optional<byte[]> getKDD() {
-        return Optional.ofNullable(kdd.clone());
+        return Optional.ofNullable(kdd == null ? null : kdd.clone());
     }
 
     @Override

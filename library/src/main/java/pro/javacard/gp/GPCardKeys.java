@@ -78,7 +78,6 @@ public abstract class GPCardKeys {
 
     // Diversify card keys automatically, based on INITIALIZE UPDATE response
     public GPCardKeys diversify(GPSecureChannel scp, byte[] kdd) {
-        logger.info("Diversification!");
         if (diversified)
             throw new IllegalStateException("Keys already diversified!");
         this.scp = scp; // We know for sure what is the type of the key.

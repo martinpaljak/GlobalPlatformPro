@@ -465,7 +465,13 @@ public final class GPTool extends GPCommandLineInterface {
                     if (args.has(OPT_PARAMS)) {
                         params = HexUtils.stringToBin(args.valueOf(OPT_PARAMS));
                         BerTlvParser parser = new BerTlvParser();
-                        parameters = parser.parse(params); // this throws
+                        try {
+                            parameters = parser.parse(params); // this throws
+                        } catch (Exception e) {
+                            if (args.has(OPT_ALLOW_FROM) || args.has(OPT_ALLOW_TO))
+                                throw new IllegalArgumentException(OPT_ALLOW_FROM + " and " + OPT_ALLOW_TO + " not available, could not parse parameters: " + HexUtils.bin2hex(params));
+                            System.err.println("Warning: could not parse parameters: " + HexUtils.bin2hex(params));
+                        }
                     } else {
                         params = new byte[0];
                     }
@@ -491,25 +497,26 @@ public final class GPTool extends GPCommandLineInterface {
                     privs.add(Privilege.SecurityDomain);
 
                     // By default same SCP
-                    if (parameters.find(new BerTag(0x81)) == null) {
+                    if (parameters != null && parameters.find(new BerTag(0x81)) == null) {
                         params = GPUtils.concatenate(params, new byte[]{(byte) 0x81, 0x02, gp.getSecureChannel().getValue(), (byte) gp.getSecureChannel().getI()});
                     } else {
                         System.err.println("Notice: 0x81 already in parameters");
                     }
 
                     // Extradition rules
-                    if (args.has(OPT_ALLOW_TO) && parameters.find(new BerTag(0x82)) == null) {
+                    if (args.has(OPT_ALLOW_TO) && parameters != null && parameters.find(new BerTag(0x82)) == null) {
                         params = GPUtils.concatenate(params, new byte[]{(byte) 0x82, 0x02, 0x20, 0x20});
                     } else {
                         System.err.println("Warning: 0x82 already in parameters, --" + OPT_ALLOW_TO + " not applied");
                     }
-                    if (args.has(OPT_ALLOW_FROM) && parameters.find(new BerTag(0x87)) == null) {
+                    if (args.has(OPT_ALLOW_FROM) && parameters != null && parameters.find(new BerTag(0x87)) == null) {
                         params = GPUtils.concatenate(params, new byte[]{(byte) 0x87, 0x02, 0x20, 0x20});
                     } else {
                         System.err.println("Warning: 0x87 already in parameters, --" + OPT_ALLOW_FROM + " not applied");
                     }
 
-                    verbose(String.format("Final parameters: %s", HexUtils.bin2hex(params)));
+                    if (parameters != null)
+                        verbose(String.format("Final parameters: %s", HexUtils.bin2hex(params)));
                     // shoot
                     gp.installAndMakeSelectable(packageAID, appletAID, instanceAID, privs, params);
                 }

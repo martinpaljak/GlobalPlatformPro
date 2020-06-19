@@ -52,7 +52,9 @@ public class GPRegistry implements Iterable<GPRegistryEntry> {
         if (!entries.contains(entry)) {
             entries.add(entry);
         } else {
-            logger.debug("Registry already contains {}", entry);
+            // We populate the package with applets if card returns them, so not an error
+            if (entry.getType() != Kind.ExecutableLoadFile)
+                logger.warn("Registry already contains {}", entry);
         }
     }
 

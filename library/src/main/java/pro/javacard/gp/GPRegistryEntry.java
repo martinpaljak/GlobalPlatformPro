@@ -107,7 +107,6 @@ public class GPRegistryEntry {
         return r;
     }
 
-
     static String getLifeCycleString(Kind kind, int lifeCycleState) {
         switch (kind) {
             case IssuerSecurityDomain:
@@ -212,7 +211,7 @@ public class GPRegistryEntry {
     }
 
     public String toString() {
-        return String.format("%s: %s, %s", kind.toShortString(), HexUtils.bin2hex(aid.getBytes()), lifecycle);
+        return String.format("%s: %s, %s", kind.toShortString(), HexUtils.bin2hex(aid.getBytes()), getLifeCycleString());
     }
 
     public String getLifeCycleString() {

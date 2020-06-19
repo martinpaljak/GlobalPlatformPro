@@ -83,9 +83,9 @@ public final class GPTool extends GPCommandLineInterface {
             OptionSet args = parseArguments(argv);
             setupLogging(args);
 
-            if (isVerbose) {
+            if (args.has(OPT_VERBOSE) || args.has(OPT_VERSION)) {
                 System.out.println("# " + String.join(" ", System.getenv().entrySet().stream().filter(e -> e.getKey().startsWith("GP_")).map(e -> String.format("%s=%s", e.getKey(), e.getValue())).collect(Collectors.toList())));
-                System.out.println("# " + String.join(" ", argv));
+                System.out.println("# gp " + String.join(" ", argv));
             }
             TerminalFactory tf = TerminalManager.getTerminalFactory();
             String reader = args.valueOf(OPT_READER);
@@ -105,7 +105,7 @@ public final class GPTool extends GPCommandLineInterface {
             System.err.println("Error: " + e.getMessage());
             e.printStackTrace();
         } finally {
-            if (c!= null) {
+            if (c != null) {
                 try {
                     c.disconnect(true);
                 } catch (CardException e) {
@@ -114,6 +114,12 @@ public final class GPTool extends GPCommandLineInterface {
             }
         }
         System.exit(ret);
+    }
+
+    static boolean onlyHasArg(OptionSet args, OptionSpec<?> s) {
+        long needle = args.specs().stream().filter(e -> args.has(e)).count();
+        long hay = args.specs().stream().filter(e -> args.has(e) && e != s).count();
+        return needle == 1 && hay == 0;
     }
 
     // For running in apdu4j mode
@@ -136,6 +142,8 @@ public final class GPTool extends GPCommandLineInterface {
                 if (Cipher.getMaxAllowedKeyLength("AES") == 128) {
                     System.err.println("Unlimited crypto policy is NOT installed!");
                 }
+                if (onlyHasArg(args, OPT_VERSION))
+                    return 0;
             }
 
             // Load a CAP file, if specified
@@ -153,11 +161,6 @@ public final class GPTool extends GPCommandLineInterface {
                         return 0;
                     }
                 }
-            }
-
-            if (args.has(OPT_LIST_PRIVS)) {
-                System.out.println("# Known privileges:");
-                System.out.println(Arrays.asList(Privilege.values()).stream().map(i -> i.toString()).collect(Collectors.joining("\n")));
             }
 
             // Now actually talk to possible terminals
@@ -764,7 +767,7 @@ public final class GPTool extends GPCommandLineInterface {
         Privileges privs = new Privileges();
         if (args.has(OPT_PRIVS)) {
             for (String s : args.valueOf(OPT_PRIVS).split(","))
-                privs.add(Privilege.lookup(s.trim()).orElseThrow(() -> new IllegalArgumentException("Unknown privilege: " + s.trim())));
+                privs.add(Privilege.lookup(s.trim()).orElseThrow(() -> new IllegalArgumentException("Unknown privilege: " + s.trim() + "\nValid values are: " + Arrays.asList(Privilege.values()).stream().map(i -> i.toString()).collect(Collectors.joining(", ")))));
         }
         return privs;
     }
@@ -806,6 +809,7 @@ public final class GPTool extends GPCommandLineInterface {
         return Arrays.stream(yes).anyMatch(args::has);
     }
 
+    // FIXME: replace with IllegalArgumentException
     public static void fail(String msg) {
         System.err.println(msg);
         System.exit(1);

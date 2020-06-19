@@ -62,9 +62,7 @@ abstract class GPCommandLineInterface {
     protected static OptionSpec<String> OPT_DELETE = parser.accepts("delete", "Delete applet/package").withOptionalArg().describedAs("AID");
 
     protected static OptionSpec<Void> OPT_DEFAULT = parser.accepts("default", "Indicate Default Selected privilege");
-    protected static OptionSpec<Void> OPT_TERMINATE = parser.accepts("terminate", "Indicate Card Lock+Terminate privilege");
     protected static OptionSpec<String> OPT_DOMAIN = parser.accepts("domain", "Create supplementary security domain").withRequiredArg().describedAs("AID");
-    protected static OptionSpec<Void> OPT_LIST_PRIVS = parser.accepts("list-privs", "List known privileges");
 
     // Card an applet lifecycle management
     protected static OptionSpec<String> OPT_LOCK_APPLET = parser.accepts("lock-applet", "Lock applet").withRequiredArg().describedAs("AID");

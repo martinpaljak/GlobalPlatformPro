@@ -1,6 +1,6 @@
 [![Build status](https://github.com/martinpaljak/globalplatformpro/workflows/Continuous%20Integration/badge.svg?branch=master)](https://github.com/martinpaljak/globalplatformpro/actions)
 [![Latest release](https://img.shields.io/github/release/martinpaljak/GlobalPlatformPro.svg)](https://github.com/martinpaljak/GlobalPlatformPro/releases/latest)
-[![Latest tag](https://img.shields.io/github/v/tag/martinpaljak/GlobalPlatformPro?color=green&include_prereleases)](https://github.com/martinpaljak/GlobalPlatformPro/releases)
+[![Maven version](https://img.shields.io/maven-metadata/v?label=javacard.pro%20version&metadataUrl=https%3A%2F%2Fjavacard.pro%2Fmaven%2Fcom%2Fgithub%2Fmartinpaljak%2Fglobalplatformpro%2Fmaven-metadata.xml)](https://gist.github.com/martinpaljak/c77d11d671260e24eef6c39123345cae)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.martinpaljak/globalplatformpro/badge.svg)](https://mvnrepository.com/artifact/com.github.martinpaljak/globalplatformpro)
 [![LGPL-3.0 licensed](https://img.shields.io/badge/license-LGPL-blue.svg)](https://github.com/martinpaljak/GlobalPlatformPro/blob/master/LICENSE) 
 [![LGTM grade](https://img.shields.io/lgtm/grade/java/github/martinpaljak/GlobalPlatformPro)](https://lgtm.com/projects/g/martinpaljak/GlobalPlatformPro/context:java)

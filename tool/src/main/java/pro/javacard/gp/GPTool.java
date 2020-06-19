@@ -37,6 +37,8 @@ import pro.javacard.gp.GPSession.GPSpec;
 import pro.javacard.gp.PlaintextKeys.Diversification;
 
 import javax.crypto.Cipher;
+import javax.smartcardio.Card;
+import javax.smartcardio.CardException;
 import javax.smartcardio.CardTerminal;
 import javax.smartcardio.TerminalFactory;
 import java.io.File;
@@ -75,6 +77,8 @@ public final class GPTool extends GPCommandLineInterface {
 
     // To keep basic gp.jar together with apdu4j app, this is just a minimalist wrapper
     public static void main(String[] argv) {
+        Card c = null;
+        int ret = 1;
         try {
             OptionSet args = parseArguments(argv);
             setupLogging(args);
@@ -93,15 +97,23 @@ public final class GPTool extends GPCommandLineInterface {
                 System.exit(1);
             }
             t = t.map(e -> args.has(OPT_DEBUG) ? LoggingCardTerminal.getInstance(e) : e);
-            int ret = new GPTool().run(CardBIBO.wrap(t.get().connect("*")), argv);
-            System.exit(ret);
+            c = t.get().connect("*");
+            ret = new GPTool().run(CardBIBO.wrap(c), argv);
         } catch (IllegalArgumentException e) {
             System.err.println("Invalid argument: " + e.getMessage());
         } catch (Exception e) {
             System.err.println("Error: " + e.getMessage());
             e.printStackTrace();
-            System.exit(1);
+        } finally {
+            if (c!= null) {
+                try {
+                    c.disconnect(true);
+                } catch (CardException e) {
+                    // Warn or ignore
+                }
+            }
         }
+        System.exit(ret);
     }
 
     // For running in apdu4j mode

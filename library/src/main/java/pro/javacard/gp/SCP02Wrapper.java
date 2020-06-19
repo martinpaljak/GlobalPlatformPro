@@ -35,8 +35,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.EnumSet;
 
-import static pro.javacard.gp.GPCardKeys.KeyPurpose.*;
-
 // SCP02 15 - CMAC on modified APDU, ICV zero, ICV encryption, no RMAC (55 = well-known random)
 class SCP02Wrapper extends SecureChannelWrapper {
     private static final Logger logger = LoggerFactory.getLogger(SCP02Wrapper.class);
@@ -50,8 +48,8 @@ class SCP02Wrapper extends SecureChannelWrapper {
     private boolean postAPDU = false;
 
 
-    SCP02Wrapper(byte[] enc, byte[] mac, byte[]rmac, EnumSet<GPSession.APDUMode> securityLevel, int bs) {
-        super(enc, mac, rmac, securityLevel, bs);
+    SCP02Wrapper(byte[] enc, byte[] mac, byte[]rmac, int bs) {
+        super(enc, mac, rmac, bs);
         setVariant(0x55);
     }
 

@@ -42,7 +42,7 @@ public class GPUtils {
         if (s.trim().toLowerCase().startsWith("0x")) {
             return Integer.parseInt(s.substring(2), 16);
         }
-        return Integer.parseInt(s);
+        return Integer.parseInt(s, 10);
     }
 
     public static String byteArrayToReadableString(byte[] array) {

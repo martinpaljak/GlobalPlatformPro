@@ -121,12 +121,13 @@ abstract class GPCommandLineInterface {
 
     // SSD-s
     protected static OptionSpec<String> OPT_MOVE = parser.accepts("move", "Move something").withRequiredArg().describedAs("AID");
-    protected static OptionSpec<String> OPT_TO = parser.accepts("to", "Destination security domain").withRequiredArg().describedAs("AID");
-    protected static OptionSpec<Void> OPT_ALLOW_TO = parser.accepts("allow-to", "Allow moving to created SSD");
-    protected static OptionSpec<Void> OPT_ALLOW_FROM = parser.accepts("allow-from", "Allow moving from created SSD");
+    protected static OptionSpec<String> OPT_TO = parser.accepts("to", "Destination security domain").requiredIf(OPT_MOVE).withRequiredArg().describedAs("AID");
+    protected static OptionSpec<Void> OPT_ALLOW_TO = parser.accepts("allow-to", "Allow moving to created SSD").availableIf(OPT_DOMAIN);
+    protected static OptionSpec<Void> OPT_ALLOW_FROM = parser.accepts("allow-from", "Allow moving from created SSD").availableIf(OPT_DOMAIN);
+
     // DAP
     protected static OptionSpec<String> OPT_DAP_DOMAIN = parser.accepts("dap-domain", "Domain to use for DAP verification").withRequiredArg().describedAs("AID");
-    protected static OptionSpec<Void> OPT_SHA256 = parser.accepts("sha256", "Use SHA-256 for LFDB hash");
+    protected static OptionSpec<Void> OPT_SHA256 = parser.accepts("sha256", "Use SHA-256 for LFDB hash, not SHA-1");
 
     // Personalization and store data
     protected static OptionSpec<String> OPT_STORE_DATA = parser.accepts("store-data", "STORE DATA blob").withRequiredArg().describedAs("data");
@@ -136,7 +137,7 @@ abstract class GPCommandLineInterface {
     protected static OptionSpec<String> OPT_RENAME_ISD = parser.accepts("rename-isd", "Rename ISD").withRequiredArg().describedAs("new AID");
 
     // MISC options
-    protected static OptionSpec<String> OPT_SC_MODE = parser.accepts("mode", "Secure channel to use (mac/enc/rmac/renc/clr)").withRequiredArg().describedAs("mac/enc/clr");
+    protected static OptionSpec<String> OPT_SC_MODE = parser.accepts("mode", "Secure channel to use").withRequiredArg().describedAs("mac/enc/renc/rmac/clr");
     protected static OptionSpec<Integer> OPT_BS = parser.accepts("bs", "Maximum APDU payload size").withRequiredArg().ofType(Integer.class).describedAs("bytes");
     protected static OptionSpec<Void> OPT_OP201 = parser.accepts("op201", "(deprecated) Enable OpenPlatform 2.0.1 mode");
 

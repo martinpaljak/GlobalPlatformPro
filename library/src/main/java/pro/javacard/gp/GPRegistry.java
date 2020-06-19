@@ -124,7 +124,7 @@ public class GPRegistry implements Iterable<GPRegistryEntry> {
                     e.setLifeCycle(lifecycle);
                 } else if (type == Kind.ExecutableLoadFile) {
                     if (privileges != 0x00) {
-                        throw new GPDataException("Privileges of Load File is not 0x00");
+                        throw new GPDataException(String.format("Privileges of Load File is not 0x00 but %02X", privileges & 0xFF));
                     }
                     e.setAID(aid);
                     e.setLifeCycle(lifecycle);

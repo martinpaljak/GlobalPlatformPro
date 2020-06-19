@@ -35,8 +35,8 @@ abstract class SecureChannelWrapper {
     protected boolean renc;
 
 
-    protected SecureChannelWrapper(byte[] enc, byte[] mac, byte[] rmac, EnumSet<GPSession.APDUMode> securityLevel, int bs) {
-        setSecurityLevel(securityLevel);
+    protected SecureChannelWrapper(byte[] enc, byte[] mac, byte[] rmac, int bs) {
+        this.mac = true; // we always start in mac mode for external authenticate
         encKey = enc.clone();
         macKey = mac.clone();
         if (rmac != null)

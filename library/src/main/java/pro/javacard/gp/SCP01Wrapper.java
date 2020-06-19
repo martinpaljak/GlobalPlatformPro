@@ -30,8 +30,6 @@ import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
 import java.util.EnumSet;
 
-import static pro.javacard.gp.GPCardKeys.KeyPurpose.*;
-
 // SCP01 05 - no ICV encryption 15 - ICV encryption (
 class SCP01Wrapper extends SecureChannelWrapper {
     private boolean icvEnc = false;
@@ -40,8 +38,8 @@ class SCP01Wrapper extends SecureChannelWrapper {
 
     byte[] icv = null;
 
-    SCP01Wrapper(byte[] enc, byte[] mac, byte []rmac, EnumSet<GPSession.APDUMode> securityLevel, int bs) {
-        super(enc, mac, rmac, securityLevel, bs);
+    SCP01Wrapper(byte[] enc, byte[] mac, byte []rmac, int bs) {
+        super(enc, mac, rmac, bs);
         setVariant(0x15);
     }
 

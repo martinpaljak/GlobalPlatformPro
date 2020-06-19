@@ -47,7 +47,6 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.Key;
-import java.security.PrivateKey;
 import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.*;
@@ -84,12 +83,12 @@ public class GPSession {
     public static final byte P1_MORE_BLOCKS = (byte) 0x00;
     public static final byte P1_LAST_BLOCK = (byte) 0x80;
 
-    protected boolean strict = true;
+    // FIXME: get rid
     GPSpec spec = GPSpec.GP211;
 
     // (I)SD AID
     private AID sdAID;
-    GPSecureChannel scpVersion;
+    private GPSecureChannel scpVersion;
     private int scpKeyVersion = 0; // will be set to the key version reported by card
 
     private int blockSize = 255;
@@ -203,10 +202,6 @@ public class GPSession {
         }
     }
 
-    public void setStrict(boolean strict) {
-        this.strict = strict;
-    }
-
     public void setBlockSize(int size) {
         this.blockSize = size;
     }
@@ -223,17 +218,12 @@ public class GPSession {
         return new AID(sdAID.getBytes());
     }
 
-    public APDUBIBO getCardChannel() {
-        return channel;
+    public GPSecureChannel getSecureChannel() {
+        return this.scpVersion;
     }
 
-    protected void giveStrictWarning(String message) throws GPException {
-        message = "STRICT WARNING: " + message;
-        if (strict) {
-            throw new GPException(message);
-        } else {
-            logger.warn(message);
-        }
+    public APDUBIBO getCardChannel() {
+        return channel;
     }
 
     /**
@@ -400,9 +390,8 @@ public class GPSession {
         offset++;
 
         // get the protocol "i" parameter, if SCP03
-        int scp_i = -1;
         if (this.scpVersion == GPSecureChannel.SCP03) {
-            scp_i = update_response[offset];
+            scpVersion.setI(update_response[offset]);
             offset++;
         }
 
@@ -417,7 +406,7 @@ public class GPSession {
         // FIXME: detect if got to end
         logger.debug("Host challenge: " + HexUtils.bin2hex(host_challenge));
         logger.debug("Card challenge: " + HexUtils.bin2hex(card_challenge));
-        logger.debug("Card reports {}{} with key version {}", this.scpVersion, (this.scpVersion == GPSecureChannel.SCP03 ? " i=" + String.format("%02x", scp_i) : ""), String.format("%d (0x%02X)", scpKeyVersion, scpKeyVersion));
+        logger.debug("Card reports {} with key version {}", this.scpVersion, String.format("%d (0x%02X)", scpKeyVersion, scpKeyVersion));
 
         // Verify response
         // If using explicit key version, it must match.
@@ -442,7 +431,7 @@ public class GPSession {
             }
         }
 
-        // Give the card key a chance to be automatically diverisifed based on KDD
+        // Give the card key a chance to be automatically diverisifed based on KDD from INITIALIZE UPDATE
         cardKeys = keys.diversify(this.scpVersion, diversification_data);
 
         logger.info("Diversified card keys: {}", cardKeys);
@@ -472,11 +461,7 @@ public class GPSession {
 
         // This is the main check for possible successful authentication.
         if (!Arrays.equals(card_cryptogram, my_card_cryptogram)) {
-            if (System.console() != null) {
-                // FIXME: this should be possible from GPTool
-                System.err.println("Read more from https://github.com/martinpaljak/GlobalPlatformPro/wiki/Keys");
-            }
-            giveStrictWarning("Card cryptogram invalid!" +
+            throw new GPException("Card cryptogram invalid!" +
                     "\nReceived: " + HexUtils.bin2hex(card_cryptogram) +
                     "\nExpected: " + HexUtils.bin2hex(my_card_cryptogram) +
                     "\n!!! DO NOT RE-TRY THE SAME COMMAND/KEYS OR YOU MAY BRICK YOUR CARD !!!");
@@ -489,15 +474,15 @@ public class GPSession {
         switch (scpVersion) {
             case SCP01:
                 host_cryptogram = GPCrypto.mac_3des_nulliv(encKey, GPUtils.concatenate(card_challenge, host_challenge));
-                wrapper = new SCP01Wrapper(encKey, macKey, rmacKey, EnumSet.of(APDUMode.MAC), blockSize);
+                wrapper = new SCP01Wrapper(encKey, macKey, rmacKey, blockSize);
                 break;
             case SCP02:
                 host_cryptogram = GPCrypto.mac_3des_nulliv(encKey, GPUtils.concatenate(card_challenge, host_challenge));
-                wrapper = new SCP02Wrapper(encKey, macKey, rmacKey, EnumSet.of(APDUMode.MAC), blockSize);
+                wrapper = new SCP02Wrapper(encKey, macKey, rmacKey, blockSize);
                 break;
             case SCP03:
                 host_cryptogram = GPCrypto.scp03_kdf(macKey, (byte) 0x01, cntx, 64);
-                wrapper = new SCP03Wrapper(encKey, macKey, rmacKey, EnumSet.of(APDUMode.MAC), blockSize);
+                wrapper = new SCP03Wrapper(encKey, macKey, rmacKey, blockSize);
                 break;
             default:
                 throw new IllegalStateException("Unknown SCP");
@@ -508,6 +493,7 @@ public class GPSession {
         CommandAPDU externalAuthenticate = new CommandAPDU(CLA_MAC, ISO7816.INS_EXTERNAL_AUTHENTICATE_82, P1, 0, host_cryptogram);
         response = transmit(externalAuthenticate);
         GPException.check(response, "External authenticate failed");
+
         // After opening the session with MAC mode, set it to target level
         wrapper.setSecurityLevel(securityLevel);
     }
@@ -531,11 +517,12 @@ public class GPSession {
         try {
             GPUtils.trace_lv(command.getData(), logger);
         } catch (Exception e) {
-            logger.error("Invalid LV: {}" + HexUtils.bin2hex(command.getData()));
+            logger.error("Invalid LV: {}", HexUtils.bin2hex(command.getData()));
         }
         return transmit(command);
     }
 
+    // Given a TLV APDU content, pretty-print into log
     private ResponseAPDU transmitTLV(CommandAPDU command) throws IOException {
         logger.trace("TLV payload: ");
         try {
@@ -546,27 +533,11 @@ public class GPSession {
         return transmit(command);
     }
 
-    private CommandAPDU tokenize(CommandAPDU command) {
-        return tokenizer.tokenize(command);
-    }
-
     // TODO: clean up this mess
-    public void loadCapFile(CAPFile cap, AID targetDomain) throws IOException, GPException {
-        if (targetDomain == null)
-            targetDomain = sdAID;
-        loadCapFile(cap, targetDomain, false, null, null, LFDBH_SHA1);
-    }
-
     public void loadCapFile(CAPFile cap, AID targetDomain, String hashFunction) throws IOException, GPException {
         if (targetDomain == null)
             targetDomain = sdAID;
         loadCapFile(cap, targetDomain, false, null, null, hashFunction);
-    }
-
-    public void loadCapFile(CAPFile cap, AID targetDomain, byte[] dap, String hash) throws IOException, GPException {
-        if (targetDomain == null)
-            targetDomain = sdAID;
-        loadCapFile(cap, targetDomain, false, targetDomain, dap, hash);
     }
 
     public void loadCapFile(CAPFile cap, AID targetDomain, AID dapdomain, byte[] dap, String hashFunction) throws IOException, GPException {
@@ -577,10 +548,6 @@ public class GPSession {
 
     private void loadCapFile(CAPFile cap, AID targetDomain, boolean includeDebug, AID dapDomain, byte[] dap, String hashFunction)
             throws GPException, IOException {
-
-        if (getRegistry().allAIDs().contains(cap.getPackageAID())) {
-            giveStrictWarning("Package with AID " + cap.getPackageAID() + " is already present on card");
-        }
 
         // FIXME: hash type handling needs to be sensible.
         boolean isHashRequired = dap != null || !(tokenizer instanceof DMTokenizer.NULLTokenizer);
@@ -607,7 +574,7 @@ public class GPSession {
         }
 
         CommandAPDU command = new CommandAPDU(CLA_GP, INS_INSTALL, P1_INSTALL_FOR_LOAD, 0x00, bo.toByteArray());
-        command = tokenize(command);
+        command = tokenizer.tokenize(command);
         ResponseAPDU response = transmitLV(command);
         GPException.check(response, "INSTALL [for load] failed");
 
@@ -650,31 +617,11 @@ public class GPSession {
         if (instanceAID == null) {
             instanceAID = appletAID;
         }
-        if (getRegistry().allAppletAIDs().contains(instanceAID)) {
-            giveStrictWarning("Instance AID " + instanceAID + " is already present on card");
-        }
-
         byte[] data = buildInstallData(packageAID, appletAID, instanceAID, privileges, installParams);
         CommandAPDU command = new CommandAPDU(CLA_GP, INS_INSTALL, P1_INSTALL_AND_MAKE_SELECTABLE, 0x00, data);
-        command = tokenize(command);
+        command = tokenizer.tokenize(command);
         ResponseAPDU response = transmitLV(command);
         GPException.check(response, "INSTALL [for install and make selectable] failed");
-        dirty = true;
-    }
-
-    public void installForInstall(AID packageAID, AID appletAID, AID instanceAID, Privileges privileges, byte[] installParams, PrivateKey key) throws GPException, IOException {
-        if (instanceAID == null) {
-            instanceAID = appletAID;
-        }
-        if (getRegistry().allAppletAIDs().contains(instanceAID)) {
-            giveStrictWarning("Instance AID " + instanceAID + " is already present on card");
-        }
-
-        byte[] data = buildInstallData(packageAID, appletAID, instanceAID, privileges, installParams);
-        CommandAPDU command = new CommandAPDU(CLA_GP, INS_INSTALL, P1_INSTALL_FOR_INSTALL, 0x00, data);
-        command = tokenize(command);
-        ResponseAPDU response = transmitLV(command);
-        GPException.check(response, "INSTALL [for install] failed");
         dirty = true;
     }
 
@@ -735,7 +682,7 @@ public class GPSession {
         }
 
         CommandAPDU command = new CommandAPDU(CLA_GP, INS_INSTALL, 0x10, 0x00, bo.toByteArray());
-        command = tokenize(command);
+        command = tokenizer.tokenize(command);
         ResponseAPDU response = transmitLV(command);
         GPException.check(response, "INSTALL [for extradition] failed");
         dirty = true;
@@ -760,7 +707,6 @@ public class GPSession {
         CommandAPDU install = new CommandAPDU(CLA_GP, INS_INSTALL, 0x20, 0x00, bo.toByteArray(), 256);
         GPException.check(transmitLV(install), "INSTALL [for personalization] failed");
     }
-
 
     public byte[] personalizeSingle(AID aid, byte[] data, int P1) throws IOException, GPException {
         return personalize(aid, Collections.singletonList(data), P1).get(0);
@@ -831,7 +777,7 @@ public class GPSession {
         }
 
         CommandAPDU command = new CommandAPDU(CLA_GP, INS_INSTALL, 0x08, 0x00, bo.toByteArray());
-        command = tokenize(command);
+        command = tokenizer.tokenize(command);
         ResponseAPDU response = transmitLV(command);
         GPException.check(response, "INSTALL [for make selectable] failed");
         dirty = true;
@@ -866,7 +812,7 @@ public class GPSession {
             throw new RuntimeException(ioe);
         }
         CommandAPDU command = new CommandAPDU(CLA_GP, INS_DELETE, 0x00, deleteDeps ? 0x80 : 0x00, bo.toByteArray());
-        command = tokenize(command);
+        command = tokenizer.tokenize(command);
         ResponseAPDU response = transmitTLV(command);
         GPException.check(response, "DELETE failed");
         dirty = true;
@@ -933,14 +879,7 @@ public class GPSession {
     public void putKeys(GPCardKeys keys, boolean replace) throws GPException, IOException {
 
         // Log and trace
-        logger.debug("PUT KEY version {}", keys);
-        // Check consistency, if template is available.
-        List<GPKeyInfo> tmpl = getKeyInfoTemplate();
-
-        if (replace && tmpl.size() == 0) {
-            logger.warn("No key template on card but trying to replace. Implying add");
-            replace = false;
-        }
+        logger.debug("PUT KEY version {} replace={} {}", keys.getKeyInfo().getVersion(), replace, keys);
 
         // Construct APDU
         int P1 = 0x00; // New key in single command unless replace
@@ -952,19 +891,6 @@ public class GPSession {
         P2 |= 0x80; // More than one key
 
         ByteArrayOutputStream bo = new ByteArrayOutputStream();
-
-        // FIXME: make this more obvious
-        int keyver = keys.getKeyInfo().getVersion();
-        // Only SCP02 via SCP03 is possible
-        if (keyver > 0x10 && keyver <= 0x1F)
-            keys = keys.diversify(GPSecureChannel.SCP01, cardKeys.kdd);
-        if (keyver >= 0x20 && keyver <= 0x2F)
-            keys = keys.diversify(GPSecureChannel.SCP02, cardKeys.kdd);
-        else if (keyver >= 0x30 && keyver <= 0x3F)
-            keys = keys.diversify(GPSecureChannel.SCP03, cardKeys.kdd);
-        else
-            keys = keys.diversify(cardKeys.scp, cardKeys.kdd);
-
 
         // New key version
         bo.write(keys.getKeyInfo().getVersion());

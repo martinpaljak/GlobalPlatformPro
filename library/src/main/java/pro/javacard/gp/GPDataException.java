@@ -22,8 +22,8 @@ package pro.javacard.gp;
 import apdu4j.HexUtils;
 
 // Thrown when some data is not parseable for some reason, and includes the data in question.
-@SuppressWarnings("serial")
 public class GPDataException extends GPException {
+    private static final long serialVersionUID = -4966789553820406244L;
 
     public GPDataException(String message) {
         super(message);

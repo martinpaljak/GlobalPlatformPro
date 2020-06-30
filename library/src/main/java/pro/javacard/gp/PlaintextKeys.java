@@ -22,6 +22,7 @@ package pro.javacard.gp;
 import apdu4j.HexUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pro.javacard.gp.i.CardKeysProvider;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;

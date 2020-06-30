@@ -23,7 +23,6 @@ package pro.javacard.gp;
 import apdu4j.*;
 import apdu4j.terminals.LoggingCardTerminal;
 import com.payneteasy.tlv.BerTag;
-import com.payneteasy.tlv.BerTlv;
 import com.payneteasy.tlv.BerTlvParser;
 import com.payneteasy.tlv.BerTlvs;
 import joptsimple.OptionSet;
@@ -35,6 +34,7 @@ import pro.javacard.gp.GPRegistryEntry.Privileges;
 import pro.javacard.gp.GPSession.APDUMode;
 import pro.javacard.gp.GPSession.GPSpec;
 import pro.javacard.gp.PlaintextKeys.Diversification;
+import pro.javacard.gp.i.CardKeysProvider;
 
 import javax.crypto.Cipher;
 import javax.smartcardio.Card;
@@ -216,10 +216,10 @@ public final class GPTool extends GPCommandLineInterface {
             // Normally assume a single master key
             final GPCardKeys keys;
 
-            if (args.has(OPT_KEYS)) {
+            Optional<GPCardKeys> key = keyFromPlugin(args.valueOf(OPT_KEY));
+            if (key.isPresent()) {
                 // keys come from custom provider
-                fail("Not yet implemented");
-                keys = PlaintextKeys.defaultKey();
+                keys = key.get();
             } else {
                 Optional<PlaintextKeys> envKeys = PlaintextKeys.fromEnvironment();
                 Optional<PlaintextKeys> cliKeys = PlaintextKeys.fromStrings(args.valueOf(OPT_KEY_ENC), args.valueOf(OPT_KEY_MAC), args.valueOf(OPT_KEY_DEK), args.valueOf(OPT_KEY), args.valueOf(OPT_KEY_KDF), null, args.valueOf(OPT_KEY_VERSION));
@@ -359,8 +359,8 @@ public final class GPTool extends GPCommandLineInterface {
                     if (Files.exists(Paths.get(kv))) {
                         try (FileInputStream fin = new FileInputStream(kv)) {
                             // Get public key
-                            PublicKey key = GPCrypto.pem2PublicKey(fin);
-                            gp.putKey(key, keyVersion, replace);
+                            PublicKey pubkey = GPCrypto.pem2PublicKey(fin);
+                            gp.putKey(pubkey, keyVersion, replace);
                         } catch (IllegalArgumentException e) {
                             fail("Unknown key type: " + e.getMessage());
                         }
@@ -733,6 +733,22 @@ public final class GPTool extends GPCommandLineInterface {
         return 1;
     }
 
+    private static Optional<GPCardKeys> keyFromPlugin(String spec) {
+        try {
+            ServiceLoader<CardKeysProvider> sl = ServiceLoader.load(CardKeysProvider.class, GPTool.class.getClassLoader());
+            List<CardKeysProvider> list = new ArrayList<>();
+            sl.iterator().forEachRemaining(list::add);
+            for (CardKeysProvider p : list) {
+                Optional<GPCardKeys> k = p.getCardKeys(spec);
+                if (k.isPresent()) return k;
+            }
+        } catch (ServiceConfigurationError e) {
+            System.err.println("Could not load key provider: " + e.getMessage());
+        }
+        return Optional.empty();
+    }
+
+
     private static void calculateDapPropertiesAndLoadCap(OptionSet args, GPSession gp, CAPFile capFile) throws GPException, IOException {
         try {
             DAPProperties dap = new DAPProperties(args, gp);
@@ -800,7 +816,7 @@ public final class GPTool extends GPCommandLineInterface {
     }
 
     private static boolean needsAuthentication(OptionSet args) {
-        OptionSpec[] yes = new OptionSpec[]{OPT_CONNECT, OPT_LIST, OPT_LOAD, OPT_INSTALL, OPT_DELETE, OPT_DELETE_KEY, OPT_CREATE,
+        OptionSpec<?>[] yes = new OptionSpec<?>[]{OPT_CONNECT, OPT_LIST, OPT_LOAD, OPT_INSTALL, OPT_DELETE, OPT_DELETE_KEY, OPT_CREATE,
                 OPT_LOCK, OPT_UNLOCK, OPT_LOCK_ENC, OPT_LOCK_MAC, OPT_LOCK_DEK, OPT_MAKE_DEFAULT,
                 OPT_UNINSTALL, OPT_SECURE_APDU, OPT_DOMAIN, OPT_LOCK_CARD, OPT_UNLOCK_CARD, OPT_LOCK_APPLET, OPT_UNLOCK_APPLET,
                 OPT_STORE_DATA, OPT_STORE_DATA_CHUNK, OPT_INITIALIZE_CARD, OPT_SECURE_CARD, OPT_RENAME_ISD, OPT_SET_PERSO, OPT_SET_PRE_PERSO, OPT_MOVE,

@@ -78,10 +78,10 @@ abstract class GPCommandLineInterface {
     protected static OptionSpec<Void> OPT_TODAY = parser.accepts("today", "Set date to today when updating CPLC");
 
     // SCP key handling
-    protected static OptionSpec<String> OPT_KEYS = parser.accepts("keys", "Use key provider").withRequiredArg().describedAs("provider");
+    protected static OptionSpec<String> OPT_KEYS = parser.accepts("keys", "Use key provider DEPRECATED").withRequiredArg().describedAs("provider");
 
     protected static OptionSpec<String> OPT_KEY = parser.accepts("key", "Specify master key").withRequiredArg().describedAs("key");
-    protected static OptionSpec<String> OPT_KEY_KCV = parser.accepts("key-kcv", "Specify master key check value").withRequiredArg().describedAs("KCV");
+    //protected static OptionSpec<String> OPT_KEY_KCV = parser.accepts("key-kcv", "Specify master key check value").withRequiredArg().describedAs("KCV");
     protected static OptionSpec<String> OPT_KEY_KDF = parser.accepts("key-kdf", "Use KDF with master key").withRequiredArg().describedAs("kdf");
 
     protected static OptionSpec<String> OPT_KEY_ENC = parser.accepts("key-enc", "Specify card ENC key").withRequiredArg().describedAs("key");
@@ -89,7 +89,7 @@ abstract class GPCommandLineInterface {
     protected static OptionSpec<String> OPT_KEY_DEK = parser.accepts("key-dek", "Specify card DEK key").withRequiredArg().describedAs("key");
 
     protected static OptionSpec<String> OPT_LOCK = parser.accepts("lock", "Set new key").withRequiredArg().describedAs("key");
-    protected static OptionSpec<String> OPT_LOCK_KCV = parser.accepts("lock-kcv", "Specify lock key check value").withRequiredArg().describedAs("KCV");
+    //protected static OptionSpec<String> OPT_LOCK_KCV = parser.accepts("lock-kcv", "Specify lock key check value").withRequiredArg().describedAs("KCV");
     protected static OptionSpec<String> OPT_LOCK_KDF = parser.accepts("lock-kdf", "Use KDF with lock key").withRequiredArg().describedAs("kdf");
 
     protected static OptionSpec<String> OPT_LOCK_ENC = parser.accepts("lock-enc", "Set new ENC key").withRequiredArg().describedAs("key");
@@ -104,7 +104,7 @@ abstract class GPCommandLineInterface {
     protected static OptionSpec<Void> OPT_KDF3 = parser.accepts("kdf3", "Use SCP03 KDF");
 
     // Key management
-    protected static OptionSpec<String> OPT_KEY_ID = parser.accepts("key-id", "Specify key ID").withRequiredArg();
+    //protected static OptionSpec<String> OPT_KEY_ID = parser.accepts("key-id", "Specify key ID").withRequiredArg();
     protected static OptionSpec<String> OPT_KEY_VERSION = parser.accepts("key-ver", "Specify key version").withRequiredArg();
     protected static OptionSpec<String> OPT_PUT_KEY = parser.accepts("put-key", "Put a new key").withRequiredArg().describedAs("PEM file or key");
     protected static OptionSpec<String> OPT_REPLACE_KEY = parser.accepts("replace-key", "Put a new key, forcing replace").withRequiredArg().describedAs("PEM file or key");

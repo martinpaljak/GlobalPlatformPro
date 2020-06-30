@@ -29,14 +29,22 @@ import java.util.Optional;
 @AutoService(CardKeysProvider.class)
 public class PlaintextKeysProvider implements CardKeysProvider {
 
+    public PlaintextKeysProvider() {
+    }
+
     @Override
     public Optional<GPCardKeys> getCardKeys(String spec) {
+        // Default key
+        if (spec.toLowerCase().equals("default"))
+            return Optional.of(PlaintextKeys.defaultKey());
+        // emv:<hex>
         for (PlaintextKeys.Diversification d : PlaintextKeys.Diversification.values()) {
             if (spec.toLowerCase().startsWith(d.name().toLowerCase())) {
                 byte[] k = HexUtils.stringToBin(spec.substring(d.name().length() + 1));
                 return Optional.of(PlaintextKeys.derivedFromMasterKey(k, null, d));
             }
         }
+        // hex
         try {
             byte[] k = HexUtils.stringToBin(spec);
             return Optional.of(PlaintextKeys.fromMasterKey(k));

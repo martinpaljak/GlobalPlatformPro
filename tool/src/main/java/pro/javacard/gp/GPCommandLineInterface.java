@@ -78,9 +78,7 @@ abstract class GPCommandLineInterface {
     protected static OptionSpec<Void> OPT_TODAY = parser.accepts("today", "Set date to today when updating CPLC");
 
     // SCP key handling
-    protected static OptionSpec<String> OPT_KEYS = parser.accepts("keys", "Use key provider DEPRECATED").withRequiredArg().describedAs("provider");
-
-    protected static OptionSpec<String> OPT_KEY = parser.accepts("key", "Specify master key").withRequiredArg().describedAs("key");
+    protected static OptionSpec<String> OPT_KEY = parser.acceptsAll(Arrays.asList("k", "key"), "Specify key").withRequiredArg().describedAs("key");
     //protected static OptionSpec<String> OPT_KEY_KCV = parser.accepts("key-kcv", "Specify master key check value").withRequiredArg().describedAs("KCV");
     protected static OptionSpec<String> OPT_KEY_KDF = parser.accepts("key-kdf", "Use KDF with master key").withRequiredArg().describedAs("kdf");
 

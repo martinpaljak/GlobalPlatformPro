@@ -738,10 +738,7 @@ public final class GPTool extends GPCommandLineInterface {
             ServiceLoader<CardKeysProvider> sl = ServiceLoader.load(CardKeysProvider.class, GPTool.class.getClassLoader());
             List<CardKeysProvider> list = new ArrayList<>();
             sl.iterator().forEachRemaining(list::add);
-            for (CardKeysProvider p : list) {
-                Optional<GPCardKeys> k = p.getCardKeys(spec);
-                if (k.isPresent()) return k;
-            }
+            return list.stream().map(e -> e.getCardKeys(spec)).filter(Optional::isPresent).map(Optional::get).findFirst();
         } catch (ServiceConfigurationError e) {
             System.err.println("Could not load key provider: " + e.getMessage());
         }

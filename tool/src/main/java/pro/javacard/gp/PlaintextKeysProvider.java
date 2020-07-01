@@ -34,18 +34,23 @@ public class PlaintextKeysProvider implements CardKeysProvider {
 
     @Override
     public Optional<GPCardKeys> getCardKeys(String spec) {
-        // Default key
-        if (spec.toLowerCase().equals("default"))
+        if (spec == null)
+            return Optional.empty();
+        
+        // Default key, with shorthand
+        if ("default".startsWith(spec.toLowerCase()))
             return Optional.of(PlaintextKeys.defaultKey());
-        // emv:<hex>
-        for (PlaintextKeys.Diversification d : PlaintextKeys.Diversification.values()) {
-            if (spec.toLowerCase().startsWith(d.name().toLowerCase())) {
-                byte[] k = HexUtils.stringToBin(spec.substring(d.name().length() + 1));
-                return Optional.of(PlaintextKeys.derivedFromMasterKey(k, null, d));
-            }
-        }
-        // hex
+
         try {
+            // emv:<hex>
+            for (PlaintextKeys.Diversification d : PlaintextKeys.Diversification.values()) {
+                if (spec.toLowerCase().startsWith(d.name().toLowerCase())) {
+                    byte[] k = HexUtils.stringToBin(spec.substring(d.name().length() + 1));
+                    return Optional.of(PlaintextKeys.derivedFromMasterKey(k, null, d));
+                }
+            }
+
+            // hex
             byte[] k = HexUtils.stringToBin(spec);
             return Optional.of(PlaintextKeys.fromMasterKey(k));
         } catch (IllegalArgumentException e) {

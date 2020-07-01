@@ -641,32 +641,45 @@ public final class GPTool extends GPCommandLineInterface {
 
                 // --lock
                 if (args.has(OPT_LOCK) || args.has(OPT_LOCK_ENC) || args.has(OPT_LOCK_MAC) || args.has(OPT_LOCK_DEK)) {
-
-                    PlaintextKeys newKeys = PlaintextKeys.fromStrings(args.valueOf(OPT_LOCK_ENC), args.valueOf(OPT_LOCK_MAC), args.valueOf(OPT_LOCK_DEK), args.valueOf(OPT_LOCK), args.valueOf(OPT_LOCK_KDF), null, args.valueOf(OPT_NEW_KEY_VERSION))
-                            .orElseThrow(() -> new IllegalArgumentException("Can not lock without keys :)"));
-
+                    final GPCardKeys newKeys;
                     // By default we try to change an existing key
                     boolean replace = true;
-                    List<GPKeyInfo> current = gp.getKeyInfoTemplate();
-                    System.out.println(current);
-                    // By default use key version 1
-                    final int keyver;
-                    if (args.has(OPT_NEW_KEY_VERSION)) {
-                        keyver = GPUtils.intValue(args.valueOf(OPT_NEW_KEY_VERSION));
-                        // Key version is indicated, check if already present on card
-                        if (current.stream().filter(e -> (e.getVersion() == keyver)).count() > 0) {
-                            replace = false;
-                        }
+
+                    // Get new key values
+                    Optional<GPCardKeys> lockKey = keyFromPlugin(args.valueOf(OPT_LOCK));
+                    if (lockKey.isPresent()) {
+                        newKeys = lockKey.get(); // From provider
                     } else {
-                        if (current.size() == 0 || gp.getScpKeyVersion() == 255) {
-                            keyver = 1;
-                            replace = false;
-                        } else {
-                            keyver = gp.getScpKeyVersion();
-                        }
+                        newKeys = PlaintextKeys.fromStrings(args.valueOf(OPT_LOCK_ENC), args.valueOf(OPT_LOCK_MAC), args.valueOf(OPT_LOCK_DEK), args.valueOf(OPT_LOCK), args.valueOf(OPT_LOCK_KDF), null, args.valueOf(OPT_NEW_KEY_VERSION))
+                                .orElseThrow(() -> new IllegalArgumentException("Can not lock without keys :)"));
                     }
-                    newKeys.setVersion(keyver);
-                    verbose("Keyset version: " + newKeys.getKeyInfo().getVersion());
+
+                    if (newKeys instanceof PlaintextKeys) {
+                        // Adjust the mode and version with plaintext keys
+                        PlaintextKeys pk = (PlaintextKeys) newKeys;
+                        List<GPKeyInfo> current = gp.getKeyInfoTemplate();
+                        // By default use key version 1
+                        final int keyver;
+                        if (args.has(OPT_NEW_KEY_VERSION)) {
+                            keyver = GPUtils.intValue(args.valueOf(OPT_NEW_KEY_VERSION));
+                            // Key version is indicated, check if already present on card
+                            if (current.stream().filter(e -> (e.getVersion() == keyver)).count() > 0) {
+                                replace = false;
+                            }
+                        } else {
+                            if (current.size() == 0 || gp.getScpKeyVersion() == 255) {
+                                keyver = 1;
+                                replace = false;
+                            } else {
+                                keyver = gp.getScpKeyVersion();
+                            }
+                        }
+                        pk.setVersion(keyver);
+                    }
+
+                    // Diversify new keys
+                    int keyver = newKeys.getKeyInfo().getVersion();
+                    verbose("Keyset version: " + keyver);
 
                     // Only SCP02 via SCP03 should be possible, but cards vary
                     byte[] kdd = newKeys.getKDD().orElseGet(() -> keys.getKDD().get());
@@ -681,16 +694,14 @@ public final class GPTool extends GPCommandLineInterface {
                     else
                         newKeys.diversify(gp.getSecureChannel(), kdd);
 
-                    if (newKeys.diversifier != Diversification.NONE) {
-                        verbose("Diversified keys: " + newKeys);
-                    }
-
                     gp.putKeys(newKeys, replace);
 
-                    if (args.has(OPT_LOCK)) {
-                        System.out.println(gp.getAID() + " locked with: " + HexUtils.bin2hex(HexUtils.stringToBin(args.valueOf(OPT_LOCK))));
-                        if (newKeys.diversifier != Diversification.NONE)
-                            System.out.println("Keys were diversified with " + newKeys.diversifier + " and " + HexUtils.bin2hex(kdd));
+                    if (args.has(OPT_LOCK) && newKeys instanceof PlaintextKeys) {
+                        PlaintextKeys pk = (PlaintextKeys) newKeys;
+                        if (pk.getMasterKey().isPresent())
+                            System.out.println(gp.getAID() + " locked with: " + HexUtils.bin2hex(pk.getMasterKey().get()));
+                        if (pk.diversifier != Diversification.NONE)
+                            System.out.println("Keys were diversified with " + pk.diversifier + " and " + HexUtils.bin2hex(kdd));
                         System.out.println("Write this down, DO NOT FORGET/LOSE IT!");
                     } else {
                         System.out.println("Card locked with new keys.");

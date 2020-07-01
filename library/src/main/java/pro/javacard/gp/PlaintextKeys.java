@@ -75,16 +75,24 @@ public class PlaintextKeys extends GPCardKeys {
     // Keyset version
     private int version = 0x00;
 
+    // Holds the unmodified master key
+    private byte[] masterKey;
+
     // Holds card-specific keys. They shall be diversified in-place, as needed
     private HashMap<KeyPurpose, byte[]> cardKeys = new HashMap<>();
 
     // Holds a copy of session-specific keys. Only relevant for SCP02
     private HashMap<KeyPurpose, byte[]> sessionKeys = new HashMap<>();
 
+    private PlaintextKeys(byte[] master, Diversification d) {
+        this(master, master, master, d);
+        masterKey = master.clone();
+    }
+
     private PlaintextKeys(byte[] enc, byte[] mac, byte[] dek, Diversification d) {
-        cardKeys.put(KeyPurpose.ENC, enc);
-        cardKeys.put(KeyPurpose.MAC, mac);
-        cardKeys.put(KeyPurpose.DEK, dek);
+        cardKeys.put(KeyPurpose.ENC, enc.clone());
+        cardKeys.put(KeyPurpose.MAC, mac.clone());
+        cardKeys.put(KeyPurpose.DEK, dek.clone());
         diversifier = d;
     }
 
@@ -181,7 +189,7 @@ public class PlaintextKeys extends GPCardKeys {
                 throw new IllegalArgumentException(msg);
             }
         }
-        return new PlaintextKeys(master, master, master, div);
+        return new PlaintextKeys(master, div);
     }
 
 
@@ -253,6 +261,10 @@ public class PlaintextKeys extends GPCardKeys {
         data[14] = (byte) 0x0F;
         data[15] = key.getValue();
         return data;
+    }
+
+    public Optional<byte[]> getMasterKey() {
+        return Optional.ofNullable(masterKey);
     }
 
     @Override

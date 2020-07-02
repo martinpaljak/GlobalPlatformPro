@@ -129,7 +129,65 @@ public final class GPData {
         }
     }
 
-    // GPV 2.2 AmdE 6.1
+    enum LFDBH {
+        SHA1(0x01),
+        SHA256(0x02),
+        SHA384(0x03),
+        SHA512(0x04);
+        int value;
+
+        LFDBH(int byteValue) {
+            this.value = byteValue;
+        }
+
+        public static Optional<LFDBH> byValue(int byteValue) {
+            return Arrays.asList(values()).stream().filter(e -> e.value == byteValue).findFirst();
+        }
+    }
+
+    enum SIGNATURE {
+        // First byte
+        RSA1024_SHA1(0x01, 0),
+        RSAPSS_SHA256(0x02, 0),
+        DES_MAC(0x04, 0),
+        CMAC_AES128(0x08, 0),
+        CMAC_AES192(0x10, 0),
+        CMAC_AES256(0x20, 0),
+        ECCP256_SHA256(0x40, 0),
+        ECCP384_SHA384(0x80, 0),
+        // Second byte
+        ECCP512_SHA512(0x01, 1),
+        ECCP521_SHA512(0x02, 1);
+
+        int value;
+        int pos;
+
+        SIGNATURE(int byteValue, int pos) {
+            this.value = byteValue;
+            this.pos = pos;
+        }
+
+        public static Set<SIGNATURE> byValue(byte[] v) {
+            LinkedHashSet<SIGNATURE> r = new LinkedHashSet<>();
+            for (int i = 0; i < v.length; i++) {
+                final int p = i;
+                Arrays.asList(values()).stream().filter(e -> e.pos == p).forEach(e -> {
+                    if (e.value == (e.value & v[p]))
+                        r.add(e);
+                });
+            }
+            return r;
+        }
+    }
+
+    static List<Integer> toUnsignedList(byte[] b) {
+        ArrayList<Integer> r = new ArrayList<>();
+        for (int i = 0; i < b.length; i++)
+            r.add(b[i] & 0xFF);
+        return r;
+    }
+
+    // GPV 2.2 AmdE 6.1 /
     public static void pretty_print_card_capabilities(byte[] data) throws GPDataException {
         // BUGFIX: exist cards that return nested 0x67 tag with GET DATA with GP CLA
         if (data[0] == 0x67 && data[2] == 0x67) {
@@ -149,7 +207,7 @@ public final class GPData {
                     if (t != null) {
                         BerTlv scp = t.find(new BerTag(0x80));
                         if (scp != null) {
-                            System.out.format("Supports: SCP%02X", scp.getIntValue());
+                            System.out.format("Supports SCP%02X", scp.getIntValue());
                             BerTlv is = t.find(new BerTag(0x81));
                             if (is != null) {
                                 byte[] isv = is.getBytesValue();
@@ -186,22 +244,26 @@ public final class GPData {
                     }
                     t = v.find(new BerTag(0x83));
                     if (t != null) {
-                        System.out.println("Supported LFDB hash: " + HexUtils.bin2hex(t.getBytesValue()));
+                        String hashes = toUnsignedList(t.getBytesValue()).stream().map(e -> LFDBH.byValue(e).get().name()).collect(Collectors.joining(", "));
+                        System.out.println("Supported LFDB hash: " + hashes);
                         continue;
                     }
                     t = v.find(new BerTag(0x85));
                     if (t != null) { // TODO: parse
-                        System.out.println("Supported Token Verification ciphers: " + HexUtils.bin2hex(t.getBytesValue()));
+                        String ciphers = SIGNATURE.byValue(t.getBytesValue()).stream().map(e -> e.name()).collect(Collectors.joining(", "));
+                        System.out.println("Supported Token Verification ciphers: " + ciphers);
                         continue;
                     }
                     t = v.find(new BerTag(0x86));
                     if (t != null) {
-                        System.out.println("Supported Receipt Generation ciphers: " + HexUtils.bin2hex(t.getBytesValue()));
+                        String ciphers = SIGNATURE.byValue(t.getBytesValue()).stream().map(e -> e.name()).collect(Collectors.joining(", "));
+                        System.out.println("Supported Receipt Generation ciphers: " + ciphers);
                         continue;
                     }
                     t = v.find(new BerTag(0x87));
                     if (t != null) {
-                        System.out.println("Supported DAP Verification ciphers: " + HexUtils.bin2hex(t.getBytesValue()));
+                        String ciphers = SIGNATURE.byValue(t.getBytesValue()).stream().map(e -> e.name()).collect(Collectors.joining(", "));
+                        System.out.println("Supported DAP Verification ciphers: " + ciphers);
                         continue;
                     }
                     t = v.find(new BerTag(0x88));
@@ -330,7 +392,7 @@ public final class GPData {
 
         private CPLC(byte[] data) {
             int offset = 0;
-            for (Field f: Field.values()) {
+            for (Field f : Field.values()) {
                 values.put(f, Arrays.copyOfRange(data, offset, offset + f.len));
                 offset += f.len;
             }
@@ -380,6 +442,7 @@ public final class GPData {
             ICPersonalizationEquipmentID(4);
 
             private final int len;
+
             Field(int len) {
                 this.len = len;
             }

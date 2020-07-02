@@ -9,6 +9,7 @@ import org.testng.annotations.Test;
 import pro.javacard.AID;
 
 import java.util.List;
+import java.util.Set;
 
 public class TestParseTags {
     final static Logger logger = LoggerFactory.getLogger(TestParseTags.class);
@@ -78,4 +79,29 @@ public class TestParseTags {
         //b = Arrays.copyOf(b, 0x2A);
         System.out.println(GPData.CPLC.fromBytes(b).toPrettyString());
     }
+
+    @Test
+    public void testCardCapabilities() {
+        byte[] v = HexUtils.hex2bin("3B");
+        Set<GPData.SIGNATURE> ciphers = GPData.SIGNATURE.byValue(v);
+        Assert.assertTrue( ciphers.size() > 0);
+        System.out.println(ciphers);
+    }
+
+    @Test
+    public void testPrivileges() {
+        byte[] v = HexUtils.hex2bin("80C000");
+        Set<GPRegistryEntry.Privilege> privileges = GPRegistryEntry.Privilege.fromBytes(v);
+        Assert.assertEquals(privileges.size(), 3);
+        Assert.assertTrue(privileges.contains(GPRegistryEntry.Privilege.AuthorizedManagement));
+        Assert.assertTrue(privileges.contains(GPRegistryEntry.Privilege.SecurityDomain));
+        Assert.assertTrue(privileges.contains(GPRegistryEntry.Privilege.TrustedPath));
+        Assert.assertEquals(GPRegistryEntry.Privilege.toBytes(privileges), v);
+
+        v = HexUtils.hex2bin("9EFE80");
+        privileges = GPRegistryEntry.Privilege.fromBytes(v);
+        Assert.assertEquals(privileges.size(), 13);
+        Assert.assertEquals(GPRegistryEntry.Privilege.toBytes(privileges), v);
+    }
+
 }

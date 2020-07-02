@@ -483,7 +483,7 @@ public class GPSession {
         switch (scpVersion) {
             case SCP01:
                 host_cryptogram = GPCrypto.mac_3des_nulliv(encKey, GPUtils.concatenate(card_challenge, host_challenge));
-                wrapper = new SCP01Wrapper(encKey, macKey, rmacKey, blockSize);
+                wrapper = new SCP01Wrapper(encKey, macKey, blockSize);
                 break;
             case SCP02:
                 host_cryptogram = GPCrypto.mac_3des_nulliv(encKey, GPUtils.concatenate(card_challenge, host_challenge));

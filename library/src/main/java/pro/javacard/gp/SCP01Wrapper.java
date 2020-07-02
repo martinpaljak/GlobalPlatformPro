@@ -38,8 +38,8 @@ class SCP01Wrapper extends SecureChannelWrapper {
 
     byte[] icv = null;
 
-    SCP01Wrapper(byte[] enc, byte[] mac, byte []rmac, int bs) {
-        super(enc, mac, rmac, bs);
+    SCP01Wrapper(byte[] enc, byte[] mac, int bs) {
+        super(enc, mac, null, bs);
         setVariant(0x15);
     }
 

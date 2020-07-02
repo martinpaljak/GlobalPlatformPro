@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 import java.io.PrintStream;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 // Encapsulates key metadata
 public final class GPKeyInfo {
@@ -141,27 +142,47 @@ public final class GPKeyInfo {
         return r;
     }
 
+    private static Optional<String> getPurposeDescription(GPKeyInfo k) {
+        switch (k.getVersion()) {
+            case 0x70:
+                return Optional.of("Token Verification");
+            case 0x71:
+                return Optional.of("Receipt Generation");
+            case 0x73:
+                return Optional.of("DAP Verification");
+            default:
+                return Optional.empty();
+        }
+    }
+
+    private static Optional<String> getTypeDescription(GPKeyInfo k) {
+        if (k.getType() == GPKey.RSA_PUB_E || k.getType() == GPKey.RSA_PUB_N && k.getLength() > 0) {
+            return Optional.of("RSA-" + k.getLength() * 8 + " public");
+        } else if (k.getType() == GPKey.AES && k.getLength() > 0) {
+            return Optional.of("AES-" + k.getLength() * 8);
+        }
+        return Optional.empty();
+    }
+
+    private static Optional<String> getKeyDescription(GPKeyInfo k) {
+        Optional<String> t = getTypeDescription(k);
+        Optional<String> p = getPurposeDescription(k);
+
+        return Stream.of(t, p).filter(Optional::isPresent).map(Optional::get).reduce((a, b) -> a + ", " + b);
+    }
+
     // Print the key template
     public static void print(List<GPKeyInfo> list, PrintStream out) {
         boolean factory_keys = false;
         out.flush();
         for (GPKeyInfo k : list) {
-            // Descriptive text about the key
-            final String nice;
-            if (k.getType() == GPKey.RSA_PUB_E || k.getType() == GPKey.RSA_PUB_N && k.getLength() > 0) {
-                nice = "(RSA-" + k.getLength() * 8 + " public)";
-            } else if (k.getType() == GPKey.AES && k.getLength() > 0) {
-                nice = "(AES-" + k.getLength() * 8 + ")";
-            } else {
-                // TODO: 70, 71, 73 descriptions
-                nice = "";
-            }
             // Detect unaddressable factory keys
             if (k.getVersion() == 0x00 || k.getVersion() == 0xFF)
                 factory_keys = true;
 
             // print
-            out.println(String.format("Version: %3d (0x%02X) ID: %3d (0x%02X) type: %-12s length: %3d %s", k.getVersion(), k.getVersion(), k.getID(), k.getID(), k.getType(), k.getLength(), nice));
+            String description = getKeyDescription(k).map(e -> " (" + e + ")").orElse("");
+            out.println(String.format("Version: %3d (0x%02X) ID: %3d (0x%02X) type: %-12s length: %3d%s", k.getVersion(), k.getVersion(), k.getID(), k.getID(), k.getType(), k.getLength(), description));
         }
         if (factory_keys) {
             out.println("Key version suggests factory keys");

@@ -105,7 +105,7 @@ abstract class GPCommandLineInterface {
     //protected static OptionSpec<String> OPT_KEY_ID = parser.accepts("key-id", "Specify key ID").withRequiredArg();
     protected static OptionSpec<String> OPT_KEY_VERSION = parser.accepts("key-ver", "Specify key version").withRequiredArg();
     protected static OptionSpec<String> OPT_PUT_KEY = parser.accepts("put-key", "Put a new key").withRequiredArg().describedAs("PEM file or key");
-    protected static OptionSpec<String> OPT_REPLACE_KEY = parser.accepts("replace-key", "Put a new key, forcing replace").withRequiredArg().describedAs("PEM file or key");
+    protected static OptionSpec<String> OPT_REPLACE_KEY = parser.accepts("replace-key", "Put a new key, forcing replace").availableUnless(OPT_PUT_KEY).withRequiredArg().describedAs("PEM file or key");
     protected static OptionSpec<String> OPT_NEW_KEY_VERSION = parser.accepts("new-keyver", "Key version for the new key").requiredIf(OPT_PUT_KEY, OPT_REPLACE_KEY).withRequiredArg().describedAs("key version");
 
     protected static OptionSpec<String> OPT_DELETE_KEY = parser.accepts("delete-key", "Delete key with version").withRequiredArg().describedAs("key version");

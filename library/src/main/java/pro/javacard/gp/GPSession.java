@@ -339,18 +339,27 @@ public class GPSession {
         return result;
     }
 
+    private void normalizeSecurityLevel(EnumSet<APDUMode> securityLevel) {
+        // GPC AmdD (SCP03) v1.1.1 7.1.2.1
+        if (securityLevel.contains(APDUMode.RENC)) {
+            securityLevel.add(APDUMode.ENC);
+            securityLevel.add(APDUMode.RMAC);
+        }
+
+        if (securityLevel.contains(APDUMode.ENC) || securityLevel.contains(APDUMode.RMAC)) {
+            securityLevel.add(APDUMode.MAC);
+        }
+    }
+
     /*
-     * Establishes a secure channel to the security domain.
+     * Establishes a secure channel to the security domain or application
      */
     public void openSecureChannel(GPCardKeys keys, GPSecureChannel scp, byte[] host_challenge, EnumSet<APDUMode> securityLevel)
             throws IOException, GPException {
 
-        // ENC requires MAC
-        if (securityLevel.contains(APDUMode.ENC)) {
-            securityLevel.add(APDUMode.MAC);
-        }
+        normalizeSecurityLevel(securityLevel);
 
-        logger.info("Using card master keys with version: {}", keys.getKeyInfo().getVersion());
+        logger.info("Using card master keys with version {} for setting up session {} ", keys.getKeyInfo().getVersion(), securityLevel);
         // DWIM: Generate host challenge
         if (host_challenge == null) {
             host_challenge = new byte[8];
@@ -550,7 +559,7 @@ public class GPSession {
             throws GPException, IOException {
 
         // FIXME: hash type handling needs to be sensible.
-        boolean isHashRequired = dap != null || !(tokenizer instanceof DMTokenizer.NULLTokenizer);
+        boolean isHashRequired = dap != null || !(tokenizer instanceof DMTokenizer.NULLTokenizer) || hashFunction != null;
         byte[] hash = isHashRequired ? cap.getLoadFileDataHash(hashFunction) : new byte[0];
         byte[] code = cap.getCode();
         byte[] loadParams = new byte[0];
@@ -573,7 +582,7 @@ public class GPSession {
             throw new RuntimeException(ioe);
         }
 
-        CommandAPDU command = new CommandAPDU(CLA_GP, INS_INSTALL, P1_INSTALL_FOR_LOAD, 0x00, bo.toByteArray());
+        CommandAPDU command = new CommandAPDU(CLA_GP, INS_INSTALL, P1_INSTALL_FOR_LOAD, 0x00, bo.toByteArray(), 256);
         command = tokenizer.tokenize(command);
         ResponseAPDU response = transmitLV(command);
         GPException.check(response, "INSTALL [for load] failed");

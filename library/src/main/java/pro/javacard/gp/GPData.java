@@ -320,7 +320,7 @@ public final class GPData {
         // Print Key Info Template
         byte[] keyInfo = fetchKeyInfoTemplate(channel);
         if (keyInfo != null) {
-            GPKeyInfo.print(GPKeyInfo.parseTemplate(keyInfo), System.out);
+            System.out.println(GPKeyInfo.toString(GPKeyInfo.parseTemplate(keyInfo)));
         }
     }
 

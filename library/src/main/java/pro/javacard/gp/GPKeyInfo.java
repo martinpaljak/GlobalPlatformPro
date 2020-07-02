@@ -168,26 +168,20 @@ public final class GPKeyInfo {
         Optional<String> t = getTypeDescription(k);
         Optional<String> p = getPurposeDescription(k);
 
-        return Stream.of(t, p).filter(Optional::isPresent).map(Optional::get).reduce((a, b) -> a + ", " + b);
+        // Detect unaddressable factory keys
+        Optional<String> f = k.getVersion() == 0x00 || k.getVersion() == 0xFF ? Optional.of("factory key") : Optional.empty();
+        return Stream.of(t, p, f).filter(Optional::isPresent).map(Optional::get).reduce((a, b) -> a + ", " + b);
     }
 
     // Print the key template
-    public static void print(List<GPKeyInfo> list, PrintStream out) {
-        boolean factory_keys = false;
-        out.flush();
+    public static String toString(List<GPKeyInfo> list) {
+        StringBuilder sb = new StringBuilder();
         for (GPKeyInfo k : list) {
-            // Detect unaddressable factory keys
-            if (k.getVersion() == 0x00 || k.getVersion() == 0xFF)
-                factory_keys = true;
-
             // print
             String description = getKeyDescription(k).map(e -> " (" + e + ")").orElse("");
-            out.println(String.format("Version: %3d (0x%02X) ID: %3d (0x%02X) type: %-12s length: %3d%s", k.getVersion(), k.getVersion(), k.getID(), k.getID(), k.getType(), k.getLength(), description));
+            sb.append(String.format("Version: %3d (0x%02X) ID: %3d (0x%02X) type: %-12s length: %3d%s%n", k.getVersion(), k.getVersion(), k.getID(), k.getID(), k.getType(), k.getLength(), description));
         }
-        if (factory_keys) {
-            out.println("Key version suggests factory keys");
-        }
-        out.flush();
+       return sb.toString();
     }
 
     public int getID() {

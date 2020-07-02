@@ -457,7 +457,7 @@ public class GPSession {
         byte[] encKey = _sessionKeys.get(KeyPurpose.ENC);
         byte[] macKey = _sessionKeys.get(KeyPurpose.MAC);
         byte[] rmacKey = _sessionKeys.get(KeyPurpose.RMAC);
-        logger.info("Session keys: ENC={} MAC={} RMAC={}", HexUtils.bin2hex(_sessionKeys.get(KeyPurpose.ENC)), HexUtils.bin2hex(_sessionKeys.get(KeyPurpose.MAC)), HexUtils.bin2hex(_sessionKeys.get(KeyPurpose.RMAC)));
+        logger.info("Session keys: ENC={} MAC={} RMAC={}", HexUtils.bin2hex(_sessionKeys.get(KeyPurpose.ENC)), HexUtils.bin2hex(_sessionKeys.get(KeyPurpose.MAC)), rmacKey == null ? "N/A" : HexUtils.bin2hex(_sessionKeys.get(KeyPurpose.RMAC)));
 
         // Verify card cryptogram
         byte[] my_card_cryptogram;

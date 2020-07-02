@@ -347,14 +347,15 @@ public final class GPTool extends GPCommandLineInterface {
                 }
 
                 // --put-key <keyfile.pem or hex> or --replace-key <keyfile.pem or hex>
-                // Load a public key or a plaintext symmetric key (for DAP purposes)
+                // Load a public key or a plaintext symmetric key (for DAP or DM purposes)
                 if (args.has(OPT_PUT_KEY) || args.has(OPT_REPLACE_KEY)) {
                     final String kv = args.has(OPT_PUT_KEY) ? args.valueOf(OPT_PUT_KEY) : args.valueOf(OPT_REPLACE_KEY);
-                    // Default to DAP version
                     final int keyVersion = GPUtils.intValue(args.valueOf(OPT_NEW_KEY_VERSION));
                     // Check for presence (thus replace)
-                    List<GPKeyInfo> current = gp.getKeyInfoTemplate();
-                    boolean replace = current.stream().filter(p -> p.getVersion() == keyVersion).count() == 1 || args.has(OPT_REPLACE_KEY);
+                    // FIXME: some cards reject the command if actually trying to replace existing key.
+                    // List<GPKeyInfo> current = gp.getKeyInfoTemplate();
+                    // boolean replace = current.stream().filter(p -> p.getVersion() == keyVersion).count() == 1 || args.has(OPT_REPLACE_KEY);
+                    boolean replace = args.has(OPT_REPLACE_KEY);
                     // Check if file or string
                     if (Files.exists(Paths.get(kv))) {
                         try (FileInputStream fin = new FileInputStream(kv)) {
@@ -365,7 +366,7 @@ public final class GPTool extends GPCommandLineInterface {
                             fail("Unknown key type: " + e.getMessage());
                         }
                     } else {
-                        // Interpret as raw key
+                        // Interpret as raw key FIXME: implicit 3DES currently
                         byte[] k = HexUtils.hex2bin(kv);
                         gp.putKey(GPCrypto.des3key(k), keyVersion, replace);
                     }

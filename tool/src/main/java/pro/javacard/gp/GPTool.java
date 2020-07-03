@@ -102,7 +102,8 @@ public final class GPTool extends GPCommandLineInterface {
             System.err.println("Invalid argument: " + e.getMessage());
         } catch (Exception e) {
             System.err.println("Error: " + e.getMessage());
-            e.printStackTrace();
+            if (isVerbose)
+                e.printStackTrace();
         } finally {
             if (c != null) {
                 try {
@@ -289,53 +290,65 @@ public final class GPTool extends GPCommandLineInterface {
                     }
                 }
 
-                // --delete <aid> or --delete --default
+                // --delete <aid>
                 if (args.has(OPT_DELETE)) {
                     GPRegistry reg = gp.getRegistry();
 
                     // DWIM: assume that default selected is the one to be deleted
                     if (args.has(OPT_DEFAULT)) {
                         Optional<AID> def = reg.getDefaultSelectedAID();
-
                         if (def.isPresent()) {
                             gp.deleteAID(def.get(), false);
                         } else {
                             System.err.println("Could not identify default selected application!");
                         }
                     }
-                    List<AID> aids = args.valuesOf(OPT_DELETE).stream().map(a -> AID.fromString(a)).collect(Collectors.toList());
-                    for (AID aid : aids) {
+                    boolean failure = false;
+                    List<AID> aidList = args.valuesOf(OPT_DELETE).stream().map(a -> AID.fromString(a)).collect(Collectors.toList());
+                    for (AID aid : aidList) {
                         try {
-                            // If the AID represents a package or otherwise force is enabled.
-                            boolean deleteDeps = reg.allPackageAIDs().contains(aid) || args.has(OPT_FORCE);
+                            // If the AID represents a package and force is enabled, delete deps as well
+                            boolean deleteDeps = reg.allPackageAIDs().contains(aid) && args.has(OPT_FORCE);
                             gp.deleteAID(aid, deleteDeps);
                         } catch (GPException e) {
-                            if (!gp.getRegistry().allAIDs().contains(aid)) {
+                            failure = true;
+                            if (!reg.allAIDs().contains(aid)) {
                                 System.err.println("Could not delete AID (not present on card): " + aid);
                             } else {
-                                System.err.println("Could not delete AID: " + aid);
                                 if (e.sw == 0x6985) {
-                                    System.err.println("Deletion not allowed. Some app still active?");
+                                    System.err.println("Could not delete " + aid + ". Some app still active?");
                                 } else {
-                                    throw e;
+                                    System.err.println("Could not delete AID: " + aid);
                                 }
                             }
+                            // Do not return errors from -delete to behave like rm
                         }
                     }
+                    // #142: Behave like rm -f: fail if there was an error, unless -f
+                    if (failure && !args.has(OPT_FORCE))
+                        return 1;
                 }
 
                 // --uninstall <cap>
                 if (args.has(OPT_UNINSTALL)) {
                     List<CAPFile> caps = getCapFileList(args, OPT_UNINSTALL);
+                    boolean failure = false;
                     for (CAPFile instcap : caps) {
                         AID aid = instcap.getPackageAID();
+                        // Simple warning
                         if (!gp.getRegistry().allAIDs().contains(aid)) {
-                            System.out.println(aid + " is not present on card!");
-                        } else {
+                            System.err.println(aid + " is not present on card!");
+                        }
+                        try {
                             gp.deleteAID(aid, true);
                             System.out.println(aid + " deleted.");
+                        } catch (GPException e) {
+                            failure = true;
                         }
                     }
+                    // #142: Behave like rm -f: fail if there was an error, unless -f
+                    if (failure && !args.has(OPT_FORCE))
+                        return 1;
                 }
 
                 // --load <applet.cap>
@@ -416,7 +429,7 @@ public final class GPTool extends GPCommandLineInterface {
                         instanceaid = appaid;
                     }
 
-                    Set<Privilege> privs = getInstPrivs(args);
+                    Set<Privilege> privs = getPrivileges(args);
 
                     // Load CAP
                     loadCAP(args, gp, instcap);
@@ -446,6 +459,7 @@ public final class GPTool extends GPCommandLineInterface {
                     // Load AID-s from cap if present
                     if (cap != null) {
                         packageAID = cap.getPackageAID();
+
                         if (cap.getAppletAIDs().size() > 1 && !args.has(OPT_APPLET)) {
                             throw new IllegalArgumentException("There should be only one applet in CAP. Use --" + OPT_APPLET + " to specify one of " + cap.getAppletAIDs());
                         }
@@ -472,7 +486,7 @@ public final class GPTool extends GPCommandLineInterface {
                     }
 
                     // Privileges
-                    Set<Privilege> privs = getInstPrivs(args);
+                    Set<Privilege> privs = getPrivileges(args);
 
                     // Parameters
                     byte[] params = args.has(OPT_PARAMS) ? HexUtils.stringToBin(args.valueOf(OPT_PARAMS)) : new byte[0];
@@ -517,7 +531,7 @@ public final class GPTool extends GPCommandLineInterface {
                     AID instanceAID = AID.fromString(args.valueOf(OPT_DOMAIN));
 
                     // Extra privileges
-                    Set<Privilege> privs = getInstPrivs(args);
+                    Set<Privilege> privs = getPrivileges(args);
                     privs.add(Privilege.SecurityDomain);
 
                     // By default same SCP
@@ -622,8 +636,7 @@ public final class GPTool extends GPCommandLineInterface {
                     gp.deleteKey(keyver);
                 }
 
-                // TODO: Move to GPCommands
-                // --unlock
+                // --unlock, same as -lock default
                 if (args.has(OPT_UNLOCK)) {
                     List<GPKeyInfo> current = gp.getKeyInfoTemplate();
                     // Write default keys
@@ -724,6 +737,7 @@ public final class GPTool extends GPCommandLineInterface {
                 if (args.has(OPT_RENAME_ISD)) {
                     gp.renameISD(AID.fromString(args.valueOf(OPT_RENAME_ISD)));
                 }
+
                 // --set-pre-perso
                 if (args.has(OPT_SET_PRE_PERSO)) {
                     byte[] payload = HexUtils.stringToBin(args.valueOf(OPT_SET_PRE_PERSO));
@@ -732,6 +746,7 @@ public final class GPTool extends GPCommandLineInterface {
                     }
                     GPCommands.setPrePerso(gp, payload);
                 }
+
                 // --set-perso
                 if (args.has(OPT_SET_PERSO)) {
                     byte[] payload = HexUtils.stringToBin(args.valueOf(OPT_SET_PERSO));
@@ -741,12 +756,13 @@ public final class GPTool extends GPCommandLineInterface {
                     GPCommands.setPerso(gp, payload);
                 }
             }
-            // Other exceptions escape. fin.
             return 0;
         } catch (NoSuchAlgorithmException | IOException e) {
-            // FIXME: deal with it
-            e.printStackTrace();
+            System.err.println("ERROR: " + e.getMessage());
+            if (isVerbose)
+                e.printStackTrace();
         }
+        // Other exceptions escape. fin.
         return 1;
     }
 
@@ -763,6 +779,7 @@ public final class GPTool extends GPCommandLineInterface {
     }
 
 
+    // Extract parameters and call GPCommands.load()
     private static void loadCAP(OptionSet args, GPSession gp, CAPFile capFile) throws GPException, IOException {
         try {
             AID to = args.has(OPT_TO) ? AID.fromString(OPT_TO) : gp.getAID();
@@ -785,7 +802,12 @@ public final class GPTool extends GPCommandLineInterface {
         }
     }
 
-    private static EnumSet<Privilege> getInstPrivs(OptionSet args) {
+    private static AID appletAIDfromCAP(CAPFile cap) {
+        return cap.getAppletAIDs().get(0);
+    }
+
+
+    private static EnumSet<Privilege> getPrivileges(OptionSet args) {
         EnumSet<Privilege> privs = EnumSet.noneOf(Privilege.class);
         if (args.has(OPT_PRIVS)) {
             for (String p : args.valuesOf(OPT_PRIVS))

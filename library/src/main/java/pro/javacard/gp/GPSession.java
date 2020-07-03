@@ -818,26 +818,13 @@ public class GPSession {
     }
 
     public void deleteKey(int keyver) throws GPException, IOException {
-        // FIXME: no card seems to support it
         ByteArrayOutputStream bo = new ByteArrayOutputStream();
-        //bo.write(0xd0);
-        //bo.write(1);
         bo.write(0xd2);
         bo.write(1); // length
         bo.write(keyver);
-
-//		bo.write(0xd0);
-//		bo.write(2);
-//		bo.write(0xd2);
-//		bo.write(keyver);
-//
-//		bo.write(0xd0);
-//		bo.write(3);
-//		bo.write(0xd2);
-//		bo.write(keyver);
         CommandAPDU delete = new CommandAPDU(CLA_GP, INS_DELETE, 0x00, 0x00, bo.toByteArray());
         ResponseAPDU response = transmit(delete);
-        GPException.check(response, "Deletion failed");
+        GPException.check(response, String.format("Could not delete key %d (0x%02X)", keyver, keyver));
     }
 
     public void renameISD(AID newaid) throws GPException, IOException {

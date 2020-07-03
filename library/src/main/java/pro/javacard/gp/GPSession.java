@@ -541,27 +541,19 @@ public class GPSession {
         return transmit(command);
     }
 
-    // TODO: clean up this mess
-    public void loadCapFile(CAPFile cap, AID targetDomain, String hashFunction) throws IOException, GPException {
+    // Simple LOAD without DAP, but possible LFDBH
+    public void loadCapFile(CAPFile cap, AID targetDomain, GPData.LFDBH hashFunction) throws IOException, GPException {
         if (targetDomain == null)
             targetDomain = sdAID;
-        loadCapFile(cap, targetDomain, false, null, null, hashFunction);
+        loadCapFile(cap, targetDomain, null, null, hashFunction);
     }
 
-    public void loadCapFile(CAPFile cap, AID targetDomain, AID dapdomain, byte[] dap, String hashFunction) throws IOException, GPException {
-        if (targetDomain == null)
-            targetDomain = sdAID;
-        loadCapFile(cap, targetDomain, false, dapdomain, dap, hashFunction);
-    }
-
-    private void loadCapFile(CAPFile cap, AID targetDomain, boolean includeDebug, AID dapDomain, byte[] dap, String hashFunction)
+    public void loadCapFile(CAPFile cap, AID targetDomain, AID dapDomain, byte[] dap, GPData.LFDBH hashFunction)
             throws GPException, IOException {
-
-        // FIXME: hash type handling needs to be sensible.
-        boolean isHashRequired = dap != null || !(tokenizer instanceof DMTokenizer.NULLTokenizer) || hashFunction != null;
-        byte[] hash = isHashRequired ? cap.getLoadFileDataHash(hashFunction) : new byte[0];
+        byte[] hash = hashFunction == null ? new byte[0] : cap.getLoadFileDataHash(hashFunction.algo);
         byte[] code = cap.getCode();
-        byte[] loadParams = new byte[0];
+        byte[] loadParams = new byte[0]; // FIXME
+
 
         ByteArrayOutputStream bo = new ByteArrayOutputStream();
 

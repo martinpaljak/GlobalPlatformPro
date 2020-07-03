@@ -341,7 +341,7 @@ public final class GPTool extends GPCommandLineInterface {
                         if (isVerbose) {
                             loadcap.dump(System.out);
                         }
-                        calculateDapPropertiesAndLoadCap(args, gp, loadcap);
+                        loadCAP(args, gp, loadcap);
                     }
                 }
 
@@ -387,27 +387,26 @@ public final class GPTool extends GPCommandLineInterface {
 
                     GPRegistry reg = gp.getRegistry();
 
-                    // Remove existing load file
+                    // Remove existing load file if needed
                     if (args.has(OPT_FORCE) && reg.allPackageAIDs().contains(instcap.getPackageAID())) {
                         gp.deleteAID(instcap.getPackageAID(), true);
                     }
 
                     // Load
                     if (instcap.getAppletAIDs().size() <= 1) {
-                        calculateDapPropertiesAndLoadCap(args, gp, instcap);
+                        loadCAP(args, gp, instcap);
                     }
 
                     // Install
                     final AID appaid;
                     final AID instanceaid;
                     if (instcap.getAppletAIDs().size() == 0) {
-                        return 1;
+                        throw new IllegalArgumentException("CAP file has no applets!");
                     } else if (instcap.getAppletAIDs().size() > 1) {
                         if (args.has(OPT_APPLET)) {
                             appaid = AID.fromString(args.valueOf(OPT_APPLET));
                         } else {
-                            fail("CAP contains more than one applet, specify the right one with --" + OPT_APPLET);
-                            return 1;
+                            throw new IllegalArgumentException("CAP contains more than one applet, specify the right one with --" + OPT_APPLET);
                         }
                     } else {
                         appaid = instcap.getAppletAIDs().get(0);
@@ -538,9 +537,6 @@ public final class GPTool extends GPCommandLineInterface {
 
                 // --move <AID>
                 if (args.has(OPT_MOVE)) {
-                    if (!args.has(OPT_TO)) {
-                        fail("Specify extradition target with --" + OPT_TO);
-                    }
                     AID what = AID.fromString(args.valueOf(OPT_MOVE));
                     AID to = AID.fromString(args.valueOf(OPT_TO));
                     gp.extradite(what, to);
@@ -757,11 +753,13 @@ public final class GPTool extends GPCommandLineInterface {
     }
 
 
-    private static void calculateDapPropertiesAndLoadCap(OptionSet args, GPSession gp, CAPFile capFile) throws GPException, IOException {
+    private static void loadCAP(OptionSet args, GPSession gp, CAPFile capFile) throws GPException, IOException {
         try {
-            DAPProperties dap = new DAPProperties(args, gp);
-            loadCapAccordingToDapRequirement(args, gp, dap.getTargetDomain(), dap.getDapDomain(), dap.isRequired(), capFile);
-            System.out.println("CAP loaded");
+            AID to = args.has(OPT_TO) ? AID.fromString(OPT_TO) : gp.getAID();
+            AID dapDomain = args.has(OPT_DAP_DOMAIN) ? AID.fromString(OPT_DAP_DOMAIN) : null;
+            GPData.LFDBH lfdbh = args.has(OPT_SHA256) ? GPData.LFDBH.SHA256 : null;
+            GPCommands.load(gp, capFile, to, dapDomain, lfdbh);
+            System.out.println("CAP loaded"); // FIXME: path
         } catch (GPException e) {
             switch (e.sw) {
                 case 0x6A80:
@@ -777,18 +775,9 @@ public final class GPTool extends GPCommandLineInterface {
         }
     }
 
-    private static void loadCapAccordingToDapRequirement(OptionSet args, GPSession gp, AID targetDomain, AID dapDomain, boolean dapRequired, CAPFile cap) throws IOException, GPException {
-        // XXX: figure out right signature type in a better way
-        if (dapRequired) {
-            byte[] dap = args.has(OPT_SHA256) ? cap.getMetaInfEntry(CAPFile.DAP_RSA_V1_SHA256_FILE) : cap.getMetaInfEntry(CAPFile.DAP_RSA_V1_SHA1_FILE);
-            gp.loadCapFile(cap, targetDomain, dapDomain == null ? targetDomain : dapDomain, dap, args.has(OPT_SHA256) ? "SHA-256" : "SHA-1");
-        } else {
-            gp.loadCapFile(cap, targetDomain, args.has(OPT_SHA256) ? "SHA-256" : "SHA-1");
-        }
-    }
-
     private static EnumSet<Privilege> getInstPrivs(OptionSet args) {
         EnumSet<Privilege> privs = EnumSet.noneOf(Privilege.class);
+        // FIXME: valuesOf for -priv A -priv B or -priv A,B
         if (args.has(OPT_PRIVS)) {
             for (String s : args.valueOf(OPT_PRIVS).split(","))
                 privs.add(Privilege.lookup(s.trim()).orElseThrow(() -> new IllegalArgumentException("Unknown privilege: " + s.trim() + "\nValid values are: " + Arrays.asList(Privilege.values()).stream().map(i -> i.toString()).collect(Collectors.joining(", ")))));

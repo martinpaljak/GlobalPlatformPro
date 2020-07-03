@@ -130,14 +130,16 @@ public final class GPData {
     }
 
     enum LFDBH {
-        SHA1(0x01),
-        SHA256(0x02),
-        SHA384(0x03),
-        SHA512(0x04);
-        int value;
+        SHA1(0x01, "SHA-1"),
+        SHA256(0x02, "SHA-256"),
+        SHA384(0x03, "SHA-384"),
+        SHA512(0x04, "SHA-512");
+        final int value;
+        final String algo;
 
-        LFDBH(int byteValue) {
+        LFDBH(int byteValue, String algo) {
             this.value = byteValue;
+            this.algo = algo;
         }
 
         public static Optional<LFDBH> byValue(int byteValue) {
@@ -151,6 +153,11 @@ public final class GPData {
                 r.add(Arrays.asList(values()).stream().filter(e -> e.value == (v[j] & 0xFF)).findFirst().orElseThrow(() -> new GPDataException("Invalid value", v)));
             }
             return r;
+        }
+
+        @Override
+        public String toString() {
+            return algo;
         }
     }
 
@@ -255,25 +262,25 @@ public final class GPData {
                     }
                     t = v.find(new BerTag(0x83));
                     if (t != null) {
-                        String hashes = toUnsignedList(t.getBytesValue()).stream().map(e -> LFDBH.byValue(e).get().name()).collect(Collectors.joining(", "));
+                        String hashes = toUnsignedList(t.getBytesValue()).stream().map(e -> LFDBH.byValue(e).get().toString()).collect(Collectors.joining(", "));
                         System.out.println("Supported LFDB hash: " + hashes);
                         continue;
                     }
                     t = v.find(new BerTag(0x85));
                     if (t != null) { // TODO: parse
-                        String ciphers = SIGNATURE.byValue(t.getBytesValue()).stream().map(e -> e.name()).collect(Collectors.joining(", "));
+                        String ciphers = SIGNATURE.byValue(t.getBytesValue()).stream().map(e -> e.toString()).collect(Collectors.joining(", "));
                         System.out.println("Supported Token Verification ciphers: " + ciphers);
                         continue;
                     }
                     t = v.find(new BerTag(0x86));
                     if (t != null) {
-                        String ciphers = SIGNATURE.byValue(t.getBytesValue()).stream().map(e -> e.name()).collect(Collectors.joining(", "));
+                        String ciphers = SIGNATURE.byValue(t.getBytesValue()).stream().map(e -> e.toString()).collect(Collectors.joining(", "));
                         System.out.println("Supported Receipt Generation ciphers: " + ciphers);
                         continue;
                     }
                     t = v.find(new BerTag(0x87));
                     if (t != null) {
-                        String ciphers = SIGNATURE.byValue(t.getBytesValue()).stream().map(e -> e.name()).collect(Collectors.joining(", "));
+                        String ciphers = SIGNATURE.byValue(t.getBytesValue()).stream().map(e -> e.toString()).collect(Collectors.joining(", "));
                         System.out.println("Supported DAP Verification ciphers: " + ciphers);
                         continue;
                     }

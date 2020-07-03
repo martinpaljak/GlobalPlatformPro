@@ -116,7 +116,7 @@ abstract class GPCommandLineInterface {
 
     // SSD-s
     protected static OptionSpec<String> OPT_MOVE = parser.accepts("move", "Move something").withRequiredArg().describedAs("AID");
-    protected static OptionSpec<String> OPT_TO = parser.accepts("to", "Destination security domain").requiredIf(OPT_MOVE).withRequiredArg().describedAs("AID");
+    protected static OptionSpec<String> OPT_TO = parser.accepts("to", "Destination domain").requiredIf(OPT_MOVE).withRequiredArg().describedAs("AID");
     protected static OptionSpec<Void> OPT_ALLOW_TO = parser.accepts("allow-to", "Allow moving to created SSD").availableIf(OPT_DOMAIN);
     protected static OptionSpec<Void> OPT_ALLOW_FROM = parser.accepts("allow-from", "Allow moving from created SSD").availableIf(OPT_DOMAIN);
 

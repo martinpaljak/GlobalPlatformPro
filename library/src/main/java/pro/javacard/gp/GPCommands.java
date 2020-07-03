@@ -23,10 +23,14 @@ import apdu4j.CommandAPDU;
 import apdu4j.HexUtils;
 import apdu4j.ResponseAPDU;
 import pro.javacard.AID;
+import pro.javacard.CAPFile;
 import pro.javacard.WellKnownAID;
+import pro.javacard.gp.GPData.LFDBH;
+import pro.javacard.gp.GPRegistryEntry.Privilege;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.Optional;
 
 // Middle layer between GPTool (CLI) and GlobalPlatform (session)
 public class GPCommands {
@@ -82,11 +86,58 @@ public class GPCommands {
                 if (e.getLoadFile() != null) {
                     out.println(tab + "From:    " + e.getLoadFile());
                 }
-                //if (!app.getPrivileges().isEmpty()) {
                 out.println(tab + "Privs:   " + e.getPrivileges());
-                //}
             }
             out.println();
         }
+    }
+
+    // Figure out load parameters
+    public static void load(GPSession gp, CAPFile cap, AID to, AID dapAID, LFDBH hash) throws GPException, IOException {
+        GPRegistry reg = gp.getRegistry();
+        boolean dapRequired = false;
+
+        // Override target domain
+        AID targetAID = to == null ? gp.getAID() : to;
+        GPRegistryEntry targetDomain = reg.getDomain(targetAID).orElseThrow(() -> new IllegalArgumentException("Target domain does not exist: " + targetAID));
+
+        // Check for DAP with the target domain
+        dapRequired = dapRequired || targetDomain.hasPrivilege(Privilege.DAPVerification);
+
+        // Check if Mandatory DAP block is required
+        dapRequired = dapRequired || reg.allDomains().stream().anyMatch(e -> e.hasPrivilege(Privilege.MandatedDAPVerification));
+
+        // Check if DAP domain is overriden
+        if (dapAID != null) {
+            GPRegistryEntry dapTarget = reg.getDomain(targetAID).orElseThrow(() -> new IllegalArgumentException("DAP domain does not exist: " + dapAID));
+            if (!(dapTarget.hasPrivilege(Privilege.DAPVerification) || dapTarget.hasPrivilege(Privilege.MandatedDAPVerification))) {
+                throw new IllegalArgumentException("Specified DAP domain does not have (Mandated)DAPVerification privilege: " + dapAID.toString());
+            }
+        }
+
+        final LFDBH lfdbh;
+        // Check if hash needs to be included
+        if (targetDomain.hasPrivilege(Privilege.DelegatedManagement) || dapRequired || hash != null) {
+            lfdbh = Optional.ofNullable(hash).orElse(LFDBH.SHA1);
+        } else {
+            lfdbh = null;
+        }
+
+        final byte[] dap;
+        if (dapRequired) {
+            switch (hash) {
+                case SHA1:
+                    dap = cap.getMetaInfEntry(CAPFile.DAP_RSA_V1_SHA256_FILE);
+                    break;
+                case SHA256:
+                    dap = cap.getMetaInfEntry(CAPFile.DAP_RSA_V1_SHA1_FILE);
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unsupported DAP hash algoriothm: " + hash);
+            }
+        } else {
+            dap = null;
+        }
+        gp.loadCapFile(cap, targetAID, Optional.ofNullable(dapAID).orElse(targetAID), dap, lfdbh);
     }
 }

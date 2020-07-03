@@ -127,13 +127,13 @@ public class GPCommands {
         if (dapRequired) {
             switch (lfdbh) {
                 case SHA1:
-                    dap = cap.getMetaInfEntry(CAPFile.DAP_RSA_V1_SHA256_FILE);
-                    break;
-                case SHA256:
                     dap = cap.getMetaInfEntry(CAPFile.DAP_RSA_V1_SHA1_FILE);
                     break;
+                case SHA256:
+                    dap = cap.getMetaInfEntry(CAPFile.DAP_RSA_V1_SHA256_FILE);
+                    break;
                 default:
-                    throw new IllegalArgumentException("Unsupported DAP hash algoriothm: " + hash);
+                    throw new IllegalArgumentException("Unsupported DAP hash algorithm: " + hash);
             }
         } else {
             dap = null;

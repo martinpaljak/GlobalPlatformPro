@@ -238,7 +238,10 @@ public final class GPTool extends GPCommandLineInterface {
                 } else if (args.has(OPT_KDF3)) {
                     keyz.setDiversifier(Diversification.KDF3);
                 } else if (args.has(OPT_KEY_KDF)) {
-                    keyz.setDiversifier(getDiversificationOrFail(args.valueOf(OPT_KEY_KDF)));
+                    Diversification div = Diversification.lookup(args.valueOf(OPT_KEY_KDF));
+                    if (div == null)
+                        throw new IllegalArgumentException("Invalid KDF: " + args.valueOf(OPT_KEY_KDF) + "\nValid values are: " + Arrays.asList(Diversification.values()).stream().map(i -> i.toString()).collect(Collectors.joining(", ")));
+                    keyz.setDiversifier(div);
                 }
 
                 if (args.has(OPT_KEY_VERSION)) {
@@ -274,7 +277,8 @@ public final class GPTool extends GPCommandLineInterface {
                 try {
                     gp.openSecureChannel(keys, null, null, mode);
                 } catch (GPException e) {
-                    fail("Failed to open secure channel: " + e.getMessage() + "\nRead more from https://github.com/martinpaljak/GlobalPlatformPro/wiki/Keys");
+                    System.err.println("Failed to open secure channel: " + e.getMessage() + "\nRead more from https://github.com/martinpaljak/GlobalPlatformPro/wiki/Keys");
+                    return 1;
                 }
 
                 // --secure-apdu or -s
@@ -361,8 +365,6 @@ public final class GPTool extends GPCommandLineInterface {
                             // Get public key
                             PublicKey pubkey = GPCrypto.pem2PublicKey(fin);
                             gp.putKey(pubkey, keyVersion, replace);
-                        } catch (IllegalArgumentException e) {
-                            fail("Unknown key type: " + e.getMessage());
                         }
                     } else {
                         // Interpret as raw key FIXME: implicit 3DES currently
@@ -392,12 +394,7 @@ public final class GPTool extends GPCommandLineInterface {
                         gp.deleteAID(instcap.getPackageAID(), true);
                     }
 
-                    // Load
-                    if (instcap.getAppletAIDs().size() <= 1) {
-                        loadCAP(args, gp, instcap);
-                    }
-
-                    // Install
+                    // Get install parameters
                     final AID appaid;
                     final AID instanceaid;
                     if (instcap.getAppletAIDs().size() == 0) {
@@ -419,7 +416,10 @@ public final class GPTool extends GPCommandLineInterface {
                         instanceaid = appaid;
                     }
 
-                    EnumSet<Privilege> privs = getInstPrivs(args);
+                    Set<Privilege> privs = getInstPrivs(args);
+
+                    // Load CAP
+                    loadCAP(args, gp, instcap);
 
                     // Remove existing default app FIXME: this might be non-obvious
                     if (args.has(OPT_FORCE) && (reg.getDefaultSelectedAID().isPresent() && privs.contains(Privilege.CardReset))) {
@@ -431,8 +431,11 @@ public final class GPTool extends GPCommandLineInterface {
                         System.err.println("WARNING: Applet " + instanceaid + " already present on card");
                     }
 
+                    // Parameters
+                    byte[] params = args.has(OPT_PARAMS) ? HexUtils.stringToBin(args.valueOf(OPT_PARAMS)) : new byte[0];
+
                     // shoot
-                    gp.installAndMakeSelectable(instcap.getPackageAID(), appaid, instanceaid, privs, getInstParams(args));
+                    gp.installAndMakeSelectable(instcap.getPackageAID(), appaid, instanceaid, privs, params);
                 }
 
                 // --create <aid> (--applet <aid> --package <aid> or --cap <cap>)
@@ -461,14 +464,21 @@ public final class GPTool extends GPCommandLineInterface {
                     if (packageAID == null || appletAID == null)
                         throw new IllegalArgumentException("Need --" + OPT_PACKAGE + " and --" + OPT_APPLET + " or --" + OPT_CAP);
 
+                    AID instanceAID = AID.fromString(args.valueOf(OPT_CREATE));
+
                     // warn
                     if (gp.getRegistry().allAIDs().contains(appletAID)) {
                         System.err.println("WARNING: Applet " + appletAID + " already present on card");
                     }
 
+                    // Privileges
+                    Set<Privilege> privs = getInstPrivs(args);
+
+                    // Parameters
+                    byte[] params = args.has(OPT_PARAMS) ? HexUtils.stringToBin(args.valueOf(OPT_PARAMS)) : new byte[0];
+
                     // shoot
-                    AID instanceAID = AID.fromString(args.valueOf(OPT_CREATE));
-                    gp.installAndMakeSelectable(packageAID, appletAID, instanceAID, getInstPrivs(args), getInstParams(args));
+                    gp.installAndMakeSelectable(packageAID, appletAID, instanceAID, privs, params);
                 }
 
                 // --domain <AID>
@@ -777,37 +787,20 @@ public final class GPTool extends GPCommandLineInterface {
 
     private static EnumSet<Privilege> getInstPrivs(OptionSet args) {
         EnumSet<Privilege> privs = EnumSet.noneOf(Privilege.class);
-        // FIXME: valuesOf for -priv A -priv B or -priv A,B
         if (args.has(OPT_PRIVS)) {
-            for (String s : args.valueOf(OPT_PRIVS).split(","))
-                privs.add(Privilege.lookup(s.trim()).orElseThrow(() -> new IllegalArgumentException("Unknown privilege: " + s.trim() + "\nValid values are: " + Arrays.asList(Privilege.values()).stream().map(i -> i.toString()).collect(Collectors.joining(", ")))));
+            for (String p : args.valuesOf(OPT_PRIVS))
+                for (String s : p.split(","))
+                    privs.add(Privilege.lookup(s.trim()).orElseThrow(() -> new IllegalArgumentException("Unknown privilege: " + s.trim() + "\nValid values are: " + Arrays.asList(Privilege.values()).stream().map(i -> i.toString()).collect(Collectors.joining(", ")))));
         }
         return privs;
-    }
-
-    static Diversification getDiversificationOrFail(String v) {
-        Diversification kdf = Diversification.lookup(v.trim());
-        if (kdf == null)
-            fail("Invalid KDF: " + v + "\nValid values are: " + Arrays.asList(Diversification.values()).stream().map(i -> i.toString()).collect(Collectors.joining(", ")));
-        return kdf;
-    }
-
-    private static byte[] getInstParams(OptionSet args) {
-        if (args.has(OPT_PARAMS)) {
-            String arg = args.valueOf(OPT_PARAMS);
-            return HexUtils.stringToBin(arg);
-        } else {
-            return new byte[0];
-        }
     }
 
     private static List<CAPFile> getCapFileList(OptionSet args, OptionSpec<File> arg) {
         return args.valuesOf(arg).stream().map(e -> {
             try (FileInputStream fin = new FileInputStream(e)) {
-                return CAPFile.fromStream(fin);
+                return CAPFile.fromStream(fin); // FIXME: fromFile
             } catch (IOException x) {
-                fail("Could not read CAP: " + x.getMessage());
-                return null; // For compiler, fail() quits the process
+                throw new IllegalArgumentException("Could not read CAP: " + x.getMessage());
             }
         }).collect(Collectors.toList());
     }
@@ -820,12 +813,6 @@ public final class GPTool extends GPCommandLineInterface {
                 OPT_PUT_KEY, OPT_REPLACE_KEY};
 
         return Arrays.stream(yes).anyMatch(args::has);
-    }
-
-    // FIXME: replace with IllegalArgumentException
-    public static void fail(String msg) {
-        System.err.println(msg);
-        System.exit(1);
     }
 
     private void verbose(String s) {

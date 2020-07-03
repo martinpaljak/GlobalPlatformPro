@@ -30,7 +30,6 @@ import joptsimple.OptionSpec;
 import pro.javacard.AID;
 import pro.javacard.CAPFile;
 import pro.javacard.gp.GPRegistryEntry.Privilege;
-import pro.javacard.gp.GPRegistryEntry.Privileges;
 import pro.javacard.gp.GPSession.APDUMode;
 import pro.javacard.gp.GPSession.GPSpec;
 import pro.javacard.gp.PlaintextKeys.Diversification;

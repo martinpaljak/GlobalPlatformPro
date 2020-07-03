@@ -125,7 +125,7 @@ public class GPCommands {
 
         final byte[] dap;
         if (dapRequired) {
-            switch (hash) {
+            switch (lfdbh) {
                 case SHA1:
                     dap = cap.getMetaInfEntry(CAPFile.DAP_RSA_V1_SHA256_FILE);
                     break;

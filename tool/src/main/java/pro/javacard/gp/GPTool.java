@@ -421,10 +421,10 @@ public final class GPTool extends GPCommandLineInterface {
                         instanceaid = appaid;
                     }
 
-                    Privileges privs = getInstPrivs(args);
+                    EnumSet<Privilege> privs = getInstPrivs(args);
 
                     // Remove existing default app FIXME: this might be non-obvious
-                    if (args.has(OPT_FORCE) && (reg.getDefaultSelectedAID().isPresent() && privs.has(Privilege.CardReset))) {
+                    if (args.has(OPT_FORCE) && (reg.getDefaultSelectedAID().isPresent() && privs.contains(Privilege.CardReset))) {
                         gp.deleteAID(reg.getDefaultSelectedAID().get(), false);
                     }
 
@@ -509,7 +509,7 @@ public final class GPTool extends GPCommandLineInterface {
                     AID instanceAID = AID.fromString(args.valueOf(OPT_DOMAIN));
 
                     // Extra privileges
-                    Privileges privs = getInstPrivs(args);
+                    Set<Privilege> privs = getInstPrivs(args);
                     privs.add(Privilege.SecurityDomain);
 
                     // By default same SCP
@@ -788,8 +788,8 @@ public final class GPTool extends GPCommandLineInterface {
         }
     }
 
-    private static Privileges getInstPrivs(OptionSet args) {
-        Privileges privs = new Privileges();
+    private static EnumSet<Privilege> getInstPrivs(OptionSet args) {
+        EnumSet<Privilege> privs = EnumSet.noneOf(Privilege.class);
         if (args.has(OPT_PRIVS)) {
             for (String s : args.valueOf(OPT_PRIVS).split(","))
                 privs.add(Privilege.lookup(s.trim()).orElseThrow(() -> new IllegalArgumentException("Unknown privilege: " + s.trim() + "\nValid values are: " + Arrays.asList(Privilege.values()).stream().map(i -> i.toString()).collect(Collectors.joining(", ")))));

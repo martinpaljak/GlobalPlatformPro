@@ -7,6 +7,8 @@ import org.testng.Assert;
 import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 import pro.javacard.AID;
+import pro.javacard.gp.GPData.CPLC;
+import pro.javacard.gp.GPRegistryEntry.Privilege;
 
 import java.util.List;
 import java.util.Set;
@@ -31,13 +33,13 @@ public class TestParseTags {
     }
 
     @Test
-    public void testPrintCardCapabilities() throws  Exception {
+    public void testPrintCardCapabilities() throws Exception {
         byte[] data = HexUtils.hex2bin("6735A00E8001038106001020306070820107A007800102810215558103FF9E0082031E160083010284018F8502FF028602FF028702FF02");
         GPData.pretty_print_card_capabilities(data);
     }
 
     @Test
-    public void testBrokenPrintCardCapabilities() throws  Exception {
+    public void testBrokenPrintCardCapabilities() throws Exception {
         // Broken - double 0x67
         byte[] data = HexUtils.hex2bin("673A6738A006800102810155A00A8001038102001082010781039EFE8082031E03008301028504010208408602040887040102084088050102030405");
         GPData.pretty_print_card_capabilities(data);
@@ -47,61 +49,69 @@ public class TestParseTags {
     @Ignore // FIXME: see https://github.com/martinpaljak/GlobalPlatformPro/issues/116
     public void testCPLCDateParse() throws Exception {
         byte[] b = HexUtils.hex2bin("1210");
-        Assert.assertEquals("2011-07-29", GPData.CPLC.toDate(b));
+        Assert.assertEquals("2011-07-29", CPLC.toDate(b));
         b = HexUtils.hex2bin("0000");
-        Assert.assertEquals("2010-01-01", GPData.CPLC.toDate(b));
-        System.out.println("Today is " + HexUtils.bin2hex(GPData.CPLC.today()));
+        Assert.assertEquals("2010-01-01", CPLC.toDate(b));
+        System.out.println("Today is " + HexUtils.bin2hex(CPLC.today()));
     }
 
-   @Test
-   public void testParseISD() throws Exception {
-       byte[] r = HexUtils.hex2bin("E3144F07A00000015100009F700107C50180EA028000");
-       GPRegistry g = new GPRegistry();
-       g.parse(0x80, r, GPRegistryEntry.Kind.IssuerSecurityDomain, GPSession.GPSpec.GP22);
-       GPRegistryEntry isd = g.getISD().orElseThrow(() -> new Exception("No ISD"));
-       Assert.assertEquals(1, g.allAIDs().size());
-       Assert.assertEquals(AID.fromString("A0000001510000"), isd.getAID());
-       Assert.assertEquals(1, isd.getPrivileges().size());
-       Assert.assertTrue(isd.getPrivileges().has(GPRegistryEntry.Privilege.SecurityDomain));
-       Assert.assertEquals(GPData.initializedStatus, isd.getLifeCycle());
-   }
+    @Test
+    public void testParseISD() throws Exception {
+        byte[] r = HexUtils.hex2bin("E3144F07A00000015100009F700107C50180EA028000");
+        GPRegistry g = new GPRegistry();
+        g.parse(0x80, r, GPRegistryEntry.Kind.IssuerSecurityDomain, GPSession.GPSpec.GP22);
+        GPRegistryEntry isd = g.getISD().orElseThrow(() -> new Exception("No ISD"));
+        Assert.assertEquals(1, g.allAIDs().size());
+        Assert.assertEquals(AID.fromString("A0000001510000"), isd.getAID());
+        Assert.assertEquals(1, isd.getPrivileges().size());
+        Assert.assertTrue(isd.hasPrivilege(Privilege.SecurityDomain));
+        Assert.assertEquals(GPData.initializedStatus, isd.getLifeCycle());
+    }
 
 
     @Test(expectedExceptions = GPDataException.class)
     public void testCPLCDateParseInvalid() throws Exception {
         byte[] b = HexUtils.hex2bin("1410");
-        GPData.CPLC.toDate(b);
+        CPLC.toDate(b);
     }
 
     @Test(expectedExceptions = GPDataException.class)
     public void testCPLCTagless() throws Exception {
         byte[] b = HexUtils.hex2bin("FF401AE218E116C1144434050D9648B771CB3500D5398D36CE3F1C23A4");
         //b = Arrays.copyOf(b, 0x2A);
-        System.out.println(GPData.CPLC.fromBytes(b).toPrettyString());
+        System.out.println(CPLC.fromBytes(b).toPrettyString());
     }
 
     @Test
     public void testCardCapabilities() {
         byte[] v = HexUtils.hex2bin("3B");
         Set<GPData.SIGNATURE> ciphers = GPData.SIGNATURE.byValue(v);
-        Assert.assertTrue( ciphers.size() > 0);
+        Assert.assertEquals(ciphers.size(), 5);
         System.out.println(ciphers);
+    }
+
+    @Test
+    public void testLFDBH() {
+        byte[] v = HexUtils.hex2bin("0102");
+        List<GPData.LFDBH> hashes = GPData.LFDBH.fromBytes(v);
+        Assert.assertEquals(hashes.size(), 2);
+        System.out.println(hashes);
     }
 
     @Test
     public void testPrivileges() {
         byte[] v = HexUtils.hex2bin("80C000");
-        Set<GPRegistryEntry.Privilege> privileges = GPRegistryEntry.Privilege.fromBytes(v);
+        Set<Privilege> privileges = Privilege.fromBytes(v);
         Assert.assertEquals(privileges.size(), 3);
-        Assert.assertTrue(privileges.contains(GPRegistryEntry.Privilege.AuthorizedManagement));
-        Assert.assertTrue(privileges.contains(GPRegistryEntry.Privilege.SecurityDomain));
-        Assert.assertTrue(privileges.contains(GPRegistryEntry.Privilege.TrustedPath));
-        Assert.assertEquals(GPRegistryEntry.Privilege.toBytes(privileges), v);
+        Assert.assertTrue(privileges.contains(Privilege.AuthorizedManagement));
+        Assert.assertTrue(privileges.contains(Privilege.SecurityDomain));
+        Assert.assertTrue(privileges.contains(Privilege.TrustedPath));
+        Assert.assertEquals(Privilege.toBytes(privileges), v);
 
         v = HexUtils.hex2bin("9EFE80");
-        privileges = GPRegistryEntry.Privilege.fromBytes(v);
+        privileges = Privilege.fromBytes(v);
         Assert.assertEquals(privileges.size(), 13);
-        Assert.assertEquals(GPRegistryEntry.Privilege.toBytes(privileges), v);
+        Assert.assertEquals(Privilege.toBytes(privileges), v);
     }
 
 }

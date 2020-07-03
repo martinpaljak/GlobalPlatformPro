@@ -143,6 +143,15 @@ public final class GPData {
         public static Optional<LFDBH> byValue(int byteValue) {
             return Arrays.asList(values()).stream().filter(e -> e.value == byteValue).findFirst();
         }
+
+        public static ArrayList<LFDBH> fromBytes(byte[] v) {
+            ArrayList<LFDBH> r = new ArrayList<>();
+            for (int i = 0; i < v.length; i++) {
+                final int j = i; // TODO: IntStream.range() ?
+                r.add(Arrays.asList(values()).stream().filter(e -> e.value == (v[j] & 0xFF)).findFirst().orElseThrow(() -> new GPDataException("Invalid value", v)));
+            }
+            return r;
+        }
     }
 
     enum SIGNATURE {
@@ -234,12 +243,14 @@ public final class GPData {
                     }
                     t = v.find(new BerTag(0x81));
                     if (t != null) {
-                        System.out.println("Supported DOM privileges: " + GPRegistryEntry.Privileges.fromBytes(t.getBytesValue()));
+                        Set<GPRegistryEntry.Privilege> privs = GPRegistryEntry.Privilege.fromBytes(t.getBytesValue());
+                        System.out.println("Supported DOM privileges: " + privs.stream().map(e -> e.toString()).collect(Collectors.joining(", ")));
                         continue;
                     }
                     t = v.find(new BerTag(0x82));
                     if (t != null) {
-                        System.out.println("Supported APP privileges: " + GPRegistryEntry.Privileges.fromBytes(t.getBytesValue()));
+                        Set<GPRegistryEntry.Privilege> privs = GPRegistryEntry.Privilege.fromBytes(t.getBytesValue());
+                        System.out.println("Supported APP privileges: " + privs.stream().map(e -> e.toString()).collect(Collectors.joining(", ")));
                         continue;
                     }
                     t = v.find(new BerTag(0x83));

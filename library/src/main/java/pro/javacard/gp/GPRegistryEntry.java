@@ -34,7 +34,7 @@ public class GPRegistryEntry {
     AID domain; // Associated security domain
 
     // Apps and Domains
-    private Privileges privileges = new Privileges();
+    private EnumSet<Privilege> privileges = EnumSet.noneOf(Privilege.class);
     private AID loadfile; // source
 
     // Packages
@@ -42,12 +42,12 @@ public class GPRegistryEntry {
     private List<AID> modules = new ArrayList<>();
 
 
-    public Privileges getPrivileges() {
+    public Set<Privilege> getPrivileges() {
         return privileges;
     }
 
-    void setPrivileges(Privileges privs) {
-        privileges = privs;
+    void setPrivileges(Set<Privilege> privs) {
+        privileges.addAll(privs);
     }
 
     public AID getLoadFile() {
@@ -60,7 +60,7 @@ public class GPRegistryEntry {
 
 
     public boolean hasPrivilege(Privilege p) {
-        return privileges.has(p);
+        return privileges.contains(p);
     }
 
     public byte[] getVersion() {
@@ -238,6 +238,8 @@ public class GPRegistryEntry {
         }
     }
 
+    // See GP 2.2.1 11.1.2 Tables 11-7, 11-8, 11-9
+    // See GP 2.1.1 Table 9-7 (matches 2.2 Table 11-7)
     public enum Privilege {
         SecurityDomain(0x80, 0),
         DAPVerification(0xC0, 0),
@@ -305,65 +307,6 @@ public class GPRegistryEntry {
             if (!oneByte)
                 throw new IllegalStateException("This privileges set can not be encoded in one byte");
             return toBytes(privs)[0];
-        }
-    }
-
-    // FIXME: remove or shrink
-    public static class Privileges {
-        private EnumSet<Privilege> privs = EnumSet.noneOf(Privilege.class);
-
-        public static Privileges set(Privilege... privs) {
-            Privileges p = new Privileges();
-            Arrays.stream(privs).forEach(v -> p.add(v));
-            return p;
-        }
-
-        // TODO: implement GP 2.2 table 6.2
-        // See GP 2.2.1 11.1.2 Tables 11-7, 11-8, 11-9
-        // See GP 2.1.1 Table 9-7 (matches 2.2 Table 11-7)
-        public static Privileges fromBytes(byte[] data) throws GPDataException {
-            if (data.length != 1 && data.length != 3) {
-                throw new IllegalArgumentException("Privileges must be encoded on 1 or 3 bytes: " + HexUtils.bin2hex(data));
-            }
-            Privileges p = new Privileges();
-            p.addAll(Privilege.fromBytes(data));
-            return p;
-        }
-
-        public static Privileges fromByte(byte b) throws GPDataException {
-            return fromBytes(new byte[]{b});
-        }
-
-        public byte[] toBytes() {
-            return Privilege.toBytes(privs);
-        }
-
-        public byte toByte() {
-            return Privilege.toByte(privs);
-        }
-
-        public String toString() {
-            return privs.stream().map(i -> i.toString()).collect(Collectors.joining(", "));
-        }
-
-        public boolean has(Privilege p) {
-            return privs.contains(p);
-        }
-
-        public void add(Privilege p) {
-            privs.add(p);
-        }
-
-        public void addAll(Collection<Privilege> p) {
-            privs.addAll(p);
-        }
-
-        public boolean isEmpty() {
-            return privs.size() == 0;
-        }
-
-        public int size() {
-            return privs.size();
         }
     }
 }

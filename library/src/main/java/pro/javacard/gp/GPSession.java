@@ -39,7 +39,6 @@ import pro.javacard.CAPFile;
 import pro.javacard.gp.GPKeyInfo.GPKey;
 import pro.javacard.gp.GPRegistryEntry.Kind;
 import pro.javacard.gp.GPRegistryEntry.Privilege;
-import pro.javacard.gp.GPRegistryEntry.Privileges;
 
 import javax.crypto.SecretKey;
 import java.io.*;
@@ -622,7 +621,7 @@ public class GPSession {
         dirty = true;
     }
 
-    public void installAndMakeSelectable(AID packageAID, AID appletAID, AID instanceAID, Privileges privileges, byte[] installParams) throws GPException, IOException {
+    public void installAndMakeSelectable(AID packageAID, AID appletAID, AID instanceAID, Set<Privilege> privileges, byte[] installParams) throws GPException, IOException {
         if (instanceAID == null) {
             instanceAID = appletAID;
         }
@@ -634,7 +633,7 @@ public class GPSession {
         dirty = true;
     }
 
-    private byte[] buildInstallData(AID packageAID, AID appletAID, AID instanceAID, Privileges privileges, byte[] installParams) {
+    private byte[] buildInstallData(AID packageAID, AID appletAID, AID instanceAID, Set<Privilege> privileges, byte[] installParams) {
         if (instanceAID == null) {
             instanceAID = appletAID;
         }
@@ -649,7 +648,7 @@ public class GPSession {
             System.arraycopy(installParams, 0, newparams, 2, installParams.length);
             installParams = newparams;
         }
-        byte[] privs = privileges.toBytes();
+        byte[] privs = Privilege.toBytes(privileges);
         ByteArrayOutputStream bo = new ByteArrayOutputStream();
         try {
             bo.write(packageAID.getLength());
@@ -770,8 +769,7 @@ public class GPSession {
         // FIXME: only works for some 2.1.1 cards ? Clarify and document
         ByteArrayOutputStream bo = new ByteArrayOutputStream();
         // Only supported privilege.
-        Privileges ds = Privileges.set(Privilege.CardReset);
-        byte privileges = ds.toByte();
+        byte privileges = Privilege.toByte(EnumSet.of(Privilege.CardReset));
 
         try {
             bo.write(0);

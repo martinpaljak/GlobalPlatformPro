@@ -31,7 +31,6 @@ import org.slf4j.LoggerFactory;
 import pro.javacard.AID;
 import pro.javacard.gp.GPRegistryEntry.Kind;
 import pro.javacard.gp.GPRegistryEntry.Privilege;
-import pro.javacard.gp.GPRegistryEntry.Privileges;
 import pro.javacard.gp.GPSession.GPSpec;
 
 import java.util.*;
@@ -46,7 +45,7 @@ public class GPRegistry implements Iterable<GPRegistryEntry> {
 
     public void add(GPRegistryEntry entry) {
         // "fix" the kind at a single location.
-        if (entry.getPrivileges().has(Privilege.SecurityDomain) && entry.getType() == Kind.Application) {
+        if (entry.hasPrivilege(Privilege.SecurityDomain) && entry.getType() == Kind.Application) {
             entry.setType(Kind.SecurityDomain);
         }
         if (!entries.contains(entry)) {
@@ -122,7 +121,7 @@ public class GPRegistry implements Iterable<GPRegistryEntry> {
                 if (type == Kind.IssuerSecurityDomain || type == Kind.Application) {
                     e.setType(type);
                     e.setAID(aid);
-                    e.setPrivileges(Privileges.fromByte(privileges));
+                    e.getPrivileges().addAll(Privilege.fromBytes(new byte[]{privileges}));
                     e.setLifeCycle(lifecycle);
                 } else if (type == Kind.ExecutableLoadFile) {
                     if (privileges != 0x00) {
@@ -170,8 +169,7 @@ public class GPRegistry implements Iterable<GPRegistryEntry> {
 
                 BerTlv privstag = t.find(new BerTag(0xC5));
                 if (privstag != null) {
-                    Privileges privs = Privileges.fromBytes(privstag.getBytesValue());
-                    e.setPrivileges(privs);
+                    e.setPrivileges(Privilege.fromBytes(privstag.getBytesValue()));
                 }
                 for (BerTlv cf : t.findAll(new BerTag(0xCF))) {
                     logger.debug("CF=" + cf.getHexValue() + " for " + e.aid);

@@ -19,7 +19,7 @@ public class TestDMTokenizer {
 
     @BeforeClass
     public void setUp() throws Exception {
-        try (FileInputStream fin = new FileInputStream(new File("src/test/resources/test-private.pem"))) {
+        try (FileInputStream fin = new FileInputStream(new File("src/test/resources/test-dm-private.pem"))) {
             key = (RSAPrivateKey) GPCrypto.pem2PrivateKey(fin);
         }
     }

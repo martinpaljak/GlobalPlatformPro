@@ -267,7 +267,7 @@ public final class GPData {
                         continue;
                     }
                     t = v.find(new BerTag(0x85));
-                    if (t != null) { // TODO: parse
+                    if (t != null) {
                         String ciphers = SIGNATURE.byValue(t.getBytesValue()).stream().map(e -> e.toString()).collect(Collectors.joining(", "));
                         System.out.println("Supported Token Verification ciphers: " + ciphers);
                         continue;
@@ -375,14 +375,17 @@ public final class GPData {
         }
     }
 
-    public static GPSession.GPSpec oid2version(byte[] bytes) throws GPDataException {
+
+    public enum GPSpec {OP201, GP211, GP22, GP221}
+
+    public static GPSpec oid2version(byte[] bytes) throws GPDataException {
         String oid = oid2string(bytes);
         if (oid.equals("1.2.840.114283.2.2.1.1")) {
-            return GPSession.GPSpec.GP211;
+            return GPSpec.GP211;
         } else if (oid.equals("1.2.840.114283.2.2.2")) {
-            return GPSession.GPSpec.GP22;
+            return GPSpec.GP22;
         } else if (oid.equals("1.2.840.114283.2.2.2.1")) {
-            return GPSession.GPSpec.GP22; // No need to make a difference
+            return GPSpec.GP221;
         } else {
             throw new GPDataException("Unknown GP version OID: " + oid, bytes);
         }

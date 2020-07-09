@@ -81,14 +81,11 @@ public class GPSession {
     public static final byte P1_MORE_BLOCKS = (byte) 0x00;
     public static final byte P1_LAST_BLOCK = (byte) 0x80;
 
-    // FIXME: get rid
-    GPSpec spec = GPSpec.GP211;
-
     // (I)SD AID
     private AID sdAID;
     private GPSecureChannel scpVersion;
     private int scpKeyVersion = 0; // will be set to the key version reported by card
-
+    GPCardProfile profile;
     private int blockSize = 255;
     private GPCardKeys cardKeys = null;
     private byte[] sessionContext;
@@ -102,11 +99,16 @@ public class GPSession {
      * Maintaining locks to the underlying hardware is the duty of the caller
      */
     public GPSession(APDUBIBO channel, AID sdAID) {
+        this(channel, sdAID, GPCardProfile.defaultProfile());
+    }
+
+    public GPSession(APDUBIBO channel, AID sdAID, GPCardProfile profile) {
         if (channel == null) {
             throw new IllegalArgumentException("A card session is required");
         }
         this.channel = channel;
         this.sdAID = sdAID;
+        this.profile = profile;
     }
 
     // Try to find GlobalPlatform from a card
@@ -133,7 +135,7 @@ public class GPSession {
             }
         }
 
-        // SmartJac UICC
+        // WORKAROUND: SmartJac UICC
         if (response.getSW() == 0x6A87) {
             // Try the default
             logger.debug("Trying default ISD AID ...");
@@ -142,6 +144,8 @@ public class GPSession {
 
         // 6283 - locked. Pass through locked.
         GPException.check(response, "Could not SELECT default selected", 0x6283);
+        if (response.getSW() == 0x6283)
+            logger.warn("Card Manager is LOCKED");
 
         final BerTlvs tlvs;
         try {
@@ -150,7 +154,7 @@ public class GPSession {
             tlvs = parser.parse(response.getData());
             GPUtils.trace_tlv(response.getData(), logger);
         } catch (ArrayIndexOutOfBoundsException | IllegalStateException e) {
-            // XXX: Exists a card, which returns plain AID as response
+            // WORKAROUND: Exists a card, which returns plain AID as response
             logger.warn("Could not parse SELECT response: " + e.getMessage());
             throw new GPDataException("Could not auto-detect ISD AID", response.getData());
         }
@@ -158,7 +162,7 @@ public class GPSession {
         BerTlv fcitag = tlvs.find(new BerTag(0x6F));
         if (fcitag != null) {
             BerTlv isdaid = fcitag.find(new BerTag(0x84));
-            // XXX: exists a card that returns a zero length AID in template
+            // WORKAROUND: exists a card that returns a zero length AID in template
             if (isdaid != null && isdaid.getBytesValue().length > 0) {
                 AID detectedAID = new AID(isdaid.getBytesValue());
                 logger.debug("Auto-detected ISD: " + detectedAID);
@@ -202,10 +206,6 @@ public class GPSession {
 
     public void setBlockSize(int size) {
         this.blockSize = size;
-    }
-
-    public void setSpec(GPSpec spec) {
-        this.spec = spec;
     }
 
     public void setTokenizer(DMTokenizer tokenizer) {
@@ -284,8 +284,8 @@ public class GPSession {
                             if (vertag != null) {
                                 BerTlv veroid = vertag.find(new BerTag(0x06));
                                 if (veroid != null) {
-                                    spec = GPData.oid2version(veroid.getBytesValue());
-                                    logger.debug("Auto-detected GP version: " + spec);
+                                    // TODO: react to it maybe? Not that relevant in 2.2 era
+                                    logger.debug("Auto-detected GP version: " + GPData.oid2version(veroid.getBytesValue()));
                                 }
                             }
                         } else {
@@ -424,10 +424,9 @@ public class GPSession {
             throw new GPException("Key version mismatch: " + keyInfo.getVersion() + " != " + scpKeyVersion);
         }
 
-        // Remove RMAC if SCP01 TODO: this should be generic sanitizer somewhere
+        // This will throw as expected.
         if (this.scpVersion == GPSecureChannel.SCP01 && securityLevel.contains(APDUMode.RMAC)) {
-            logger.debug("SCP01 does not support RMAC, removing.");
-            securityLevel.remove(APDUMode.RMAC);
+            logger.warn("SCP01 does not support RMAC, removing.");
         }
 
         // Extract ssc
@@ -967,25 +966,22 @@ public class GPSession {
         return registry;
     }
 
-    // TODO: The way registry parsing mode is piggybacked to the registry class is not really nice.
-    private byte[] getConcatenatedStatus(GPRegistry reg, int p1, byte[] data) throws IOException, GPException {
+    private byte[] getConcatenatedStatus(int p1, byte[] data, boolean useTags) throws IOException, GPException {
         // By default use tags
-        int p2 = reg.tags ? 0x02 : 0x00;
+        int p2 = useTags ? 0x02 : 0x00;
 
         CommandAPDU cmd = new CommandAPDU(CLA_GP, INS_GET_STATUS, p1, p2, data, 256);
         ResponseAPDU response = transmit(cmd);
 
         // Workaround for legacy cards, like SCE 6.0 FIXME: this does not work properly
         // Find a different way to adjust the response parser without touching the overall spec mode
-
         // If ISD-s are asked and none is returned, it could be either
         // - SSD
         // - no support for tags
         if (p1 == 0x80 && response.getSW() == 0x6A86) {
             if (p2 == 0x02) {
                 // If no support for tags. Re-issue command without requesting tags
-                reg.tags = false;
-                return getConcatenatedStatus(reg, p1, data);
+                return getConcatenatedStatus(p1, data, false);
             }
         }
 
@@ -1021,28 +1017,25 @@ public class GPSession {
     private GPRegistry getStatus() throws IOException, GPException {
         GPRegistry registry = new GPRegistry();
 
-        if (spec == GPSpec.OP201) {
-            registry.tags = false;
-        }
         // Issuer security domain
-        byte[] data = getConcatenatedStatus(registry, 0x80, new byte[]{0x4F, 0x00});
-        registry.parse(0x80, data, Kind.IssuerSecurityDomain, spec);
+        byte[] data = getConcatenatedStatus(0x80, new byte[]{0x4F, 0x00}, profile.getStatusUsesTags());
+        registry.parse_and_populate(0x80, data, Kind.IssuerSecurityDomain, profile);
 
         // Apps and security domains
-        data = getConcatenatedStatus(registry, 0x40, new byte[]{0x4F, 0x00});
-        registry.parse(0x40, data, Kind.Application, spec);
+        data = getConcatenatedStatus(0x40, new byte[]{0x4F, 0x00}, profile.getStatusUsesTags());
+        registry.parse_and_populate(0x40, data, Kind.Application, profile);
 
         // Load files with modules is better than just load files. Registry does not allow to update
         // existing entries
-        if (spec != GPSpec.OP201) { // TODO: remove
+        if (profile.doesReportModules()) {
             // Load files with modules
-            data = getConcatenatedStatus(registry, 0x10, new byte[]{0x4F, 0x00});
-            registry.parse(0x10, data, Kind.ExecutableLoadFile, spec);
+            data = getConcatenatedStatus( 0x10, new byte[]{0x4F, 0x00}, profile.getStatusUsesTags());
+            registry.parse_and_populate(0x10, data, Kind.ExecutableLoadFile, profile);
         }
 
         // Load files
-        data = getConcatenatedStatus(registry, 0x20, new byte[]{0x4F, 0x00});
-        registry.parse(0x20, data, Kind.ExecutableLoadFile, spec);
+        data = getConcatenatedStatus(0x20, new byte[]{0x4F, 0x00}, profile.getStatusUsesTags());
+        registry.parse_and_populate(0x20, data, Kind.ExecutableLoadFile, profile);
 
         return registry;
     }
@@ -1070,8 +1063,5 @@ public class GPSession {
             return valueOf(s.trim().toUpperCase());
         }
     }
-
-
-    public enum GPSpec {OP201, GP211, GP22}
 
 }

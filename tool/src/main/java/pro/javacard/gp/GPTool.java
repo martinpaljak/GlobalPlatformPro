@@ -374,7 +374,7 @@ public final class GPTool extends GPCommandLineInterface {
                     final String kv = args.has(OPT_PUT_KEY) ? args.valueOf(OPT_PUT_KEY) : args.valueOf(OPT_REPLACE_KEY);
                     final int keyVersion = GPUtils.intValue(args.valueOf(OPT_NEW_KEY_VERSION));
                     // Check for presence (thus replace)
-                    // FIXME: some cards reject the command if actually trying to replace existing key.
+                    // WORKAROUND: some cards reject the command if actually trying to replace existing key.
                     // List<GPKeyInfo> current = gp.getKeyInfoTemplate();
                     // boolean replace = current.stream().filter(p -> p.getVersion() == keyVersion).count() == 1 || args.has(OPT_REPLACE_KEY);
                     boolean replace = args.has(OPT_REPLACE_KEY);

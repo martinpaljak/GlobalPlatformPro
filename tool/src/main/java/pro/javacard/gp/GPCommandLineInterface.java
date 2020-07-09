@@ -44,7 +44,8 @@ abstract class GPCommandLineInterface {
     protected static OptionSpec<Void> OPT_INFO = parser.acceptsAll(Arrays.asList("i", "info"), "Show information");
     protected static OptionSpec<String> OPT_APDU = parser.acceptsAll(Arrays.asList("a", "apdu"), "Send raw APDU (hex)").withRequiredArg().describedAs("APDU");
     protected static OptionSpec<String> OPT_SECURE_APDU = parser.acceptsAll(Arrays.asList("s", "secure-apdu"), "Send raw APDU (hex) via SCP").withRequiredArg().describedAs("APDU");
-    protected static OptionSpec<Void> OPT_FORCE = parser.acceptsAll(Arrays.asList("f", "force"), "Force operation");
+    protected static OptionSpec<Void> OPT_FORCE = parser.acceptsAll(Arrays.asList("f", "force"), "Force operations");
+    protected static OptionSpec<Void> OPT_SAD = parser.acceptsAll(Arrays.asList("F", "no-felix"), "Disable Felix mode DWIM");
 
     // Applet loading operations
     protected static OptionSpec<File> OPT_CAP = parser.accepts("cap", "Use a CAP file as source").withRequiredArg().ofType(File.class);

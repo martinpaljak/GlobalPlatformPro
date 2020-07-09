@@ -373,6 +373,10 @@ public final class GPTool extends GPCommandLineInterface {
                 if (args.has(OPT_PUT_KEY) || args.has(OPT_REPLACE_KEY)) {
                     final String kv = args.has(OPT_PUT_KEY) ? args.valueOf(OPT_PUT_KEY) : args.valueOf(OPT_REPLACE_KEY);
                     final int keyVersion = GPUtils.intValue(args.valueOf(OPT_NEW_KEY_VERSION));
+                    if (keyVersion < 0x01 || keyVersion > 0x7F) {
+                        System.err.println("Invalid key version: " + GPUtils.intString(keyVersion) + ", some possible values:");
+                        System.err.println(GPKeyInfo.keyVersionPurposes.entrySet().stream().map(e -> String.format("%s - %s", GPUtils.intString(e.getKey()), e.getValue())).collect(Collectors.joining("\n")));
+                    }
                     // Check for presence (thus replace)
                     // WORKAROUND: some cards reject the command if actually trying to replace existing key.
                     // List<GPKeyInfo> current = gp.getKeyInfoTemplate();
@@ -388,6 +392,8 @@ public final class GPTool extends GPCommandLineInterface {
                     } else {
                         // Interpret as raw key FIXME: implicit 3DES currently
                         byte[] k = HexUtils.hex2bin(kv);
+                        if (k.length != 16)
+                            throw new IllegalArgumentException("Invalid key length: " + k.length);
                         gp.putKey(GPCrypto.des3key(k), keyVersion, replace);
                     }
                 }

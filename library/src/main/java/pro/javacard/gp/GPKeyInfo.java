@@ -27,7 +27,6 @@ import com.payneteasy.tlv.BerTlvs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.PrintStream;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -142,17 +141,18 @@ public final class GPKeyInfo {
         return r;
     }
 
+    final static Map<Integer, String> keyVersionPurposes;
+
+    static {
+        LinkedHashMap<Integer, String> tmp = new LinkedHashMap<>();
+        tmp.put(0x70, "Token Verification");
+        tmp.put(0x71, "Receipt Generation");
+        tmp.put(0x73, "DAP Verification");
+        keyVersionPurposes = Collections.unmodifiableMap(tmp);
+    }
+
     private static Optional<String> getPurposeDescription(GPKeyInfo k) {
-        switch (k.getVersion()) {
-            case 0x70:
-                return Optional.of("Token Verification");
-            case 0x71:
-                return Optional.of("Receipt Generation");
-            case 0x73:
-                return Optional.of("DAP Verification");
-            default:
-                return Optional.empty();
-        }
+        return Optional.ofNullable(keyVersionPurposes.get(k.getVersion()));
     }
 
     private static Optional<String> getTypeDescription(GPKeyInfo k) {
@@ -181,7 +181,7 @@ public final class GPKeyInfo {
             String description = getKeyDescription(k).map(e -> " (" + e + ")").orElse("");
             sb.append(String.format("Version: %3d (0x%02X) ID: %3d (0x%02X) type: %-12s length: %3d%s%n", k.getVersion(), k.getVersion(), k.getID(), k.getID(), k.getType(), k.getLength(), description));
         }
-       return sb.toString();
+        return sb.toString();
     }
 
     public int getID() {

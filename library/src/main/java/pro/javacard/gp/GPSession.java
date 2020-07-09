@@ -640,7 +640,8 @@ public class GPSession {
             System.arraycopy(installParams, 0, newparams, 2, installParams.length);
             installParams = newparams;
         }
-        byte[] privs = Privilege.toBytes(privileges);
+        // Try to use the minimal
+        byte[] privs = Privilege.toByteOrBytes(privileges);
         ByteArrayOutputStream bo = new ByteArrayOutputStream();
         try {
             bo.write(packageAID.getLength());

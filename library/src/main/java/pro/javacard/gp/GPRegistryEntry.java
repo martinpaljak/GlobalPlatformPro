@@ -23,8 +23,6 @@ import apdu4j.HexUtils;
 import pro.javacard.AID;
 
 import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 public class GPRegistryEntry {
 
@@ -294,6 +292,10 @@ public class GPRegistryEntry {
             return r;
         }
 
+        static boolean isOneByte(Set<Privilege> privs) {
+            return privs.stream().filter(e -> e.pos != 0).count() == 0;
+        }
+
         public static byte[] toBytes(Set<Privilege> privs) {
             byte[] r = new byte[3];
             for (Privilege p : privs) {
@@ -302,9 +304,15 @@ public class GPRegistryEntry {
             return r;
         }
 
+        public static byte[] toByteOrBytes(Set<Privilege> privs) {
+            byte[] r = toBytes(privs);
+            if (isOneByte(privs))
+                r = Arrays.copyOf(r, 1);
+            return r;
+        }
+
         public static byte toByte(Set<Privilege> privs) {
-            boolean oneByte = privs.stream().filter(e -> e.pos != 0).count() == 0;
-            if (!oneByte)
+            if (!isOneByte(privs))
                 throw new IllegalStateException("This privileges set can not be encoded in one byte");
             return toBytes(privs)[0];
         }

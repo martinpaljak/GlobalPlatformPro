@@ -31,6 +31,7 @@ import pro.javacard.gp.GPRegistryEntry.Privilege;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 // Middle layer between GPTool (CLI) and GlobalPlatform (session)
 public class GPCommands {
@@ -86,7 +87,7 @@ public class GPCommands {
                 if (e.getLoadFile() != null) {
                     out.println(tab + "From:    " + e.getLoadFile());
                 }
-                out.println(tab + "Privs:   " + e.getPrivileges());
+                out.println(tab + "Privs:   " + e.getPrivileges().stream().map(p -> p.toString()).collect(Collectors.joining(", ")));
             }
             out.println();
         }

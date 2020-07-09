@@ -100,6 +100,8 @@ public final class GPTool extends GPCommandLineInterface {
             ret = new GPTool().run(CardBIBO.wrap(c), argv);
         } catch (IllegalArgumentException e) {
             System.err.println("Invalid argument: " + e.getMessage());
+            if (isVerbose)
+                e.printStackTrace();
         } catch (Exception e) {
             System.err.println("Error: " + e.getMessage());
             if (isVerbose)
@@ -535,22 +537,29 @@ public final class GPTool extends GPCommandLineInterface {
                     privs.add(Privilege.SecurityDomain);
 
                     // By default same SCP
-                    if (parameters != null && parameters.find(new BerTag(0x81)) == null) {
-                        params = GPUtils.concatenate(params, new byte[]{(byte) 0x81, 0x02, gp.getSecureChannel().getValue(), (byte) gp.getSecureChannel().getI()});
-                    } else {
-                        System.err.println("Notice: 0x81 already in parameters");
+                    if (!args.has(OPT_SAD)) {
+                        if (parameters != null && parameters.find(new BerTag(0x81)) == null) {
+                            params = GPUtils.concatenate(params, new byte[]{(byte) 0x81, 0x02, gp.getSecureChannel().getValue(), (byte) gp.getSecureChannel().getI()});
+                        } else {
+                            System.err.println("Notice: 0x81 already in parameters");
+                        }
                     }
 
                     // Extradition rules
-                    if (args.has(OPT_ALLOW_TO) && parameters != null && parameters.find(new BerTag(0x82)) == null) {
-                        params = GPUtils.concatenate(params, new byte[]{(byte) 0x82, 0x02, 0x20, 0x20});
-                    } else {
-                        System.err.println("Warning: 0x82 already in parameters, --" + OPT_ALLOW_TO + " not applied");
+                    if (args.has(OPT_ALLOW_TO)) {
+                        if (parameters != null && parameters.find(new BerTag(0x82)) == null) {
+                            params = GPUtils.concatenate(params, new byte[]{(byte) 0x82, 0x02, 0x20, 0x20});
+                        } else {
+                            System.err.println("Warning: 0x82 already in parameters, " + OPT_ALLOW_TO + " not applied");
+                        }
                     }
-                    if (args.has(OPT_ALLOW_FROM) && parameters != null && parameters.find(new BerTag(0x87)) == null) {
-                        params = GPUtils.concatenate(params, new byte[]{(byte) 0x87, 0x02, 0x20, 0x20});
-                    } else {
-                        System.err.println("Warning: 0x87 already in parameters, --" + OPT_ALLOW_FROM + " not applied");
+
+                    if (args.has(OPT_ALLOW_FROM)) {
+                        if (parameters != null && parameters.find(new BerTag(0x87)) == null) {
+                            params = GPUtils.concatenate(params, new byte[]{(byte) 0x87, 0x02, 0x20, 0x20});
+                        } else {
+                            System.err.println("Warning: 0x87 already in parameters, " + OPT_ALLOW_FROM + " not applied");
+                        }
                     }
 
                     if (parameters != null)
@@ -781,8 +790,8 @@ public final class GPTool extends GPCommandLineInterface {
     // Extract parameters and call GPCommands.load()
     private static void loadCAP(OptionSet args, GPSession gp, CAPFile capFile) throws GPException, IOException {
         try {
-            AID to = args.has(OPT_TO) ? AID.fromString(OPT_TO) : gp.getAID();
-            AID dapDomain = args.has(OPT_DAP_DOMAIN) ? AID.fromString(OPT_DAP_DOMAIN) : null;
+            AID to = args.has(OPT_TO) ? AID.fromString(args.valueOf(OPT_TO)) : gp.getAID();
+            AID dapDomain = args.has(OPT_DAP_DOMAIN) ? AID.fromString(args.valueOf(OPT_DAP_DOMAIN)) : null;
             GPData.LFDBH lfdbh = args.has(OPT_SHA256) ? GPData.LFDBH.SHA256 : null;
             GPCommands.load(gp, capFile, to, dapDomain, lfdbh);
             System.out.println("CAP loaded"); // FIXME: path

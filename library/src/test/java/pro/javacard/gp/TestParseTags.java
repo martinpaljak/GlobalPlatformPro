@@ -20,7 +20,7 @@ public class TestParseTags {
     public void testParsePaertialIsd() throws Exception {
         byte[] data = HexUtils.hex2bin("E3464F08A0000000030000009F700101C5039EFE80CF0140CF0141CF0142CF0143CF0180CF0181CF0182CF0183C40BD276000005AAFFCAFE0001CE020001CC08A000000003000000");
         GPRegistry reg = new GPRegistry();
-        reg.parse(0x80, data, GPRegistryEntry.Kind.IssuerSecurityDomain, GPSession.GPSpec.GP22);
+        reg.parse_and_populate(0x80, data, GPRegistryEntry.Kind.IssuerSecurityDomain, GPCardProfile.defaultProfile());
         GPCommands.listRegistry(reg, System.out, true);
     }
 
@@ -59,7 +59,7 @@ public class TestParseTags {
     public void testParseISD() throws Exception {
         byte[] r = HexUtils.hex2bin("E3144F07A00000015100009F700107C50180EA028000");
         GPRegistry g = new GPRegistry();
-        g.parse(0x80, r, GPRegistryEntry.Kind.IssuerSecurityDomain, GPSession.GPSpec.GP22);
+        g.parse_and_populate(0x80, r, GPRegistryEntry.Kind.IssuerSecurityDomain, GPCardProfile.defaultProfile());
         GPRegistryEntry isd = g.getISD().orElseThrow(() -> new Exception("No ISD"));
         Assert.assertEquals(1, g.allAIDs().size());
         Assert.assertEquals(AID.fromString("A0000001510000"), isd.getAID());

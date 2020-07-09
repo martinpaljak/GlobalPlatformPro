@@ -31,7 +31,6 @@ import pro.javacard.AID;
 import pro.javacard.CAPFile;
 import pro.javacard.gp.GPRegistryEntry.Privilege;
 import pro.javacard.gp.GPSession.APDUMode;
-import pro.javacard.gp.GPSession.GPSpec;
 import pro.javacard.gp.PlaintextKeys.Diversification;
 import pro.javacard.gp.i.CardKeysProvider;
 
@@ -253,16 +252,21 @@ public final class GPTool extends GPCommandLineInterface {
                 keys = keyz;
             }
 
-            // XXX: leftover
-            if (args.has(OPT_OP201)) {
-                gp.setSpec(GPSpec.OP201);
-            }
-
             // Override block size for stupidly broken readers.
             // See https://github.com/martinpaljak/GlobalPlatformPro/issues/32
             // The name of the option comes from a common abbreviation as well as dd utility
             if (args.has(OPT_BS)) {
-                gp.setBlockSize((int) args.valueOf(OPT_BS));
+                gp.setBlockSize(args.valueOf(OPT_BS));
+            }
+
+            if (args.has(OPT_PROFILE)) {
+                Optional<GPCardProfile> p = GPCardProfile.fromName(args.valueOf(OPT_PROFILE));
+                if (!p.isPresent()) {
+                    System.err.println(String.format("Unknown profile '%s', known profiles: %s", args.valueOf(OPT_PROFILE), String.join(", ", GPCardProfile.profiles.keySet())));
+                    return 1;
+                }
+
+                gp.profile = p.get();
             }
 
             // Authenticate, only if needed

@@ -31,7 +31,6 @@ import org.slf4j.LoggerFactory;
 import pro.javacard.AID;
 import pro.javacard.gp.GPRegistryEntry.Kind;
 import pro.javacard.gp.GPRegistryEntry.Privilege;
-import pro.javacard.gp.GPSession.GPSpec;
 
 import java.util.*;
 import java.util.function.BinaryOperator;
@@ -40,7 +39,6 @@ import java.util.stream.Collectors;
 
 public class GPRegistry implements Iterable<GPRegistryEntry> {
     private static final Logger logger = LoggerFactory.getLogger(GPRegistry.class);
-    boolean tags = true; // XXX (visibility) true if newer tags format should be used for parsing, false otherwise
     ArrayList<GPRegistryEntry> entries = new ArrayList<>();
 
     public void add(GPRegistryEntry entry) {
@@ -107,7 +105,7 @@ public class GPRegistry implements Iterable<GPRegistryEntry> {
         return allDomains().stream().filter(e -> e.getType() == Kind.IssuerSecurityDomain).reduce(onlyOne());
     }
 
-    private void populate_legacy(int p1, byte[] data, Kind type, GPSpec spec) throws GPDataException {
+    private void populate_legacy(int p1, byte[] data, Kind type, GPCardProfile spec) throws GPDataException {
         int offset = 0;
         try {
             while (offset < data.length) {
@@ -130,8 +128,8 @@ public class GPRegistry implements Iterable<GPRegistryEntry> {
                     e.setAID(aid);
                     e.setLifeCycle(lifecycle);
                     e.setType(type);
-                    // Modules TODO: remove
-                    if (spec != GPSpec.OP201 && p1 != 0x20) {
+                    // Modules. 0x20 is load files, 0x10 load files with modules
+                    if (spec.doesReportModules() && p1 != 0x20) {
                         int num = data[offset++];
                         for (int i = 0; i < num; i++) {
                             len = data[offset++] & 0xFF;
@@ -149,7 +147,6 @@ public class GPRegistry implements Iterable<GPRegistryEntry> {
     }
 
     private void populate_tags(byte[] data, Kind type) throws GPDataException {
-
         BerTlvParser parser = new BerTlvParser();
         BerTlvs tlvs = parser.parse(data);
         GPUtils.trace_tlv(data, logger);
@@ -199,12 +196,11 @@ public class GPRegistry implements Iterable<GPRegistryEntry> {
         }
     }
 
-    // FIXME: this is ugly
-    public void parse(int p1, byte[] data, Kind type, GPSpec spec) throws GPDataException {
-        if (tags) {
+    void parse_and_populate(int p1, byte[] data, Kind type, GPCardProfile profile) throws GPDataException {
+        if (profile.getStatusUsesTags()) {
             populate_tags(data, type);
         } else {
-            populate_legacy(p1, data, type, spec);
+            populate_legacy(p1, data, type, profile);
         }
     }
 

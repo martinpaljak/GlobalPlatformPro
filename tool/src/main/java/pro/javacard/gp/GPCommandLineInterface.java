@@ -135,8 +135,7 @@ abstract class GPCommandLineInterface {
     // MISC options
     protected static OptionSpec<String> OPT_SC_MODE = parser.accepts("mode", "Secure channel to use").withRequiredArg().describedAs("mac/enc/renc/rmac/clr");
     protected static OptionSpec<Integer> OPT_BS = parser.accepts("bs", "Maximum APDU payload size").withRequiredArg().ofType(Integer.class).describedAs("bytes");
-    protected static OptionSpec<Void> OPT_OP201 = parser.accepts("op201", "(deprecated) Enable OpenPlatform 2.0.1 mode");
-
+    protected static OptionSpec<String> OPT_PROFILE = parser.acceptsAll(Arrays.asList("P", "profile"), "Use pre-defined profile").withRequiredArg().describedAs("profile");
 
     protected static OptionSet parseArguments(String[] argv) throws IOException {
         OptionSet args = null;

@@ -30,8 +30,8 @@ import com.payneteasy.tlv.IBerTlvLogger;
 import org.slf4j.Logger;
 
 import java.io.ByteArrayOutputStream;
-import java.nio.ByteBuffer;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -43,6 +43,10 @@ public class GPUtils {
             return Integer.parseInt(s.substring(2), 16);
         }
         return Integer.parseInt(s, 10);
+    }
+
+    public static String intString(int i) {
+        return String.format("%d (0x%02X)", i, i);
     }
 
     public static String byteArrayToReadableString(byte[] array) {
@@ -139,7 +143,7 @@ public class GPUtils {
 
     static void trace_lv(byte[] data, Logger logger) {
         for (int i = 0; i < data.length; ) {
-            int l= data[i] & 0xFF;
+            int l = data[i] & 0xFF;
             logger.trace(String.format("[%02X] %s", l, HexUtils.bin2hex(Arrays.copyOfRange(data, i + 1, i + 1 + l))));
             i += 1 + l;
         }

@@ -204,9 +204,9 @@ public final class GPKeyInfo {
         StringBuffer s = new StringBuffer();
         s.append("type=" + type);
         if (version >= 1 && version <= 0x7f)
-            s.append(" version=" + String.format("%d (0x%02X)", version, version));
+            s.append(" version=" + GPUtils.intString(version));
         if (id >= 0 && id <= 0x7F)
-            s.append(" id=" + String.format("%d (0x%02X)", id, id));
+            s.append(" id=" + GPUtils.intString(id));
         s.append(" len=" + length);
         return s.toString();
     }

@@ -141,8 +141,7 @@ public class GPRegistryEntry {
                 if (lifeCycleState == 0x1) {
                     return "LOADED";
                 } else if (lifeCycleState == 0x00) {
-                    // OP201 TODO: remove in v0.5
-                    return "LOGICALLY_DELETED";
+                    return "LOGICALLY_DELETED"; // From OP201
                 } else {
                     return "ERROR (0x" + Integer.toHexString(lifeCycleState) + ")";
                 }

@@ -38,6 +38,7 @@ class SCP03Wrapper extends SecureChannelWrapper {
     private byte[] chaining_value = new byte[16];
     private byte[] encryption_counter = new byte[16];
 
+    // FIXME: incorporate GPCardProfile here
     static final String COUNTER_WORKAROUND = "globalplatformpro.scp03.buggycounterworkaround";
     private String buggyCounterEnv = System.getenv().getOrDefault(COUNTER_WORKAROUND.replace(".", "_").toUpperCase(), "false");
     private boolean counterIsBuggy = System.getProperty(COUNTER_WORKAROUND, buggyCounterEnv).equalsIgnoreCase("true");

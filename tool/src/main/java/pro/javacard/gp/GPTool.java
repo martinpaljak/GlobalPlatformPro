@@ -640,7 +640,7 @@ public final class GPTool extends GPCommandLineInterface {
                 // --delete-key
                 if (args.has(OPT_DELETE_KEY)) {
                     int keyver = GPUtils.intValue(args.valueOf(OPT_DELETE_KEY));
-                    System.out.println("Deleting key " + String.format("%d (0x%02X)", keyver, keyver));
+                    System.out.println("Deleting key " + GPUtils.intString(keyver));
                     gp.deleteKey(keyver);
                 }
 

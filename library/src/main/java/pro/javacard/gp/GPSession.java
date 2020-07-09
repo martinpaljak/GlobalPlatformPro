@@ -60,7 +60,6 @@ import static pro.javacard.gp.GPCardKeys.KeyPurpose;
 public class GPSession {
     private static final Logger logger = LoggerFactory.getLogger(GPSession.class);
 
-    private static final String LFDBH_SHA1 = "SHA1";
     public static final EnumSet<APDUMode> defaultMode = EnumSet.of(APDUMode.MAC);
     // Implementation details
     public static final byte CLA_GP = (byte) 0x80;
@@ -411,10 +410,12 @@ public class GPSession {
         byte card_cryptogram[] = Arrays.copyOfRange(update_response, offset, offset + 8);
         offset += card_cryptogram.length;
 
-        // FIXME: detect if got to end
+        if (offset != update_response.length)
+            throw new GPDataException("Unhandled data in INITIALIZE UPDATE response", Arrays.copyOfRange(update_response, offset, update_response.length));
+
         logger.debug("Host challenge: " + HexUtils.bin2hex(host_challenge));
         logger.debug("Card challenge: " + HexUtils.bin2hex(card_challenge));
-        logger.debug("Card reports {} with key version {}", this.scpVersion, String.format("%d (0x%02X)", scpKeyVersion, scpKeyVersion));
+        logger.debug("Card reports {} with key version {}", this.scpVersion, GPUtils.intString(scpKeyVersion));
 
         // Verify response
         // If using explicit key version, it must match.
@@ -753,7 +754,7 @@ public class GPSession {
         return result;
     }
 
-    byte[] _storeDataSingle(byte[] data, int P1, int P2) throws IOException, GPException {
+    public byte[] storeDataSingle(byte[] data, int P1, int P2) throws IOException, GPException {
         CommandAPDU store = new CommandAPDU(CLA_GP, INS_STORE_DATA, P1, P2, data, 256);
         return GPException.check(transmit(store), "STORE DATA failed").getData();
     }
@@ -825,7 +826,7 @@ public class GPSession {
         bo.write(keyver);
         CommandAPDU delete = new CommandAPDU(CLA_GP, INS_DELETE, 0x00, 0x00, bo.toByteArray());
         ResponseAPDU response = transmit(delete);
-        GPException.check(response, String.format("Could not delete key %d (0x%02X)", keyver, keyver));
+        GPException.check(response, String.format("Could not delete key %s", GPUtils.intString(keyver)));
     }
 
     public void renameISD(AID newaid) throws GPException, IOException {

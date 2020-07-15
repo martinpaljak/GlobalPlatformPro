@@ -55,12 +55,12 @@ abstract class GPCommandLineInterface {
 
     protected static OptionSpec<File> OPT_LOAD = parser.accepts("load", "Load a CAP file").withRequiredArg().ofType(File.class);
 
-    protected static OptionSpec<File> OPT_INSTALL = parser.accepts("install", "Install applet(s) from CAP").withOptionalArg().ofType(File.class);
+    protected static OptionSpec<File> OPT_INSTALL = parser.accepts("install", "Install applet(s) from CAP").withRequiredArg().ofType(File.class);
     protected static OptionSpec<String> OPT_PARAMS = parser.accepts("params", "Installation parameters").withRequiredArg().describedAs("HEX");
     protected static OptionSpec<String> OPT_PRIVS = parser.accepts("privs", "Specify privileges for installation").withRequiredArg();
 
     protected static OptionSpec<File> OPT_UNINSTALL = parser.accepts("uninstall", "Uninstall applet/package").withRequiredArg().ofType(File.class);
-    protected static OptionSpec<String> OPT_DELETE = parser.accepts("delete", "Delete applet/package").withOptionalArg().describedAs("AID");
+    protected static OptionSpec<String> OPT_DELETE = parser.accepts("delete", "Delete applet/package").withRequiredArg().describedAs("AID");
 
     protected static OptionSpec<Void> OPT_DEFAULT = parser.accepts("default", "Indicate Default Selected privilege");
     protected static OptionSpec<String> OPT_DOMAIN = parser.accepts("domain", "Create supplementary security domain").withRequiredArg().describedAs("AID");

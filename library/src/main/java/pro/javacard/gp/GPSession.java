@@ -410,8 +410,22 @@ public class GPSession {
         byte card_cryptogram[] = Arrays.copyOfRange(update_response, offset, offset + 8);
         offset += card_cryptogram.length;
 
-        if (offset != update_response.length)
-            throw new GPDataException("Unhandled data in INITIALIZE UPDATE response", Arrays.copyOfRange(update_response, offset, update_response.length));
+        // Extract ssc
+        final byte[] seq;
+        if (this.scpVersion == GPSecureChannel.SCP02) {
+            seq = Arrays.copyOfRange(update_response, 12, 14);
+        } else if (this.scpVersion == GPSecureChannel.SCP03 && update_response.length == 32) {
+            seq = Arrays.copyOfRange(update_response, offset, 32);
+            offset += seq.length;
+        } else {
+            seq = null;
+        }
+
+        logger.debug("SSC: {}", seq == null ? null : HexUtils.bin2hex(seq));
+        if (offset != update_response.length) {
+            logger.error("Unhandled data in INITIALIZE UPDATE response: {}", HexUtils.bin2hex(Arrays.copyOfRange(update_response, offset, update_response.length)));
+            //throw new GPDataException("Unhandled data in INITIALIZE UPDATE response", Arrays.copyOfRange(update_response, offset, update_response.length));
+        }
 
         logger.debug("Host challenge: " + HexUtils.bin2hex(host_challenge));
         logger.debug("Card challenge: " + HexUtils.bin2hex(card_challenge));
@@ -429,15 +443,6 @@ public class GPSession {
             logger.warn("SCP01 does not support RMAC, removing.");
         }
 
-        // Extract ssc
-        byte[] seq = null;
-        if (this.scpVersion == GPSecureChannel.SCP02) {
-            seq = Arrays.copyOfRange(update_response, 12, 14);
-        } else if (this.scpVersion == GPSecureChannel.SCP03) {
-            if (update_response.length == 32) {
-                seq = Arrays.copyOfRange(update_response, 29, 32);
-            }
-        }
 
         // Give the card key a chance to be automatically diverisifed based on KDD from INITIALIZE UPDATE
         cardKeys = keys.diversify(this.scpVersion, diversification_data);
@@ -1029,7 +1034,7 @@ public class GPSession {
         // existing entries
         if (profile.doesReportModules()) {
             // Load files with modules
-            data = getConcatenatedStatus( 0x10, new byte[]{0x4F, 0x00}, profile.getStatusUsesTags());
+            data = getConcatenatedStatus(0x10, new byte[]{0x4F, 0x00}, profile.getStatusUsesTags());
             registry.parse_and_populate(0x10, data, Kind.ExecutableLoadFile, profile);
         }
 

@@ -168,9 +168,19 @@ public class GPRegistry implements Iterable<GPRegistryEntry> {
                 if (privstag != null) {
                     e.setPrivileges(Privilege.fromBytes(privstag.getBytesValue()));
                 }
+
+                // 11.1.7 of GPC 2.3
                 for (BerTlv cf : t.findAll(new BerTag(0xCF))) {
-                    logger.debug("CF=" + cf.getHexValue() + " for " + e.aid);
-                    // FIXME: how to expose?
+                    byte[] cfb = cf.getBytesValue();
+                    if (cfb.length != 1)
+                        throw new GPDataException("Tag CF not single byte", cfb);
+                    int v = cfb[0] & 0xFF;
+                    int c = v & 0x1F;
+                    if ((v & 0x80) == 0x80) {
+                        e.implicitContactless.add(c);
+                    } else if ((v & 0x40) == 0x40) {
+                        e.implicitContact.add(c);
+                    }
                 }
 
                 BerTlv loadfiletag = t.find(new BerTag(0xC4));

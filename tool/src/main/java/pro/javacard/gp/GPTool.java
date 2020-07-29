@@ -232,7 +232,7 @@ public final class GPTool extends GPCommandLineInterface {
                 }
                 PlaintextKeys keyz = cliKeys.map(Optional::of).orElse(envKeys).orElse(PlaintextKeys.defaultKey());
 
-                // "gp -l -emv" should still work
+                // "gp -l -emv" should still work FIXME: move out of else
                 if (args.has(OPT_VISA2)) {
                     keyz.setDiversifier(Diversification.VISA2);
                 } else if (args.has(OPT_EMV)) {
@@ -376,7 +376,9 @@ public final class GPTool extends GPCommandLineInterface {
                     if (keyVersion < 0x01 || keyVersion > 0x7F) {
                         System.err.println("Invalid key version: " + GPUtils.intString(keyVersion) + ", some possible values:");
                         System.err.println(GPKeyInfo.keyVersionPurposes.entrySet().stream().map(e -> String.format("%s - %s", GPUtils.intString(e.getKey()), e.getValue())).collect(Collectors.joining("\n")));
+                        throw new IllegalArgumentException("Invalid key version: " + GPUtils.intString(keyVersion));
                     }
+
                     // Check for presence (thus replace)
                     // WORKAROUND: some cards reject the command if actually trying to replace existing key.
                     // List<GPKeyInfo> current = gp.getKeyInfoTemplate();
@@ -546,34 +548,42 @@ public final class GPTool extends GPCommandLineInterface {
                     Set<Privilege> privs = getPrivileges(args);
                     privs.add(Privilege.SecurityDomain);
 
-                    // By default same SCP
-                    if (!args.has(OPT_SAD)) {
+                    // By default same SCP as argument
+                    if (!args.has(OPT_SAD) && !gp.profile.oldStyleSSDParameters()) {
                         if (parameters != null && parameters.find(new BerTag(0x81)) == null) {
                             params = GPUtils.concatenate(params, new byte[]{(byte) 0x81, 0x02, gp.getSecureChannel().getValue(), (byte) gp.getSecureChannel().getI()});
                         } else {
-                            System.err.println("Notice: 0x81 already in parameters");
+                            System.err.println("Notice: 0x81 already in parameters or no parameters");
                         }
                     }
 
                     // Extradition rules
                     if (args.has(OPT_ALLOW_TO)) {
-                        if (parameters != null && parameters.find(new BerTag(0x82)) == null) {
-                            params = GPUtils.concatenate(params, new byte[]{(byte) 0x82, 0x02, 0x20, 0x20});
-                        } else {
-                            System.err.println("Warning: 0x82 already in parameters, " + OPT_ALLOW_TO + " not applied");
-                        }
+                        if (parameters != null)
+                            if (parameters.find(new BerTag(0x82)) == null) {
+                                params = GPUtils.concatenate(params, new byte[]{(byte) 0x82, 0x02, 0x20, 0x20});
+                            } else {
+                                System.err.println("Warning: 0x82 already in parameters, " + OPT_ALLOW_TO + " not applied");
+                            }
                     }
 
                     if (args.has(OPT_ALLOW_FROM)) {
-                        if (parameters != null && parameters.find(new BerTag(0x87)) == null) {
-                            params = GPUtils.concatenate(params, new byte[]{(byte) 0x87, 0x02, 0x20, 0x20});
-                        } else {
-                            System.err.println("Warning: 0x87 already in parameters, " + OPT_ALLOW_FROM + " not applied");
-                        }
+                        if (parameters != null)
+                            if (parameters.find(new BerTag(0x87)) == null) {
+                                params = GPUtils.concatenate(params, new byte[]{(byte) 0x87, 0x02, 0x20, 0x20});
+                            } else {
+                                System.err.println("Warning: 0x87 already in parameters, " + OPT_ALLOW_FROM + " not applied");
+                            }
                     }
 
-                    if (parameters != null)
+                    // Old style actually only allows one parameter, the 45
+                    if (args.has(OPT_ALLOW_TO) && gp.profile.oldStyleSSDParameters()) {
+                        params = HexUtils.hex2bin("C90145");
+                    }
+
+                    if (parameters != null || args.has(OPT_ALLOW_TO) || args.has(OPT_ALLOW_FROM)) {
                         verbose(String.format("Final parameters: %s", HexUtils.bin2hex(params)));
+                    }
                     // shoot
                     gp.installAndMakeSelectable(packageAID, appletAID, instanceAID, privs, params);
                 }

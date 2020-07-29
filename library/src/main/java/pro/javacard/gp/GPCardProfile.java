@@ -39,6 +39,7 @@ public abstract class GPCardProfile {
 
     protected boolean useTags = true;
     protected boolean reportsModules = true;
+    protected boolean oldStyleSSD = false;
 
     public boolean getStatusUsesTags() {
         return useTags;
@@ -46,6 +47,10 @@ public abstract class GPCardProfile {
 
     public boolean doesReportModules() {
         return reportsModules;
+    }
+
+    public boolean oldStyleSSDParameters() {
+        return oldStyleSSD;
     }
 
     static class DefaultModernProfile extends GPCardProfile {
@@ -56,6 +61,7 @@ public abstract class GPCardProfile {
         OldCardProfile() {
             useTags = false;
             reportsModules = false;
+            oldStyleSSD = true;
         }
     }
 

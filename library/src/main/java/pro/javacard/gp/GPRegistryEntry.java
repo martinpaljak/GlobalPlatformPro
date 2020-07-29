@@ -23,6 +23,8 @@ import apdu4j.HexUtils;
 import pro.javacard.AID;
 
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class GPRegistryEntry {
 
@@ -39,6 +41,8 @@ public class GPRegistryEntry {
     private byte[] version;
     private List<AID> modules = new ArrayList<>();
 
+    HashSet<Integer> implicitContact = new HashSet<>();
+    HashSet<Integer> implicitContactless = new HashSet<>();
 
     public Set<Privilege> getPrivileges() {
         return privileges;
@@ -55,7 +59,6 @@ public class GPRegistryEntry {
     public void setLoadFile(AID aid) {
         this.loadfile = aid;
     }
-
 
     public boolean hasPrivilege(Privilege p) {
         return privileges.contains(p);
@@ -213,6 +216,14 @@ public class GPRegistryEntry {
 
     public String getLifeCycleString() {
         return getLifeCycleString(kind, lifecycle);
+    }
+
+    public Set<Integer> getImplicitlySelectedContact() {
+        return implicitContact;
+    }
+
+    public Set<Integer> getImplicitlySelectedContactless() {
+        return implicitContactless;
     }
 
     public enum Kind {

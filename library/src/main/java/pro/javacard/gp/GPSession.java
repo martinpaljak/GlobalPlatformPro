@@ -43,7 +43,6 @@ import pro.javacard.gp.GPRegistryEntry.Privilege;
 import javax.crypto.SecretKey;
 import java.io.*;
 import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.Key;
 import java.security.interfaces.ECPublicKey;
@@ -191,14 +190,10 @@ public class GPSession {
      * Get the version and build information of the library.
      */
     public static String getVersion() {
-        try (InputStream versionfile = GPSession.class.getResourceAsStream("pro_version.txt")) {
-            String version = "unknown-development";
-            if (versionfile != null) {
-                try (BufferedReader vinfo = new BufferedReader(new InputStreamReader(versionfile, StandardCharsets.US_ASCII))) {
-                    version = vinfo.readLine();
-                }
-            }
-            return version;
+        Properties prop = new Properties();
+        try (InputStream versionfile = GPSession.class.getResourceAsStream("git.properties")) {
+                prop.load(versionfile);
+                return prop.getProperty("git.commit.id.describe", "unknown-development");
         } catch (IOException e) {
             return "unknown-error";
         }

@@ -41,9 +41,6 @@
             <resource>
                 <directory>target/generated-resources</directory>
             </resource>
-            <resource>
-                <directory>src/main/resources</directory>
-            </resource>
         </resources>
         <plugins>
             <plugin>
@@ -51,30 +48,6 @@
                 <artifactId>spotbugs-maven-plugin</artifactId>
                 <configuration>
                     <excludeFilterFile>spotbugs.xml</excludeFilterFile>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <version>1.6.0</version>
-                <executions>
-                    <execution>
-                        <id>git-version</id>
-                        <phase>generate-resources</phase>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <executable>sh</executable>
-                    <outputFile>target/generated-resources/pro/javacard/gp/pro_version.txt</outputFile>
-                    <arguments>
-                        <argument>-c</argument>
-                        <argument>[ "x$GPPRO_VERSION" = "x" ] &amp;&amp; git describe --tags --always --long --dirty ||
-                            echo "$GPPRO_VERSION"
-                        </argument>
-                    </arguments>
                 </configuration>
             </plugin>
             <!-- Reproducible -->

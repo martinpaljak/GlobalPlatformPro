@@ -24,7 +24,7 @@
         <dependency>
             <groupId>com.github.martinpaljak</groupId>
             <artifactId>capfile</artifactId>
-            <version>20.02.19</version>
+            <version>20.08.12</version>
         </dependency>
         <!-- For logging -->
         <dependency>
@@ -64,8 +64,18 @@
             <plugin>
                 <groupId>pl.project13.maven</groupId>
                 <artifactId>git-commit-id-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>store-git-info</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>revision</goal>
+                        </goals>
+                    </execution>
+                </executions>
                 <configuration>
                     <runOnlyOnce>false</runOnlyOnce>
+                    <generateGitPropertiesFile>true</generateGitPropertiesFile>
                     <generateGitPropertiesFilename>${project.build.directory}/generated-resources/pro/javacard/gp/git.properties</generateGitPropertiesFilename>
                     <includeOnlyProperties>
                         <includeOnlyProperty>^git.commit.id.describe$</includeOnlyProperty>

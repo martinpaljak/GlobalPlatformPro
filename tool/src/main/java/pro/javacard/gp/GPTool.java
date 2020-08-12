@@ -21,7 +21,9 @@
 package pro.javacard.gp;
 
 import apdu4j.*;
+import apdu4j.i.SmartCardApp;
 import apdu4j.terminals.LoggingCardTerminal;
+import com.google.auto.service.AutoService;
 import com.payneteasy.tlv.BerTag;
 import com.payneteasy.tlv.BerTlvParser;
 import com.payneteasy.tlv.BerTlvs;
@@ -43,6 +45,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
@@ -51,7 +54,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 // Does the CLI parameter parsing and associated execution
-public final class GPTool extends GPCommandLineInterface {
+@AutoService(SmartCardApp.class)
+public final class GPTool extends GPCommandLineInterface implements SmartCardApp {
 
     private static boolean isVerbose = false;
 
@@ -71,6 +75,10 @@ public final class GPTool extends GPCommandLineInterface {
         if (args.has(OPT_DEBUG) && System.getenv().containsKey("GP_TRACE"))
             System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "trace");
 
+    }
+
+    // Explicitly public, to not forget
+    public GPTool() {
     }
 
     // To keep basic gp.jar together with apdu4j app, this is just a minimalist wrapper
@@ -124,6 +132,7 @@ public final class GPTool extends GPCommandLineInterface {
     }
 
     // For running in apdu4j mode
+    @Override
     public int run(BIBO bibo, String[] argv) {
         try {
             OptionSet args = parseArguments(argv);
@@ -151,9 +160,8 @@ public final class GPTool extends GPCommandLineInterface {
             CAPFile cap = null;
             if (args.has(OPT_CAP)) {
                 File capfile = args.valueOf(OPT_CAP);
-                try (FileInputStream fin = new FileInputStream(capfile)) {
-                    cap = CAPFile.fromStream(fin);
-                }
+                cap = CAPFile.fromFile(capfile.toPath());
+
                 if (args.has(OPT_INFO)) {
                     System.out.println("**** CAP info of " + capfile.getName());
                     cap.dump(System.out);
@@ -814,7 +822,7 @@ public final class GPTool extends GPCommandLineInterface {
             AID dapDomain = args.has(OPT_DAP_DOMAIN) ? AID.fromString(args.valueOf(OPT_DAP_DOMAIN)) : null;
             GPData.LFDBH lfdbh = args.has(OPT_SHA256) ? GPData.LFDBH.SHA256 : null;
             GPCommands.load(gp, capFile, to, dapDomain, lfdbh);
-            System.out.println("CAP loaded"); // FIXME: path
+            System.out.println(capFile.getFile().map(Path::toString).orElse("CAP") + " loaded");
         } catch (GPException e) {
             switch (e.sw) {
                 case 0x6A80:
@@ -846,9 +854,9 @@ public final class GPTool extends GPCommandLineInterface {
     }
 
     private static List<CAPFile> getCapFileList(OptionSet args, OptionSpec<File> arg) {
-        return args.valuesOf(arg).stream().map(e -> {
-            try (FileInputStream fin = new FileInputStream(e)) {
-                return CAPFile.fromStream(fin); // FIXME: fromFile
+        return args.valuesOf(arg).stream().map(File::toPath).map(e -> {
+            try {
+                return CAPFile.fromFile(e);
             } catch (IOException x) {
                 throw new IllegalArgumentException("Could not read CAP: " + x.getMessage());
             }

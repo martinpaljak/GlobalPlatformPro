@@ -9,11 +9,11 @@ tool/target/gp.jar: $(SOURCES)
 dep: $(SOURCES)
 	./mvnw $(MVN_OPTS) install
 
-install: ~/.apdu4j/plugins/gp.jar
+install: ~/.apdu4j/apps/gp.jar
 
-~/.apdu4j/plugins/gp.jar: tool/target/gp.jar
-	mkdir -p ~/.apdu4j/plugins
-	cp tool/target/gp.jar ~/.apdu4j/plugins/gp.jar
+~/.apdu4j/apps/gp.jar: tool/target/gp.jar
+	mkdir -p ~/.apdu4j/apps
+	cp tool/target/gp.jar ~/.apdu4j/apps/gp.jar
 
 clean:
 	./mvnw clean

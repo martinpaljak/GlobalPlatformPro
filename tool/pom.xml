@@ -7,7 +7,7 @@
     <parent>
         <groupId>com.github.martinpaljak</groupId>
         <artifactId>gppro</artifactId>
-        <version>20.08.12</version>
+        <version>20.08.13-SNAPSHOT</version>
     </parent>
 
     <artifactId>gptool</artifactId>
@@ -24,7 +24,7 @@
         <dependency>
             <groupId>com.github.martinpaljak</groupId>
             <artifactId>globalplatformpro</artifactId>
-            <version>20.08.12</version>
+            <version>20.08.13-SNAPSHOT</version>
         </dependency>
         <!-- For logging in the command line tool -->
         <dependency>

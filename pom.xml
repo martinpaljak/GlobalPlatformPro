@@ -7,7 +7,7 @@
         <artifactId>metacard</artifactId>
         <version>20.08.07</version>
     </parent>
-    <version>20.08.12</version>
+    <version>20.08.13-SNAPSHOT</version>
     <artifactId>gppro</artifactId>
     <packaging>pom</packaging>
     <name>GlobalPlatformPro</name>

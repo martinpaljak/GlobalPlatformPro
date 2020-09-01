@@ -164,7 +164,7 @@ Include the dependency:
 </dependency>
 ```
 
- * For now consult the [command line utility source code](https://github.com/martinpaljak/GlobalPlatformPro/blob/master/src/pro/javacard/gp/GPTool.java)
+ * For now consult the [command line utility source code](https://github.com/martinpaljak/GlobalPlatformPro/blob/master/tool/src/main/java/pro/javacard/gp/GPTool.java)
  * Rudimentary [Javadoc](http://martinpaljak.github.io/GlobalPlatformPro/)
  * General rules:
    * Expect `RuntimeException`-s when things go unexpectedly wrong

@@ -376,7 +376,7 @@ public final class GPData {
     }
 
 
-    public enum GPSpec {OP201, GP211, GP22, GP221}
+    public enum GPSpec {OP201, GP211, GP22, GP221, GP23}
 
     public static GPSpec oid2version(byte[] bytes) throws GPDataException {
         String oid = oid2string(bytes);
@@ -386,6 +386,8 @@ public final class GPData {
             return GPSpec.GP22;
         } else if (oid.equals("1.2.840.114283.2.2.2.1")) {
             return GPSpec.GP221;
+        } else if (oid.equals("1.2.840.114283.2.2.3")) {
+            return GPSpec.GP23;
         } else {
             throw new GPDataException("Unknown GP version OID: " + oid, bytes);
         }

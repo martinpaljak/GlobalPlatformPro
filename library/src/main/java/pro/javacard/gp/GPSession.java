@@ -196,8 +196,8 @@ public class GPSession {
     public static String getVersion() {
         Properties prop = new Properties();
         try (InputStream versionfile = GPSession.class.getResourceAsStream("git.properties")) {
-                prop.load(versionfile);
-                return prop.getProperty("git.commit.id.describe", "unknown-development");
+            prop.load(versionfile);
+            return prop.getProperty("git.commit.id.describe", "unknown-development");
         } catch (IOException e) {
             return "unknown-error";
         }

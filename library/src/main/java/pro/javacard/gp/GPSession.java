@@ -661,12 +661,29 @@ public class GPSession {
             bo.write(privs.length);
             bo.write(privs);
 
-            bo.write(installParams.length);
+            bo.write(getParamsLengthBySpecVersion(installParams));
             bo.write(installParams);
         } catch (IOException ioe) {
             throw new RuntimeException(ioe);
         }
         return bo.toByteArray();
+    }
+
+    private byte[] getParamsLengthBySpecVersion(byte[] params) {
+        if (gpSpec != null) {
+            if (gpSpec == GPData.GPSpec.OP201) {
+                // TODO: Didnt check the specs, placeholder for no complains
+                return new byte[]{(byte) params.length};
+            } else if (gpSpec == GPData.GPSpec.GP211) {
+                return new byte[]{(byte) params.length};
+            } else {
+                // TODO: Maybe check that for 2.2 length is 2 bytes max and for GP 2.3 is 3 max?
+                return GPUtils.encodeLength(params.length);
+            }
+        } else {
+            // TODO: what we do in default case?? placeholder for no complains
+            return new byte[]{(byte) params.length};
+        }
     }
 
     public void extradite(AID what, AID to) throws GPException, IOException {

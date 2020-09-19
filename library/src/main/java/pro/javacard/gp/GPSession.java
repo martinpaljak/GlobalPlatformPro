@@ -93,6 +93,10 @@ public class GPSession {
     private GPRegistry registry = null;
     private DMTokenizer tokenizer = DMTokenizer.none();
     private boolean dirty = true; // True if registry is dirty.
+    // TODO: should this be included in card profile? As per my understanding most of time for install/load,
+    //  the applet selected with be the ISD and per spec, it should provide FCI with identification information
+    //  after a select
+    private GPData.GPSpec gpSpec;
 
     /*
      * Maintaining locks to the underlying hardware is the duty of the caller
@@ -280,7 +284,8 @@ public class GPSession {
                                 BerTlv veroid = vertag.find(new BerTag(0x06));
                                 if (veroid != null) {
                                     // TODO: react to it maybe? Not that relevant in 2.2 era
-                                    logger.debug("Auto-detected GP version: " + GPData.oid2version(veroid.getBytesValue()));
+                                    gpSpec = GPData.oid2version(veroid.getBytesValue());
+                                    logger.debug("Auto-detected GP version: " + gpSpec);
                                 }
                             }
                         } else {

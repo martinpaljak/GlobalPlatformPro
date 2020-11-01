@@ -38,6 +38,7 @@ import java.util.List;
 
 public class GPUtils {
 
+    // Knows both hex and dec
     public static int intValue(String s) {
         if (s.trim().toLowerCase().startsWith("0x")) {
             return Integer.parseInt(s.substring(2), 16);
@@ -45,6 +46,7 @@ public class GPUtils {
         return Integer.parseInt(s, 10);
     }
 
+    // Prints both hex and dec
     public static String intString(int i) {
         return String.format("%d (0x%02X)", i, i);
     }
@@ -75,7 +77,7 @@ public class GPUtils {
     }
 
     public static List<byte[]> splitArray(byte[] array, int blockSize) {
-        List<byte[]> result = new ArrayList<byte[]>();
+        List<byte[]> result = new ArrayList<>();
 
         int len = array.length;
         int offset = 0;

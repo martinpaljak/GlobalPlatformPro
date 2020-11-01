@@ -567,7 +567,8 @@ public class GPSession {
             bo.write(hash.length);
             bo.write(hash);
 
-            bo.write(loadParams.length);
+            // XXX: would be nice to check in CLI when payload length exceeds encodable length
+            bo.write(GPUtils.encodeLength(loadParams.length));
             bo.write(loadParams);
         } catch (IOException ioe) {
             throw new RuntimeException(ioe);
@@ -656,7 +657,8 @@ public class GPSession {
             bo.write(privs.length);
             bo.write(privs);
 
-            bo.write(installParams.length);
+            // XXX: See #241. It would be nice to warn if the length exceeds the supported length
+            bo.write(GPUtils.encodeLength(installParams.length));
             bo.write(installParams);
         } catch (IOException ioe) {
             throw new RuntimeException(ioe);

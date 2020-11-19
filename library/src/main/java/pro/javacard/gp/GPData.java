@@ -129,7 +129,7 @@ public final class GPData {
         }
     }
 
-    enum LFDBH {
+    public enum LFDBH {
         SHA1(0x01, "SHA-1"),
         SHA256(0x02, "SHA-256"),
         SHA384(0x03, "SHA-384"),

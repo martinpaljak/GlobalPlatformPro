@@ -13,7 +13,7 @@ jobs:
       - name: Setup Java
         uses: actions/setup-java@master
         with:
-          java-version: 8
+          java-version: 11
       - name: Checkout
         uses: actions/checkout@master
       - name: Set SSH key
@@ -23,7 +23,7 @@ jobs:
       - name: Add known host key
         run: ssh-keyscan javacard.pro >> ~/.ssh/known_hosts
       - name: Build
-        run: mvn -B verify
+        run: ./mvnw -B verify
       - name: Release
         id: create_release
         uses: actions/create-release@v1.0.0
@@ -55,4 +55,4 @@ jobs:
           asset_name: gp.exe
           asset_content_type: application/x-msdownload
       - name: Deploy package
-        run: mvn -B deploy
+        run: ./mvnw -B deploy

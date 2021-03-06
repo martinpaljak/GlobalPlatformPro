@@ -47,6 +47,7 @@ import java.security.cert.CertificateException;
 import java.util.Arrays;
 
 // Various cryptographic primitives used for secure channel or plaintext keys
+@SuppressWarnings("lgtm[java/weak-cryptographic-algorithm]")
 public final class GPCrypto {
     static final byte[] null_bytes_8 = new byte[]{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
     static final byte[] null_bytes_16 = new byte[]{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};

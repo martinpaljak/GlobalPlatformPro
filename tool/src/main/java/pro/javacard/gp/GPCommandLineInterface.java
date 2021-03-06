@@ -157,7 +157,7 @@ abstract class GPCommandLineInterface {
         if (args.nonOptionArguments().size() > 0) {
             parser.printHelpOn(System.out);
             System.err.println();
-            System.err.println("Invalid non-option arguments: " + String.join(" ", args.nonOptionArguments().stream().map(e -> e.toString()).collect(Collectors.toList())));
+            System.err.println("Invalid non-option arguments: " + args.nonOptionArguments().stream().map(e -> e.toString()).collect(Collectors.joining(" ")));
             System.exit(1);
         }
 

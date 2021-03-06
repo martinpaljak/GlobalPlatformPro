@@ -59,6 +59,11 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
 
     private static boolean isVerbose = false;
 
+    static final String ENV_GP_AID = "GP_AID";
+    static final String ENV_GP_READER = "GP_READER";
+    static final String ENV_GP_READER_IGNORE = "GP_READER_IGNORE";
+    static final String ENV_GP_TRACE = "GP_TRACE";
+
     static void setupLogging(OptionSet args) {
         // Set up slf4j simple in a way that pleases us
         System.setProperty("org.slf4j.simpleLogger.showThreadName", "false");
@@ -72,7 +77,7 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
         }
         if (args.has(OPT_DEBUG) && args.has(OPT_VERBOSE))
             System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "debug");
-        if (args.has(OPT_DEBUG) && System.getenv().containsKey("GP_TRACE"))
+        if (args.has(OPT_DEBUG) && System.getenv().containsKey(ENV_GP_TRACE))
             System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "trace");
 
     }
@@ -90,14 +95,17 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
             setupLogging(args);
 
             if (args.has(OPT_VERBOSE) || args.has(OPT_VERSION)) {
-                System.out.println("# " + String.join(" ", System.getenv().entrySet().stream().filter(e -> e.getKey().startsWith("GP_")).map(e -> String.format("%s=%s", e.getKey(), e.getValue())).collect(Collectors.toList())));
+                // dump relevant environment and command line variables
+                List<String> gpenv = System.getenv().entrySet().stream().filter(e -> e.getKey().startsWith("GP_")).map(e -> String.format("%s=%s", e.getKey(), e.getValue())).collect(Collectors.toList());
+                if (gpenv.size() > 0)
+                    System.out.println("# " + String.join(" ", gpenv));
                 System.out.println("# gp " + String.join(" ", argv));
             }
             TerminalFactory tf = TerminalManager.getTerminalFactory();
             String reader = args.valueOf(OPT_READER);
             if (reader == null)
-                reader = System.getenv("GP_READER");
-            Optional<CardTerminal> t = TerminalManager.getInstance(tf.terminals()).dwim(reader, System.getenv("GP_READER_IGNORE"), Collections.emptyList());
+                reader = System.getenv(ENV_GP_READER);
+            Optional<CardTerminal> t = TerminalManager.getInstance(tf.terminals()).dwim(reader, System.getenv(ENV_GP_READER_IGNORE), Collections.emptyList());
             if (!t.isPresent()) {
                 System.err.println("Specify reader with -r/$GP_READER");
                 System.exit(1);
@@ -150,7 +158,7 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
 
                 // Test for unlimited crypto
                 if (Cipher.getMaxAllowedKeyLength("AES") == 128) {
-                    System.err.println("Unlimited crypto policy is NOT installed!");
+                    System.err.println("# Warning: unlimited crypto policy is NOT installed!");
                 }
                 if (onlyHasArg(args, OPT_VERSION))
                     return 0;
@@ -198,12 +206,14 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
             // GlobalPlatform specific
             final GPSession gp;
             if (args.has(OPT_SDAID)) {
-                System.err.println("# -sdaid is deprecated, use -c/--connect <AID>");
+                System.err.println("# Warning: --sdaid is deprecated, use -c/--connect <AID>");
                 gp = GPSession.connect(channel, AID.fromString(args.valueOf(OPT_SDAID)));
             } else if (args.has(OPT_CONNECT)) {
                 gp = GPSession.connect(channel, AID.fromString(args.valueOf(OPT_CONNECT)));
-            } else if (env.containsKey("GP_AID")) {
-                gp = GPSession.connect(channel, AID.fromString(env.get("GP_AID")));
+            } else if (env.containsKey(ENV_GP_AID)) {
+                AID aid = AID.fromString(env.get(ENV_GP_AID));
+                verbose(String.format("Connecting to $% (%s)", ENV_GP_AID, aid));
+                gp = GPSession.connect(channel, aid);
             } else {
                 gp = GPSession.discover(channel);
             }
@@ -234,13 +244,30 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
                 Optional<PlaintextKeys> cliKeys = PlaintextKeys.fromStrings(args.valueOf(OPT_KEY_ENC), args.valueOf(OPT_KEY_MAC), args.valueOf(OPT_KEY_DEK), args.valueOf(OPT_KEY), args.valueOf(OPT_KEY_KDF), null, args.valueOf(OPT_KEY_VERSION));
 
                 if (envKeys.isPresent() && cliKeys.isPresent()) {
-                    System.err.println("Warning: keys set on command line shadow environment!");
+                    System.err.println("# Warning: keys set on command line shadow environment!");
                 } else if (!envKeys.isPresent() && !cliKeys.isPresent()) {
-                    System.err.println("Warning: no keys given, defaulting to " + HexUtils.bin2hex(PlaintextKeys.defaultKeyBytes));
+                    System.err.println("# Warning: no keys given, defaulting to " + HexUtils.bin2hex(PlaintextKeys.defaultKeyBytes));
                 }
                 PlaintextKeys keyz = cliKeys.map(Optional::of).orElse(envKeys).orElse(PlaintextKeys.defaultKey());
+                keys = keyz;
+            }
 
-                // "gp -l -emv" should still work FIXME: move out of else
+            // Legacy KDF options so that "gp -l -emv" would still work
+            if (keys instanceof PlaintextKeys) {
+                List<OptionSpec<?>> deprecated = Arrays.asList(OPT_VISA2, OPT_EMV, OPT_KDF3);
+                List<OptionSpec<?>> kdfs = new ArrayList<>(deprecated);
+                kdfs.add(OPT_KEY_KDF);
+                List<OptionSpec<?>> present = kdfs.stream().filter(e -> args.has(e)).collect(Collectors.toList());
+                if (deprecated.stream().filter(e -> args.has(e)).count() > 0) {
+                    String presented = deprecated.stream().filter(e -> args.has(e)).map(e -> e.options()).flatMap(Collection::stream).map(e -> "--" + e).collect(Collectors.joining(", "));
+                    System.err.println(String.format("# Warning: deprecated options detected (%s) please use \"--key <kdf_name>:<master_key_in_hex>\"", presented));
+                }
+                if (present.size() > 1) {
+                    String allowed = kdfs.stream().map(e -> e.options()).flatMap(Collection::stream).map(e -> "--" + e).collect(Collectors.joining(", "));
+                    String presented = present.stream().map(e -> e.options()).flatMap(Collection::stream).map(e -> "--" + e).collect(Collectors.joining(", "));
+                    throw new IllegalArgumentException(String.format("Only one of %s is allowed, whereas %s given", allowed, presented));
+                }
+                PlaintextKeys keyz = (PlaintextKeys) keys;
                 if (args.has(OPT_VISA2)) {
                     keyz.setDiversifier(Diversification.VISA2);
                 } else if (args.has(OPT_EMV)) {
@@ -254,10 +281,10 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
                     keyz.setDiversifier(div);
                 }
 
+                // Set/override key version
                 if (args.has(OPT_KEY_VERSION)) {
                     keyz.setVersion(GPUtils.intValue(args.valueOf(OPT_KEY_VERSION)));
                 }
-                keys = keyz;
             }
 
             // Override block size for stupidly broken readers.

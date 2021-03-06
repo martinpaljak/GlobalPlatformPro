@@ -58,6 +58,7 @@ import java.util.stream.Collectors;
 public final class GPTool extends GPCommandLineInterface implements SmartCardApp {
 
     private static boolean isVerbose = false;
+    private static boolean isTrace = false;
 
     static final String ENV_GP_AID = "GP_AID";
     static final String ENV_GP_READER = "GP_READER";
@@ -77,9 +78,10 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
         }
         if (args.has(OPT_DEBUG) && args.has(OPT_VERBOSE))
             System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "debug");
-        if (args.has(OPT_DEBUG) && System.getenv().containsKey(ENV_GP_TRACE))
+        if (args.has(OPT_DEBUG) && System.getenv().containsKey(ENV_GP_TRACE)) {
             System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "trace");
-
+            isTrace = true;
+        }
     }
 
     // Explicitly public, to not forget
@@ -115,11 +117,11 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
             ret = new GPTool().run(CardBIBO.wrap(c), argv);
         } catch (IllegalArgumentException e) {
             System.err.println("Invalid argument: " + e.getMessage());
-            if (isVerbose)
+            if (isTrace)
                 e.printStackTrace();
         } catch (Exception e) {
             System.err.println("Error: " + e.getMessage());
-            if (isVerbose)
+            if (isTrace)
                 e.printStackTrace();
         } finally {
             if (c != null) {
@@ -134,7 +136,7 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
     }
 
     static boolean onlyHasArg(OptionSet args, OptionSpec<?> s) {
-        long needle = args.specs().stream().filter(e -> args.has(e)).count();
+        long needle = args.specs().stream().filter(args::has).count();
         long hay = args.specs().stream().filter(e -> args.has(e) && e != s).count();
         return needle == 1 && hay == 0;
     }
@@ -212,7 +214,7 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
                 gp = GPSession.connect(channel, AID.fromString(args.valueOf(OPT_CONNECT)));
             } else if (env.containsKey(ENV_GP_AID)) {
                 AID aid = AID.fromString(env.get(ENV_GP_AID));
-                verbose(String.format("Connecting to $% (%s)", ENV_GP_AID, aid));
+                verbose(String.format("Connecting to $%s (%s)", ENV_GP_AID, aid));
                 gp = GPSession.connect(channel, aid);
             } else {
                 gp = GPSession.discover(channel);
@@ -248,26 +250,30 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
                 } else if (!envKeys.isPresent() && !cliKeys.isPresent()) {
                     System.err.println("# Warning: no keys given, defaulting to " + HexUtils.bin2hex(PlaintextKeys.defaultKeyBytes));
                 }
-                PlaintextKeys keyz = cliKeys.map(Optional::of).orElse(envKeys).orElse(PlaintextKeys.defaultKey());
-                keys = keyz;
+                keys = cliKeys.map(Optional::of).orElse(envKeys).orElse(PlaintextKeys.defaultKey());
             }
 
             // Legacy KDF options so that "gp -l -emv" would still work
             if (keys instanceof PlaintextKeys) {
+                PlaintextKeys keyz = (PlaintextKeys) keys;
                 List<OptionSpec<?>> deprecated = Arrays.asList(OPT_VISA2, OPT_EMV, OPT_KDF3);
                 List<OptionSpec<?>> kdfs = new ArrayList<>(deprecated);
                 kdfs.add(OPT_KEY_KDF);
-                List<OptionSpec<?>> present = kdfs.stream().filter(e -> args.has(e)).collect(Collectors.toList());
-                if (deprecated.stream().filter(e -> args.has(e)).count() > 0) {
-                    String presented = deprecated.stream().filter(e -> args.has(e)).map(e -> e.options()).flatMap(Collection::stream).map(e -> "--" + e).collect(Collectors.joining(", "));
-                    System.err.println(String.format("# Warning: deprecated options detected (%s) please use \"--key <kdf_name>:<master_key_in_hex>\"", presented));
+                List<OptionSpec<?>> present = kdfs.stream().filter(args::has).collect(Collectors.toList());
+                if (deprecated.stream().anyMatch(args::has)) {
+                    String presented = deprecated.stream().filter(args::has).map(OptionSpec::options).flatMap(Collection::stream).map(e -> "--" + e).collect(Collectors.joining(", "));
+                    System.err.printf("# Warning: deprecated options detected (%s) please use \"--key <kdf_name>:<master_key_in_hex>\"%n", presented);
+                    // Make sure we don't override pre-existing KDF
+                    if (keyz.diversifier != Diversification.NONE) {
+                        throw new IllegalArgumentException("Key diversification already defined!");
+                    }
                 }
                 if (present.size() > 1) {
-                    String allowed = kdfs.stream().map(e -> e.options()).flatMap(Collection::stream).map(e -> "--" + e).collect(Collectors.joining(", "));
-                    String presented = present.stream().map(e -> e.options()).flatMap(Collection::stream).map(e -> "--" + e).collect(Collectors.joining(", "));
+                    String allowed = kdfs.stream().map(OptionSpec::options).flatMap(Collection::stream).map(e -> "--" + e).collect(Collectors.joining(", "));
+                    String presented = present.stream().map(OptionSpec::options).flatMap(Collection::stream).map(e -> "--" + e).collect(Collectors.joining(", "));
                     throw new IllegalArgumentException(String.format("Only one of %s is allowed, whereas %s given", allowed, presented));
                 }
-                PlaintextKeys keyz = (PlaintextKeys) keys;
+
                 if (args.has(OPT_VISA2)) {
                     keyz.setDiversifier(Diversification.VISA2);
                 } else if (args.has(OPT_EMV)) {
@@ -277,7 +283,7 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
                 } else if (args.has(OPT_KEY_KDF)) {
                     Diversification div = Diversification.lookup(args.valueOf(OPT_KEY_KDF));
                     if (div == null)
-                        throw new IllegalArgumentException("Invalid KDF: " + args.valueOf(OPT_KEY_KDF) + "\nValid values are: " + Arrays.asList(Diversification.values()).stream().map(i -> i.toString()).collect(Collectors.joining(", ")));
+                        throw new IllegalArgumentException("Invalid KDF: " + args.valueOf(OPT_KEY_KDF) + "\nValid values are: " + Arrays.stream(Diversification.values()).map(Enum::toString).collect(Collectors.joining(", ")));
                     keyz.setDiversifier(div);
                 }
 
@@ -297,7 +303,7 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
             if (args.has(OPT_PROFILE)) {
                 Optional<GPCardProfile> p = GPCardProfile.fromName(args.valueOf(OPT_PROFILE));
                 if (!p.isPresent()) {
-                    System.err.println(String.format("Unknown profile '%s', known profiles: %s", args.valueOf(OPT_PROFILE), String.join(", ", GPCardProfile.profiles.keySet())));
+                    System.err.printf("Unknown profile '%s', known profiles: %s%n", args.valueOf(OPT_PROFILE), String.join(", ", GPCardProfile.profiles.keySet()));
                     return 1;
                 }
 
@@ -345,7 +351,7 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
                         }
                     }
                     boolean failure = false;
-                    List<AID> aidList = args.valuesOf(OPT_DELETE).stream().map(a -> AID.fromString(a)).collect(Collectors.toList());
+                    List<AID> aidList = args.valuesOf(OPT_DELETE).stream().map(AID::fromString).collect(Collectors.toList());
                     for (AID aid : aidList) {
                         try {
                             // If the AID represents a package and force is enabled, delete deps as well
@@ -633,7 +639,7 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
                 // --store-data <XX>
                 // This will split the data, if necessary
                 if (args.has(OPT_STORE_DATA)) {
-                    List<byte[]> blobs = args.valuesOf(OPT_STORE_DATA).stream().map(e -> HexUtils.stringToBin(e)).collect(Collectors.toList());
+                    List<byte[]> blobs = args.valuesOf(OPT_STORE_DATA).stream().map(HexUtils::stringToBin).collect(Collectors.toList());
                     for (byte[] blob : blobs) {
                         if (args.has(OPT_APPLET)) {
                             gp.personalize(AID.fromString(args.valueOf(OPT_APPLET)), blob, 0x01);
@@ -646,7 +652,7 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
                 // --store-data-chunk
                 // This will collect the chunks and send them one by one
                 if (args.has(OPT_STORE_DATA_CHUNK)) {
-                    List<byte[]> blobs = args.valuesOf(OPT_STORE_DATA_CHUNK).stream().map(e -> HexUtils.stringToBin(e)).collect(Collectors.toList());
+                    List<byte[]> blobs = args.valuesOf(OPT_STORE_DATA_CHUNK).stream().map(HexUtils::stringToBin).collect(Collectors.toList());
                     if (args.has(OPT_APPLET)) {
                         gp.personalize(AID.fromString(args.valueOf(OPT_APPLET)), blobs, 0x01);
                     } else {
@@ -745,7 +751,7 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
                         if (args.has(OPT_NEW_KEY_VERSION)) {
                             keyver = GPUtils.intValue(args.valueOf(OPT_NEW_KEY_VERSION));
                             // Key version is indicated, check if already present on card
-                            if (current.stream().filter(e -> (e.getVersion() == keyver)).count() > 0) {
+                            if (current.stream().anyMatch(e -> (e.getVersion() == keyver))) {
                                 replace = false;
                             }
                         } else {
@@ -865,17 +871,12 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
         }
     }
 
-    private static AID appletAIDfromCAP(CAPFile cap) {
-        return cap.getAppletAIDs().get(0);
-    }
-
-
     private static EnumSet<Privilege> getPrivileges(OptionSet args) {
         EnumSet<Privilege> privs = EnumSet.noneOf(Privilege.class);
         if (args.has(OPT_PRIVS)) {
             for (String p : args.valuesOf(OPT_PRIVS))
                 for (String s : p.split(","))
-                    privs.add(Privilege.lookup(s.trim()).orElseThrow(() -> new IllegalArgumentException("Unknown privilege: " + s.trim() + "\nValid values are: " + Arrays.asList(Privilege.values()).stream().map(i -> i.toString()).collect(Collectors.joining(", ")))));
+                    privs.add(Privilege.lookup(s.trim()).orElseThrow(() -> new IllegalArgumentException("Unknown privilege: " + s.trim() + "\nValid values are: " + Arrays.stream(Privilege.values()).map(Enum::toString).collect(Collectors.joining(", ")))));
         }
         return privs;
     }

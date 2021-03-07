@@ -206,6 +206,14 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
             Map<String, String> env = System.getenv();
 
             // GlobalPlatform specific
+            final EnumSet<APDUMode> mode = GPSession.defaultMode.clone();
+            // Override default mode if needed.
+            if (args.has(OPT_SC_MODE)) {
+                mode.clear();
+                for (String s : args.valuesOf(OPT_SC_MODE)) {
+                    mode.add(APDUMode.fromString(s));
+                }
+            }
             final GPSession gp;
             if (args.has(OPT_SDAID)) {
                 System.err.println("# Warning: --sdaid is deprecated, use -c/--connect <AID>");
@@ -306,21 +314,11 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
                     System.err.printf("Unknown profile '%s', known profiles: %s%n", args.valueOf(OPT_PROFILE), String.join(", ", GPCardProfile.profiles.keySet()));
                     return 1;
                 }
-
                 gp.profile = p.get();
             }
 
             // Authenticate, only if needed
             if (needsAuthentication(args)) {
-                EnumSet<APDUMode> mode = GPSession.defaultMode.clone();
-                // Override default mode if needed.
-                if (args.has(OPT_SC_MODE)) {
-                    mode.clear();
-                    for (String s : args.valuesOf(OPT_SC_MODE)) {
-                        mode.add(APDUMode.fromString(s));
-                    }
-                }
-
                 // IMPORTANT PLACE. Possibly brick the card now, if keys don't match.
                 try {
                     gp.openSecureChannel(keys, null, null, mode);

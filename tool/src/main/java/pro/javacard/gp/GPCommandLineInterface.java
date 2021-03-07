@@ -95,12 +95,12 @@ abstract class GPCommandLineInterface {
     protected static OptionSpec<String> OPT_LOCK_MAC = parser.accepts("lock-mac", "Set new MAC key").withRequiredArg().describedAs("key");
     protected static OptionSpec<String> OPT_LOCK_DEK = parser.accepts("lock-dek", "Set new DEK key").withRequiredArg().describedAs("key");
 
-    protected static OptionSpec<Void> OPT_UNLOCK = parser.accepts("unlock", "Set default test key for card key");
+    protected static OptionSpec<Void> OPT_UNLOCK = parser.accepts("unlock", "(deprecated) Set default test key");
 
     // Legacy shorthands
-    protected static OptionSpec<Void> OPT_EMV = parser.accepts("emv", "Use EMV KDF");
-    protected static OptionSpec<Void> OPT_VISA2 = parser.accepts("visa2", "Use VISA2 KDF");
-    protected static OptionSpec<Void> OPT_KDF3 = parser.accepts("kdf3", "Use SCP03 KDF");
+    protected static OptionSpec<Void> OPT_EMV = parser.accepts("emv", "(deprecated) Use EMV KDF");
+    protected static OptionSpec<Void> OPT_VISA2 = parser.accepts("visa2", " (deprecated) Use VISA2 KDF");
+    protected static OptionSpec<Void> OPT_KDF3 = parser.accepts("kdf3", " (deprecated) Use SCP03 KDF");
 
     // Key management
     //protected static OptionSpec<String> OPT_KEY_ID = parser.accepts("key-id", "Specify key ID").withRequiredArg();
@@ -112,7 +112,7 @@ abstract class GPCommandLineInterface {
     protected static OptionSpec<String> OPT_DELETE_KEY = parser.accepts("delete-key", "Delete key with version").withRequiredArg().describedAs("key version");
 
     // Delegated management
-    protected static OptionSpec<String> OPT_DM_KEY = parser.accepts("dm-key", "Delegated Management key").withRequiredArg().describedAs("path or hex");
+    protected static OptionSpec<String> OPT_DM_KEY = parser.accepts("dm-key", "Delegated Management key").withRequiredArg().describedAs("PEM file or key");
     protected static OptionSpec<String> OPT_DM_TOKEN = parser.accepts("dm-token", "Delegated Management token").availableUnless(OPT_DM_KEY).withRequiredArg().describedAs("hex");
 
     // SSD-s

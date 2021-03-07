@@ -17,7 +17,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@master
       - name: Set SSH key
-        uses: webfactory/ssh-agent@v0.2.0
+        uses: webfactory/ssh-agent@v0.5.0
         with:
           ssh-private-key: ${{ secrets.SSH_KEY }}
       - name: Add known host key

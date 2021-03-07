@@ -48,6 +48,7 @@ import java.security.Key;
 import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static pro.javacard.gp.GPCardKeys.KeyPurpose;
 
@@ -192,8 +193,8 @@ public class GPSession {
     public static String getVersion() {
         Properties prop = new Properties();
         try (InputStream versionfile = GPSession.class.getResourceAsStream("git.properties")) {
-                prop.load(versionfile);
-                return prop.getProperty("git.commit.id.describe", "unknown-development");
+            prop.load(versionfile);
+            return prop.getProperty("git.commit.id.describe", "unknown-development");
         } catch (IOException e) {
             return "unknown-error";
         }
@@ -352,7 +353,7 @@ public class GPSession {
 
         normalizeSecurityLevel(securityLevel);
 
-        logger.info("Using card master keys with version {} for setting up session {} ", keys.getKeyInfo().getVersion(), securityLevel);
+        logger.info("Using card master keys with version {} for setting up session with {} ", keys.getKeyInfo().getVersion(), securityLevel.stream().map(Enum::name).collect(Collectors.joining(", ")));
         // DWIM: Generate host challenge
         if (host_challenge == null) {
             host_challenge = new byte[8];
@@ -415,13 +416,14 @@ public class GPSession {
         } else {
             seq = null;
         }
-
-        logger.debug("SSC: {}", seq == null ? null : HexUtils.bin2hex(seq));
         if (offset != update_response.length) {
             logger.error("Unhandled data in INITIALIZE UPDATE response: {}", HexUtils.bin2hex(Arrays.copyOfRange(update_response, offset, update_response.length)));
             //throw new GPDataException("Unhandled data in INITIALIZE UPDATE response", Arrays.copyOfRange(update_response, offset, update_response.length));
         }
 
+        logger.debug("KDD: {}", HexUtils.bin2hex(diversification_data));
+        if (seq != null)
+            logger.debug("SSC: {}", HexUtils.bin2hex(seq));
         logger.debug("Host challenge: " + HexUtils.bin2hex(host_challenge));
         logger.debug("Card challenge: " + HexUtils.bin2hex(card_challenge));
         logger.debug("Card reports {} with key version {}", this.scpVersion, GPUtils.intString(scpKeyVersion));
@@ -433,7 +435,7 @@ public class GPSession {
             throw new GPException("Key version mismatch: " + keyInfo.getVersion() + " != " + scpKeyVersion);
         }
 
-        // This will throw as expected.
+        // This will throw as expected later, to indicate the issue
         if (this.scpVersion == GPSecureChannel.SCP01 && securityLevel.contains(APDUMode.RMAC)) {
             logger.warn("SCP01 does not support RMAC, removing.");
         }

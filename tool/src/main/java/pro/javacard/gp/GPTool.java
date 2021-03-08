@@ -363,7 +363,7 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
                                 if (e.sw == 0x6985) {
                                     System.err.println("Could not delete " + aid + ". Some app still active?");
                                 } else {
-                                    System.err.println("Could not delete AID: " + aid);
+                                    System.err.printf("Could not delete AID %s: %s%n", aid, GPData.sw2str(e.sw));
                                 }
                             }
                             // Do not return errors from -delete to behave like rm
@@ -551,20 +551,27 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
                 // --domain <AID>
                 if (args.has(OPT_DOMAIN)) {
                     // Validate parameters
+                    BerTlvParser tlvparser = new BerTlvParser();
                     BerTlvs parameters = null;
+
                     byte[] params;
+                    // If parameters given by user
                     if (args.has(OPT_PARAMS)) {
                         params = HexUtils.stringToBin(args.valueOf(OPT_PARAMS));
-                        BerTlvParser parser = new BerTlvParser();
+                        // Try to parse
                         try {
-                            parameters = parser.parse(params); // this throws
+                            parameters = tlvparser.parse(params); // this throws
                         } catch (Exception e) {
+                            // and fail if what is given is not TLV that we can modify.
                             if (args.has(OPT_ALLOW_FROM) || args.has(OPT_ALLOW_TO))
                                 throw new IllegalArgumentException(OPT_ALLOW_FROM + " and " + OPT_ALLOW_TO + " not available, could not parse parameters: " + HexUtils.bin2hex(params));
-                            System.err.println("Warning: could not parse parameters: " + HexUtils.bin2hex(params));
+                            // If we don't need to modify parameters, just give a handy warning
+                            System.err.println("Warning: could not parse parameters as TLV: " + HexUtils.bin2hex(params));
                         }
                     } else {
                         params = new byte[0];
+                        // This results in empty non-null parameters
+                        parameters = tlvparser.parse(params);
                     }
 
                     // Default AID-s
@@ -576,7 +583,7 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
                         packageAID = AID.fromString(args.valueOf(OPT_PACKAGE));
                         appletAID = AID.fromString(args.valueOf(OPT_APPLET));
                     } else {
-                        // But query registry for defaults
+                        // But query registry for defaults. Default to "new"
                         packageAID = gp.getRegistry().allPackageAIDs().contains(new AID("A0000000035350")) ? new AID("A0000000035350") : new AID("A0000001515350");
                         appletAID = gp.getRegistry().allPackageAIDs().contains(new AID("A0000000035350")) ? new AID("A000000003535041") : new AID("A000000151535041");
                         verbose("Note: using detected default AID-s for SSD instantiation: " + appletAID + " from " + packageAID);
@@ -587,7 +594,7 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
                     Set<Privilege> privs = getPrivileges(args);
                     privs.add(Privilege.SecurityDomain);
 
-                    // By default same SCP as argument
+                    // By default same SCP as current
                     if (!args.has(OPT_SAD) && !gp.profile.oldStyleSSDParameters()) {
                         if (parameters != null && parameters.find(new BerTag(0x81)) == null) {
                             params = GPUtils.concatenate(params, new byte[]{(byte) 0x81, 0x02, gp.getSecureChannel().getValue(), (byte) gp.getSecureChannel().getI()});
@@ -607,12 +614,13 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
                     }
 
                     if (args.has(OPT_ALLOW_FROM)) {
-                        if (parameters != null)
+                        if (parameters != null) {
                             if (parameters.find(new BerTag(0x87)) == null) {
                                 params = GPUtils.concatenate(params, new byte[]{(byte) 0x87, 0x02, 0x20, 0x20});
                             } else {
                                 System.err.println("Warning: 0x87 already in parameters, " + OPT_ALLOW_FROM + " not applied");
                             }
+                        }
                     }
 
                     // Old style actually only allows one parameter, the 45

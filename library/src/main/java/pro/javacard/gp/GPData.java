@@ -312,16 +312,17 @@ public final class GPData {
         if (cin != null) {
             System.out.println("CIN: " + HexUtils.bin2hex(cin));
         }
-        // FIXME: SSC?
-//        BerTlvParser parser = new BerTlvParser();
-//        BerTlvs tlvs = parser.parse(resp.getData());
-//        BerTlvLogger.log("    ", tlvs, GPData.getLoggerInstance());
-//        if (tlvs != null) {
-//            BerTlv ssc = tlvs.find(new BerTag(0xC1));
-//            if (ssc != null) {
-//                out.println(HexUtils.bin2hex(ssc.getBytesValue()));
-//            }
-//        }
+
+        // KDD
+        byte[] kdd = getData(channel, 0x00, 0xCF, "KDD", false);
+        if (kdd != null) {
+            System.out.println("KDD: " + HexUtils.bin2hex(kdd));
+        }
+        // SSC
+        byte[] ssc = getData(channel, 0x00, 0xC1, "SSC", false);
+        if (ssc != null) {
+            System.out.println("SSC: " + HexUtils.bin2hex(ssc));
+        }
         // Print Card Data
         System.out.println("Card Data: ");
         byte[] cardData = getData(channel, 0x00, 0x66, "Card Data", false);

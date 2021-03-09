@@ -208,6 +208,10 @@ public class GPSession {
         this.tokenizer = tokenizer;
     }
 
+    public DMTokenizer getTokenizer() {
+        return tokenizer;
+    }
+
     public AID getAID() {
         return new AID(sdAID.getBytes());
     }
@@ -970,6 +974,14 @@ public class GPSession {
         return registry;
     }
 
+    public GPRegistryEntry getCurrentDomain() throws IOException {
+        return getRegistry().getDomain(getAID()).orElseThrow(() -> new IllegalStateException("Current domain not in registry?"));
+    }
+
+    public boolean delegatedManagementEnabled() {
+        return !(tokenizer instanceof DMTokenizer.NULLTokenizer);
+    }
+
     private byte[] getConcatenatedStatus(int p1, byte[] data, boolean useTags) throws IOException, GPException {
         // By default use tags
         int p2 = useTags ? 0x02 : 0x00;
@@ -995,7 +1007,6 @@ public class GPSession {
             if (sw == 0x6A88) {
                 // No data to report
                 return response.getData();
-
             }
             // 0x6A86 - no tags support or ISD asked from SSD
             // 0a6A81 - Same as 6A88 ?

@@ -23,6 +23,7 @@ import joptsimple.OptionException;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import joptsimple.OptionSpec;
+import pro.javacard.AID;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,54 +35,54 @@ abstract class GPCommandLineInterface {
     // Generic options
     protected static OptionSpec<Void> OPT_VERSION = parser.acceptsAll(Arrays.asList("V", "version"), "Show information about the program");
     protected static OptionSpec<Void> OPT_HELP = parser.acceptsAll(Arrays.asList("h", "?", "help"), "Shows this help").forHelp();
-    protected static OptionSpec<String> OPT_CONNECT = parser.acceptsAll(Arrays.asList("c", "connect"), "Connect to app/domain").withRequiredArg().describedAs("AID");
-    protected static OptionSpec<String> OPT_SDAID = parser.accepts("sdaid", "(deprecated) ISD AID").availableUnless(OPT_CONNECT).withRequiredArg().describedAs("AID");
+    protected static OptionSpec<AID> OPT_CONNECT = parser.acceptsAll(Arrays.asList("c", "connect"), "Connect to app/domain").withRequiredArg().ofType(AID.class).describedAs("AID");
+    protected static OptionSpec<AID> OPT_SDAID = parser.accepts("sdaid", "(deprecated) ISD AID").availableUnless(OPT_CONNECT).withRequiredArg().ofType(AID.class).describedAs("AID");
 
     protected static OptionSpec<Void> OPT_DEBUG = parser.acceptsAll(Arrays.asList("d", "debug"), "Show PC/SC and APDU trace");
     protected static OptionSpec<Void> OPT_VERBOSE = parser.acceptsAll(Arrays.asList("v", "verbose"), "Be verbose about operations");
-    protected static OptionSpec<String> OPT_READER = parser.acceptsAll(Arrays.asList("r", "reader"), "Use specific reader").withRequiredArg();
+    protected static OptionSpec<String> OPT_READER = parser.acceptsAll(Arrays.asList("r", "reader"), "Use specific reader").withRequiredArg().describedAs("reader");
     protected static OptionSpec<Void> OPT_LIST = parser.acceptsAll(Arrays.asList("l", "list"), "List the contents of the card");
     protected static OptionSpec<Void> OPT_INFO = parser.acceptsAll(Arrays.asList("i", "info"), "Show information");
-    protected static OptionSpec<String> OPT_APDU = parser.acceptsAll(Arrays.asList("a", "apdu"), "Send raw APDU (hex)").withRequiredArg().describedAs("APDU");
-    protected static OptionSpec<String> OPT_SECURE_APDU = parser.acceptsAll(Arrays.asList("s", "secure-apdu"), "Send raw APDU (hex) via SCP").withRequiredArg().describedAs("APDU");
+    protected static OptionSpec<HexBytes> OPT_APDU = parser.acceptsAll(Arrays.asList("a", "apdu"), "Send raw APDU").withRequiredArg().ofType(HexBytes.class).describedAs("hex");
+    protected static OptionSpec<HexBytes> OPT_SECURE_APDU = parser.acceptsAll(Arrays.asList("s", "secure-apdu"), "Send raw APDU via SCP").withRequiredArg().ofType(HexBytes.class).describedAs("hex");
     protected static OptionSpec<Void> OPT_FORCE = parser.acceptsAll(Arrays.asList("f", "force"), "Force operations");
     protected static OptionSpec<Void> OPT_SAD = parser.acceptsAll(Arrays.asList("F", "no-felix"), "Disable Felix mode DWIM");
 
     // Applet loading operations
-    protected static OptionSpec<File> OPT_CAP = parser.accepts("cap", "Use a CAP file as source").withRequiredArg().ofType(File.class);
-    protected static OptionSpec<String> OPT_CREATE = parser.accepts("create", "Create new instance of an applet").withRequiredArg().describedAs("AID");
-    protected static OptionSpec<String> OPT_APPLET = parser.accepts("applet", "Applet AID").withRequiredArg().describedAs("AID");
-    protected static OptionSpec<String> OPT_PACKAGE = parser.acceptsAll(Arrays.asList("package", "pkg"), "Package AID").withRequiredArg().describedAs("AID");
+    protected static OptionSpec<File> OPT_CAP = parser.accepts("cap", "Use a CAP file as source").withRequiredArg().ofType(File.class).describedAs("capfile");
+    protected static OptionSpec<AID> OPT_CREATE = parser.accepts("create", "Create new instance of an applet").withRequiredArg().ofType(AID.class).describedAs("AID");
+    protected static OptionSpec<AID> OPT_APPLET = parser.accepts("applet", "Applet AID").withRequiredArg().ofType(AID.class).describedAs("AID");
+    protected static OptionSpec<AID> OPT_PACKAGE = parser.acceptsAll(Arrays.asList("package", "pkg"), "Package AID").withRequiredArg().ofType(AID.class).describedAs("AID");
 
-    protected static OptionSpec<File> OPT_LOAD = parser.accepts("load", "Load a CAP file").withRequiredArg().ofType(File.class);
+    protected static OptionSpec<File> OPT_LOAD = parser.accepts("load", "Load a CAP file").withRequiredArg().ofType(File.class).describedAs("capfile");
 
-    protected static OptionSpec<File> OPT_INSTALL = parser.accepts("install", "Install applet(s) from CAP").withRequiredArg().ofType(File.class);
-    protected static OptionSpec<String> OPT_PARAMS = parser.accepts("params", "Installation parameters").withRequiredArg().describedAs("HEX");
-    protected static OptionSpec<String> OPT_PRIVS = parser.accepts("privs", "Specify privileges for installation").withRequiredArg();
+    protected static OptionSpec<File> OPT_INSTALL = parser.accepts("install", "Install applet(s) from CAP").withRequiredArg().ofType(File.class).describedAs("capfile");
+    protected static OptionSpec<HexBytes> OPT_PARAMS = parser.accepts("params", "Installation parameters").withRequiredArg().ofType(HexBytes.class).describedAs("hex");
+    protected static OptionSpec<String> OPT_PRIVS = parser.accepts("privs", "Specify privileges for installation").withRequiredArg().describedAs("privs");
 
-    protected static OptionSpec<File> OPT_UNINSTALL = parser.accepts("uninstall", "Uninstall applet/package").withRequiredArg().ofType(File.class);
-    protected static OptionSpec<String> OPT_DELETE = parser.accepts("delete", "Delete applet/package").withRequiredArg().describedAs("AID");
+    protected static OptionSpec<File> OPT_UNINSTALL = parser.accepts("uninstall", "Uninstall applet/package").withRequiredArg().ofType(File.class).describedAs("capfile");
+    protected static OptionSpec<AID> OPT_DELETE = parser.accepts("delete", "Delete applet/package").withRequiredArg().ofType(AID.class).describedAs("AID");
 
     protected static OptionSpec<Void> OPT_DEFAULT = parser.accepts("default", "Indicate Default Selected privilege");
-    protected static OptionSpec<String> OPT_DOMAIN = parser.accepts("domain", "Create supplementary security domain").withRequiredArg().describedAs("AID");
+    protected static OptionSpec<AID> OPT_DOMAIN = parser.accepts("domain", "Create supplementary security domain").withRequiredArg().ofType(AID.class).describedAs("AID");
 
     // Card an applet lifecycle management
-    protected static OptionSpec<String> OPT_LOCK_APPLET = parser.accepts("lock-applet", "Lock applet").withRequiredArg().describedAs("AID");
-    protected static OptionSpec<String> OPT_UNLOCK_APPLET = parser.accepts("unlock-applet", "Unlock applet").withRequiredArg().describedAs("AID");
+    protected static OptionSpec<AID> OPT_LOCK_APPLET = parser.accepts("lock-applet", "Lock applet").withRequiredArg().ofType(AID.class).describedAs("AID");
+    protected static OptionSpec<AID> OPT_UNLOCK_APPLET = parser.accepts("unlock-applet", "Unlock applet").withRequiredArg().ofType(AID.class).describedAs("AID");
     protected static OptionSpec<Void> OPT_LOCK_CARD = parser.accepts("lock-card", "Lock card");
     protected static OptionSpec<Void> OPT_UNLOCK_CARD = parser.accepts("unlock-card", "Unlock card");
     protected static OptionSpec<Void> OPT_INITIALIZE_CARD = parser.accepts("initialize-card", "Transition ISD to INITIALIZED state");
     protected static OptionSpec<Void> OPT_SECURE_CARD = parser.accepts("secure-card", "Transition ISD to SECURED state");
 
     // pre-personalization, CPLC
-    protected static OptionSpec<String> OPT_SET_PRE_PERSO = parser.accepts("set-pre-perso", "Set PrePerso data in CPLC").withRequiredArg().describedAs("data");
-    protected static OptionSpec<String> OPT_SET_PERSO = parser.accepts("set-perso", "Set Perso data in CPLC").withRequiredArg().describedAs("data");
+    protected static OptionSpec<HexBytes> OPT_SET_PRE_PERSO = parser.accepts("set-pre-perso", "Set PrePerso data in CPLC").withRequiredArg().ofType(HexBytes.class).describedAs("hex");
+    protected static OptionSpec<HexBytes> OPT_SET_PERSO = parser.accepts("set-perso", "Set Perso data in CPLC").withRequiredArg().ofType(HexBytes.class).describedAs("hex");
     protected static OptionSpec<Void> OPT_TODAY = parser.accepts("today", "Set date to today when updating CPLC");
 
     // SCP key handling
     protected static OptionSpec<String> OPT_KEY = parser.acceptsAll(Arrays.asList("k", "key"), "Specify key").withRequiredArg().describedAs("key");
     //protected static OptionSpec<String> OPT_KEY_KCV = parser.accepts("key-kcv", "Specify master key check value").withRequiredArg().describedAs("KCV");
-    protected static OptionSpec<String> OPT_KEY_KDF = parser.accepts("key-kdf", "Use KDF with master key").withRequiredArg().describedAs("kdf");
+    protected static OptionSpec<String> OPT_KEY_KDF = parser.accepts("key-kdf", "Use KDF with master key").withRequiredArg().describedAs("KDF");
 
     protected static OptionSpec<String> OPT_KEY_ENC = parser.accepts("key-enc", "Specify card ENC key").withRequiredArg().describedAs("key");
     protected static OptionSpec<String> OPT_KEY_MAC = parser.accepts("key-mac", "Specify card MAC key").withRequiredArg().describedAs("key");
@@ -89,7 +90,7 @@ abstract class GPCommandLineInterface {
 
     protected static OptionSpec<String> OPT_LOCK = parser.accepts("lock", "Set new key").withRequiredArg().describedAs("key");
     //protected static OptionSpec<String> OPT_LOCK_KCV = parser.accepts("lock-kcv", "Specify lock key check value").withRequiredArg().describedAs("KCV");
-    protected static OptionSpec<String> OPT_LOCK_KDF = parser.accepts("lock-kdf", "Use KDF with lock key").withRequiredArg().describedAs("kdf");
+    protected static OptionSpec<String> OPT_LOCK_KDF = parser.accepts("lock-kdf", "Use KDF with lock key").withRequiredArg().describedAs("KDF");
 
     protected static OptionSpec<String> OPT_LOCK_ENC = parser.accepts("lock-enc", "Set new ENC key").withRequiredArg().describedAs("key");
     protected static OptionSpec<String> OPT_LOCK_MAC = parser.accepts("lock-mac", "Set new MAC key").withRequiredArg().describedAs("key");
@@ -104,33 +105,33 @@ abstract class GPCommandLineInterface {
 
     // Key management
     //protected static OptionSpec<String> OPT_KEY_ID = parser.accepts("key-id", "Specify key ID").withRequiredArg();
-    protected static OptionSpec<String> OPT_KEY_VERSION = parser.accepts("key-ver", "Specify key version").withRequiredArg();
-    protected static OptionSpec<String> OPT_PUT_KEY = parser.accepts("put-key", "Put a new key").withRequiredArg().describedAs("PEM file or key");
+    protected static OptionSpec<String> OPT_KEY_VERSION = parser.accepts("key-ver", "Specify key version").withRequiredArg().describedAs("version");
+    protected static OptionSpec<String> OPT_PUT_KEY = parser.accepts("put-key", "Put a new key").withRequiredArg().describedAs("PEM file or key (hex)");
     protected static OptionSpec<String> OPT_REPLACE_KEY = parser.accepts("replace-key", "Put a new key, forcing replace").availableUnless(OPT_PUT_KEY).withRequiredArg().describedAs("PEM file or key");
     protected static OptionSpec<String> OPT_NEW_KEY_VERSION = parser.accepts("new-keyver", "Key version for the new key").requiredIf(OPT_PUT_KEY, OPT_REPLACE_KEY).withRequiredArg().describedAs("key version");
 
-    protected static OptionSpec<String> OPT_DELETE_KEY = parser.accepts("delete-key", "Delete key with version").withRequiredArg().describedAs("key version");
+    protected static OptionSpec<String> OPT_DELETE_KEY = parser.accepts("delete-key", "Delete key").withRequiredArg().describedAs("version");
 
     // Delegated management
     protected static OptionSpec<String> OPT_DM_KEY = parser.accepts("dm-key", "Delegated Management key").withRequiredArg().describedAs("PEM file or key");
-    protected static OptionSpec<String> OPT_DM_TOKEN = parser.accepts("dm-token", "Delegated Management token").availableUnless(OPT_DM_KEY).withRequiredArg().describedAs("hex");
+    protected static OptionSpec<HexBytes> OPT_DM_TOKEN = parser.accepts("dm-token", "Delegated Management token").availableUnless(OPT_DM_KEY).withRequiredArg().ofType(HexBytes.class).describedAs("hex");
 
     // SSD-s
-    protected static OptionSpec<String> OPT_MOVE = parser.accepts("move", "Move something").withRequiredArg().describedAs("AID");
-    protected static OptionSpec<String> OPT_TO = parser.accepts("to", "Destination domain").requiredIf(OPT_MOVE).withRequiredArg().describedAs("AID");
+    protected static OptionSpec<AID> OPT_MOVE = parser.accepts("move", "Move something").withRequiredArg().ofType(AID.class).describedAs("AID");
+    protected static OptionSpec<AID> OPT_TO = parser.accepts("to", "Destination domain").requiredIf(OPT_MOVE).withRequiredArg().ofType(AID.class).describedAs("AID");
     protected static OptionSpec<Void> OPT_ALLOW_TO = parser.accepts("allow-to", "Allow moving to created SSD").availableIf(OPT_DOMAIN);
     protected static OptionSpec<Void> OPT_ALLOW_FROM = parser.accepts("allow-from", "Allow moving from created SSD").availableIf(OPT_DOMAIN);
 
     // DAP
-    protected static OptionSpec<String> OPT_DAP_DOMAIN = parser.accepts("dap-domain", "Domain to use for DAP verification").withRequiredArg().describedAs("AID");
+    protected static OptionSpec<AID> OPT_DAP_DOMAIN = parser.accepts("dap-domain", "Domain to use for DAP verification").withRequiredArg().ofType(AID.class).describedAs("AID");
     protected static OptionSpec<Void> OPT_SHA256 = parser.accepts("sha256", "Use SHA-256 for LFDB hash, not SHA-1");
 
     // Personalization and store data
-    protected static OptionSpec<String> OPT_STORE_DATA = parser.accepts("store-data", "STORE DATA blob").withRequiredArg().describedAs("data");
-    protected static OptionSpec<String> OPT_STORE_DATA_CHUNK = parser.accepts("store-data-chunk", "Send STORE DATA commands").withRequiredArg().describedAs("data");
+    protected static OptionSpec<HexBytes> OPT_STORE_DATA = parser.accepts("store-data", "STORE DATA blob").withRequiredArg().ofType(HexBytes.class).describedAs("hex");
+    protected static OptionSpec<HexBytes> OPT_STORE_DATA_CHUNK = parser.accepts("store-data-chunk", "Send STORE DATA commands").withRequiredArg().ofType(HexBytes.class).describedAs("hex");
 
-    protected static OptionSpec<String> OPT_MAKE_DEFAULT = parser.accepts("make-default", "Make AID the default").withRequiredArg().describedAs("AID");
-    protected static OptionSpec<String> OPT_RENAME_ISD = parser.accepts("rename-isd", "Rename ISD").withRequiredArg().describedAs("new AID");
+    protected static OptionSpec<AID> OPT_MAKE_DEFAULT = parser.accepts("make-default", "Make AID the default").withRequiredArg().ofType(AID.class).describedAs("AID");
+    protected static OptionSpec<AID> OPT_RENAME_ISD = parser.accepts("rename-isd", "Rename ISD").withRequiredArg().ofType(AID.class).describedAs("new AID");
 
     // MISC options
     protected static OptionSpec<String> OPT_SC_MODE = parser.accepts("mode", "Secure channel to use").withRequiredArg().describedAs("mac/enc/renc/rmac/clr");
@@ -155,9 +156,9 @@ abstract class GPCommandLineInterface {
         }
 
         if (args.nonOptionArguments().size() > 0) {
-            parser.printHelpOn(System.out);
             System.err.println();
             System.err.println("Invalid non-option arguments: " + args.nonOptionArguments().stream().map(e -> e.toString()).collect(Collectors.joining(" ")));
+            System.err.println("Try gp --help");
             System.exit(1);
         }
 
@@ -168,4 +169,5 @@ abstract class GPCommandLineInterface {
 
         return args;
     }
+
 }

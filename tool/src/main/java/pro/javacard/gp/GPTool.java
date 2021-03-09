@@ -189,7 +189,7 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
                 // Select the application, if present
                 AID target = null;
                 if (args.has(OPT_APPLET)) {
-                    target = AID.fromString(args.valueOf(OPT_APPLET));
+                    target = args.valueOf(OPT_APPLET);
                 } else if (cap != null) {
                     target = cap.getAppletAIDs().get(0); // FIXME: generalize and only work if one
                 }
@@ -197,8 +197,8 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
                     verbose("Selecting " + target);
                     channel.transmit(new CommandAPDU(0x00, ISO7816.INS_SELECT, 0x04, 0x00, target.getBytes()));
                 }
-                for (String s : args.valuesOf(OPT_APDU)) {
-                    CommandAPDU c = new CommandAPDU(HexUtils.stringToBin(s));
+                for (byte[] s : args.valuesOf(OPT_APDU).stream().map(HexBytes::getValue).collect(Collectors.toList())) {
+                    CommandAPDU c = new CommandAPDU(s);
                     channel.transmit(c);
                 }
             }
@@ -217,9 +217,9 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
             final GPSession gp;
             if (args.has(OPT_SDAID)) {
                 System.err.println("# Warning: --sdaid is deprecated, use -c/--connect <AID>");
-                gp = GPSession.connect(channel, AID.fromString(args.valueOf(OPT_SDAID)));
+                gp = GPSession.connect(channel, args.valueOf(OPT_SDAID));
             } else if (args.has(OPT_CONNECT)) {
-                gp = GPSession.connect(channel, AID.fromString(args.valueOf(OPT_CONNECT)));
+                gp = GPSession.connect(channel, args.valueOf(OPT_CONNECT));
             } else if (env.containsKey(ENV_GP_AID)) {
                 AID aid = AID.fromString(env.get(ENV_GP_AID));
                 verbose(String.format("Connecting to $%s (%s)", ENV_GP_AID, aid));
@@ -233,7 +233,7 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
                 RSAPrivateKey pkey = (RSAPrivateKey) GPCrypto.pem2PrivateKey(Files.newInputStream(Paths.get(args.valueOf(OPT_DM_KEY))));
                 gp.setTokenizer(DMTokenizer.forPrivateKey(pkey));
             } else if (args.has(OPT_DM_TOKEN)) {
-                byte[] token = HexUtils.stringToBin(args.valueOf(OPT_DM_TOKEN));
+                byte[] token = args.valueOf(OPT_DM_TOKEN).getValue();
                 gp.setTokenizer(DMTokenizer.forToken(token));
             }
 
@@ -247,7 +247,7 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
 
             Optional<GPCardKeys> key = keyFromPlugin(args.valueOf(OPT_KEY));
             if (key.isPresent()) {
-                // keys come from custom provider
+                // keys come from custom or plaintext provider
                 keys = key.get();
             } else {
                 Optional<PlaintextKeys> envKeys = PlaintextKeys.fromEnvironment();
@@ -329,14 +329,17 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
 
                 // --secure-apdu or -s
                 if (args.has(OPT_SECURE_APDU)) {
-                    for (String s : args.valuesOf(OPT_SECURE_APDU)) {
-                        CommandAPDU c = new CommandAPDU(HexUtils.stringToBin(s));
+                    for (byte[] s : args.valuesOf(OPT_SECURE_APDU).stream().map(HexBytes::getValue).collect(Collectors.toList())) {
+                        CommandAPDU c = new CommandAPDU(s);
                         gp.transmit(c);
                     }
                 }
 
                 // --delete <aid>
                 if (args.has(OPT_DELETE)) {
+                    if (!args.has(OPT_FORCE) && !args.has(OPT_SAD))
+                        warnIfNoDelegatedManagement(gp);
+
                     GPRegistry reg = gp.getRegistry();
 
                     // DWIM: assume that default selected is the one to be deleted
@@ -349,7 +352,7 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
                         }
                     }
                     boolean failure = false;
-                    List<AID> aidList = args.valuesOf(OPT_DELETE).stream().map(AID::fromString).collect(Collectors.toList());
+                    List<AID> aidList = args.valuesOf(OPT_DELETE).stream().collect(Collectors.toList());
                     for (AID aid : aidList) {
                         try {
                             // If the AID represents a package and force is enabled, delete deps as well
@@ -376,6 +379,8 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
 
                 // --uninstall <cap>
                 if (args.has(OPT_UNINSTALL)) {
+                    if (!args.has(OPT_FORCE) && !args.has(OPT_SAD))
+                        warnIfNoDelegatedManagement(gp);
                     List<CAPFile> caps = getCapFileList(args, OPT_UNINSTALL);
                     boolean failure = false;
                     for (CAPFile instcap : caps) {
@@ -398,6 +403,8 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
 
                 // --load <applet.cap>
                 if (args.has(OPT_LOAD)) {
+                    if (!args.has(OPT_FORCE) && !args.has(OPT_SAD))
+                        warnIfNoDelegatedManagement(gp);
                     List<CAPFile> caps = getCapFileList(args, OPT_LOAD);
                     for (CAPFile loadcap : caps) {
                         if (isVerbose) {
@@ -441,6 +448,9 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
 
                 // --install <applet.cap> (--applet <aid> --create <aid> --privs <privs> --params <params>)
                 if (args.has(OPT_INSTALL)) {
+                    if (!args.has(OPT_FORCE) && !args.has(OPT_SAD))
+                        warnIfNoDelegatedManagement(gp);
+
                     final File capfile;
                     capfile = args.valueOf(OPT_INSTALL);
 
@@ -467,7 +477,7 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
                         throw new IllegalArgumentException("CAP file has no applets!");
                     } else if (instcap.getAppletAIDs().size() > 1) {
                         if (args.has(OPT_APPLET)) {
-                            appaid = AID.fromString(args.valueOf(OPT_APPLET));
+                            appaid = args.valueOf(OPT_APPLET);
                         } else {
                             throw new IllegalArgumentException("CAP contains more than one applet, specify the right one with --" + OPT_APPLET);
                         }
@@ -475,9 +485,9 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
                         appaid = instcap.getAppletAIDs().get(0);
                     }
 
-                    // override
+                    // override instance AID
                     if (args.has(OPT_CREATE)) {
-                        instanceaid = AID.fromString(args.valueOf(OPT_CREATE));
+                        instanceaid = args.valueOf(OPT_CREATE);
                     } else {
                         instanceaid = appaid;
                     }
@@ -498,7 +508,7 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
                     }
 
                     // Parameters
-                    byte[] params = args.has(OPT_PARAMS) ? HexUtils.stringToBin(args.valueOf(OPT_PARAMS)) : new byte[0];
+                    byte[] params = args.has(OPT_PARAMS) ? args.valueOf(OPT_PARAMS).getValue() : new byte[0];
 
                     // shoot
                     gp.installAndMakeSelectable(instcap.getPackageAID(), appaid, instanceaid, privs, params);
@@ -506,6 +516,8 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
 
                 // --create <aid> (--applet <aid> --package <aid> or --cap <cap>)
                 if (args.has(OPT_CREATE) && !args.has(OPT_INSTALL)) {
+                    if (!args.has(OPT_FORCE) && !args.has(OPT_SAD))
+                        warnIfNoDelegatedManagement(gp);
                     AID packageAID = null;
                     AID appletAID = null;
 
@@ -521,17 +533,17 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
 
                     // override
                     if (args.has(OPT_PACKAGE)) {
-                        packageAID = AID.fromString(args.valueOf(OPT_PACKAGE));
+                        packageAID = args.valueOf(OPT_PACKAGE);
                     }
                     if (args.has(OPT_APPLET)) {
-                        appletAID = AID.fromString(args.valueOf(OPT_APPLET));
+                        appletAID = args.valueOf(OPT_APPLET);
                     }
 
                     // check
                     if (packageAID == null || appletAID == null)
                         throw new IllegalArgumentException("Need --" + OPT_PACKAGE + " and --" + OPT_APPLET + " or --" + OPT_CAP);
 
-                    AID instanceAID = AID.fromString(args.valueOf(OPT_CREATE));
+                    AID instanceAID = args.valueOf(OPT_CREATE);
 
                     // warn
                     if (gp.getRegistry().allAIDs().contains(appletAID)) {
@@ -542,7 +554,7 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
                     Set<Privilege> privs = getPrivileges(args);
 
                     // Parameters
-                    byte[] params = args.has(OPT_PARAMS) ? HexUtils.stringToBin(args.valueOf(OPT_PARAMS)) : new byte[0];
+                    byte[] params = args.has(OPT_PARAMS) ? args.valueOf(OPT_PARAMS).getValue() : new byte[0];
 
                     // shoot
                     gp.installAndMakeSelectable(packageAID, appletAID, instanceAID, privs, params);
@@ -557,7 +569,7 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
                     byte[] params;
                     // If parameters given by user
                     if (args.has(OPT_PARAMS)) {
-                        params = HexUtils.stringToBin(args.valueOf(OPT_PARAMS));
+                        params = args.valueOf(OPT_PARAMS).getValue();
                         // Try to parse
                         try {
                             parameters = tlvparser.parse(params); // this throws
@@ -580,15 +592,15 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
 
                     // Override if necessary
                     if (args.has(OPT_PACKAGE) && args.has(OPT_APPLET)) {
-                        packageAID = AID.fromString(args.valueOf(OPT_PACKAGE));
-                        appletAID = AID.fromString(args.valueOf(OPT_APPLET));
+                        packageAID = args.valueOf(OPT_PACKAGE);
+                        appletAID = args.valueOf(OPT_APPLET);
                     } else {
                         // But query registry for defaults. Default to "new"
                         packageAID = gp.getRegistry().allPackageAIDs().contains(new AID("A0000000035350")) ? new AID("A0000000035350") : new AID("A0000001515350");
                         appletAID = gp.getRegistry().allPackageAIDs().contains(new AID("A0000000035350")) ? new AID("A000000003535041") : new AID("A000000151535041");
                         verbose("Note: using detected default AID-s for SSD instantiation: " + appletAID + " from " + packageAID);
                     }
-                    AID instanceAID = AID.fromString(args.valueOf(OPT_DOMAIN));
+                    AID instanceAID = args.valueOf(OPT_DOMAIN);
 
                     // Extra privileges
                     Set<Privilege> privs = getPrivileges(args);
@@ -637,18 +649,20 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
 
                 // --move <AID>
                 if (args.has(OPT_MOVE)) {
-                    AID what = AID.fromString(args.valueOf(OPT_MOVE));
-                    AID to = AID.fromString(args.valueOf(OPT_TO));
+                    if (!args.has(OPT_FORCE) && !args.has(OPT_SAD))
+                        warnIfNoDelegatedManagement(gp);
+                    AID what = args.valueOf(OPT_MOVE);
+                    AID to = args.valueOf(OPT_TO);
                     gp.extradite(what, to);
                 }
 
                 // --store-data <XX>
                 // This will split the data, if necessary
                 if (args.has(OPT_STORE_DATA)) {
-                    List<byte[]> blobs = args.valuesOf(OPT_STORE_DATA).stream().map(HexUtils::stringToBin).collect(Collectors.toList());
+                    List<byte[]> blobs = args.valuesOf(OPT_STORE_DATA).stream().map(HexBytes::getValue).collect(Collectors.toList());
                     for (byte[] blob : blobs) {
                         if (args.has(OPT_APPLET)) {
-                            gp.personalize(AID.fromString(args.valueOf(OPT_APPLET)), blob, 0x01);
+                            gp.personalize(args.valueOf(OPT_APPLET), blob, 0x01);
                         } else {
                             gp.storeData(blob, 0x1);
                         }
@@ -658,9 +672,9 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
                 // --store-data-chunk
                 // This will collect the chunks and send them one by one
                 if (args.has(OPT_STORE_DATA_CHUNK)) {
-                    List<byte[]> blobs = args.valuesOf(OPT_STORE_DATA_CHUNK).stream().map(HexUtils::stringToBin).collect(Collectors.toList());
+                    List<byte[]> blobs = args.valuesOf(OPT_STORE_DATA_CHUNK).stream().map(HexBytes::getValue).collect(Collectors.toList());
                     if (args.has(OPT_APPLET)) {
-                        gp.personalize(AID.fromString(args.valueOf(OPT_APPLET)), blobs, 0x01);
+                        gp.personalize(args.valueOf(OPT_APPLET), blobs, 0x01);
                     } else {
                         gp.storeData(blobs, 0x1);
                     }
@@ -691,12 +705,12 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
 
                 // --lock-applet <aid>
                 if (args.has(OPT_LOCK_APPLET)) {
-                    gp.lockUnlockApplet(AID.fromString(args.valueOf(OPT_LOCK_APPLET)), true);
+                    gp.lockUnlockApplet(args.valueOf(OPT_LOCK_APPLET), true);
                 }
 
                 // --unlock-applet <AID>
                 if (args.has(OPT_UNLOCK_APPLET)) {
-                    gp.lockUnlockApplet(AID.fromString(args.valueOf(OPT_UNLOCK_APPLET)), false);
+                    gp.lockUnlockApplet(args.valueOf(OPT_UNLOCK_APPLET), false);
                 }
 
                 // --list
@@ -713,6 +727,7 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
 
                 // --unlock, same as -lock default
                 if (args.has(OPT_UNLOCK)) {
+                    System.err.println("# Warning: \"--unlock\" is deprecated, please use \"--lock default\"");
                     List<GPKeyInfo> current = gp.getKeyInfoTemplate();
                     // Write default keys
                     final boolean replace;
@@ -805,17 +820,17 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
 
                 // --make-default <aid>
                 if (args.has(OPT_MAKE_DEFAULT)) {
-                    gp.makeDefaultSelected(AID.fromString(args.valueOf(OPT_MAKE_DEFAULT)));
+                    gp.makeDefaultSelected(args.valueOf(OPT_MAKE_DEFAULT));
                 }
 
                 // --rename-isd
                 if (args.has(OPT_RENAME_ISD)) {
-                    gp.renameISD(AID.fromString(args.valueOf(OPT_RENAME_ISD)));
+                    gp.renameISD(args.valueOf(OPT_RENAME_ISD));
                 }
 
                 // --set-pre-perso
                 if (args.has(OPT_SET_PRE_PERSO)) {
-                    byte[] payload = HexUtils.stringToBin(args.valueOf(OPT_SET_PRE_PERSO));
+                    byte[] payload = args.valueOf(OPT_SET_PRE_PERSO).getValue();
                     if (args.has(OPT_TODAY)) {
                         System.arraycopy(GPData.CPLC.today(), 0, payload, 2, 2);
                     }
@@ -824,7 +839,7 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
 
                 // --set-perso
                 if (args.has(OPT_SET_PERSO)) {
-                    byte[] payload = HexUtils.stringToBin(args.valueOf(OPT_SET_PERSO));
+                    byte[] payload = args.valueOf(OPT_SET_PERSO).getValue();
                     if (args.has(OPT_TODAY)) {
                         System.arraycopy(GPData.CPLC.today(), 0, payload, 2, 2);
                     }
@@ -834,12 +849,19 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
             return 0;
         } catch (NoSuchAlgorithmException | IOException e) {
             System.err.println("ERROR: " + e.getMessage());
-            if (isVerbose)
+            if (isTrace)
                 e.printStackTrace();
         }
         // Other exceptions escape. fin.
         return 1;
     }
+
+    private void warnIfNoDelegatedManagement(GPSession session) throws IOException {
+        if (session.getCurrentDomain().hasPrivilege(Privilege.DelegatedManagement) && !session.delegatedManagementEnabled()) {
+            System.err.println("# Warning: specify delegated management key or token with --dm-key/--dm-token");
+        }
+    }
+
 
     private static Optional<GPCardKeys> keyFromPlugin(String spec) {
         try {
@@ -857,8 +879,8 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
     // Extract parameters and call GPCommands.load()
     private static void loadCAP(OptionSet args, GPSession gp, CAPFile capFile) throws GPException, IOException {
         try {
-            AID to = args.has(OPT_TO) ? AID.fromString(args.valueOf(OPT_TO)) : gp.getAID();
-            AID dapDomain = args.has(OPT_DAP_DOMAIN) ? AID.fromString(args.valueOf(OPT_DAP_DOMAIN)) : null;
+            AID to = args.has(OPT_TO) ? args.valueOf(OPT_TO) : gp.getAID();
+            AID dapDomain = args.has(OPT_DAP_DOMAIN) ? args.valueOf(OPT_DAP_DOMAIN) : null;
             GPData.LFDBH lfdbh = args.has(OPT_SHA256) ? GPData.LFDBH.SHA256 : null;
             GPCommands.load(gp, capFile, to, dapDomain, lfdbh);
             System.out.println(capFile.getFile().map(Path::toString).orElse("CAP") + " loaded");

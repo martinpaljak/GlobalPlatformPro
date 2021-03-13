@@ -88,6 +88,35 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
     public GPTool() {
     }
 
+    private static boolean preamble = true;
+
+    private static void showPreamble(String[] argv, OptionSet args) {
+        if (preamble) {
+            // dump relevant environment and command line variables in verbose+ mode
+            if (args.has(OPT_VERBOSE) || args.has(OPT_DEBUG) || args.has(OPT_INFO)) {
+                List<String> gpenv = System.getenv().entrySet().stream().filter(e -> e.getKey().startsWith("GP_")).map(e -> String.format("%s=%s", e.getKey(), e.getValue())).collect(Collectors.toList());
+                if (gpenv.size() > 0)
+                    System.out.println("# " + String.join(" ", gpenv));
+                System.out.println("# gp " + String.join(" ", argv));
+            }
+            if (args.has(OPT_VERBOSE) || args.has(OPT_DEBUG) || args.has(OPT_INFO) || args.has(OPT_VERSION)) {
+                System.out.printf("# GlobalPlatformPro %s%n", GPSession.getVersion());
+                System.out.printf("# Running on %s %s %s", System.getProperty("os.name"), System.getProperty("os.version"), System.getProperty("os.arch"));
+                System.out.printf(", Java %s by %s%n", System.getProperty("java.version"), System.getProperty("java.vendor"));
+            }
+            try {
+                // Test for unlimited crypto
+                if (Cipher.getMaxAllowedKeyLength("AES") == 128) {
+                    System.err.println("# Error: unlimited crypto policy is NOT installed!");
+                    System.err.println("# Please install and use JDK 11 LTS");
+                }
+            } catch (NoSuchAlgorithmException e) {
+                System.err.println("# Error: no AES support in JRE?");
+            }
+        }
+        preamble = false;
+    }
+
     // To keep basic gp.jar together with apdu4j app, this is just a minimalist wrapper
     public static void main(String[] argv) {
         Card c = null;
@@ -95,14 +124,11 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
         try {
             OptionSet args = parseArguments(argv);
             setupLogging(args);
+            showPreamble(argv, args);
 
-            if (args.has(OPT_VERBOSE) || args.has(OPT_VERSION)) {
-                // dump relevant environment and command line variables
-                List<String> gpenv = System.getenv().entrySet().stream().filter(e -> e.getKey().startsWith("GP_")).map(e -> String.format("%s=%s", e.getKey(), e.getValue())).collect(Collectors.toList());
-                if (gpenv.size() > 0)
-                    System.out.println("# " + String.join(" ", gpenv));
-                System.out.println("# gp " + String.join(" ", argv));
-            }
+            if (onlyHasArg(args, OPT_VERSION))
+                System.exit(0);
+
             TerminalFactory tf = TerminalManager.getTerminalFactory();
             String reader = args.valueOf(OPT_READER);
             if (reader == null)
@@ -148,23 +174,9 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
             OptionSet args = parseArguments(argv);
             setupLogging(args);
 
-            if (args.has(OPT_VERSION) || args.has(OPT_VERBOSE) || args.has(OPT_DEBUG) || args.has(OPT_INFO)) {
-                String version = GPSession.getVersion();
-                // Append host information
-                version += "\n# Running on " + System.getProperty("os.name");
-                version += " " + System.getProperty("os.version");
-                version += " " + System.getProperty("os.arch");
-                version += ", Java " + System.getProperty("java.version");
-                version += " by " + System.getProperty("java.vendor");
-                System.out.println("# GlobalPlatformPro " + version);
-
-                // Test for unlimited crypto
-                if (Cipher.getMaxAllowedKeyLength("AES") == 128) {
-                    System.err.println("# Warning: unlimited crypto policy is NOT installed!");
-                }
-                if (onlyHasArg(args, OPT_VERSION))
-                    return 0;
-            }
+            showPreamble(argv, args);
+            if (onlyHasArg(args, OPT_VERSION))
+                return 0;
 
             // Load a CAP file, if specified
             CAPFile cap = null;
@@ -228,6 +240,13 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
                 gp = GPSession.discover(channel);
             }
 
+            // Override block size for stupidly broken readers.
+            // See https://github.com/martinpaljak/GlobalPlatformPro/issues/32
+            // The name of the option comes from a common abbreviation as well as dd utility
+            if (args.has(OPT_BS)) {
+                gp.setBlockSize(args.valueOf(OPT_BS));
+            }
+
             // Delegated management
             if (args.has(OPT_DM_KEY)) {
                 RSAPrivateKey pkey = (RSAPrivateKey) GPCrypto.pem2PrivateKey(Files.newInputStream(Paths.get(args.valueOf(OPT_DM_KEY))));
@@ -256,7 +275,11 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
                 if (envKeys.isPresent() && cliKeys.isPresent()) {
                     System.err.println("# Warning: keys set on command line shadow environment!");
                 } else if (!envKeys.isPresent() && !cliKeys.isPresent()) {
-                    System.err.println("# Warning: no keys given, defaulting to " + HexUtils.bin2hex(PlaintextKeys.defaultKeyBytes));
+                    if (args.has(OPT_SAD)) {
+                        System.err.println("Error: no keys given");
+                        return 1;
+                    } else
+                        System.err.println("# Warning: no keys given, defaulting to " + HexUtils.bin2hex(PlaintextKeys.defaultKeyBytes));
                 }
                 keys = cliKeys.map(Optional::of).orElse(envKeys).orElse(PlaintextKeys.defaultKey());
             }
@@ -299,13 +322,6 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
                 if (args.has(OPT_KEY_VERSION)) {
                     keyz.setVersion(GPUtils.intValue(args.valueOf(OPT_KEY_VERSION)));
                 }
-            }
-
-            // Override block size for stupidly broken readers.
-            // See https://github.com/martinpaljak/GlobalPlatformPro/issues/32
-            // The name of the option comes from a common abbreviation as well as dd utility
-            if (args.has(OPT_BS)) {
-                gp.setBlockSize(args.valueOf(OPT_BS));
             }
 
             if (args.has(OPT_PROFILE)) {
@@ -847,7 +863,7 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
                 }
             }
             return 0;
-        } catch (NoSuchAlgorithmException | IOException e) {
+        } catch (IOException e) {
             System.err.println("ERROR: " + e.getMessage());
             if (isTrace)
                 e.printStackTrace();

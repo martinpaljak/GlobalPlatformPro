@@ -41,7 +41,9 @@ import pro.javacard.gp.GPRegistryEntry.Kind;
 import pro.javacard.gp.GPRegistryEntry.Privilege;
 
 import javax.crypto.SecretKey;
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.security.Key;
@@ -393,7 +395,7 @@ public class GPSession {
         scpKeyVersion = update_response[offset] & 0xFF;
         offset++;
         // Get major SCP version from Key Information field in response
-        this.scpVersion = GPSecureChannel.valueOf(update_response[offset] & 0xFF).orElseThrow(() -> new GPDataException("Invalid SCP version", update_response));
+        this.scpVersion = GPSecureChannel.valueOf(update_response[offset] & 0xFF).orElseThrow(() -> new GPDataException("Unknown or invalid SCP version", update_response));
         offset++;
 
         // get the protocol "i" parameter, if SCP03
@@ -444,8 +446,7 @@ public class GPSession {
             logger.warn("SCP01 does not support RMAC, removing.");
         }
 
-
-        // Give the card key a chance to be automatically diverisifed based on KDD from INITIALIZE UPDATE
+        // Give the card key a chance to be automatically diversifed based on KDD from INITIALIZE UPDATE
         cardKeys = keys.diversify(this.scpVersion, diversification_data);
 
         logger.info("Diversified card keys: {}", cardKeys);
@@ -506,7 +507,7 @@ public class GPSession {
         int P1 = APDUMode.getSetValue(securityLevel);
         CommandAPDU externalAuthenticate = new CommandAPDU(CLA_MAC, ISO7816.INS_EXTERNAL_AUTHENTICATE_82, P1, 0, host_cryptogram);
         response = transmit(externalAuthenticate);
-        GPException.check(response, "External authenticate failed");
+        GPException.check(response, "EXTERNAL AUTHENTICATE failed");
 
         // After opening the session with MAC mode, set it to target level
         wrapper.setSecurityLevel(securityLevel);
@@ -1078,5 +1079,4 @@ public class GPSession {
             return valueOf(s.trim().toUpperCase());
         }
     }
-
 }

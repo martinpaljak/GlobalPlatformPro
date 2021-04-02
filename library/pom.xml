@@ -18,7 +18,7 @@
         <dependency>
             <groupId>com.github.martinpaljak</groupId>
             <artifactId>apdu4j-core</artifactId>
-            <version>2020b1</version>
+            <version>2020r3</version>
         </dependency>
         <!-- For CAP file parsing -->
         <dependency>
@@ -48,7 +48,7 @@
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
-            <version>7.3.0</version>
+            <version>7.4.0</version>
             <scope>test</scope>
         </dependency>
         <!-- For logging in tests -->

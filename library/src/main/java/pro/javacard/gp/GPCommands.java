@@ -19,9 +19,9 @@
  */
 package pro.javacard.gp;
 
-import apdu4j.CommandAPDU;
-import apdu4j.HexUtils;
-import apdu4j.ResponseAPDU;
+import apdu4j.core.CommandAPDU;
+import apdu4j.core.HexUtils;
+import apdu4j.core.ResponseAPDU;
 import pro.javacard.AID;
 import pro.javacard.CAPFile;
 import pro.javacard.WellKnownAID;

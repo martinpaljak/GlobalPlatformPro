@@ -22,7 +22,7 @@
 
 package pro.javacard.gp;
 
-import apdu4j.HexUtils;
+import apdu4j.core.HexUtils;
 import com.payneteasy.tlv.BerTlvLogger;
 import com.payneteasy.tlv.BerTlvParser;
 import com.payneteasy.tlv.BerTlvs;

@@ -19,6 +19,7 @@
  */
 package pro.javacard.gp;
 
+import apdu4j.core.HexBytes;
 import joptsimple.OptionException;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;

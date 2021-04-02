@@ -19,7 +19,7 @@
  */
 package pro.javacard.gp;
 
-import apdu4j.HexUtils;
+import apdu4j.core.HexUtils;
 
 // Thrown when some data is not parseable for some reason, and includes the data in question.
 public class GPDataException extends GPException {

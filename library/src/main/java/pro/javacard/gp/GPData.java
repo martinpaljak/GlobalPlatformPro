@@ -19,10 +19,10 @@
  */
 package pro.javacard.gp;
 
-import apdu4j.APDUBIBO;
-import apdu4j.CommandAPDU;
-import apdu4j.HexUtils;
-import apdu4j.ResponseAPDU;
+import apdu4j.core.APDUBIBO;
+import apdu4j.core.CommandAPDU;
+import apdu4j.core.HexUtils;
+import apdu4j.core.ResponseAPDU;
 import com.payneteasy.tlv.BerTag;
 import com.payneteasy.tlv.BerTlv;
 import com.payneteasy.tlv.BerTlvParser;

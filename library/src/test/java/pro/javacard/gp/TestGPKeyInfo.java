@@ -1,6 +1,6 @@
 package pro.javacard.gp;
 
-import apdu4j.HexUtils;
+import apdu4j.core.HexUtils;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 

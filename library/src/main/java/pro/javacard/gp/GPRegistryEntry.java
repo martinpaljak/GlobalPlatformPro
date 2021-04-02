@@ -19,7 +19,7 @@
  */
 package pro.javacard.gp;
 
-import apdu4j.HexUtils;
+import apdu4j.core.HexUtils;
 import pro.javacard.AID;
 
 import java.util.*;

@@ -23,7 +23,7 @@
 
 package pro.javacard.gp;
 
-import apdu4j.ResponseAPDU;
+import apdu4j.core.ResponseAPDU;
 
 /**
  * Root exception class for all global platform protocol errors.

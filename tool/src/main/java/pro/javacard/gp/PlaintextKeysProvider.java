@@ -20,7 +20,7 @@
  */
 package pro.javacard.gp;
 
-import apdu4j.HexUtils;
+import apdu4j.core.HexUtils;
 import com.google.auto.service.AutoService;
 import pro.javacard.gp.i.CardKeysProvider;
 

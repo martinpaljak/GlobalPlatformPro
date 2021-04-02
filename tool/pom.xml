@@ -18,7 +18,7 @@
         <dependency>
             <groupId>com.github.martinpaljak</groupId>
             <artifactId>apdu4j-pcsc</artifactId>
-            <version>20.08.12</version>
+            <version>21.04.01</version>
         </dependency>
         <!-- Library itself -->
         <dependency>
@@ -50,7 +50,7 @@
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
-            <version>7.3.0</version>
+            <version>7.4.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -76,7 +76,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.2.1</version>
+                <version>3.2.4</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -110,7 +110,7 @@
             <plugin>
                 <groupId>com.akathist.maven.plugins.launch4j</groupId>
                 <artifactId>launch4j-maven-plugin</artifactId>
-                <version>1.7.25</version>
+                <version>2.0.1</version>
                 <executions>
                     <execution>
                         <id>gp-exe</id>
@@ -127,7 +127,7 @@
                                 <mainClass>pro.javacard.gp.GPTool</mainClass>
                             </classPath>
                             <jre>
-                                <minVersion>1.8.0</minVersion>
+                                <minVersion>11</minVersion>
                             </jre>
                             <versionInfo>
                                 <fileVersion>

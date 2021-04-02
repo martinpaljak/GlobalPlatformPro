@@ -20,9 +20,12 @@
  */
 package pro.javacard.gp;
 
-import apdu4j.*;
-import apdu4j.i.SmartCardApp;
-import apdu4j.terminals.LoggingCardTerminal;
+import apdu4j.core.*;
+import apdu4j.core.SmartCardApp;
+import apdu4j.pcsc.CardBIBO;
+import apdu4j.pcsc.PCSCReader;
+import apdu4j.pcsc.TerminalManager;
+import apdu4j.pcsc.terminals.LoggingCardTerminal;
 import com.google.auto.service.AutoService;
 import com.payneteasy.tlv.BerTag;
 import com.payneteasy.tlv.BerTlvParser;
@@ -55,7 +58,7 @@ import java.util.stream.Collectors;
 
 // Does the CLI parameter parsing and associated execution
 @AutoService(SmartCardApp.class)
-public final class GPTool extends GPCommandLineInterface implements SmartCardApp {
+public final class GPTool extends GPCommandLineInterface implements SimpleSmartCardApp {
 
     private static boolean isVerbose = false;
     private static boolean isTrace = false;
@@ -84,7 +87,7 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
         }
     }
 
-    // Explicitly public, to not forget
+    // Explicitly public, to not forget the need for apdu4j
     public GPTool() {
     }
 
@@ -129,17 +132,21 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
             if (onlyHasArg(args, OPT_VERSION))
                 System.exit(0);
 
-            TerminalFactory tf = TerminalManager.getTerminalFactory();
-            String reader = args.valueOf(OPT_READER);
-            if (reader == null)
-                reader = System.getenv(ENV_GP_READER);
-            Optional<CardTerminal> t = TerminalManager.getInstance(tf.terminals()).dwim(reader, System.getenv(ENV_GP_READER_IGNORE), Collections.emptyList());
-            if (!t.isPresent()) {
+            TerminalManager terminalManager = TerminalManager.getDefault();
+            List<PCSCReader> readers = TerminalManager.listPCSC(terminalManager.terminals().list(), null, false);
+
+            String useReader = args.hasArgument(OPT_READER) ? args.valueOf(OPT_READER) : System.getenv(ENV_GP_READER);
+            String ignoreReader = System.getenv(ENV_GP_READER_IGNORE);
+
+            // XXX: simplify
+            Optional<CardTerminal> reader = TerminalManager.getLucky(TerminalManager.dwimify(readers,useReader, ignoreReader), terminalManager.terminals());
+
+            if (!reader.isPresent()) {
                 System.err.println("Specify reader with -r/$GP_READER");
                 System.exit(1);
             }
-            t = t.map(e -> args.has(OPT_DEBUG) ? LoggingCardTerminal.getInstance(e) : e);
-            c = t.get().connect("*");
+            reader = reader.map(e -> args.has(OPT_DEBUG) ? LoggingCardTerminal.getInstance(e) : e);
+            c = reader.get().connect("*");
             ret = new GPTool().run(CardBIBO.wrap(c), argv);
         } catch (IllegalArgumentException e) {
             System.err.println("Invalid argument: " + e.getMessage());
@@ -209,7 +216,7 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
                     verbose("Selecting " + target);
                     channel.transmit(new CommandAPDU(0x00, ISO7816.INS_SELECT, 0x04, 0x00, target.getBytes()));
                 }
-                for (byte[] s : args.valuesOf(OPT_APDU).stream().map(HexBytes::getValue).collect(Collectors.toList())) {
+                for (byte[] s : args.valuesOf(OPT_APDU).stream().map(HexBytes::value).collect(Collectors.toList())) {
                     CommandAPDU c = new CommandAPDU(s);
                     channel.transmit(c);
                 }
@@ -252,7 +259,7 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
                 RSAPrivateKey pkey = (RSAPrivateKey) GPCrypto.pem2PrivateKey(Files.newInputStream(Paths.get(args.valueOf(OPT_DM_KEY))));
                 gp.setTokenizer(DMTokenizer.forPrivateKey(pkey));
             } else if (args.has(OPT_DM_TOKEN)) {
-                byte[] token = args.valueOf(OPT_DM_TOKEN).getValue();
+                byte[] token = args.valueOf(OPT_DM_TOKEN).value();
                 gp.setTokenizer(DMTokenizer.forToken(token));
             }
 
@@ -345,7 +352,7 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
 
                 // --secure-apdu or -s
                 if (args.has(OPT_SECURE_APDU)) {
-                    for (byte[] s : args.valuesOf(OPT_SECURE_APDU).stream().map(HexBytes::getValue).collect(Collectors.toList())) {
+                    for (byte[] s : args.valuesOf(OPT_SECURE_APDU).stream().map(HexBytes::value).collect(Collectors.toList())) {
                         CommandAPDU c = new CommandAPDU(s);
                         gp.transmit(c);
                     }
@@ -524,7 +531,7 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
                     }
 
                     // Parameters
-                    byte[] params = args.has(OPT_PARAMS) ? args.valueOf(OPT_PARAMS).getValue() : new byte[0];
+                    byte[] params = args.has(OPT_PARAMS) ? args.valueOf(OPT_PARAMS).value() : new byte[0];
 
                     // shoot
                     gp.installAndMakeSelectable(instcap.getPackageAID(), appaid, instanceaid, privs, params);
@@ -570,7 +577,7 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
                     Set<Privilege> privs = getPrivileges(args);
 
                     // Parameters
-                    byte[] params = args.has(OPT_PARAMS) ? args.valueOf(OPT_PARAMS).getValue() : new byte[0];
+                    byte[] params = args.has(OPT_PARAMS) ? args.valueOf(OPT_PARAMS).value() : new byte[0];
 
                     // shoot
                     gp.installAndMakeSelectable(packageAID, appletAID, instanceAID, privs, params);
@@ -585,7 +592,7 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
                     byte[] params;
                     // If parameters given by user
                     if (args.has(OPT_PARAMS)) {
-                        params = args.valueOf(OPT_PARAMS).getValue();
+                        params = args.valueOf(OPT_PARAMS).value();
                         // Try to parse
                         try {
                             parameters = tlvparser.parse(params); // this throws
@@ -675,7 +682,7 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
                 // --store-data <XX>
                 // This will split the data, if necessary
                 if (args.has(OPT_STORE_DATA)) {
-                    List<byte[]> blobs = args.valuesOf(OPT_STORE_DATA).stream().map(HexBytes::getValue).collect(Collectors.toList());
+                    List<byte[]> blobs = args.valuesOf(OPT_STORE_DATA).stream().map(HexBytes::value).collect(Collectors.toList());
                     for (byte[] blob : blobs) {
                         if (args.has(OPT_APPLET)) {
                             gp.personalize(args.valueOf(OPT_APPLET), blob, 0x01);
@@ -688,7 +695,7 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
                 // --store-data-chunk
                 // This will collect the chunks and send them one by one
                 if (args.has(OPT_STORE_DATA_CHUNK)) {
-                    List<byte[]> blobs = args.valuesOf(OPT_STORE_DATA_CHUNK).stream().map(HexBytes::getValue).collect(Collectors.toList());
+                    List<byte[]> blobs = args.valuesOf(OPT_STORE_DATA_CHUNK).stream().map(HexBytes::value).collect(Collectors.toList());
                     if (args.has(OPT_APPLET)) {
                         gp.personalize(args.valueOf(OPT_APPLET), blobs, 0x01);
                     } else {
@@ -846,7 +853,7 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
 
                 // --set-pre-perso
                 if (args.has(OPT_SET_PRE_PERSO)) {
-                    byte[] payload = args.valueOf(OPT_SET_PRE_PERSO).getValue();
+                    byte[] payload = args.valueOf(OPT_SET_PRE_PERSO).value();
                     if (args.has(OPT_TODAY)) {
                         System.arraycopy(GPData.CPLC.today(), 0, payload, 2, 2);
                     }
@@ -855,7 +862,7 @@ public final class GPTool extends GPCommandLineInterface implements SmartCardApp
 
                 // --set-perso
                 if (args.has(OPT_SET_PERSO)) {
-                    byte[] payload = args.valueOf(OPT_SET_PERSO).getValue();
+                    byte[] payload = args.valueOf(OPT_SET_PERSO).value();
                     if (args.has(OPT_TODAY)) {
                         System.arraycopy(GPData.CPLC.today(), 0, payload, 2, 2);
                     }

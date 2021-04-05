@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Setup Java
-        uses: actions/setup-java@master
+        uses: actions/setup-java@v1
         with:
           java-version: 11
       - name: Checkout

@@ -21,7 +21,6 @@
 package pro.javacard.gp;
 
 import apdu4j.core.*;
-import apdu4j.core.SmartCardApp;
 import apdu4j.pcsc.CardBIBO;
 import apdu4j.pcsc.PCSCReader;
 import apdu4j.pcsc.TerminalManager;
@@ -36,22 +35,19 @@ import pro.javacard.AID;
 import pro.javacard.CAPFile;
 import pro.javacard.gp.GPRegistryEntry.Privilege;
 import pro.javacard.gp.GPSession.APDUMode;
-import pro.javacard.gp.PlaintextKeys.Diversification;
+import pro.javacard.gp.PlaintextKeys.KDF;
 import pro.javacard.gp.i.CardKeysProvider;
 
 import javax.crypto.Cipher;
 import javax.smartcardio.Card;
 import javax.smartcardio.CardException;
 import javax.smartcardio.CardTerminal;
-import javax.smartcardio.TerminalFactory;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
-import java.security.PublicKey;
+import java.security.PrivateKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -138,8 +134,8 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
             String useReader = args.hasArgument(OPT_READER) ? args.valueOf(OPT_READER) : System.getenv(ENV_GP_READER);
             String ignoreReader = System.getenv(ENV_GP_READER_IGNORE);
 
-            // XXX: simplify
-            Optional<CardTerminal> reader = TerminalManager.getLucky(TerminalManager.dwimify(readers,useReader, ignoreReader), terminalManager.terminals());
+            // FIXME: simplify
+            Optional<CardTerminal> reader = TerminalManager.getLucky(TerminalManager.dwimify(readers, useReader, ignoreReader), terminalManager.terminals());
 
             if (!reader.isPresent()) {
                 System.err.println("Specify reader with -r/$GP_READER");
@@ -229,8 +225,8 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
             // Override default mode if needed.
             if (args.has(OPT_SC_MODE)) {
                 mode.clear();
-                for (String s : args.valuesOf(OPT_SC_MODE)) {
-                    mode.add(APDUMode.fromString(s));
+                for (APDUMode s : args.valuesOf(OPT_SC_MODE)) {
+                    mode.add(s);
                 }
             }
             final GPSession gp;
@@ -250,14 +246,16 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
             // Override block size for stupidly broken readers.
             // See https://github.com/martinpaljak/GlobalPlatformPro/issues/32
             // The name of the option comes from a common abbreviation as well as dd utility
-            if (args.has(OPT_BS)) {
-                gp.setBlockSize(args.valueOf(OPT_BS));
-            }
+            optional(args, OPT_BS).ifPresent(bs -> gp.setBlockSize(bs));
 
             // Delegated management
             if (args.has(OPT_DM_KEY)) {
-                RSAPrivateKey pkey = (RSAPrivateKey) GPCrypto.pem2PrivateKey(Files.newInputStream(Paths.get(args.valueOf(OPT_DM_KEY))));
-                gp.setTokenizer(DMTokenizer.forPrivateKey(pkey));
+                Optional<PrivateKey> dmkey = args.valueOf(OPT_DM_KEY).getPrivate();
+
+                if (!dmkey.isPresent() || !(dmkey.get() instanceof RSAPrivateKey)) {
+                    throw new IllegalArgumentException("Only RSA private keys are supported for DM");
+                }
+                gp.setTokenizer(DMTokenizer.forPrivateKey((RSAPrivateKey) dmkey.get()));
             } else if (args.has(OPT_DM_TOKEN)) {
                 byte[] token = args.valueOf(OPT_DM_TOKEN).value();
                 gp.setTokenizer(DMTokenizer.forToken(token));
@@ -277,8 +275,9 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                 keys = key.get();
             } else {
                 Optional<PlaintextKeys> envKeys = PlaintextKeys.fromEnvironment();
-                Optional<PlaintextKeys> cliKeys = PlaintextKeys.fromStrings(args.valueOf(OPT_KEY_ENC), args.valueOf(OPT_KEY_MAC), args.valueOf(OPT_KEY_DEK), args.valueOf(OPT_KEY), args.valueOf(OPT_KEY_KDF), null, args.valueOf(OPT_KEY_VERSION));
-
+                PlaintextKeys mKey = PlaintextKeys.fromMasterKey(HexBytes.valueOf(args.valueOf(OPT_KEY)).value(), args.valueOf(OPT_KEY_KDF));
+                //Optional<PlaintextKeys> cliKeys = PlaintextKeys.fromBytes(args.valueOf(OPT_KEY_ENC), args.valueOf(OPT_KEY_MAC), args.valueOf(OPT_KEY_DEK), args.valueOf(OPT_KEY), args.valueOf(OPT_KEY_KDF), null, args.valueOf(OPT_KEY_VERSION));
+                Optional<PlaintextKeys> cliKeys = Optional.empty();
                 if (envKeys.isPresent() && cliKeys.isPresent()) {
                     System.err.println("# Warning: keys set on command line shadow environment!");
                 } else if (!envKeys.isPresent() && !cliKeys.isPresent()) {
@@ -301,10 +300,6 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                 if (deprecated.stream().anyMatch(args::has)) {
                     String presented = deprecated.stream().filter(args::has).map(OptionSpec::options).flatMap(Collection::stream).map(e -> "--" + e).collect(Collectors.joining(", "));
                     System.err.printf("# Warning: deprecated options detected (%s) please use \"--key <kdf_name>:<master_key_in_hex>\"%n", presented);
-                    // Make sure we don't override pre-existing KDF
-                    if (keyz.diversifier != Diversification.NONE) {
-                        throw new IllegalArgumentException("Key diversification already defined!");
-                    }
                 }
                 if (present.size() > 1) {
                     String allowed = kdfs.stream().map(OptionSpec::options).flatMap(Collection::stream).map(e -> "--" + e).collect(Collectors.joining(", "));
@@ -313,22 +308,17 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                 }
 
                 if (args.has(OPT_VISA2)) {
-                    keyz.setDiversifier(Diversification.VISA2);
+                    keyz.setDiversifier(KDF.VISA2);
                 } else if (args.has(OPT_EMV)) {
-                    keyz.setDiversifier(Diversification.EMV);
+                    keyz.setDiversifier(PlaintextKeys.KDF.EMV);
                 } else if (args.has(OPT_KDF3)) {
-                    keyz.setDiversifier(Diversification.KDF3);
+                    keyz.setDiversifier(KDF.KDF3);
                 } else if (args.has(OPT_KEY_KDF)) {
-                    Diversification div = Diversification.lookup(args.valueOf(OPT_KEY_KDF));
-                    if (div == null)
-                        throw new IllegalArgumentException("Invalid KDF: " + args.valueOf(OPT_KEY_KDF) + "\nValid values are: " + Arrays.stream(Diversification.values()).map(Enum::toString).collect(Collectors.joining(", ")));
-                    keyz.setDiversifier(div);
+                    keyz.setDiversifier(args.valueOf(OPT_KEY_KDF));
                 }
 
                 // Set/override key version
-                if (args.has(OPT_KEY_VERSION)) {
-                    keyz.setVersion(GPUtils.intValue(args.valueOf(OPT_KEY_VERSION)));
-                }
+                optional(args, OPT_KEY_VERSION).ifPresent(kv -> keyz.setVersion(kv));
             }
 
             if (args.has(OPT_PROFILE)) {
@@ -440,8 +430,8 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                 // --put-key <keyfile.pem or hex> or --replace-key <keyfile.pem or hex>
                 // Load a public key or a plaintext symmetric key (for DAP or DM purposes)
                 if (args.has(OPT_PUT_KEY) || args.has(OPT_REPLACE_KEY)) {
-                    final String kv = args.has(OPT_PUT_KEY) ? args.valueOf(OPT_PUT_KEY) : args.valueOf(OPT_REPLACE_KEY);
-                    final int keyVersion = GPUtils.intValue(args.valueOf(OPT_NEW_KEY_VERSION));
+                    final Key kv = args.has(OPT_PUT_KEY) ? args.valueOf(OPT_PUT_KEY) : args.valueOf(OPT_REPLACE_KEY);
+                    final int keyVersion = args.valueOf(OPT_NEW_KEY_VERSION);
                     if (keyVersion < 0x01 || keyVersion > 0x7F) {
                         System.err.println("Invalid key version: " + GPUtils.intString(keyVersion) + ", some possible values:");
                         System.err.println(GPKeyInfo.keyVersionPurposes.entrySet().stream().map(e -> String.format("%s - %s", GPUtils.intString(e.getKey()), e.getValue())).collect(Collectors.joining("\n")));
@@ -453,19 +443,16 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                     // List<GPKeyInfo> current = gp.getKeyInfoTemplate();
                     // boolean replace = current.stream().filter(p -> p.getVersion() == keyVersion).count() == 1 || args.has(OPT_REPLACE_KEY);
                     boolean replace = args.has(OPT_REPLACE_KEY);
-                    // Check if file or string
-                    if (Files.exists(Paths.get(kv))) {
-                        try (FileInputStream fin = new FileInputStream(kv)) {
-                            // Get public key
-                            PublicKey pubkey = GPCrypto.pem2PublicKey(fin);
-                            gp.putKey(pubkey, keyVersion, replace);
-                        }
-                    } else {
-                        // Interpret as raw key FIXME: implicit 3DES currently
-                        byte[] k = HexUtils.hex2bin(kv);
+                    if (kv.getPublic().isPresent()) {
+                        gp.putKey(kv.getPublic().get(), keyVersion, replace);
+                    } else if (kv.getSymmetric().isPresent()) {
+                        byte[] k = kv.getSymmetric().get();
                         if (k.length != 16)
                             throw new IllegalArgumentException("Invalid key length: " + k.length);
+                        // FIXME: implicit DES currently
                         gp.putKey(GPCrypto.des3key(k), keyVersion, replace);
+                    } else {
+                        throw new IllegalArgumentException("Only public and symmetric keys are supported for put-key");
                     }
                 }
 
@@ -509,11 +496,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                     }
 
                     // override instance AID
-                    if (args.has(OPT_CREATE)) {
-                        instanceaid = args.valueOf(OPT_CREATE);
-                    } else {
-                        instanceaid = appaid;
-                    }
+                    instanceaid = optional(args, OPT_CREATE).orElse(appaid);
 
                     Set<Privilege> privs = getPrivileges(args);
 
@@ -577,7 +560,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                     Set<Privilege> privs = getPrivileges(args);
 
                     // Parameters
-                    byte[] params = args.has(OPT_PARAMS) ? args.valueOf(OPT_PARAMS).value() : new byte[0];
+                    byte[] params = optional(args, OPT_PARAMS).map(HexBytes::value).orElse(new byte[0]);
 
                     // shoot
                     gp.installAndMakeSelectable(packageAID, appletAID, instanceAID, privs, params);
@@ -743,7 +726,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
 
                 // --delete-key
                 if (args.has(OPT_DELETE_KEY)) {
-                    int keyver = GPUtils.intValue(args.valueOf(OPT_DELETE_KEY));
+                    int keyver = args.valueOf(OPT_DELETE_KEY);
                     System.out.println("Deleting key " + GPUtils.intString(keyver));
                     gp.deleteKey(keyver);
                 }
@@ -758,7 +741,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                     // Factory keys
                     if (gp.getScpKeyVersion() == 255 || current.size() == 0) {
                         replace = false;
-                        kv = args.has(OPT_NEW_KEY_VERSION) ? GPUtils.intValue(args.valueOf(OPT_NEW_KEY_VERSION)) : 1;
+                        kv = args.has(OPT_NEW_KEY_VERSION) ? args.valueOf(OPT_NEW_KEY_VERSION) : 1;
                     } else {
                         // Replace current key
                         kv = gp.getScpKeyVersion();
@@ -782,8 +765,8 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                     if (lockKey.isPresent()) {
                         newKeys = lockKey.get(); // From provider
                     } else {
-                        newKeys = PlaintextKeys.fromStrings(args.valueOf(OPT_LOCK_ENC), args.valueOf(OPT_LOCK_MAC), args.valueOf(OPT_LOCK_DEK), args.valueOf(OPT_LOCK), args.valueOf(OPT_LOCK_KDF), null, args.valueOf(OPT_NEW_KEY_VERSION))
-                                .orElseThrow(() -> new IllegalArgumentException("Can not lock without keys :)"));
+                        newKeys = PlaintextKeys.fromBytes(args.valueOf(OPT_LOCK_ENC).value(), args.valueOf(OPT_LOCK_MAC).value(), args.valueOf(OPT_LOCK_DEK).value(), HexBytes.v(args.valueOf(OPT_LOCK)).v(), args.valueOf(OPT_LOCK_KDF), null, args.valueOf(OPT_NEW_KEY_VERSION)).
+                                orElseThrow(() -> new IllegalArgumentException("Can not lock without keys :)"));
                     }
 
                     if (newKeys instanceof PlaintextKeys) {
@@ -793,7 +776,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                         // By default use key version 1
                         final int keyver;
                         if (args.has(OPT_NEW_KEY_VERSION)) {
-                            keyver = GPUtils.intValue(args.valueOf(OPT_NEW_KEY_VERSION));
+                            keyver = args.valueOf(OPT_NEW_KEY_VERSION);
                             // Key version is indicated, check if already present on card
                             if (current.stream().anyMatch(e -> (e.getVersion() == keyver))) {
                                 replace = false;
@@ -816,7 +799,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                     // Only SCP02 via SCP03 should be possible, but cards vary
                     byte[] kdd = newKeys.getKDD().orElseGet(() -> keys.getKDD().get());
 
-                    System.out.println("Looking at key version");
+                    verbose("Looking at key version for diversification method");
                     if (keyver >= 0x10 && keyver <= 0x1F)
                         newKeys.diversify(GPSecureChannel.SCP01, kdd);
                     else if (keyver >= 0x20 && keyver <= 0x2F)
@@ -832,8 +815,8 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                         PlaintextKeys pk = (PlaintextKeys) newKeys;
                         if (pk.getMasterKey().isPresent())
                             System.out.println(gp.getAID() + " locked with: " + HexUtils.bin2hex(pk.getMasterKey().get()));
-                        if (pk.diversifier != Diversification.NONE)
-                            System.out.println("Keys were diversified with " + pk.diversifier + " and " + HexUtils.bin2hex(kdd));
+                        if (pk.kdf != null)
+                            System.out.println("Keys were diversified with " + pk.kdf + " and " + HexUtils.bin2hex(kdd));
                         System.out.println("Write this down, DO NOT FORGET/LOSE IT!");
                     } else {
                         System.out.println("Card locked with new keys.");
@@ -902,8 +885,8 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
     // Extract parameters and call GPCommands.load()
     private static void loadCAP(OptionSet args, GPSession gp, CAPFile capFile) throws GPException, IOException {
         try {
-            AID to = args.has(OPT_TO) ? args.valueOf(OPT_TO) : gp.getAID();
-            AID dapDomain = args.has(OPT_DAP_DOMAIN) ? args.valueOf(OPT_DAP_DOMAIN) : null;
+            AID to = optional(args, OPT_TO).orElse(gp.getAID());
+            AID dapDomain = optional(args, OPT_DAP_DOMAIN).orElse(null);
             GPData.LFDBH lfdbh = args.has(OPT_SHA256) ? GPData.LFDBH.SHA256 : null;
             GPCommands.load(gp, capFile, to, dapDomain, lfdbh);
             System.out.println(capFile.getFile().map(Path::toString).orElse("CAP") + " loaded");
@@ -957,4 +940,5 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
             System.out.println("# " + s);
         }
     }
+
 }

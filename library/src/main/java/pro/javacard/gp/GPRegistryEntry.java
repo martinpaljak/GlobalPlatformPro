@@ -23,8 +23,6 @@ import apdu4j.core.HexUtils;
 import pro.javacard.AID;
 
 import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class GPRegistryEntry {
 

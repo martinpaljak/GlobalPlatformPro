@@ -26,7 +26,6 @@ import org.slf4j.LoggerFactory;
 import java.security.GeneralSecurityException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 
@@ -36,6 +35,8 @@ import java.util.Optional;
 // PlaintextKeys provides card keys, that are ... plaintext (not backed by hardware)
 public abstract class GPCardKeys {
     private static final Logger logger = LoggerFactory.getLogger(GPCardKeys.class);
+
+    // Key diversification support.
     protected GPSecureChannel scp; // The actual SCP version, to know how to handle DEK
     protected byte[] kdd; // The key derivation data that was used to get the keys in question. May be empty (no derivation)
     private boolean diversified = false;
@@ -71,7 +72,7 @@ public abstract class GPCardKeys {
     public abstract byte[] encryptKey(GPCardKeys key, KeyPurpose p, byte[] sessionContext) throws GeneralSecurityException;
 
     // Get session keys for given session data
-    public abstract Map<KeyPurpose, byte[]> getSessionKeys(byte[] sessionContext);
+    public abstract byte[] getSessionKey(KeyPurpose keyPurpose, byte[] sessionContext);
 
     // Get KCV of a card key
     public abstract byte[] kcv(KeyPurpose p);

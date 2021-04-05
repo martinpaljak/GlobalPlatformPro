@@ -33,7 +33,6 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
-import java.util.EnumSet;
 
 // SCP02 15 - CMAC on modified APDU, ICV zero, ICV encryption, no RMAC (55 = well-known random)
 class SCP02Wrapper extends SecureChannelWrapper {

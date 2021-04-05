@@ -28,7 +28,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
-import java.util.EnumSet;
 
 // SCP01 05 - no ICV encryption 15 - ICV encryption (
 class SCP01Wrapper extends SecureChannelWrapper {

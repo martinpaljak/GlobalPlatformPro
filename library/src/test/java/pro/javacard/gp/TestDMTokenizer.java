@@ -1,14 +1,12 @@
 package pro.javacard.gp;
 
 import apdu4j.core.CommandAPDU;
-import apdu4j.core.HexUtils;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.security.PrivateKey;
 import java.security.interfaces.RSAPrivateKey;
 
 import static pro.javacard.gp.GPSession.*;

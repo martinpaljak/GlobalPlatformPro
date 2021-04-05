@@ -458,12 +458,10 @@ public class GPSession {
             sessionContext = GPUtils.concatenate(host_challenge, card_challenge);
         }
 
-        Map<KeyPurpose, byte[]> _sessionKeys = cardKeys.getSessionKeys(sessionContext);
-
-        byte[] encKey = _sessionKeys.get(KeyPurpose.ENC);
-        byte[] macKey = _sessionKeys.get(KeyPurpose.MAC);
-        byte[] rmacKey = _sessionKeys.get(KeyPurpose.RMAC);
-        logger.info("Session keys: ENC={} MAC={} RMAC={}", HexUtils.bin2hex(_sessionKeys.get(KeyPurpose.ENC)), HexUtils.bin2hex(_sessionKeys.get(KeyPurpose.MAC)), rmacKey == null ? "N/A" : HexUtils.bin2hex(_sessionKeys.get(KeyPurpose.RMAC)));
+        byte[] encKey = cardKeys.getSessionKey(KeyPurpose.ENC, sessionContext);
+        byte[] macKey = cardKeys.getSessionKey(KeyPurpose.MAC, sessionContext);
+        byte[] rmacKey = cardKeys.getSessionKey(KeyPurpose.RMAC, sessionContext);
+        logger.info("Session keys: ENC={} MAC={} RMAC={}", HexUtils.bin2hex(encKey), HexUtils.bin2hex(macKey), rmacKey == null ? "N/A" : HexUtils.bin2hex(rmacKey));
 
         // Verify card cryptogram
         byte[] my_card_cryptogram;
@@ -843,6 +841,39 @@ public class GPSession {
         GPException.check(response, "Rename failed");
     }
 
+    private byte[] encodeKey(GPCardKeys dek, byte[] other, GPKeyInfo.GPKey type) {
+        try {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            if (type == GPKey.AES) {
+                // Pad with random
+                int n = other.length % 16 + 1;
+                byte[] plaintext = new byte[n * other.length];
+                GPCrypto.random.nextBytes(plaintext);
+                System.arraycopy(other, 0, plaintext, 0, other.length);
+
+                byte[] cgram = dek.encrypt(plaintext, sessionContext);
+                byte[] kcv = GPCrypto.kcv_aes(other);
+                baos.write(GPKey.AES.getType());
+                baos.write(cgram.length + 1); // +1 for actual length
+                baos.write(other.length);
+                baos.write(cgram);
+                baos.write(kcv.length);
+                baos.write(kcv);
+            } else if (type == GPKey.DES3) {
+                byte[] cgram = dek.encrypt(other, sessionContext);
+                byte[] kcv = GPCrypto.kcv_3des(other);
+                baos.write(GPKey.DES3.getType());
+                baos.write(cgram.length); // Length
+                baos.write(cgram);
+                baos.write(kcv.length);
+                baos.write(kcv);
+            }
+            return baos.toByteArray();
+        } catch (IOException | GeneralSecurityException e) {
+            throw new GPException("Could not wrap key", e);
+        }
+    }
+
     private byte[] encodeKey(GPCardKeys dek, GPCardKeys other, KeyPurpose p) {
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -940,7 +971,7 @@ public class GPSession {
         return bo.toByteArray();
     }
 
-    // Puts a RSA public key for DAP purposes (format 1)
+    // Puts a public or otherwise plaintext key (for DAP/DM purposes (format 1))
     public void putKey(Key key, int version, boolean replace) throws IOException, GPException {
         ByteArrayOutputStream bo = new ByteArrayOutputStream();
 
@@ -953,10 +984,7 @@ public class GPSession {
         } else if (key instanceof SecretKey) {
             SecretKey sk = (SecretKey) key;
             if (sk.getAlgorithm() == "DESede") {
-                // XXX: this is ugly, re-think how to fit it with plaintext keys.
-                PlaintextKeys newKey = PlaintextKeys.fromMasterKey(Arrays.copyOf(sk.getEncoded(), 16));
-                newKey.scp = GPSecureChannel.SCP02;
-                bo.write(encodeKey(cardKeys, newKey, KeyPurpose.DEK));
+                bo.write(encodeKey(cardKeys, Arrays.copyOf(sk.getEncoded(), 16), GPKey.DES3));
             } else
                 throw new IllegalArgumentException("Only 3DES symmetric keys are supported: " + sk.getAlgorithm());
         }

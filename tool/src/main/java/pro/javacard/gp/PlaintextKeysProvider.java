@@ -39,10 +39,10 @@ public class PlaintextKeysProvider implements CardKeysProvider {
         spec = spec.trim();
         try {
             // <kdf>:<hex> or <kdf>:default
-            for (PlaintextKeys.Diversification d : PlaintextKeys.Diversification.values()) {
+            for (PlaintextKeys.KDF d : PlaintextKeys.KDF.values()) {
                 if (spec.toLowerCase().startsWith(d.name().toLowerCase())) {
                     byte[] k = hexOrDefault(spec.substring(d.name().length() + 1));
-                    return Optional.of(PlaintextKeys.derivedFromMasterKey(k, null, d));
+                    return Optional.of(PlaintextKeys.fromMasterKey(k,  d));
                 }
             }
 

@@ -22,7 +22,6 @@ package pro.javacard.gp;
 import apdu4j.core.HexUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pro.javacard.gp.i.CardKeysProvider;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -32,12 +31,14 @@ import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
 // Handles plaintext card keys.
 // Supports diversification of card keys with a few known algorithms.
-// TODO: make sure only TRACE shows key values and DEBUG uses KCV-s
-public class PlaintextKeys extends GPCardKeys {
+class PlaintextKeys extends GPCardKeys {
     private static final Logger logger = LoggerFactory.getLogger(PlaintextKeys.class);
 
     // After diversify() we know for which protocol we have keys for, unless known before
@@ -69,8 +70,8 @@ public class PlaintextKeys extends GPCardKeys {
         SCP03_KDF_CONSTANTS = Collections.unmodifiableMap(scp3kdf);
     }
 
-    // If diverisification is to be used, which method
-    Diversification diversifier;
+    // If diverisification is to be used
+    KDF kdf;
 
     // Keyset version
     private int version = 0x00;
@@ -81,19 +82,16 @@ public class PlaintextKeys extends GPCardKeys {
     // Holds card-specific keys. They shall be diversified in-place, as needed
     private HashMap<KeyPurpose, byte[]> cardKeys = new HashMap<>();
 
-    // Holds a copy of session-specific keys. Only relevant for SCP02
-    private HashMap<KeyPurpose, byte[]> sessionKeys = new HashMap<>();
-
-    private PlaintextKeys(byte[] master, Diversification d) {
+    private PlaintextKeys(byte[] master, KDF d) {
         this(master, master, master, d);
         masterKey = master.clone();
     }
 
-    private PlaintextKeys(byte[] enc, byte[] mac, byte[] dek, Diversification d) {
+    private PlaintextKeys(byte[] enc, byte[] mac, byte[] dek, KDF d) {
         cardKeys.put(KeyPurpose.ENC, enc.clone());
         cardKeys.put(KeyPurpose.MAC, mac.clone());
         cardKeys.put(KeyPurpose.DEK, dek.clone());
-        diversifier = d;
+        kdf = d;
     }
 
     public static Optional<PlaintextKeys> fromEnvironment() {
@@ -105,6 +103,48 @@ public class PlaintextKeys extends GPCardKeys {
             throw new IllegalArgumentException(String.format("Invalid key length %d: %s", k.length, HexUtils.bin2hex(k)));
         }
         return k;
+    }
+
+    public static Optional<PlaintextKeys> fromBytes(byte[] enc, byte[] mac, byte[] dek, byte[] mk, KDF kdf, byte[] kdd, int ver) {
+        if ((enc != null || mac != null || dek != null) && (enc == null || mac == null || dek == null || mk != null)) {
+            throw new IllegalArgumentException("Either all or nothing of enc/mac/dek keys must be set, and no mk at the same time!");
+        }
+
+        if (enc != null && mac != null && dek != null) {
+            logger.trace("Using three individual keys");
+            byte[] encbytes = validateKey(enc);
+            byte[] macbytes = validateKey(mac);
+            byte[] dekbytes = validateKey(dek);
+
+            PlaintextKeys keys = PlaintextKeys.fromKeys(encbytes, macbytes, dekbytes);
+            if (ver != 0) {
+                keys.setVersion(ver);
+            }
+            if (kdf != null) {
+                logger.warn("Different keys and using derivation, is this right?");
+                keys.setDiversifier(kdf);
+            }
+            return Optional.of(keys);
+        } else if (mk != null) {
+            logger.trace("Using a master key");
+            byte[] master = validateKey(mk);
+            PlaintextKeys keys = PlaintextKeys.fromMasterKey(master);
+            if (kdf != null) {
+                keys.setDiversifier(kdf);
+            } else {
+                logger.warn("Using master key without derivation, is this right?");
+            }
+
+            // If the actual KDD does not match for some reason what is returned by the card, allow for easy override
+            if (kdd != null) {
+                keys.kdd = kdd.clone();
+            }
+            if (ver != 0) {
+                keys.setVersion(ver);
+            }
+            return Optional.of(keys);
+        } else
+            return Optional.empty();
     }
 
     public static Optional<PlaintextKeys> fromStrings(String enc, String mac, String dek, String mk, String div, String kdd, String ver) {
@@ -122,9 +162,9 @@ public class PlaintextKeys extends GPCardKeys {
                 keys.setVersion(GPUtils.intValue(ver));
             }
             if (div != null) {
+                KDF kdf = KDF.valueOf(div.toUpperCase());
                 logger.warn("Different keys and using derivation, is this right?");
-                Optional<Diversification> d = Optional.ofNullable(Diversification.lookup(div));
-                keys.setDiversifier(d.orElseThrow(() -> new IllegalArgumentException("Invalid diversification:  " + div)));
+                keys.setDiversifier(kdf);
             }
             return Optional.of(keys);
         } else if (mk != null) {
@@ -132,8 +172,7 @@ public class PlaintextKeys extends GPCardKeys {
             byte[] master = validateKey(HexUtils.stringToBin(mk));
             PlaintextKeys keys = PlaintextKeys.fromMasterKey(master);
             if (div != null) {
-                Optional<Diversification> d = Optional.ofNullable(Diversification.lookup(div));
-                keys.setDiversifier(d.orElseThrow(() -> new IllegalArgumentException("Invalid diversification:  " + div)));
+                keys.setDiversifier(KDF.valueOf(div.toUpperCase()));
             } else {
                 logger.warn("Using master key without derivation, is this right?");
             }
@@ -146,7 +185,6 @@ public class PlaintextKeys extends GPCardKeys {
             if (ver != null) {
                 keys.setVersion(GPUtils.intValue(ver));
             }
-            // TODO: KCV
             return Optional.of(keys);
         } else {
             return Optional.empty();
@@ -159,7 +197,7 @@ public class PlaintextKeys extends GPCardKeys {
         String mac = env.get(prefix + "_MAC");
         String dek = env.get(prefix + "_DEK");
         String mk = env.get(prefix);
-        String div = env.get(prefix + "_DIV");
+        String div = env.get(prefix + "_KDF");
         String kdd = env.get(prefix + "_KDD");
         String ver = env.get(prefix + "_VER");
         Optional<PlaintextKeys> r = fromStrings(enc, mac, dek, mk, div, kdd, ver);
@@ -169,46 +207,33 @@ public class PlaintextKeys extends GPCardKeys {
     }
 
     public static PlaintextKeys fromMasterKey(byte[] master) {
-        return derivedFromMasterKey(master, null, Diversification.NONE);
+        return new PlaintextKeys(master, null);
+    }
+
+    public static PlaintextKeys fromMasterKey(byte[] master, KDF kdf) {
+        return new PlaintextKeys(master, kdf);
     }
 
     public static PlaintextKeys defaultKey() {
-        return derivedFromMasterKey(defaultKeyBytes, null, Diversification.NONE);
+        return new PlaintextKeys(defaultKeyBytes, null);
     }
-
-    public static PlaintextKeys derivedFromMasterKey(byte[] master, byte[] kcv, Diversification div) {
-        if (kcv != null && kcv.length == 3) {
-            byte[] kcv_des = GPCrypto.kcv_3des(master);
-            byte[] kcv_aes = GPCrypto.kcv_aes(master);
-            if (Arrays.equals(kcv_des, kcv)) {
-                logger.debug("KCV matches 3DES");
-            } else if (Arrays.equals(kcv_aes, kcv)) {
-                logger.debug("KCV matches AES");
-            } else {
-                String msg = String.format("KCV mismatch: %s vs %s (3DES) or %s (AES)", HexUtils.bin2hex(kcv), HexUtils.bin2hex(kcv_des), HexUtils.bin2hex(kcv_aes));
-                throw new IllegalArgumentException(msg);
-            }
-        }
-        return new PlaintextKeys(master, div);
-    }
-
 
     public static PlaintextKeys fromKeys(byte[] enc, byte[] mac, byte[] dek) {
-        return new PlaintextKeys(enc, mac, dek, Diversification.NONE);
+        return new PlaintextKeys(enc, mac, dek, null);
     }
 
     // Purpose defines the magic constants for diversification
-    public static byte[] diversify(byte[] k, KeyPurpose usage, byte[] kdd, Diversification method) throws GPException {
+    public static byte[] diversify(byte[] k, KeyPurpose usage, byte[] kdd, KDF method) throws GPException {
         try {
             final byte[] kv;
-            if (method == Diversification.KDF3) {
+            if (method == KDF.KDF3) {
                 return GPCrypto.scp03_kdf(k, new byte[]{}, GPUtils.concatenate(SCP03_KDF_CONSTANTS.get(usage), kdd), k.length);
             } else {
                 // All DES methods rely on encryption
                 // shift around and fill initialize update data as required.
-                if (method == Diversification.VISA2) {
+                if (method == KDF.VISA2) {
                     kv = fillVisa2(kdd, usage);
-                } else if (method == Diversification.EMV) {
+                } else if (method == KDF.EMV) {
                     kv = fillEmv(kdd, usage);
                 } else
                     throw new IllegalStateException("Unknown diversification method");
@@ -218,7 +243,7 @@ public class PlaintextKeys extends GPCardKeys {
                 return cipher.doFinal(kv);
             }
         } catch (BadPaddingException | InvalidKeyException | IllegalBlockSizeException e) {
-            throw new GPException("Diversification failed.", e);
+            throw new GPException("KDF failed", e);
         } catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
             throw new RuntimeException("Can not diversify", e);
         }
@@ -283,7 +308,8 @@ public class PlaintextKeys extends GPCardKeys {
     // data must be padded by caller
     public byte[] encrypt(byte[] data, byte[] sessionContext) throws GeneralSecurityException {
         if (scp == GPSecureChannel.SCP02) {
-            return GPCrypto.dek_encrypt_des(sessionKeys.get(KeyPurpose.DEK), data);
+            byte[] sdek = deriveSessionKeySCP02(cardKeys.get(KeyPurpose.DEK), KeyPurpose.DEK, sessionContext);
+            return GPCrypto.dek_encrypt_des(sdek, data);
         } else if (scp == GPSecureChannel.SCP01) {
             return GPCrypto.dek_encrypt_des(cardKeys.get(KeyPurpose.DEK), data);
         } else if (scp == GPSecureChannel.SCP03) {
@@ -301,8 +327,9 @@ public class PlaintextKeys extends GPCardKeys {
                 logger.debug("Encrypting {} value (KCV={}) with DEK (KCV={})", p, HexUtils.bin2hex(other.kcv(p)), HexUtils.bin2hex(kcv(KeyPurpose.DEK)));
                 return GPCrypto.dek_encrypt_des(cardKeys.get(KeyPurpose.DEK), other.cardKeys.get(p));
             case SCP02:
-                logger.debug("Encrypting {} value (KCV={}) with S-DEK (KCV={})", p, HexUtils.bin2hex(other.kcv(p)), HexUtils.bin2hex(GPCrypto.kcv_3des(sessionKeys.get(KeyPurpose.DEK))));
-                return GPCrypto.dek_encrypt_des(sessionKeys.get(KeyPurpose.DEK), other.cardKeys.get(p));
+                byte[] sdek = deriveSessionKeySCP02(cardKeys.get(KeyPurpose.DEK), KeyPurpose.DEK, sessionContext);
+                logger.debug("Encrypting {} value (KCV={}) with S-DEK (KCV={})", p, HexUtils.bin2hex(other.kcv(p)), HexUtils.bin2hex(GPCrypto.kcv_3des(sdek)));
+                return GPCrypto.dek_encrypt_des(sdek, other.cardKeys.get(p));
             case SCP03:
                 logger.debug("Encrypting {} value (KCV={}) with DEK (KCV={})", p, HexUtils.bin2hex(other.kcv(p)), HexUtils.bin2hex(kcv(KeyPurpose.DEK)));
                 byte[] otherkey = other.cardKeys.get(p);
@@ -319,30 +346,24 @@ public class PlaintextKeys extends GPCardKeys {
     }
 
     @Override
-    public Map<KeyPurpose, byte[]> getSessionKeys(byte[] session_kdd) {
-        // Calculate session keys (ENC-MAC-DEK[-RMAC])
-        for (KeyPurpose p : KeyPurpose.cardKeys()) {
-            switch (scp) {
-                case SCP01:
-                    sessionKeys.put(p, deriveSessionKeySCP01(cardKeys.get(p), p, session_kdd));
-                    break;
-                case SCP02:
-                    sessionKeys.put(p, deriveSessionKeySCP02(cardKeys.get(p), p, session_kdd));
-                    if (p == KeyPurpose.MAC) {
-                        sessionKeys.put(KeyPurpose.RMAC, deriveSessionKeySCP02(cardKeys.get(p), KeyPurpose.RMAC, session_kdd));
-                    }
-                    break;
-                case SCP03:
-                    sessionKeys.put(p, deriveSessionKeySCP03(cardKeys.get(p), p, session_kdd));
-                    if (p == KeyPurpose.MAC) {
-                        sessionKeys.put(KeyPurpose.RMAC, deriveSessionKeySCP03(cardKeys.get(p), KeyPurpose.RMAC, session_kdd));
-                    }
-                    break;
-                default:
-                    throw new IllegalStateException("Illegal SCP");
-            }
+    public byte[] getSessionKey(KeyPurpose p, byte[] session_kdd) {
+        // Calculate session key (ENC-MAC-DEK[-RMAC])
+        switch (scp) {
+            case SCP01:
+                return deriveSessionKeySCP01(cardKeys.get(p), p, session_kdd);
+            case SCP02:
+                if (p == KeyPurpose.RMAC) {
+                    return deriveSessionKeySCP02(cardKeys.get(p), KeyPurpose.RMAC, session_kdd);
+                } else
+                    return deriveSessionKeySCP02(cardKeys.get(p), p, session_kdd);
+            case SCP03:
+                if (p == KeyPurpose.RMAC) {
+                    return deriveSessionKeySCP03(cardKeys.get(p), KeyPurpose.RMAC, session_kdd);
+                } else
+                    return deriveSessionKeySCP03(cardKeys.get(p), p, session_kdd);
+            default:
+                throw new IllegalStateException("Illegal SCP");
         }
-        return sessionKeys;
     }
 
     @Override
@@ -419,12 +440,12 @@ public class PlaintextKeys extends GPCardKeys {
         super.diversify(scp, kdd);
 
         // Do nothing
-        if (diversifier == Diversification.NONE)
+        if (kdf == null)
             return this;
 
         // Calculate per-card keys from master key(s), if needed
         for (Map.Entry<KeyPurpose, byte[]> e : cardKeys.entrySet()) {
-            cardKeys.put(e.getKey(), diversify(e.getValue(), e.getKey(), kdd, diversifier));
+            cardKeys.put(e.getKey(), diversify(e.getValue(), e.getKey(), kdd, kdf));
         }
         return this;
     }
@@ -441,24 +462,17 @@ public class PlaintextKeys extends GPCardKeys {
         String dek = HexUtils.bin2hex(cardKeys.get(KeyPurpose.DEK));
         String dek_kcv = HexUtils.bin2hex(kcv(KeyPurpose.DEK));
 
-        return String.format("ENC=%s (KCV: %s) MAC=%s (KCV: %s) DEK=%s (KCV: %s) for %s%s", enc, enc_kcv, mac, mac_kcv, dek, dek_kcv, scp, diversifier == Diversification.NONE ? "" : String.format(" with %s", diversifier));
+        return String.format("ENC=%s (KCV: %s) MAC=%s (KCV: %s) DEK=%s (KCV: %s) for %s%s", enc, enc_kcv, mac, mac_kcv, dek, dek_kcv, scp, kdf == null ? "" : String.format(" with %s", kdf));
     }
 
-    public void setDiversifier(Diversification diversifier) {
-        this.diversifier = diversifier;
+    public void setDiversifier(KDF kdf) {
+        if (this.kdf != null)
+            throw new IllegalStateException("KDF already set");
+        this.kdf = kdf;
     }
 
     // diversification methods
-    public enum Diversification {
-        NONE, VISA2, EMV, KDF3;
-
-        public static Diversification lookup(String v) {
-            for (Diversification d : Diversification.values()) {
-                if (d.name().equalsIgnoreCase(v)) {
-                    return d;
-                }
-            }
-            return null;
-        }
+    public enum KDF {
+        VISA2, EMV, KDF3;
     }
 }

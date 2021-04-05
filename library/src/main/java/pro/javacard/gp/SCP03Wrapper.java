@@ -31,7 +31,6 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
-import java.util.EnumSet;
 
 class SCP03Wrapper extends SecureChannelWrapper {
     // Both are block size length

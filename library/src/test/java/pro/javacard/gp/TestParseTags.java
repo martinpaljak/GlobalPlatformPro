@@ -4,13 +4,14 @@ import apdu4j.core.HexUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
-import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 import pro.javacard.AID;
 import pro.javacard.gp.GPData.CPLC;
 import pro.javacard.gp.GPRegistryEntry.Privilege;
 
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 public class TestParseTags {
@@ -46,13 +47,21 @@ public class TestParseTags {
     }
 
     @Test
-    @Ignore // FIXME: see https://github.com/martinpaljak/GlobalPlatformPro/issues/116
     public void testCPLCDateParse() throws Exception {
+        // Day 210 of year 20?1
         byte[] b = HexUtils.hex2bin("1210");
-        Assert.assertEquals("2011-07-29", CPLC.toDate(b));
+        Assert.assertEquals(Optional.of(LocalDate.of(2021, 07, 29)), CPLC.toRelativeDate(b, LocalDate.of(2021, 07, 30)));
+        // For dates recorded on the same day, we want the reverse to show the right date
+        Assert.assertEquals(Optional.of(LocalDate.of(2021, 07, 29)), CPLC.toRelativeDate(b, LocalDate.of(2021, 07, 29)));
+        Assert.assertEquals(Optional.of(LocalDate.of(2011, 07, 29)), CPLC.toRelativeDate(b, LocalDate.of(2021, 07, 28)));
+
         b = HexUtils.hex2bin("0000");
-        Assert.assertEquals("2010-01-01", CPLC.toDate(b));
-        System.out.println("Today is " + HexUtils.bin2hex(CPLC.today()));
+        Assert.assertTrue(CPLC.toRelativeDate(b, LocalDate.now()).isEmpty());
+
+        LocalDate now = LocalDate.now();
+        Assert.assertEquals(CPLC.toRelativeDate(CPLC.dateToBytes(now), now), Optional.of(now));
+        byte [] today = CPLC.dateToBytes(now);
+        System.out.printf("Today is %s what is %s%n", HexUtils.bin2hex(today), CPLC.toRelativeDate(today,now));
     }
 
     @Test
@@ -72,7 +81,7 @@ public class TestParseTags {
     @Test(expectedExceptions = GPDataException.class)
     public void testCPLCDateParseInvalid() throws Exception {
         byte[] b = HexUtils.hex2bin("1410");
-        CPLC.toDate(b);
+        CPLC.toRelativeDate(b, LocalDate.now());
     }
 
     @Test(expectedExceptions = GPDataException.class)

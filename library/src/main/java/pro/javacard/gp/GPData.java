@@ -33,7 +33,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.math.BigInteger;
-import java.text.SimpleDateFormat;
+import java.time.DateTimeException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -470,44 +472,35 @@ public final class GPData {
             }
         }
 
-        public static String toDate(byte[] v) throws GPDataException {
+        public static Optional<LocalDate> toRelativeDate(byte[] v, LocalDate now) throws GPDataException {
+            if (v[0] == 0 && v[1] == 0) {
+                logger.debug("0x0000 does not represent a valid date");
+                return Optional.empty();
+            }
             String sv = HexUtils.bin2hex(v);
             try {
                 int y = Integer.parseInt(sv.substring(0, 1));
                 int d = Integer.parseInt(sv.substring(1, 4));
-                if (d > 366) {
-                    throw new GPDataException("Invalid CPLC date format", v);
-                }
-                // Make 0000 show something meaningful
-                if (d == 0) {
-                    d = 1;
-                }
-                GregorianCalendar gc = new GregorianCalendar(TimeZone.getTimeZone("UTC"));
-                // FIXME: 2010 is hardcoded.
-                gc.set(GregorianCalendar.YEAR, 2010 + y);
-                gc.set(GregorianCalendar.DAY_OF_YEAR, d);
-                SimpleDateFormat f = new SimpleDateFormat("yyyy-MM-dd");
-                return f.format(gc.getTime());
-            } catch (NumberFormatException e) {
+                int base = 2020;
+                if (y >= now.getYear() % 10 && d > now.getDayOfYear())
+                    base = 2010;
+                LocalDate ld = LocalDate.ofYearDay(base + y, d);
+                return Optional.of(ld);
+            } catch (NumberFormatException | DateTimeException e) {
                 throw new GPDataException("Invalid CPLC date: " + sv, e);
             }
         }
 
         public static String toDateFailsafe(byte[] v) {
-            try {
-                return toDate(v);
-            } catch (GPDataException e) {
-                logger.warn("Invalid CPLC date: " + HexUtils.bin2hex(v));
-                return "invalid date format";
-            }
+            return toRelativeDate(v, LocalDate.now()).map(e -> e.format(DateTimeFormatter.ISO_LOCAL_DATE)).orElse("invalid date format");
         }
 
         public static byte[] today() {
-            return fromDate(new GregorianCalendar());
+            return dateToBytes(LocalDate.now());
         }
 
-        public static byte[] fromDate(GregorianCalendar d) {
-            return HexUtils.hex2bin(String.format("%d%03d", d.get(GregorianCalendar.YEAR) - 2010, d.get(GregorianCalendar.DAY_OF_YEAR)));
+        public static byte[] dateToBytes(LocalDate d) {
+            return HexUtils.hex2bin(String.format("%d%03d", d.getYear() - 2020, d.getDayOfYear()));
         }
     }
 }

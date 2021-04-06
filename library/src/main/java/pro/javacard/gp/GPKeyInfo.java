@@ -201,7 +201,7 @@ public final class GPKeyInfo {
     }
 
     public String toString() {
-        StringBuffer s = new StringBuffer();
+        StringBuilder s = new StringBuilder();
         s.append("type=" + type);
         if (version >= 1 && version <= 0x7f)
             s.append(" version=" + GPUtils.intString(version));
@@ -350,7 +350,7 @@ public final class GPKeyInfo {
             else if ((0xF1 <= type) && (type <= 0xFE))
                 result = RFU_ASYMMETRICAL;
             else
-                return Arrays.asList(values()).stream().filter(e -> e.type == type).findFirst();
+                return Arrays.stream(values()).filter(e -> e.type == type).findFirst();
             return Optional.ofNullable(result);
         }
 

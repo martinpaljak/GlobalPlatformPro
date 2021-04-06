@@ -224,7 +224,7 @@ public final class GPCrypto {
         try {
             Cipher cipher = Cipher.getInstance(DES3_ECB_CIPHER);
             cipher.init(Cipher.ENCRYPT_MODE, des3key(key));
-            byte check[] = cipher.doFinal(GPCrypto.null_bytes_8);
+            byte[] check = cipher.doFinal(GPCrypto.null_bytes_8);
             return Arrays.copyOf(check, 3);
         } catch (GeneralSecurityException e) {
             throw new GPException("Could not calculate KCV", e);

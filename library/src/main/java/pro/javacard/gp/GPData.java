@@ -145,14 +145,14 @@ public final class GPData {
         }
 
         public static Optional<LFDBH> byValue(int byteValue) {
-            return Arrays.asList(values()).stream().filter(e -> e.value == byteValue).findFirst();
+            return Arrays.stream(values()).filter(e -> e.value == byteValue).findFirst();
         }
 
         public static ArrayList<LFDBH> fromBytes(byte[] v) {
             ArrayList<LFDBH> r = new ArrayList<>();
             for (int i = 0; i < v.length; i++) {
                 final int j = i; // TODO: IntStream.range() ?
-                r.add(Arrays.asList(values()).stream().filter(e -> e.value == (v[j] & 0xFF)).findFirst().orElseThrow(() -> new GPDataException("Invalid value", v)));
+                r.add(Arrays.stream(values()).filter(e -> e.value == (v[j] & 0xFF)).findFirst().orElseThrow(() -> new GPDataException("Invalid value", v)));
             }
             return r;
         }
@@ -189,7 +189,7 @@ public final class GPData {
             LinkedHashSet<SIGNATURE> r = new LinkedHashSet<>();
             for (int i = 0; i < v.length; i++) {
                 final int p = i;
-                Arrays.asList(values()).stream().filter(e -> e.pos == p).forEach(e -> {
+                Arrays.stream(values()).filter(e -> e.pos == p).forEach(e -> {
                     if (e.value == (e.value & v[p]))
                         r.add(e);
                 });
@@ -200,8 +200,7 @@ public final class GPData {
 
     static List<Integer> toUnsignedList(byte[] b) {
         ArrayList<Integer> r = new ArrayList<>();
-        for (int i = 0; i < b.length; i++)
-            r.add(b[i] & 0xFF);
+        for (byte value : b) r.add(value & 0xFF);
         return r;
     }
 
@@ -228,9 +227,8 @@ public final class GPData {
                             System.out.format("Supports SCP%02X", scp.getIntValue());
                             BerTlv is = t.find(new BerTag(0x81));
                             if (is != null) {
-                                byte[] isv = is.getBytesValue();
-                                for (int i = 0; i < isv.length; i++) {
-                                    System.out.format(" i=%02X", isv[i]);
+                                for (byte b : is.getBytesValue()) {
+                                    System.out.format(" i=%02X", b);
                                 }
                             }
                             BerTlv keylens = t.find(new BerTag(0x82));
@@ -253,13 +251,13 @@ public final class GPData {
                     t = v.find(new BerTag(0x81));
                     if (t != null) {
                         Set<GPRegistryEntry.Privilege> privs = GPRegistryEntry.Privilege.fromBytes(t.getBytesValue());
-                        System.out.println("Supported DOM privileges: " + privs.stream().map(e -> e.toString()).collect(Collectors.joining(", ")));
+                        System.out.println("Supported DOM privileges: " + privs.stream().map(Enum::toString).collect(Collectors.joining(", ")));
                         continue;
                     }
                     t = v.find(new BerTag(0x82));
                     if (t != null) {
                         Set<GPRegistryEntry.Privilege> privs = GPRegistryEntry.Privilege.fromBytes(t.getBytesValue());
-                        System.out.println("Supported APP privileges: " + privs.stream().map(e -> e.toString()).collect(Collectors.joining(", ")));
+                        System.out.println("Supported APP privileges: " + privs.stream().map(Enum::toString).collect(Collectors.joining(", ")));
                         continue;
                     }
                     t = v.find(new BerTag(0x83));
@@ -270,19 +268,19 @@ public final class GPData {
                     }
                     t = v.find(new BerTag(0x85));
                     if (t != null) {
-                        String ciphers = SIGNATURE.byValue(t.getBytesValue()).stream().map(e -> e.toString()).collect(Collectors.joining(", "));
+                        String ciphers = SIGNATURE.byValue(t.getBytesValue()).stream().map(Enum::toString).collect(Collectors.joining(", "));
                         System.out.println("Supported Token Verification ciphers: " + ciphers);
                         continue;
                     }
                     t = v.find(new BerTag(0x86));
                     if (t != null) {
-                        String ciphers = SIGNATURE.byValue(t.getBytesValue()).stream().map(e -> e.toString()).collect(Collectors.joining(", "));
+                        String ciphers = SIGNATURE.byValue(t.getBytesValue()).stream().map(Enum::toString).collect(Collectors.joining(", "));
                         System.out.println("Supported Receipt Generation ciphers: " + ciphers);
                         continue;
                     }
                     t = v.find(new BerTag(0x87));
                     if (t != null) {
-                        String ciphers = SIGNATURE.byValue(t.getBytesValue()).stream().map(e -> e.toString()).collect(Collectors.joining(", "));
+                        String ciphers = SIGNATURE.byValue(t.getBytesValue()).stream().map(Enum::toString).collect(Collectors.joining(", "));
                         System.out.println("Supported DAP Verification ciphers: " + ciphers);
                         continue;
                     }
@@ -301,7 +299,7 @@ public final class GPData {
     public static void dump(APDUBIBO channel) throws IOException, GPException {
         byte[] cplc = fetchCPLC(channel);
         if (cplc != null) {
-            System.out.println(GPData.CPLC.fromBytes(cplc).toPrettyString());
+            System.out.println(CPLC.fromBytes(cplc).toPrettyString());
         }
 
         // IIN
@@ -346,11 +344,11 @@ public final class GPData {
     }
 
     // Just to encapsulate tag constants behind meaningful name
-    public static byte[] fetchCPLC(APDUBIBO channel) throws IOException {
+    public static byte[] fetchCPLC(APDUBIBO channel) {
         return getData(channel, 0x9f, 0x7f, "CPLC", true);
     }
 
-    public static byte[] fetchKeyInfoTemplate(APDUBIBO channel) throws IOException {
+    public static byte[] fetchKeyInfoTemplate(APDUBIBO channel) {
         return getData(channel, 0x00, 0xE0, "Key Info Template", false);
     }
 
@@ -383,23 +381,24 @@ public final class GPData {
 
     public static GPSpec oid2version(byte[] bytes) throws GPDataException {
         String oid = oid2string(bytes);
-        if (oid.equals("1.2.840.114283.2.2.1.1")) {
-            return GPSpec.GP211;
-        } else if (oid.equals("1.2.840.114283.2.2.2")) {
-            return GPSpec.GP22;
-        } else if (oid.equals("1.2.840.114283.2.2.2.1")) {
-            return GPSpec.GP221;
-        } else {
-            throw new GPDataException("Unknown GP version OID: " + oid, bytes);
+        switch (oid) {
+            case "1.2.840.114283.2.2.1.1":
+                return GPSpec.GP211;
+            case "1.2.840.114283.2.2.2":
+                return GPSpec.GP22;
+            case "1.2.840.114283.2.2.2.1":
+                return GPSpec.GP221;
+            default:
+                throw new GPDataException("Unknown GP version OID: " + oid, bytes);
         }
     }
 
-    public static byte[] getData(APDUBIBO channel, int p1, int p2, String name, boolean failsafe) throws IOException {
+    public static byte[] getData(APDUBIBO channel, int p1, int p2, String name, boolean failsafe) {
         logger.trace("GET DATA({})", name);
-        ResponseAPDU resp = channel.transmit(new CommandAPDU(CLA_GP, ISO7816.INS_GET_DATA, p1, p2, 256));
-        if (failsafe && resp.getSW() != ISO7816.SW_NO_ERROR)
-            resp = channel.transmit(new CommandAPDU(0x00, ISO7816.INS_GET_DATA, p1, p2, 256));
-        if (resp.getSW() == ISO7816.SW_NO_ERROR) {
+        ResponseAPDU resp = channel.transmit(new CommandAPDU(CLA_GP, GPSession.INS_GET_DATA, p1, p2, 256));
+        if (failsafe && resp.getSW() != GPSession.SW_NO_ERROR)
+            resp = channel.transmit(new CommandAPDU(0x00, GPSession.INS_GET_DATA, p1, p2, 256));
+        if (resp.getSW() == GPSession.SW_NO_ERROR) {
             return resp.getData();
         } else if (resp.getSW() == 0x6A88) {
             logger.debug("GET DATA({}): N/A", name);
@@ -412,7 +411,7 @@ public final class GPData {
 
     public static final class CPLC {
 
-        private LinkedHashMap<Field, byte[]> values = new LinkedHashMap<>();
+        private final LinkedHashMap<Field, byte[]> values = new LinkedHashMap<>();
 
         private CPLC(byte[] data) {
             int offset = 0;
@@ -438,11 +437,11 @@ public final class GPData {
         }
 
         public String toString() {
-            return Arrays.asList(Field.values()).stream().map(i -> i.toString() + "=" + HexUtils.bin2hex(values.get(i))).collect(Collectors.joining(", ", "[CPLC: ", "]"));
+            return Arrays.stream(Field.values()).map(i -> i.toString() + "=" + HexUtils.bin2hex(values.get(i))).collect(Collectors.joining(", ", "[CPLC: ", "]"));
         }
 
         public String toPrettyString() {
-            return Arrays.asList(Field.values()).stream().map(i -> i.toString() + "=" + HexUtils.bin2hex(values.get(i)) + (i.toString().endsWith("Date") ? " (" + toDateFailsafe(values.get(i)) + ")" : "")).collect(Collectors.joining("\n      ", "CPLC: ", "\n"));
+            return Arrays.stream(Field.values()).map(i -> i.toString() + "=" + HexUtils.bin2hex(values.get(i)) + (i.toString().endsWith("Date") ? " (" + toDateFailsafe(values.get(i)) + ")" : "")).collect(Collectors.joining("\n      ", "CPLC: ", "\n"));
         }
 
         public enum Field {

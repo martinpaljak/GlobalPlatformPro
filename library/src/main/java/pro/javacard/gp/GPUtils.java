@@ -55,9 +55,9 @@ public class GPUtils {
         if (array == null) {
             return "(null)";
         }
-        StringBuffer s = new StringBuffer();
-        for (int i = 0; i < array.length; i++) {
-            char c = (char) array[i];
+        StringBuilder s = new StringBuilder();
+        for (byte b : array) {
+            char c = (char) b;
             s.append(((c >= 0x20) && (c < 0x7f)) ? (c) : ("."));
         }
         return "|" + s.toString() + "|";
@@ -83,12 +83,7 @@ public class GPUtils {
         int offset = 0;
         int left = len - offset;
         while (left > 0) {
-            int currentLen = 0;
-            if (left >= blockSize) {
-                currentLen = blockSize;
-            } else {
-                currentLen = left;
-            }
+            int currentLen = Math.min(left, blockSize);
             byte[] block = new byte[currentLen];
             System.arraycopy(array, offset, block, 0, currentLen);
             result.add(block);

@@ -89,11 +89,9 @@ public class GPCommands {
                     out.println(tab + "From:     " + e.getLoadFile());
                 }
                 Optional<String> implicit = getImplicitString(e);
-                if (implicit.isPresent()) {
-                    out.println(tab + "Selected: " + implicit.get());
-                }
+                implicit.ifPresent(s -> out.println(tab + "Selected: " + s));
                 if (!e.getPrivileges().isEmpty()) {
-                    out.println(tab + "Privs:    " + e.getPrivileges().stream().map(p -> p.toString()).collect(Collectors.joining(", ")));
+                    out.println(tab + "Privs:    " + e.getPrivileges().stream().map(Enum::toString).collect(Collectors.joining(", ")));
                 }
             }
             out.println();
@@ -101,27 +99,24 @@ public class GPCommands {
     }
 
     static Optional<String> getImplicitString(GPRegistryEntry entry) {
-        Optional<String> contactless = entry.getImplicitlySelectedContactless().isEmpty() ? Optional.empty() : Optional.of(String.format("Contactless(%s)", entry.getImplicitlySelectedContactless().stream().map(e -> e.toString()).collect(Collectors.joining(", "))));
-        Optional<String> contact = entry.getImplicitlySelectedContact().isEmpty() ? Optional.empty() : Optional.of(String.format("Contact(%s)", entry.getImplicitlySelectedContact().stream().map(e -> e.toString()).collect(Collectors.joining(", "))));
+        Optional<String> contactless = entry.getImplicitlySelectedContactless().isEmpty() ? Optional.empty() : Optional.of(String.format("Contactless(%s)", entry.getImplicitlySelectedContactless().stream().map(Object::toString).collect(Collectors.joining(", "))));
+        Optional<String> contact = entry.getImplicitlySelectedContact().isEmpty() ? Optional.empty() : Optional.of(String.format("Contact(%s)", entry.getImplicitlySelectedContact().stream().map(Object::toString).collect(Collectors.joining(", "))));
         return Stream.of(contactless, contact).filter(Optional::isPresent).map(Optional::get).reduce((a, b) -> a + ", " + b);
     }
 
     // Figure out load parameters
     public static void load(GPSession gp, CAPFile cap, AID to, AID dapAID, LFDBH hash) throws GPException, IOException {
         GPRegistry reg = gp.getRegistry();
-        boolean dapRequired = false;
 
         // Override target domain
-        AID targetAID = to == null ? gp.getAID() : to;
+        AID targetAID = Optional.ofNullable(to).orElse(gp.getAID());
+
         GPRegistryEntry targetDomain = reg.getDomain(targetAID).orElseThrow(() -> new IllegalArgumentException("Target domain does not exist: " + targetAID));
 
-        // Check for DAP with the target domain
-        dapRequired = dapRequired || targetDomain.hasPrivilege(Privilege.DAPVerification);
+        // Check for DAP with the target domain or Mandatory DAP
+        boolean dapRequired = targetDomain.hasPrivilege(Privilege.DAPVerification) || reg.allDomains().stream().anyMatch(e -> e.hasPrivilege(Privilege.MandatedDAPVerification));
 
-        // Check if Mandatory DAP block is required
-        dapRequired = dapRequired || reg.allDomains().stream().anyMatch(e -> e.hasPrivilege(Privilege.MandatedDAPVerification));
-
-        // Check if DAP domain is overriden
+        // Check if DAP domain is overridden
         if (dapAID != null) {
             GPRegistryEntry dapTarget = reg.getDomain(targetAID).orElseThrow(() -> new IllegalArgumentException("DAP domain does not exist: " + dapAID));
             if (!(dapTarget.hasPrivilege(Privilege.DAPVerification) || dapTarget.hasPrivilege(Privilege.MandatedDAPVerification))) {

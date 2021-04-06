@@ -15,16 +15,16 @@ public class TestKeyConverter {
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testGarbage() {
-        Key k = Key.valueOf("foobar");
+        Key.valueOf("foobar");
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testInvalidLength() {
-        Key k = Key.valueOf("010203");
+        Key.valueOf("010203");
     }
 
     @Test
-    public void testKeypair() throws Exception {
+    public void testKeypair() {
         Key k = Key.valueOf("../library/src/test/resources/test-dap-rsa-1k.pem");
         Assert.assertFalse(k.getSymmetric().isPresent());
         Assert.assertTrue(k.getPublic().isPresent());
@@ -33,7 +33,7 @@ public class TestKeyConverter {
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testBadFile() {
-        Key k = Key.valueOf(".");
+        Key.valueOf(".");
     }
 
     @Test

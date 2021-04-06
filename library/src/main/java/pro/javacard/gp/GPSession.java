@@ -60,13 +60,17 @@ import static pro.javacard.gp.GPCardKeys.KeyPurpose;
  * NOT thread-safe
  */
 public class GPSession {
+
+    public static final int SW_NO_ERROR = 0x9000;
     private static final Logger logger = LoggerFactory.getLogger(GPSession.class);
 
     public static final EnumSet<APDUMode> defaultMode = EnumSet.of(APDUMode.MAC);
     // Implementation details
+    public static final byte CLA_ISO7816 = 0x00;
     public static final byte CLA_GP = (byte) 0x80;
     public static final byte CLA_MAC = (byte) 0x84;
 
+    public static final byte INS_SELECT = (byte)0xA4;
     public static final byte INS_INITIALIZE_UPDATE = (byte) 0x50;
     public static final byte INS_INSTALL = (byte) 0xE6;
     public static final byte INS_LOAD = (byte) 0xE8;
@@ -75,13 +79,18 @@ public class GPSession {
     public static final byte INS_SET_STATUS = (byte) 0xF0;
     public static final byte INS_PUT_KEY = (byte) 0xD8;
     public static final byte INS_STORE_DATA = (byte) 0xE2;
-    public static final byte INS_GET_DATA = (byte) 0xCA;
+
+    public static final byte INS_EXTERNAL_AUTHENTICATE_82 = (byte)0x82;
+    public static final byte INS_GET_DATA = (byte)0xCA;
 
     public static final byte P1_INSTALL_AND_MAKE_SELECTABLE = (byte) 0x0C;
     public static final byte P1_INSTALL_FOR_INSTALL = (byte) 0x04;
     public static final byte P1_INSTALL_FOR_LOAD = (byte) 0x02;
     public static final byte P1_MORE_BLOCKS = (byte) 0x00;
     public static final byte P1_LAST_BLOCK = (byte) 0x80;
+
+    public static final int SW_SECURITY_STATUS_NOT_SATISFIED = 0x6982;
+    public static final int SW_AUTHENTICATION_METHOD_BLOCKED = 0x6983;
 
     // (I)SD AID
     private AID sdAID;
@@ -119,14 +128,14 @@ public class GPSession {
             throw new IllegalArgumentException("channel is null");
 
         // Try the default
-        final CommandAPDU command = new CommandAPDU(ISO7816.CLA_ISO7816, ISO7816.INS_SELECT, 0x04, 0x00, 256);
+        final CommandAPDU command = new CommandAPDU(CLA_ISO7816, INS_SELECT, 0x04, 0x00, 256);
         ResponseAPDU response = channel.transmit(command);
 
         // Unfused JCOP replies with 0x6A82 to everything
         if (response.getSW() == 0x6A82) {
             // If it has the identification AID, it probably is an unfused JCOP
             byte[] identify_aid = HexUtils.hex2bin("A000000167413000FF");
-            CommandAPDU identify = new CommandAPDU(ISO7816.CLA_ISO7816, ISO7816.INS_SELECT, 0x04, 0x00, identify_aid, 256);
+            CommandAPDU identify = new CommandAPDU(CLA_ISO7816, INS_SELECT, 0x04, 0x00, identify_aid, 256);
             ResponseAPDU identify_resp = channel.transmit(identify);
             byte[] identify_data = identify_resp.getData();
             // Check the fuse state
@@ -235,9 +244,9 @@ public class GPSession {
         return scpKeyVersion;
     }
 
-    void select(AID sdAID) throws GPException, IOException {
+    void select(AID sdAID) throws GPException {
         // Try to select ISD (default selected)
-        final CommandAPDU command = new CommandAPDU(ISO7816.CLA_ISO7816, ISO7816.INS_SELECT, 0x04, 0x00, sdAID.getBytes(), 256);
+        final CommandAPDU command = new CommandAPDU(CLA_ISO7816, INS_SELECT, 0x04, 0x00, sdAID.getBytes(), 256);
         ResponseAPDU resp = channel.transmit(command);
 
         // If the ISD is locked, log it, but do not stop
@@ -327,16 +336,14 @@ public class GPSession {
     }
 
     List<GPKeyInfo> getKeyInfoTemplate() throws IOException, GPException {
-        List<GPKeyInfo> result = new ArrayList<>();
         final byte[] tmpl;
         if (wrapper != null) {
             // FIXME: check for 0x9000
-            tmpl = transmit(new CommandAPDU(CLA_GP, ISO7816.INS_GET_DATA, 0x00, 0xE0, 256)).getData();
+            tmpl = transmit(new CommandAPDU(CLA_GP, INS_GET_DATA, 0x00, 0xE0, 256)).getData();
         } else {
             tmpl = GPData.fetchKeyInfoTemplate(channel);
         }
-        result.addAll(GPKeyInfo.parseTemplate(tmpl));
-        return result;
+        return new ArrayList<>(GPKeyInfo.parseTemplate(tmpl));
     }
 
     private void normalizeSecurityLevel(EnumSet<APDUMode> securityLevel) {
@@ -375,7 +382,7 @@ public class GPSession {
         int sw = response.getSW();
 
         // Detect and report locked cards in a more sensible way.
-        if ((sw == ISO7816.SW_SECURITY_STATUS_NOT_SATISFIED) || (sw == ISO7816.SW_AUTHENTICATION_METHOD_BLOCKED)) {
+        if ((sw == SW_SECURITY_STATUS_NOT_SATISFIED) || (sw == SW_AUTHENTICATION_METHOD_BLOCKED)) {
             throw new GPException(sw, "INITIALIZE UPDATE failed, card LOCKED?");
         }
 
@@ -405,11 +412,11 @@ public class GPSession {
         }
 
         // get card challenge
-        byte card_challenge[] = Arrays.copyOfRange(update_response, offset, offset + 8);
+        byte[] card_challenge = Arrays.copyOfRange(update_response, offset, offset + 8);
         offset += card_challenge.length;
 
         // get card cryptogram
-        byte card_cryptogram[] = Arrays.copyOfRange(update_response, offset, offset + 8);
+        byte[] card_cryptogram = Arrays.copyOfRange(update_response, offset, offset + 8);
         offset += card_cryptogram.length;
 
         // Extract ssc
@@ -503,7 +510,7 @@ public class GPSession {
 
         logger.debug("Calculated host cryptogram: " + HexUtils.bin2hex(host_cryptogram));
         int P1 = APDUMode.getSetValue(securityLevel);
-        CommandAPDU externalAuthenticate = new CommandAPDU(CLA_MAC, ISO7816.INS_EXTERNAL_AUTHENTICATE_82, P1, 0, host_cryptogram);
+        CommandAPDU externalAuthenticate = new CommandAPDU(CLA_MAC, INS_EXTERNAL_AUTHENTICATE_82, P1, 0, host_cryptogram);
         response = transmit(externalAuthenticate);
         GPException.check(response, "EXTERNAL AUTHENTICATE failed");
 
@@ -983,7 +990,7 @@ public class GPSession {
             bo.write(encodeECKey((ECPublicKey) key));
         } else if (key instanceof SecretKey) {
             SecretKey sk = (SecretKey) key;
-            if (sk.getAlgorithm() == "DESede") {
+            if (sk.getAlgorithm().equals("DESede")) {
                 bo.write(encodeKey(cardKeys, Arrays.copyOf(sk.getEncoded(), 16), GPKey.DES3));
             } else
                 throw new IllegalArgumentException("Only 3DES symmetric keys are supported: " + sk.getAlgorithm());
@@ -1031,7 +1038,7 @@ public class GPSession {
         }
 
         int sw = response.getSW();
-        if ((sw != ISO7816.SW_NO_ERROR) && (sw != 0x6310)) {
+        if ((sw != SW_NO_ERROR) && (sw != 0x6310)) {
             // Possible values:
             if (sw == 0x6A88) {
                 // No data to report

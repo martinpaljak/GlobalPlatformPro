@@ -32,12 +32,12 @@ public class GPRegistryEntry {
     AID domain; // Associated security domain
 
     // Apps and Domains
-    private EnumSet<Privilege> privileges = EnumSet.noneOf(Privilege.class);
+    private final EnumSet<Privilege> privileges = EnumSet.noneOf(Privilege.class);
     private AID loadfile; // source
 
     // Packages
     private byte[] version;
-    private List<AID> modules = new ArrayList<>();
+    private final List<AID> modules = new ArrayList<>();
 
     HashSet<Integer> implicitContact = new HashSet<>();
     HashSet<Integer> implicitContactless = new HashSet<>();
@@ -101,9 +101,7 @@ public class GPRegistryEntry {
     }
 
     public List<AID> getModules() {
-        List<AID> r = new ArrayList<>();
-        r.addAll(modules);
-        return r;
+        return new ArrayList<>(modules);
     }
 
     static String getLifeCycleString(Kind kind, int lifeCycleState) {
@@ -277,7 +275,7 @@ public class GPRegistryEntry {
         }
 
         public static Optional<Privilege> lookup(String v) {
-            return Arrays.asList(values()).stream().filter(e -> e.name().equalsIgnoreCase(v)).findFirst();
+            return Arrays.stream(values()).filter(e -> e.name().equalsIgnoreCase(v)).findFirst();
         }
 
         public static Set<Privilege> fromBytes(byte[] v) {
@@ -292,7 +290,7 @@ public class GPRegistryEntry {
             LinkedHashSet<Privilege> r = new LinkedHashSet<>();
             for (int i = 0; i < v.length; i++) {
                 final int p = i;
-                Arrays.asList(values()).stream().filter(e -> e.pos == p).forEach(e -> {
+                Arrays.stream(values()).filter(e -> e.pos == p).forEach(e -> {
                     if (e.value == (e.value & v[p]))
                         r.add(e);
                 });
@@ -301,7 +299,7 @@ public class GPRegistryEntry {
         }
 
         static boolean isOneByte(Set<Privilege> privs) {
-            return privs.stream().filter(e -> e.pos != 0).count() == 0;
+            return privs.stream().noneMatch(e -> e.pos != 0);
         }
 
         public static byte[] toBytes(Set<Privilege> privs) {

@@ -1,7 +1,7 @@
 /*
  * GlobalPlatformPro - GlobalPlatform tool
  *
- * Copyright (C) 2015-2019 Martin Paljak, martin@martinpaljak.net
+ * Copyright (C) 2015-present Martin Paljak, martin@martinpaljak.net
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -179,8 +179,7 @@ class PlaintextKeys extends GPCardKeys {
 
             // If the actual KDD does not match for some reason what is returned by the card, allow for easy override
             if (kdd != null) {
-                byte[] kddbytes = HexUtils.stringToBin(kdd);
-                keys.kdd = kddbytes;
+                keys.kdd = HexUtils.stringToBin(kdd);
             }
             if (ver != null) {
                 keys.setVersion(GPUtils.intValue(ver));
@@ -249,7 +248,7 @@ class PlaintextKeys extends GPCardKeys {
         }
     }
 
-    public static final byte[] fillVisa2(byte[] kdd, KeyPurpose key) {
+    public static byte[] fillVisa2(byte[] kdd, KeyPurpose key) {
         byte[] data = new byte[16];
         System.arraycopy(kdd, 0, data, 0, 2);
         System.arraycopy(kdd, 4, data, 2, 4);
@@ -263,7 +262,7 @@ class PlaintextKeys extends GPCardKeys {
     }
 
     // Unknown origin
-    public static final byte[] fillVisa(byte[] kdd, KeyPurpose key) {
+    public static byte[] fillVisa(byte[] kdd, KeyPurpose key) {
         byte[] data = new byte[16];
         System.arraycopy(kdd, 0, data, 0, 4);
         System.arraycopy(kdd, 8, data, 4, 2);
@@ -276,7 +275,7 @@ class PlaintextKeys extends GPCardKeys {
         return data;
     }
 
-    public static final byte[] fillEmv(byte[] kdd, KeyPurpose key) {
+    public static byte[] fillEmv(byte[] kdd, KeyPurpose key) {
         byte[] data = new byte[16];
         // 6 rightmost bytes of init update response (which is 10 bytes)
         System.arraycopy(kdd, 4, data, 0, 6);
@@ -429,8 +428,7 @@ class PlaintextKeys extends GPCardKeys {
         if (p == KeyPurpose.DEK) {
             return cardKey;
         }
-        byte[] kdf = GPCrypto.scp03_kdf(cardKey, SCP03_CONSTANTS.get(p), kdd, cardKey.length * 8);
-        return kdf;
+        return GPCrypto.scp03_kdf(cardKey, SCP03_CONSTANTS.get(p), kdd, cardKey.length * 8);
     }
 
 
@@ -473,6 +471,6 @@ class PlaintextKeys extends GPCardKeys {
 
     // diversification methods
     public enum KDF {
-        VISA2, EMV, KDF3;
+        VISA2, EMV, KDF3
     }
 }

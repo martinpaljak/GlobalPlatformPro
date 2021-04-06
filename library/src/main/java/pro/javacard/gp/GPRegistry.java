@@ -63,19 +63,19 @@ public class GPRegistry implements Iterable<GPRegistryEntry> {
     }
 
     public List<GPRegistryEntry> allPackages() {
-        return entries.stream().filter(e -> e.isPackage()).collect(Collectors.toList());
+        return entries.stream().filter(GPRegistryEntry::isPackage).collect(Collectors.toList());
     }
 
     public List<AID> allPackageAIDs() {
-        return allPackages().stream().map(e -> e.getAID()).collect(Collectors.toList());
+        return allPackages().stream().map(GPRegistryEntry::getAID).collect(Collectors.toList());
     }
 
     public List<AID> allAppletAIDs() {
-        return allApplets().stream().map(e -> e.getAID()).collect(Collectors.toList());
+        return allApplets().stream().map(GPRegistryEntry::getAID).collect(Collectors.toList());
     }
 
     public List<AID> allAIDs() {
-        return entries.stream().map(e -> e.getAID()).collect(Collectors.toList());
+        return entries.stream().map(GPRegistryEntry::getAID).collect(Collectors.toList());
     }
 
     public Optional<GPRegistryEntry> getDomain(AID aid) {
@@ -83,21 +83,21 @@ public class GPRegistry implements Iterable<GPRegistryEntry> {
     }
 
     public List<GPRegistryEntry> allApplets() {
-        return entries.stream().filter(e -> e.isApplet()).collect(Collectors.toList());
+        return entries.stream().filter(GPRegistryEntry::isApplet).collect(Collectors.toList());
     }
 
     public List<GPRegistryEntry> allDomains() {
-        return entries.stream().filter(e -> e.isDomain()).collect(Collectors.toList());
+        return entries.stream().filter(GPRegistryEntry::isDomain).collect(Collectors.toList());
     }
 
     public Optional<AID> getDefaultSelectedAID() {
-        return allApplets().stream().filter(e -> e.hasPrivilege(Privilege.CardReset)).map(e -> e.getAID()).reduce(onlyOne());
+        return allApplets().stream().filter(e -> e.hasPrivilege(Privilege.CardReset)).map(GPRegistryEntry::getAID).reduce(onlyOne());
     }
 
     public Optional<AID> getDefaultSelectedPackageAID() {
         Optional<AID> defaultAID = getDefaultSelectedAID();
         if (defaultAID.isPresent()) {
-            return allPackages().stream().filter(e -> e.getModules().contains(defaultAID.get())).map(e -> e.getAID()).reduce(onlyOne());
+            return allPackages().stream().filter(e -> e.getModules().contains(defaultAID.get())).map(GPRegistryEntry::getAID).reduce(onlyOne());
         }
         return defaultAID;
     }

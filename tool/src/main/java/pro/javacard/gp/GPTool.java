@@ -137,7 +137,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
             // FIXME: simplify
             Optional<CardTerminal> reader = TerminalManager.getLucky(TerminalManager.dwimify(readers, useReader, ignoreReader), terminalManager.terminals());
 
-            if (!reader.isPresent()) {
+            if (reader.isEmpty()) {
                 System.err.println("Specify reader with -r/$GP_READER");
                 System.exit(1);
             }
@@ -210,7 +210,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                 }
                 if (target != null) {
                     verbose("Selecting " + target);
-                    channel.transmit(new CommandAPDU(0x00, ISO7816.INS_SELECT, 0x04, 0x00, target.getBytes()));
+                    channel.transmit(new CommandAPDU(0x00, GPSession.INS_SELECT, 0x04, 0x00, target.getBytes()));
                 }
                 for (byte[] s : args.valuesOf(OPT_APDU).stream().map(HexBytes::value).collect(Collectors.toList())) {
                     CommandAPDU c = new CommandAPDU(s);
@@ -225,9 +225,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
             // Override default mode if needed.
             if (args.has(OPT_SC_MODE)) {
                 mode.clear();
-                for (APDUMode s : args.valuesOf(OPT_SC_MODE)) {
-                    mode.add(s);
-                }
+                mode.addAll(args.valuesOf(OPT_SC_MODE));
             }
             final GPSession gp;
             if (args.has(OPT_SDAID)) {
@@ -246,13 +244,13 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
             // Override block size for stupidly broken readers.
             // See https://github.com/martinpaljak/GlobalPlatformPro/issues/32
             // The name of the option comes from a common abbreviation as well as dd utility
-            optional(args, OPT_BS).ifPresent(bs -> gp.setBlockSize(bs));
+            optional(args, OPT_BS).ifPresent(gp::setBlockSize);
 
             // Delegated management
             if (args.has(OPT_DM_KEY)) {
                 Optional<PrivateKey> dmkey = args.valueOf(OPT_DM_KEY).getPrivate();
 
-                if (!dmkey.isPresent() || !(dmkey.get() instanceof RSAPrivateKey)) {
+                if (dmkey.isEmpty() || !(dmkey.get() instanceof RSAPrivateKey)) {
                     throw new IllegalArgumentException("Only RSA private keys are supported for DM");
                 }
                 gp.setTokenizer(DMTokenizer.forPrivateKey((RSAPrivateKey) dmkey.get()));
@@ -275,19 +273,21 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                 keys = key.get();
             } else {
                 Optional<PlaintextKeys> envKeys = PlaintextKeys.fromEnvironment();
-                PlaintextKeys mKey = PlaintextKeys.fromMasterKey(HexBytes.valueOf(args.valueOf(OPT_KEY)).value(), args.valueOf(OPT_KEY_KDF));
-                //Optional<PlaintextKeys> cliKeys = PlaintextKeys.fromBytes(args.valueOf(OPT_KEY_ENC), args.valueOf(OPT_KEY_MAC), args.valueOf(OPT_KEY_DEK), args.valueOf(OPT_KEY), args.valueOf(OPT_KEY_KDF), null, args.valueOf(OPT_KEY_VERSION));
-                Optional<PlaintextKeys> cliKeys = Optional.empty();
+
+                final Optional<PlaintextKeys> cliKeys;
+                if (args.has(OPT_KEY_ENC) && args.has(OPT_KEY_MAC) && args.has(OPT_KEY_DEK)) {
+                    cliKeys = Optional.of(PlaintextKeys.fromKeys(args.valueOf(OPT_KEY_ENC).v(), args.valueOf(OPT_KEY_MAC).v(), args.valueOf(OPT_KEY_DEK).v()));
+                } else cliKeys = Optional.empty();
                 if (envKeys.isPresent() && cliKeys.isPresent()) {
                     System.err.println("# Warning: keys set on command line shadow environment!");
-                } else if (!envKeys.isPresent() && !cliKeys.isPresent()) {
+                } else if (envKeys.isEmpty() && cliKeys.isEmpty()) {
                     if (args.has(OPT_SAD)) {
                         System.err.println("Error: no keys given");
                         return 1;
                     } else
                         System.err.println("# Warning: no keys given, defaulting to " + HexUtils.bin2hex(PlaintextKeys.defaultKeyBytes));
                 }
-                keys = cliKeys.map(Optional::of).orElse(envKeys).orElse(PlaintextKeys.defaultKey());
+                keys = cliKeys.or(() -> envKeys).orElse(PlaintextKeys.defaultKey());
             }
 
             // Legacy KDF options so that "gp -l -emv" would still work
@@ -318,12 +318,12 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                 }
 
                 // Set/override key version
-                optional(args, OPT_KEY_VERSION).ifPresent(kv -> keyz.setVersion(kv));
+                optional(args, OPT_KEY_VERSION).ifPresent(keyz::setVersion);
             }
 
             if (args.has(OPT_PROFILE)) {
                 Optional<GPCardProfile> p = GPCardProfile.fromName(args.valueOf(OPT_PROFILE));
-                if (!p.isPresent()) {
+                if (p.isEmpty()) {
                     System.err.printf("Unknown profile '%s', known profiles: %s%n", args.valueOf(OPT_PROFILE), String.join(", ", GPCardProfile.profiles.keySet()));
                     return 1;
                 }
@@ -365,7 +365,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                         }
                     }
                     boolean failure = false;
-                    List<AID> aidList = args.valuesOf(OPT_DELETE).stream().collect(Collectors.toList());
+                    List<AID> aidList = new ArrayList<>(args.valuesOf(OPT_DELETE));
                     for (AID aid : aidList) {
                         try {
                             // If the AID represents a package and force is enabled, delete deps as well
@@ -762,12 +762,10 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
 
                     // Get new key values
                     Optional<GPCardKeys> lockKey = keyFromPlugin(args.valueOf(OPT_LOCK));
-                    if (lockKey.isPresent()) {
-                        newKeys = lockKey.get(); // From provider
-                    } else {
-                        newKeys = PlaintextKeys.fromBytes(args.valueOf(OPT_LOCK_ENC).value(), args.valueOf(OPT_LOCK_MAC).value(), args.valueOf(OPT_LOCK_DEK).value(), HexBytes.v(args.valueOf(OPT_LOCK)).v(), args.valueOf(OPT_LOCK_KDF), null, args.valueOf(OPT_NEW_KEY_VERSION)).
-                                orElseThrow(() -> new IllegalArgumentException("Can not lock without keys :)"));
-                    }
+                    // From provider
+                    newKeys = lockKey.
+                            orElseGet(() -> PlaintextKeys.fromBytes(args.valueOf(OPT_LOCK_ENC).value(), args.valueOf(OPT_LOCK_MAC).value(), args.valueOf(OPT_LOCK_DEK).value(), HexBytes.v(args.valueOf(OPT_LOCK)).v(), args.valueOf(OPT_LOCK_KDF), null, args.valueOf(OPT_NEW_KEY_VERSION)).
+                            orElseThrow(() -> new IllegalArgumentException("Can not lock without keys :)")));
 
                     if (newKeys instanceof PlaintextKeys) {
                         // Adjust the mode and version with plaintext keys

@@ -94,35 +94,51 @@ public final class GPData {
             if (isdd != null) {
                 // Loop all sub-values
                 for (BerTlv vt : isdd.getValues()) {
-                    BerTlv ot = vt.find(new BerTag(0x06));
-                    if (ot != null) {
-                        String oid = oid2string(ot.getBytesValue());
-                        System.out.println("Tag " + new BigInteger(1, vt.getTag().bytes).toString(16) + ": " + oid);
-
+                    if(vt.isTag(new BerTag(0x06))) {
+                        String oid = logAndGetOidFromByteArray(vt.getTag().bytes, vt.getBytesValue());
                         if (oid.equals("1.2.840.114283.1")) {
                             System.out.println("-> Global Platform card");
                         }
+                    } else if (vt.isTag(new BerTag(0x60))) {
+                        String oid = logAndGetOidFromByteArray(vt.getTag().bytes,
+                                vt.getValues().get(0).getBytesValue()); // 6X are constructed tags
                         if (oid.startsWith("1.2.840.114283.2")) {
                             String[] p = oid.substring("1.2.840.114283.2.".length()).split("\\.");
                             System.out.println("-> GP Version: " + String.join(".", p));
                         }
-
-                        if (oid.startsWith("1.2.840.114283.4")) {
-                            String[] p = oid.substring("1.2.840.114283.4.".length()).split("\\.");
-                            if (p.length == 2) {
-                                System.out.println("-> GP SCP0" + p[0] + " i=" + String.format("%02x", Integer.valueOf(p[1])));
-                            } else {
-                                if (oid.equals("1.2.840.114283.4.0")) {
-                                    System.out.println("-> GP SCP80 i=00");
+                    } else if (vt.isTag(new BerTag(0x63))) {
+                        String oid = logAndGetOidFromByteArray(vt.getTag().bytes,
+                                vt.getValues().get(0).getBytesValue()); // 6X are constructed tags
+                        if (oid.startsWith("1.2.840.114283.3")) {
+                            System.out.println("-> GP card is uniquely identified by the Issuer Identification Number (IIN) and Card Image Number (CIN)");
+                        }
+                    } else if (vt.isTag(new BerTag(0x64))) {
+                        // Format 1 and Format 2 support
+                        for (BerTlv ot : vt.getValues()) {
+                            byte[] oidBytes = ot.getBytesValue();
+                            String oid = logAndGetOidFromByteArray(ot.getTag().bytes, oidBytes);
+                            if (oid.startsWith("1.2.840.114283.4")) {
+                                byte[] scp = Arrays.copyOfRange(oidBytes, oidBytes.length - 2, oidBytes.length);
+                                if (scp.length == 2) {
+                                    System.out.printf("-> GP SCP%02x i=%02x%n", scp[0], scp[1]);
                                 }
                             }
                         }
+                    } else if (vt.isTag(new BerTag(0x65))) {
+                        // TODO: No format defined yet?
+                    } else if (vt.isTag(new BerTag(0x66))) {
+                        String oid = logAndGetOidFromByteArray(vt.getTag().bytes,
+                                vt.getValues().get(0).getBytesValue()); // 6X are constructed tags
                         if (oid.startsWith("1.3.6.1.4.1.42.2.110.1")) {
                             String p = oid.substring("1.3.6.1.4.1.42.2.110.1.".length());
                             if (p.length() == 1) {
                                 System.out.println("-> JavaCard v" + p);
                             }
                         }
+                    } else if (vt.isTag(new BerTag(0x67))) {
+                        // TODO: SCP10 parsing, is it worth it?
+                    } else if (vt.isTag(new BerTag(0x68))) {
+                        // TODO: SCP10 parsing, is it worth it?
                     }
                 }
             }
@@ -376,6 +392,11 @@ public final class GPData {
         }
     }
 
+    private static String logAndGetOidFromByteArray(byte[] tag, byte[] tlv) {
+        String oid = oid2string(tlv);
+        System.out.println("Tag " + new BigInteger(1, tag).toString(16) + ": " + oid);
+        return oid;
+    }
 
     public enum GPSpec {OP201, GP211, GP22, GP221}
 
@@ -472,7 +493,7 @@ public final class GPData {
         }
 
         public static Optional<LocalDate> toRelativeDate(byte[] v, LocalDate now) throws GPDataException {
-            if (v[0] == 0 && v[1] == 0) {
+            if ((v[0] == 0 && v[1] == 0) || (v[0] == (byte) 0xFF && v[1] == (byte) 0xFF)) {
                 logger.debug("0x0000 does not represent a valid date");
                 return Optional.empty();
             }

@@ -472,6 +472,7 @@ public final class GPData {
         }
 
         public static Optional<LocalDate> toRelativeDate(byte[] v, LocalDate now) throws GPDataException {
+            // 0xFFFF is caught below.
             if (v[0] == 0 && v[1] == 0) {
                 logger.debug("0x0000 does not represent a valid date");
                 return Optional.empty();
@@ -486,7 +487,8 @@ public final class GPData {
                 LocalDate ld = LocalDate.ofYearDay(base + y, d);
                 return Optional.of(ld);
             } catch (NumberFormatException | DateTimeException e) {
-                throw new GPDataException("Invalid CPLC date: " + sv, e);
+                logger.warn("Invalid CPLC date: " + sv);
+                return Optional.empty();
             }
         }
 

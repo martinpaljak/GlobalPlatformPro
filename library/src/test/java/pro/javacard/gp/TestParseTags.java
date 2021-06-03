@@ -78,10 +78,10 @@ public class TestParseTags {
     }
 
 
-    @Test(expectedExceptions = GPDataException.class)
+    @Test
     public void testCPLCDateParseInvalid() throws Exception {
         byte[] b = HexUtils.hex2bin("1410");
-        CPLC.toRelativeDate(b, LocalDate.now());
+        Assert.assertEquals(CPLC.toRelativeDate(b, LocalDate.now()), Optional.empty());
     }
 
     @Test(expectedExceptions = GPDataException.class)

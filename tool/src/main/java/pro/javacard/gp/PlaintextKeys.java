@@ -352,12 +352,12 @@ class PlaintextKeys extends GPCardKeys {
                 return deriveSessionKeySCP01(cardKeys.get(p), p, session_kdd);
             case SCP02:
                 if (p == KeyPurpose.RMAC) {
-                    return deriveSessionKeySCP02(cardKeys.get(p), KeyPurpose.RMAC, session_kdd);
+                    return deriveSessionKeySCP02(cardKeys.get(KeyPurpose.MAC), KeyPurpose.RMAC, session_kdd);
                 } else
                     return deriveSessionKeySCP02(cardKeys.get(p), p, session_kdd);
             case SCP03:
                 if (p == KeyPurpose.RMAC) {
-                    return deriveSessionKeySCP03(cardKeys.get(p), KeyPurpose.RMAC, session_kdd);
+                    return deriveSessionKeySCP03(cardKeys.get(KeyPurpose.MAC), KeyPurpose.RMAC, session_kdd);
                 } else
                     return deriveSessionKeySCP03(cardKeys.get(p), p, session_kdd);
             default:

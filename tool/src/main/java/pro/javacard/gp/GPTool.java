@@ -765,7 +765,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                     // From provider
                     newKeys = lockKey.
                             orElseGet(() -> PlaintextKeys.fromBytes(args.valueOf(OPT_LOCK_ENC).value(), args.valueOf(OPT_LOCK_MAC).value(), args.valueOf(OPT_LOCK_DEK).value(), HexBytes.v(args.valueOf(OPT_LOCK)).v(), args.valueOf(OPT_LOCK_KDF), null, args.valueOf(OPT_NEW_KEY_VERSION)).
-                            orElseThrow(() -> new IllegalArgumentException("Can not lock without keys :)")));
+                                    orElseThrow(() -> new IllegalArgumentException("Can not lock without keys :)")));
 
                     if (newKeys instanceof PlaintextKeys) {
                         // Adjust the mode and version with plaintext keys
@@ -776,7 +776,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                         if (args.has(OPT_NEW_KEY_VERSION)) {
                             keyver = args.valueOf(OPT_NEW_KEY_VERSION);
                             // Key version is indicated, check if already present on card
-                            if (current.stream().anyMatch(e -> (e.getVersion() == keyver))) {
+                            if (!current.stream().anyMatch(e -> (e.getVersion() == keyver)) || gp.getScpKeyVersion() == 255) {
                                 replace = false;
                             }
                         } else {

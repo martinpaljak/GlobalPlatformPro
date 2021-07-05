@@ -18,7 +18,7 @@
         <dependency>
             <groupId>com.github.martinpaljak</groupId>
             <artifactId>apdu4j-pcsc</artifactId>
-            <version>21.04.01</version>
+            <version>21.04.12</version>
         </dependency>
         <!-- Library itself -->
         <dependency>
@@ -43,7 +43,7 @@
         <dependency>
             <groupId>com.google.auto.service</groupId>
             <artifactId>auto-service</artifactId>
-            <version>1.0-rc7</version>
+            <version>1.0</version>
             <optional>true</optional>
         </dependency>
         <!-- For tests  -->
@@ -64,7 +64,7 @@
                         <path>
                             <groupId>com.google.auto.service</groupId>
                             <artifactId>auto-service</artifactId>
-                            <version>1.0-rc7</version>
+                            <version>1.0</version>
                         </path>
                     </annotationProcessorPaths>
                     <compilerArgs>

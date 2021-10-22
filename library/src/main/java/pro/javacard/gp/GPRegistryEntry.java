@@ -43,7 +43,7 @@ public class GPRegistryEntry {
     HashSet<Integer> implicitContactless = new HashSet<>();
 
     public Set<Privilege> getPrivileges() {
-        return privileges;
+        return Collections.unmodifiableSet(privileges);
     }
 
     void setPrivileges(Set<Privilege> privs) {
@@ -215,11 +215,11 @@ public class GPRegistryEntry {
     }
 
     public Set<Integer> getImplicitlySelectedContact() {
-        return implicitContact;
+        return Collections.unmodifiableSet(implicitContact);
     }
 
     public Set<Integer> getImplicitlySelectedContactless() {
-        return implicitContactless;
+        return Collections.unmodifiableSet(implicitContactless);
     }
 
     public enum Kind {

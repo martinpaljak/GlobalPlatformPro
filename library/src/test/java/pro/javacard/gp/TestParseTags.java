@@ -18,7 +18,7 @@ public class TestParseTags {
     final static Logger logger = LoggerFactory.getLogger(TestParseTags.class);
 
     @Test
-    public void testParsePaertialIsd() throws Exception {
+    public void testParsePartialISD() throws Exception {
         byte[] data = HexUtils.hex2bin("E3464F08A0000000030000009F700101C5039EFE80CF0140CF0141CF0142CF0143CF0180CF0181CF0182CF0183C40BD276000005AAFFCAFE0001CE020001CC08A000000003000000");
         GPRegistry reg = new GPRegistry();
         reg.parse_and_populate(0x80, data, GPRegistryEntry.Kind.IssuerSecurityDomain, GPCardProfile.defaultProfile());

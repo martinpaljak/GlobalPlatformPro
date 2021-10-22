@@ -376,21 +376,9 @@ public final class GPData {
         }
     }
 
-
-    public enum GPSpec {OP201, GP211, GP22, GP221}
-
-    public static GPSpec oid2version(byte[] bytes) throws GPDataException {
+    public static String oid2version(byte[] bytes) throws GPDataException {
         String oid = oid2string(bytes);
-        switch (oid) {
-            case "1.2.840.114283.2.2.1.1":
-                return GPSpec.GP211;
-            case "1.2.840.114283.2.2.2":
-                return GPSpec.GP22;
-            case "1.2.840.114283.2.2.2.1":
-                return GPSpec.GP221;
-            default:
-                throw new GPDataException("Unknown GP version OID: " + oid, bytes);
-        }
+        return oid.substring("1.2.840.114283.2.".length());
     }
 
     public static byte[] getData(APDUBIBO channel, int p1, int p2, String name, boolean failsafe) {

@@ -220,6 +220,17 @@ public final class GPCrypto {
         }
     }
 
+    public static byte[] kcv_aes0(byte[] key) {
+        try {
+            Cipher c = Cipher.getInstance(AES_CBC_CIPHER);
+            c.init(Cipher.ENCRYPT_MODE, aeskey(key), iv_null_16);
+            byte[] cv = c.doFinal(null_bytes_16);
+            return Arrays.copyOfRange(cv, 0, 3);
+        } catch (GeneralSecurityException e) {
+            throw new GPException("Could not calculate KCV", e);
+        }
+    }
+
     public static byte[] kcv_3des(byte[] key) {
         try {
             Cipher cipher = Cipher.getInstance(DES3_ECB_CIPHER);

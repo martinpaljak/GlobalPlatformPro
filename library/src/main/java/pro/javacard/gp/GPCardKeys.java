@@ -37,7 +37,7 @@ public abstract class GPCardKeys {
     private static final Logger logger = LoggerFactory.getLogger(GPCardKeys.class);
 
     // Key diversification support.
-    protected GPSecureChannel scp; // The actual SCP version, to know how to handle DEK
+    protected GPSecureChannelVersion.SCP scp; // The actual SCP version, to know how to handle DEK
     protected byte[] kdd; // The key derivation data that was used to get the keys in question. May be empty (no derivation)
     private boolean diversified = false;
 
@@ -78,7 +78,7 @@ public abstract class GPCardKeys {
     public abstract byte[] kcv(KeyPurpose p);
 
     // Diversify card keys automatically, based on INITIALIZE UPDATE response
-    public GPCardKeys diversify(GPSecureChannel scp, byte[] kdd) {
+    public GPCardKeys diversify(GPSecureChannelVersion.SCP scp, byte[] kdd) {
         if (diversified)
             throw new IllegalStateException("Keys already diversified!");
         this.scp = scp; // We know for sure what is the type of the key.

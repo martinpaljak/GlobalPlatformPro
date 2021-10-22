@@ -77,7 +77,7 @@ public final class GPKeyInfo {
                 throw new GPDataException("Multiple unsupported elements in key info template");
             }
         }
-        this.elements = elements;
+        this.elements = new ArrayList<>(elements);
 
         // FIXME: handle them as optionals here
         this.access = access;

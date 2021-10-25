@@ -290,6 +290,7 @@ public class GPSession {
                     // Tag 73 is a constructed tag.
                     BerTlv oidtag = isdd.find(new BerTag(0x06));
                     if (oidtag != null) {
+                        // 1.2.840.114283.1
                         if (Arrays.equals(oidtag.getBytesValue(), HexUtils.hex2bin("2A864886FC6B01"))) {
                             // Detect versions
                             BerTlv vertag = isdd.find(new BerTag(0x60));

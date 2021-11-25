@@ -1,6 +1,7 @@
 package pro.javacard.gp;
 
 import apdu4j.core.HexUtils;
+import org.bouncycastle.util.encoders.Hex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
@@ -15,6 +16,9 @@ import java.util.Optional;
 import java.util.Set;
 
 public class TestParseTags {
+    static {
+        System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "trace");
+    }
     final static Logger logger = LoggerFactory.getLogger(TestParseTags.class);
 
     @Test
@@ -60,8 +64,8 @@ public class TestParseTags {
 
         LocalDate now = LocalDate.now();
         Assert.assertEquals(CPLC.toRelativeDate(CPLC.dateToBytes(now), now), Optional.of(now));
-        byte [] today = CPLC.dateToBytes(now);
-        System.out.printf("Today is %s what is %s%n", HexUtils.bin2hex(today), CPLC.toRelativeDate(today,now));
+        byte[] today = CPLC.dateToBytes(now);
+        System.out.printf("Today is %s what is %s%n", HexUtils.bin2hex(today), CPLC.toRelativeDate(today, now));
     }
 
     @Test
@@ -123,4 +127,9 @@ public class TestParseTags {
         Assert.assertEquals(Privilege.toBytes(privileges), v);
     }
 
+    @Test
+    public void testLV() {
+        byte[] data = Hex.decode("05060906090608D233000000444F4D20DADFAD3ABBEFC249B1C878566C24ECB072289A15D06F4539E4AF03E876F763F0 00 81804861F702FE0C7E2FDA2F993A19C93F6326A4AE5E0DA72500E4754F7C1A82DA07554D2E084799AFA7037A25CF9E2A7EA67066C4FDCC0DC2C5FD096BA4BEB3C7A4462E040A3F8AC9FF870DA2A4CF624466A43BE8D75713F3D4A7263A1A4C1B6E819FE73A80B46E4F03C20A6FBE44B55A036923D2F9C3090CA3EA2E463B83A13DB7");
+        GPUtils.trace_lv(data, logger);
+    }
 }

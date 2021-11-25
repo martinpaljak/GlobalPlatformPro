@@ -51,7 +51,7 @@ public abstract class DMTokenizer {
                 // Handle DELETE and prefix with tag
                 if (apdu.getINS() == 0xE4)
                     data.write(0x9E);
-                data.write(token.length);
+                data.write(GPUtils.encodeLength(token.length));
                 data.write(token);
             } else {
                 if (apdu.getINS() != 0xE4)

@@ -114,6 +114,25 @@ public class GPUtils {
         return bo.toByteArray();
     }
 
+    public static int getLength(byte[] buffer, int offset) {
+        // XXX: Old specs allow 0x80 for encoding 128 bytes...., so maybe check that 81 80 is in fact > 80
+        int first = buffer[offset] & 0xFF;
+        if (first <= 0x80) {
+            return buffer[offset] & 0xFF;
+        } else if (first == 0x81) {
+            return buffer[offset + 1] & 0xFF;
+        } else if (first == 0x82) {
+            return (buffer[offset + 1] & 0xFF) << 8 | (buffer[offset + 2] & 0xFF);
+        } else
+            throw new GPDataException("Invalid length encoding", Arrays.copyOfRange(buffer, offset, offset + 3));
+    }
+
+    public static int getLenLen(byte[] buffer, int offset) {
+        if ((buffer[offset] & 0xFF) <= 0x80)
+            return 1;
+        else return (buffer[offset] & 0xFF) - 0x7F;
+    }
+
     // Encodes APDU LC value, which has either length of 1 byte or 3 bytes (for extended length APDUs)
     // If LC or LE is bigger than fits in one byte (255), LC must be encoded in three bytes
     public static byte[] encodeLcLength(int lc, int le) {
@@ -140,9 +159,10 @@ public class GPUtils {
 
     static void trace_lv(byte[] data, Logger logger) {
         for (int i = 0; i < data.length; ) {
-            int l = data[i] & 0xFF;
-            logger.trace(String.format("[%02X] %s", l, HexUtils.bin2hex(Arrays.copyOfRange(data, i + 1, i + 1 + l))));
-            i += 1 + l;
+            int l = getLength(data, i);
+            int lenLen = getLenLen(data, i);
+            logger.trace(String.format("[%s] %s", HexUtils.bin2hex(Arrays.copyOfRange(data, i, i + lenLen)), HexUtils.bin2hex(Arrays.copyOfRange(data, i + lenLen, i + lenLen + l))));
+            i += lenLen + l;
         }
     }
 

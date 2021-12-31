@@ -51,11 +51,11 @@ public abstract class DMTokenizer {
                 // Handle DELETE and prefix with tag
                 if (apdu.getINS() == 0xE4)
                     data.write(0x9E);
-                data.write(token.length);
+                data.write(GPUtils.encodeLength(token.length));
                 data.write(token);
             } else {
                 if (apdu.getINS() != 0xE4)
-                    data.write(0); // No token in LV chain and not tag in TLV case
+                    data.write(0); // No token in LV chain and no tag in TLV case
             }
             return new CommandAPDU(apdu.getCLA(), apdu.getINS(), apdu.getP1(), apdu.getP2(), data.toByteArray()); // FIXME: Le handling
         } catch (IOException e) {

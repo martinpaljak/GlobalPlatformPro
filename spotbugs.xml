@@ -11,4 +11,8 @@
     <Class name="pro.javacard.gp.HexBytes"/>
     <Bug pattern="EI_EXPOSE_REP"/>
   </Match>
+  <Match>
+    <Class name="pro.javacard.gp.GPSession"/>
+    <Bug pattern="EI_EXPOSE_REP"/>
+  </Match>
 </FindBugsFilter>

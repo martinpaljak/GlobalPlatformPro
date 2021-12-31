@@ -52,6 +52,8 @@ import java.security.interfaces.RSAPrivateKey;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static pro.javacard.gp.GPSecureChannelVersion.SCP.*;
+
 // Does the CLI parameter parsing and associated execution
 @AutoService(SmartCardApp.class)
 public final class GPTool extends GPCommandLineInterface implements SimpleSmartCardApp {
@@ -615,7 +617,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                     // By default same SCP as current
                     if (!args.has(OPT_SAD) && !gp.profile.oldStyleSSDParameters()) {
                         if (parameters != null && parameters.find(new BerTag(0x81)) == null) {
-                            params = GPUtils.concatenate(params, new byte[]{(byte) 0x81, 0x02, gp.getSecureChannel().getValue(), (byte) gp.getSecureChannel().getI()});
+                            params = GPUtils.concatenate(params, new byte[]{(byte) 0x81, 0x02, gp.getSecureChannel().scp.getValue(), (byte) gp.getSecureChannel().i});
                         } else {
                             System.err.println("Notice: 0x81 already in parameters or no parameters");
                         }
@@ -749,7 +751,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                     }
                     PlaintextKeys new_key = PlaintextKeys.defaultKey();
                     new_key.setVersion(kv);
-                    new_key.diversify(gp.getSecureChannel(), new byte[0]); // Just set the SCP type
+                    new_key.diversify(gp.getSecureChannel().scp, new byte[0]); // Just set the SCP type
                     gp.putKeys(new_key, replace);
                     System.out.println("Default " + HexUtils.bin2hex(PlaintextKeys.defaultKeyBytes) + " set as key for " + gp.getAID());
                 }
@@ -765,7 +767,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                     // From provider
                     newKeys = lockKey.
                             orElseGet(() -> PlaintextKeys.fromBytes(args.valueOf(OPT_LOCK_ENC).value(), args.valueOf(OPT_LOCK_MAC).value(), args.valueOf(OPT_LOCK_DEK).value(), HexBytes.v(args.valueOf(OPT_LOCK)).v(), args.valueOf(OPT_LOCK_KDF), null, args.valueOf(OPT_NEW_KEY_VERSION)).
-                            orElseThrow(() -> new IllegalArgumentException("Can not lock without keys :)")));
+                                    orElseThrow(() -> new IllegalArgumentException("Can not lock without keys :)")));
 
                     if (newKeys instanceof PlaintextKeys) {
                         // Adjust the mode and version with plaintext keys
@@ -776,7 +778,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                         if (args.has(OPT_NEW_KEY_VERSION)) {
                             keyver = args.valueOf(OPT_NEW_KEY_VERSION);
                             // Key version is indicated, check if already present on card
-                            if (current.stream().anyMatch(e -> (e.getVersion() == keyver))) {
+                            if (!current.stream().anyMatch(e -> (e.getVersion() == keyver)) || gp.getScpKeyVersion() == 255) {
                                 replace = false;
                             }
                         } else {
@@ -799,13 +801,13 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
 
                     verbose("Looking at key version for diversification method");
                     if (keyver >= 0x10 && keyver <= 0x1F)
-                        newKeys.diversify(GPSecureChannel.SCP01, kdd);
+                        newKeys.diversify(SCP01, kdd);
                     else if (keyver >= 0x20 && keyver <= 0x2F)
-                        newKeys.diversify(GPSecureChannel.SCP02, kdd);
+                        newKeys.diversify(SCP02, kdd);
                     else if (keyver >= 0x30 && keyver <= 0x3F)
-                        newKeys.diversify(GPSecureChannel.SCP03, kdd);
+                        newKeys.diversify(SCP03, kdd);
                     else
-                        newKeys.diversify(gp.getSecureChannel(), kdd);
+                        newKeys.diversify(gp.getSecureChannel().scp, kdd);
 
                     gp.putKeys(newKeys, replace);
 

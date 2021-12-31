@@ -398,20 +398,9 @@ public final class GPData {
         return oid;
     }
 
-    public enum GPSpec {OP201, GP211, GP22, GP221}
-
-    public static GPSpec oid2version(byte[] bytes) throws GPDataException {
+    public static String oid2version(byte[] bytes) throws GPDataException {
         String oid = oid2string(bytes);
-        switch (oid) {
-            case "1.2.840.114283.2.2.1.1":
-                return GPSpec.GP211;
-            case "1.2.840.114283.2.2.2":
-                return GPSpec.GP22;
-            case "1.2.840.114283.2.2.2.1":
-                return GPSpec.GP221;
-            default:
-                throw new GPDataException("Unknown GP version OID: " + oid, bytes);
-        }
+        return oid.substring("1.2.840.114283.2.".length());
     }
 
     public static byte[] getData(APDUBIBO channel, int p1, int p2, String name, boolean failsafe) {
@@ -494,7 +483,7 @@ public final class GPData {
 
         public static Optional<LocalDate> toRelativeDate(byte[] v, LocalDate now) throws GPDataException {
             if ((v[0] == 0 && v[1] == 0) || (v[0] == (byte) 0xFF && v[1] == (byte) 0xFF)) {
-                logger.debug("0x0000 does not represent a valid date");
+                logger.debug("0x0000/0xFFFF does not represent a valid date");
                 return Optional.empty();
             }
             String sv = HexUtils.bin2hex(v);
@@ -507,7 +496,8 @@ public final class GPData {
                 LocalDate ld = LocalDate.ofYearDay(base + y, d);
                 return Optional.of(ld);
             } catch (NumberFormatException | DateTimeException e) {
-                throw new GPDataException("Invalid CPLC date: " + sv, e);
+                logger.warn("Invalid CPLC date: " + sv);
+                return Optional.empty();
             }
         }
 

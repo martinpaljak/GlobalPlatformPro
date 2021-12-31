@@ -1,6 +1,7 @@
 package pro.javacard.gp;
 
 import apdu4j.core.HexUtils;
+import org.bouncycastle.util.encoders.Hex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
@@ -9,16 +10,25 @@ import pro.javacard.AID;
 import pro.javacard.gp.GPData.CPLC;
 import pro.javacard.gp.GPRegistryEntry.Privilege;
 
+import javax.crypto.Cipher;
+import javax.crypto.spec.IvParameterSpec;
+import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 public class TestParseTags {
+    static {
+        System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "trace");
+    }
+
     final static Logger logger = LoggerFactory.getLogger(TestParseTags.class);
 
     @Test
-    public void testParsePaertialIsd() throws Exception {
+    public void testParsePartialISD() throws Exception {
         byte[] data = HexUtils.hex2bin("E3464F08A0000000030000009F700101C5039EFE80CF0140CF0141CF0142CF0143CF0180CF0181CF0182CF0183C40BD276000005AAFFCAFE0001CE020001CC08A000000003000000");
         GPRegistry reg = new GPRegistry();
         reg.parse_and_populate(0x80, data, GPRegistryEntry.Kind.IssuerSecurityDomain, GPCardProfile.defaultProfile());
@@ -60,8 +70,8 @@ public class TestParseTags {
 
         LocalDate now = LocalDate.now();
         Assert.assertEquals(CPLC.toRelativeDate(CPLC.dateToBytes(now), now), Optional.of(now));
-        byte [] today = CPLC.dateToBytes(now);
-        System.out.printf("Today is %s what is %s%n", HexUtils.bin2hex(today), CPLC.toRelativeDate(today,now));
+        byte[] today = CPLC.dateToBytes(now);
+        System.out.printf("Today is %s what is %s%n", HexUtils.bin2hex(today), CPLC.toRelativeDate(today, now));
     }
 
     @Test
@@ -78,10 +88,10 @@ public class TestParseTags {
     }
 
 
-    @Test(expectedExceptions = GPDataException.class)
+    @Test
     public void testCPLCDateParseInvalid() throws Exception {
         byte[] b = HexUtils.hex2bin("1410");
-        CPLC.toRelativeDate(b, LocalDate.now());
+        Assert.assertEquals(CPLC.toRelativeDate(b, LocalDate.now()), Optional.empty());
     }
 
     @Test(expectedExceptions = GPDataException.class)
@@ -123,4 +133,9 @@ public class TestParseTags {
         Assert.assertEquals(Privilege.toBytes(privileges), v);
     }
 
+    @Test
+    public void testLV() {
+        byte[] data = Hex.decode("05060906090608D233000000444F4D20DADFAD3ABBEFC249B1C878566C24ECB072289A15D06F4539E4AF03E876F763F0 00 81804861F702FE0C7E2FDA2F993A19C93F6326A4AE5E0DA72500E4754F7C1A82DA07554D2E084799AFA7037A25CF9E2A7EA67066C4FDCC0DC2C5FD096BA4BEB3C7A4462E040A3F8AC9FF870DA2A4CF624466A43BE8D75713F3D4A7263A1A4C1B6E819FE73A80B46E4F03C20A6FBE44B55A036923D2F9C3090CA3EA2E463B83A13DB7");
+        GPUtils.trace_lv(data, logger);
+    }
 }

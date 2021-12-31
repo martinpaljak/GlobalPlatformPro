@@ -26,7 +26,7 @@ public class TestDMTokenizer {
         CommandAPDU c = new CommandAPDU(CLA_GP, INS_DELETE, 0x02, 0x00, new byte[]{0});
         DMTokenizer t = DMTokenizer.forPrivateKey(key);
         c = t.tokenize(c);
-        Assert.assertEquals(c.getData().length, 131);
+        Assert.assertEquals(c.getData().length, 132);
         Assert.assertEquals(c.getData()[1] & 0xFF, 0x9E);
     }
 

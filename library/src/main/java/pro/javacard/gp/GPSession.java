@@ -53,6 +53,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static pro.javacard.gp.GPCardKeys.KeyPurpose;
+import static pro.javacard.gp.GPSecureChannelVersion.SCP.*;
 
 /**
  * Represents a connection to a GlobalPlatform Card (BIBO interface)
@@ -94,7 +95,7 @@ public class GPSession {
 
     // (I)SD AID
     private AID sdAID;
-    private GPSecureChannel scpVersion;
+    private GPSecureChannelVersion scpVersion;
     private int scpKeyVersion = 0; // will be set to the key version reported by card
     GPCardProfile profile;
     private int blockSize = 255;
@@ -227,7 +228,7 @@ public class GPSession {
         return new AID(sdAID.getBytes());
     }
 
-    public GPSecureChannel getSecureChannel() {
+    public GPSecureChannelVersion getSecureChannel() {
         return this.scpVersion;
     }
 
@@ -289,6 +290,7 @@ public class GPSession {
                     // Tag 73 is a constructed tag.
                     BerTlv oidtag = isdd.find(new BerTag(0x06));
                     if (oidtag != null) {
+                        // 1.2.840.114283.1
                         if (Arrays.equals(oidtag.getBytesValue(), HexUtils.hex2bin("2A864886FC6B01"))) {
                             // Detect versions
                             BerTlv vertag = isdd.find(new BerTag(0x60));
@@ -361,7 +363,7 @@ public class GPSession {
     /*
      * Establishes a secure channel to the security domain or application
      */
-    public void openSecureChannel(GPCardKeys keys, GPSecureChannel scp, byte[] host_challenge, EnumSet<APDUMode> securityLevel)
+    public void openSecureChannel(GPCardKeys keys, GPSecureChannelVersion scp, byte[] host_challenge, EnumSet<APDUMode> securityLevel)
             throws IOException, GPException {
 
         normalizeSecurityLevel(securityLevel);
@@ -376,7 +378,7 @@ public class GPSession {
 
         // P1 key version (all)
         // P2 either key ID (SCP01) or 0 (SCP02)
-        CommandAPDU initUpdate = new CommandAPDU(CLA_GP, INS_INITIALIZE_UPDATE, keys.getKeyInfo().getVersion(), scp == GPSecureChannel.SCP01 ? keys.getKeyInfo().getID() : 0, host_challenge, 256);
+        CommandAPDU initUpdate = new CommandAPDU(CLA_GP, INS_INITIALIZE_UPDATE, keys.getKeyInfo().getVersion(), scp.scp == GPSecureChannelVersion.SCP.SCP01 ? keys.getKeyInfo().getID() : 0, host_challenge, 256);
 
         ResponseAPDU response = channel.transmit(initUpdate);
         int sw = response.getSW();
@@ -402,13 +404,15 @@ public class GPSession {
         scpKeyVersion = update_response[offset] & 0xFF;
         offset++;
         // Get major SCP version from Key Information field in response
-        this.scpVersion = GPSecureChannel.valueOf(update_response[offset] & 0xFF).orElseThrow(() -> new GPDataException("Unknown or invalid SCP version", update_response));
+        int scpv = update_response[offset] & 0xFF;
         offset++;
 
         // get the protocol "i" parameter, if SCP03
-        if (this.scpVersion == GPSecureChannel.SCP03) {
-            scpVersion.setI(update_response[offset]);
+        if (scpv == 0x03) {
+            this.scpVersion = GPSecureChannelVersion.valueOf(scpv, update_response[offset]);
             offset++;
+        } else {
+            this.scpVersion = GPSecureChannelVersion.valueOf(scpv);
         }
 
         // get card challenge
@@ -421,9 +425,9 @@ public class GPSession {
 
         // Extract ssc
         final byte[] seq;
-        if (this.scpVersion == GPSecureChannel.SCP02) {
+        if (this.scpVersion.scp == SCP02) {
             seq = Arrays.copyOfRange(update_response, 12, 14);
-        } else if (this.scpVersion == GPSecureChannel.SCP03 && update_response.length == 32) {
+        } else if (this.scpVersion.scp == SCP03 && update_response.length == 32) {
             seq = Arrays.copyOfRange(update_response, offset, 32);
             offset += seq.length;
         } else {
@@ -449,17 +453,17 @@ public class GPSession {
         }
 
         // This will throw as expected later, to indicate the issue
-        if (this.scpVersion == GPSecureChannel.SCP01 && securityLevel.contains(APDUMode.RMAC)) {
+        if (this.scpVersion.scp == GPSecureChannelVersion.SCP.SCP01 && securityLevel.contains(APDUMode.RMAC)) {
             logger.warn("SCP01 does not support RMAC, removing.");
         }
 
         // Give the card key a chance to be automatically diversifed based on KDD from INITIALIZE UPDATE
-        cardKeys = keys.diversify(this.scpVersion, diversification_data);
+        cardKeys = keys.diversify(this.scpVersion.scp, diversification_data);
 
         logger.info("Diversified card keys: {}", cardKeys);
 
         // Derive session keys
-        if (this.scpVersion == GPSecureChannel.SCP02) {
+        if (this.scpVersion.scp == GPSecureChannelVersion.SCP.SCP02) {
             sessionContext = seq.clone();
         } else {
             sessionContext = GPUtils.concatenate(host_challenge, card_challenge);
@@ -473,7 +477,7 @@ public class GPSession {
         // Verify card cryptogram
         byte[] my_card_cryptogram;
         byte[] cntx = GPUtils.concatenate(host_challenge, card_challenge);
-        if (this.scpVersion == GPSecureChannel.SCP01 || this.scpVersion == GPSecureChannel.SCP02) {
+        if (this.scpVersion.scp == SCP01 || this.scpVersion.scp == SCP02) {
             my_card_cryptogram = GPCrypto.mac_3des_nulliv(encKey, cntx);
         } else {
             my_card_cryptogram = GPCrypto.scp03_kdf(macKey, (byte) 0x00, cntx, 64);
@@ -491,7 +495,7 @@ public class GPSession {
 
         // Calculate host cryptogram and initialize SCP wrapper
         final byte[] host_cryptogram;
-        switch (scpVersion) {
+        switch (scpVersion.scp) {
             case SCP01:
                 host_cryptogram = GPCrypto.mac_3des_nulliv(encKey, GPUtils.concatenate(card_challenge, host_challenge));
                 wrapper = new SCP01Wrapper(encKey, macKey, blockSize);

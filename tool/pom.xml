@@ -7,7 +7,7 @@
     <parent>
         <groupId>com.github.martinpaljak</groupId>
         <artifactId>gppro</artifactId>
-        <version>20.08.13-SNAPSHOT</version>
+        <version>21.12.32-SNAPSHOT</version>
     </parent>
 
     <artifactId>gptool</artifactId>
@@ -18,19 +18,19 @@
         <dependency>
             <groupId>com.github.martinpaljak</groupId>
             <artifactId>apdu4j-pcsc</artifactId>
-            <version>21.04.01</version>
+            <version>21.04.12</version>
         </dependency>
         <!-- Library itself -->
         <dependency>
             <groupId>com.github.martinpaljak</groupId>
             <artifactId>globalplatformpro</artifactId>
-            <version>20.08.13-SNAPSHOT</version>
+            <version>21.12.32-SNAPSHOT</version>
         </dependency>
         <!-- For logging in the command line tool -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
-            <version>1.7.30</version>
+            <version>1.7.32</version>
             <optional>true</optional>
         </dependency>
         <!-- For command line parsing -->
@@ -43,7 +43,7 @@
         <dependency>
             <groupId>com.google.auto.service</groupId>
             <artifactId>auto-service</artifactId>
-            <version>1.0-rc7</version>
+            <version>1.0</version>
             <optional>true</optional>
         </dependency>
         <!-- For tests  -->
@@ -64,7 +64,7 @@
                         <path>
                             <groupId>com.google.auto.service</groupId>
                             <artifactId>auto-service</artifactId>
-                            <version>1.0-rc7</version>
+                            <version>1.0</version>
                         </path>
                     </annotationProcessorPaths>
                     <compilerArgs>

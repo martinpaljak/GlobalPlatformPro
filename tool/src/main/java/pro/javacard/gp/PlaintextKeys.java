@@ -36,6 +36,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+import static pro.javacard.gp.GPSecureChannelVersion.SCP.*;
+
 // Handles plaintext card keys.
 // Supports diversification of card keys with a few known algorithms.
 class PlaintextKeys extends GPCardKeys {
@@ -296,7 +298,7 @@ class PlaintextKeys extends GPCardKeys {
         // all keys are of same length
         byte[] aKey = cardKeys.get(KeyPurpose.ENC);
         final GPKeyInfo.GPKey type;
-        if (aKey.length > 16 || scp == GPSecureChannel.SCP03)
+        if (aKey.length > 16 || scp == SCP03)
             type = GPKeyInfo.GPKey.AES;
         else
             type = GPKeyInfo.GPKey.DES3;
@@ -306,12 +308,12 @@ class PlaintextKeys extends GPCardKeys {
     @Override
     // data must be padded by caller
     public byte[] encrypt(byte[] data, byte[] sessionContext) throws GeneralSecurityException {
-        if (scp == GPSecureChannel.SCP02) {
+        if (scp == SCP02) {
             byte[] sdek = deriveSessionKeySCP02(cardKeys.get(KeyPurpose.DEK), KeyPurpose.DEK, sessionContext);
             return GPCrypto.dek_encrypt_des(sdek, data);
-        } else if (scp == GPSecureChannel.SCP01) {
+        } else if (scp == SCP01) {
             return GPCrypto.dek_encrypt_des(cardKeys.get(KeyPurpose.DEK), data);
-        } else if (scp == GPSecureChannel.SCP03) {
+        } else if (scp == SCP03) {
             return GPCrypto.dek_encrypt_aes(cardKeys.get(KeyPurpose.DEK), data);
         } else throw new IllegalStateException("Unknown SCP version");
     }
@@ -352,12 +354,12 @@ class PlaintextKeys extends GPCardKeys {
                 return deriveSessionKeySCP01(cardKeys.get(p), p, session_kdd);
             case SCP02:
                 if (p == KeyPurpose.RMAC) {
-                    return deriveSessionKeySCP02(cardKeys.get(p), KeyPurpose.RMAC, session_kdd);
+                    return deriveSessionKeySCP02(cardKeys.get(KeyPurpose.MAC), KeyPurpose.RMAC, session_kdd);
                 } else
                     return deriveSessionKeySCP02(cardKeys.get(p), p, session_kdd);
             case SCP03:
                 if (p == KeyPurpose.RMAC) {
-                    return deriveSessionKeySCP03(cardKeys.get(p), KeyPurpose.RMAC, session_kdd);
+                    return deriveSessionKeySCP03(cardKeys.get(KeyPurpose.MAC), KeyPurpose.RMAC, session_kdd);
                 } else
                     return deriveSessionKeySCP03(cardKeys.get(p), p, session_kdd);
             default:
@@ -369,9 +371,9 @@ class PlaintextKeys extends GPCardKeys {
     public byte[] kcv(KeyPurpose p) {
         byte[] k = cardKeys.get(p);
 
-        if (scp == GPSecureChannel.SCP03)
+        if (scp == SCP03)
             return GPCrypto.kcv_aes(k);
-        else if (scp == GPSecureChannel.SCP01 || scp == GPSecureChannel.SCP02)
+        else if (scp == SCP01 || scp == SCP02)
             return GPCrypto.kcv_3des(k);
         else {
             if (k.length == 16) {
@@ -433,7 +435,7 @@ class PlaintextKeys extends GPCardKeys {
 
 
     @Override
-    public PlaintextKeys diversify(GPSecureChannel scp, byte[] kdd) {
+    public PlaintextKeys diversify(GPSecureChannelVersion.SCP scp, byte[] kdd) {
         // Set SCP and KDD and diversification state
         super.diversify(scp, kdd);
 

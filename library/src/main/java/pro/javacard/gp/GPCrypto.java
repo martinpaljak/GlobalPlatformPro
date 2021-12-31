@@ -242,11 +242,11 @@ public final class GPCrypto {
         }
     }
 
-    static Key des3key(byte[] v) {
+    public static Key des3key(byte[] v) {
         return new SecretKeySpec(resizeDES(v, 24), "DESede");
     }
 
-    static Key aeskey(byte[] v) {
+    public static Key aeskey(byte[] v) {
         return new SecretKeySpec(v, "AES");
     }
 

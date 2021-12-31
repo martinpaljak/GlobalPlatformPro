@@ -69,9 +69,15 @@ public final class GPKeyInfo {
         } else {
             // FIXME: reduce here RSA to a single public key
             Optional<GPKeyInfoElement> rsa = valid.stream().filter(e -> e.key == GPKey.RSA_PUB_N).findFirst();
+            Optional<GPKeyInfoElement> ecc = valid.stream().filter(e ->
+                    (e.key == GPKey.EC_PRIV) || (e.key == GPKey.EC_PUB)).findFirst();
             if (rsa.isPresent()) {
                 this.length = rsa.get().keyLength;
                 this.type = GPKey.RSA_PUB_N;
+            } else if (ecc.isPresent()) {
+                // TODO: If ecc, shall we use the CRT parameter on the second element EC_PARAM_REF, to know the exact curve?
+                this.length = ecc.get().keyLength;
+                GPKey.get(ecc.get().key.getType()).ifPresent(gpKey -> this.type = gpKey);
             } else {
                 logger.error("Multiple unsupported elements in key info:  {} ", elements);
                 throw new GPDataException("Multiple unsupported elements in key info template");

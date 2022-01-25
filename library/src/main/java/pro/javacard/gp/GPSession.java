@@ -378,7 +378,7 @@ public class GPSession {
 
         // P1 key version (all)
         // P2 either key ID (SCP01) or 0 (SCP02)
-        CommandAPDU initUpdate = new CommandAPDU(CLA_GP, INS_INITIALIZE_UPDATE, keys.getKeyInfo().getVersion(), scp.scp == GPSecureChannelVersion.SCP.SCP01 ? keys.getKeyInfo().getID() : 0, host_challenge, 256);
+        CommandAPDU initUpdate = new CommandAPDU(CLA_GP, INS_INITIALIZE_UPDATE, keys.getKeyInfo().getVersion(), (scp != null && scp.scp == GPSecureChannelVersion.SCP.SCP01) ? keys.getKeyInfo().getID() : 0, host_challenge, 256);
 
         ResponseAPDU response = channel.transmit(initUpdate);
         int sw = response.getSW();

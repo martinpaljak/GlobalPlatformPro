@@ -22,9 +22,9 @@ package pro.javacard.gp;
 import apdu4j.core.CommandAPDU;
 import apdu4j.core.HexUtils;
 import apdu4j.core.ResponseAPDU;
-import pro.javacard.AID;
-import pro.javacard.CAPFile;
-import pro.javacard.WellKnownAID;
+import pro.javacard.capfile.AID;
+import pro.javacard.capfile.CAPFile;
+import pro.javacard.capfile.WellKnownAID;
 import pro.javacard.gp.GPData.LFDBH;
 import pro.javacard.gp.GPRegistryEntry.Privilege;
 

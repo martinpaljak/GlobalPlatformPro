@@ -22,7 +22,7 @@ package pro.javacard.gp;
 import apdu4j.core.HexBytes;
 import joptsimple.*;
 import joptsimple.util.EnumConverter;
-import pro.javacard.AID;
+import pro.javacard.capfile.AID;
 
 import java.io.File;
 import java.io.IOException;

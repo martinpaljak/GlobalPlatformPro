@@ -24,19 +24,17 @@
         <dependency>
             <groupId>com.github.martinpaljak</groupId>
             <artifactId>capfile</artifactId>
-            <version>21.03.07</version>
+            <version>${project.version}</version>
         </dependency>
         <!-- For logging -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>1.7.32</version>
         </dependency>
         <!-- For crypto in SCP03 -->
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcpkix-jdk15on</artifactId>
-            <version>1.70</version>
         </dependency>
         <!-- For TLV handling -->
         <dependency>
@@ -48,23 +46,20 @@
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
-            <version>7.4.0</version>
             <scope>test</scope>
         </dependency>
         <!-- For logging in tests -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
-            <version>1.7.32</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
     <build>
         <plugins>
             <plugin>
-                <groupId>pl.project13.maven</groupId>
-                <artifactId>git-commit-id-plugin</artifactId>
-                <version>4.9.10</version>
+                <groupId>io.github.git-commit-id</groupId>
+                <artifactId>git-commit-id-maven-plugin</artifactId>
                 <executions>
                     <execution>
                         <id>store-git-info</id>
@@ -77,7 +72,9 @@
                 <configuration>
                     <runOnlyOnce>false</runOnlyOnce>
                     <generateGitPropertiesFile>true</generateGitPropertiesFile>
-                    <generateGitPropertiesFilename>${project.build.directory}/generated-resources/pro/javacard/gp/git.properties</generateGitPropertiesFilename>
+                    <generateGitPropertiesFilename>
+                        ${project.build.directory}/generated-resources/pro/javacard/gp/git.properties
+                    </generateGitPropertiesFilename>
                     <includeOnlyProperties>
                         <includeOnlyProperty>^git.commit.id.describe$</includeOnlyProperty>
                     </includeOnlyProperties>

@@ -31,8 +31,8 @@ import com.payneteasy.tlv.BerTlvParser;
 import com.payneteasy.tlv.BerTlvs;
 import joptsimple.OptionSet;
 import joptsimple.OptionSpec;
-import pro.javacard.AID;
-import pro.javacard.CAPFile;
+import pro.javacard.capfile.AID;
+import pro.javacard.capfile.CAPFile;
 import pro.javacard.gp.GPRegistryEntry.Privilege;
 import pro.javacard.gp.GPSession.APDUMode;
 import pro.javacard.gp.PlaintextKeys.KDF;
@@ -193,14 +193,8 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                 File capfile = args.valueOf(OPT_CAP);
                 cap = CAPFile.fromFile(capfile.toPath());
 
-                if (args.has(OPT_INFO)) {
-                    System.out.println("**** CAP info of " + capfile.getName());
-                    cap.dump(System.out);
-                    if (args.specs().size() == 2) {
-                        // Exit after --cap <file> --info
-                        return 0;
-                    }
-                }
+                if (args.asMap().size() == 1)
+                    return 0;
             }
 
             // Now actually talk to possible terminals

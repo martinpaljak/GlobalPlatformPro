@@ -1,85 +1,75 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<?xml version="1.0"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
-
     <parent>
         <groupId>com.github.martinpaljak</groupId>
         <artifactId>gppro</artifactId>
         <version>21.12.32-SNAPSHOT</version>
     </parent>
-
-    <artifactId>gptool</artifactId>
-    <name>GlobalPlatformPro CLI tool</name>
-
+    <artifactId>capfile</artifactId>
+    <name>CAP file library</name>
+    <licenses>
+        <license>
+            <name>MIT</name>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
     <dependencies>
-        <!-- For PC/SC reader access -->
+        <!-- For PEM parsing in the signing tool -->
         <dependency>
-            <groupId>com.github.martinpaljak</groupId>
-            <artifactId>apdu4j-pcsc</artifactId>
-            <version>21.04.12</version>
-        </dependency>
-        <!-- Library itself -->
-        <dependency>
-            <groupId>com.github.martinpaljak</groupId>
-            <artifactId>globalplatformpro</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <!-- For logging in the command line tool -->
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcpkix-jdk15on</artifactId>
             <optional>true</optional>
         </dependency>
-        <!-- For command line parsing -->
+        <!-- For parsing aid_list.yml in WellKnownAID -->
         <dependency>
-            <groupId>net.sf.jopt-simple</groupId>
-            <artifactId>jopt-simple</artifactId>
-            <version>5.0.4</version>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
+            <version>1.30</version>
         </dependency>
-        <!-- For lazy plugins -->
-        <dependency>
-            <groupId>com.google.auto.service</groupId>
-            <artifactId>auto-service-annotations</artifactId>
-            <version>1.0.1</version>
-            <optional>true</optional>
-        </dependency>
-        <!-- For tests  -->
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
+            <version>7.4.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
     <build>
         <plugins>
             <plugin>
+                <groupId>com.github.spotbugs</groupId>
+                <artifactId>spotbugs-maven-plugin</artifactId>
+                <configuration>
+                    <excludeFilterFile>spotbugs.xml</excludeFilterFile>
+                </configuration>
+            </plugin>
+            <!-- Small CLI utility -->
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>gp-jar</id>
                         <phase>package</phase>
                         <goals>
                             <goal>shade</goal>
                         </goals>
                         <configuration>
-                            <finalName>gp</finalName>
+                            <finalName>capfile</finalName>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>pro.javacard.gp.GPTool</mainClass>
+                                    <mainClass>pro.javacard.capfile.tool.CAPFileTool</mainClass>
                                 </transformer>
                             </transformers>
                             <filters>
                                 <filter>
                                     <artifact>*:*</artifact>
                                     <excludes>
+                                        <exclude>META-INF/MANIFEST.MF</exclude>
                                         <exclude>META-INF/*.SF</exclude>
                                         <exclude>META-INF/*.DSA</exclude>
                                         <exclude>META-INF/*.RSA</exclude>
                                         <exclude>META-INF/maven/**</exclude>
-                                        <exclude>META-INF/MANIFEST.MF</exclude>
                                         <exclude>**/module-info.class</exclude>
                                     </excludes>
                                 </filter>
@@ -88,46 +78,49 @@
                     </execution>
                 </executions>
             </plugin>
-            <!-- Package for Windows -->
             <plugin>
                 <groupId>com.akathist.maven.plugins.launch4j</groupId>
                 <artifactId>launch4j-maven-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>gp-exe</id>
+                        <id>capfile-exe</id>
                         <phase>package</phase>
                         <goals>
                             <goal>launch4j</goal>
                         </goals>
                         <configuration>
                             <headerType>console</headerType>
-                            <outfile>target/gp.exe</outfile>
-                            <jar>target/gp.jar</jar>
-                            <errTitle>GlobalPlatformPro</errTitle>
+                            <jar>target/capfile.jar</jar>
+                            <errTitle>capfile</errTitle>
                             <classPath>
-                                <mainClass>pro.javacard.gp.GPTool</mainClass>
+                                <mainClass>pro.javacard.capfile.tool.CAPFileTool</mainClass>
                             </classPath>
                             <jre>
-                                <minVersion>11</minVersion>
+                                <minVersion>1.8.0</minVersion>
                             </jre>
                             <versionInfo>
                                 <fileVersion>
                                     ${windowsVersion.majorVersion}.${windowsVersion.minorVersion}.${windowsVersion.incrementalVersion}.${windowsVersion.buildNumber}
                                 </fileVersion>
                                 <txtFileVersion>${project.version}</txtFileVersion>
-                                <fileDescription>GlobalPlatformPro</fileDescription>
-                                <copyright>(C) 2015 - 2022 Martin Paljak and contributors (LGPL+MIT)</copyright>
+                                <fileDescription>Parse JavaCard CAP files</fileDescription>
+                                <copyright>(C) 2018-2022 Martin Paljak (MIT License)</copyright>
                                 <productVersion>
                                     ${windowsVersion.majorVersion}.${windowsVersion.minorVersion}.${windowsVersion.incrementalVersion}.${windowsVersion.buildNumber}
                                 </productVersion>
                                 <txtProductVersion>${project.version}</txtProductVersion>
-                                <productName>GlobalPlatformPro</productName>
-                                <internalName>gppro</internalName>
-                                <originalFilename>gp.exe</originalFilename>
+                                <productName>capfile</productName>
+                                <internalName>capfile</internalName>
+                                <originalFilename>capfile.exe</originalFilename>
                             </versionInfo>
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <!-- Reproducible -->
+            <plugin>
+                <groupId>io.github.zlika</groupId>
+                <artifactId>reproducible-build-maven-plugin</artifactId>
             </plugin>
         </plugins>
     </build>

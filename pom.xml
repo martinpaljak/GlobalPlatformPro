@@ -5,7 +5,7 @@
     <parent>
         <groupId>com.github.martinpaljak</groupId>
         <artifactId>metacard</artifactId>
-        <version>21.10.19</version>
+        <version>22.02.12-SNAPSHOT</version>
     </parent>
     <version>21.12.32-SNAPSHOT</version>
     <artifactId>gppro</artifactId>
@@ -33,15 +33,11 @@
         </repository>
     </repositories>
     <modules>
-        <module>tool</module>
+        <module>capfile</module>
         <module>library</module>
+        <module>tool</module>
     </modules>
     <build>
-        <resources>
-            <resource>
-                <directory>target/generated-resources</directory>
-            </resource>
-        </resources>
         <plugins>
             <plugin>
                 <groupId>com.github.spotbugs</groupId>

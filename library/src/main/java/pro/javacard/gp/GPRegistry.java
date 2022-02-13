@@ -28,7 +28,7 @@ import com.payneteasy.tlv.BerTlvParser;
 import com.payneteasy.tlv.BerTlvs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pro.javacard.AID;
+import pro.javacard.capfile.AID;
 import pro.javacard.gp.GPRegistryEntry.Kind;
 import pro.javacard.gp.GPRegistryEntry.Privilege;
 

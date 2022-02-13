@@ -20,7 +20,7 @@
 package pro.javacard.gp;
 
 import apdu4j.core.HexUtils;
-import pro.javacard.AID;
+import pro.javacard.capfile.AID;
 
 import java.util.*;
 

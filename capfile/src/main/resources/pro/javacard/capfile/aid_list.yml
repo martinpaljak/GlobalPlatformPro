@@ -1,0 +1,31 @@
+# from https://www.commoncriteriaportal.org/files/epfiles/anssi-cc-2018_32fr.pdf
+- aid: A0000000308000000008DB00FF
+  name: com.gemalto.javacard.eid
+- aid: A0000000180F000001833032
+  name: com.gemalto.mchipadv
+- aid: A00000001830030100000000000000FF
+  name: com.gemalto.mpcos
+- aid: A0000000308000000008F500FF
+  name: com.gemalto.javacard.esign
+- aid: 4D4F43415F536572766572
+  name: com.gemalto.moc.server
+- aid: A00000001830070100000000000001FF
+  name: com.gemalto.dualPSE
+- aid: A0000000308000000006DF00FF
+  name: com.gemalto.javacard.mspnp
+- aid: A000000018320A0100000000000000FF
+  name: com.gemalto.pure
+- aid: A00000000310
+  name: com.visa.vsdc
+- aid: A000000018300B0200000000000000FF
+  name: eTravel (Virtual Pkg)
+- aid: A00000001880000000066240FF
+  name: com.gemalto.javacard.iasclassic
+# from https://www.commoncriteriaportal.org/files/epfiles/ANSSI-CC-2016-23.pdf
+- aid: 4D4F43415F436C69656E74
+  name: com.gemalto.moc.applet
+# based on https://github.com/tsenger/CCU2F/blob/master/CCU2F/cap/ccu2f.cap
+- aid: D276000085494A434F5058
+  name: com.nxp.id.jcopx
+- aid: A0000003964D344D30
+  name: org.mifare4mobile.hostinterface

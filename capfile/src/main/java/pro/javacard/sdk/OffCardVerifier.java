@@ -26,8 +26,9 @@ import pro.javacard.capfile.CAPFile;
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.nio.file.*;
-import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -78,21 +79,12 @@ public class OffCardVerifier {
             // Get verifier class
             Class<?> verifier = Class.forName("com.sun.javacard.offcardverifier.Verifier", true, sdk.getClassLoader());
 
-            // Verifier takes a vector of files
+            // Verifier takes a vector of files, so collect
             final Vector<File> expfiles = new Vector<>();
             for (Path e : exps) {
                 // collect all export files to a list
                 if (Files.isDirectory(e)) {
-                    Files.walkFileTree(e.toRealPath(), new SimpleFileVisitor<Path>() {
-                        @Override
-                        public FileVisitResult visitFile(java.nio.file.Path file, BasicFileAttributes attrs)
-                                throws IOException {
-                            if (file.toString().endsWith(".exp")) {
-                                expfiles.add(file.toFile());
-                            }
-                            return FileVisitResult.CONTINUE;
-                        }
-                    });
+                    expfiles.addAll(Files.walk(e.toRealPath()).filter(p -> p.toString().endsWith(".exp")).map(Path::toFile).collect(Collectors.toList()));
                 } else if (Files.isReadable(e)) {
                     if (e.toString().endsWith(".exp")) {
                         expfiles.add(e.toFile());
@@ -126,10 +118,7 @@ public class OffCardVerifier {
 
     private static void rmminusrf(Path path) {
         try {
-            Files.walk(path)
-                    .sorted(Comparator.reverseOrder())
-                    .map(Path::toFile)
-                    .forEach(File::delete);
+            Files.walk(path).sorted(Comparator.reverseOrder()).forEach(CAPFile::uncheckedDelete);
         } catch (FileNotFoundException | NoSuchFileException e) {
             // Already gone - do nothing.
         } catch (IOException e) {
@@ -144,7 +133,7 @@ public class OffCardVerifier {
         return p;
     }
 
-    // Extracts .exp files from a jarfile to given path and returns the list of .exp files there
+    // Extracts .exp files from a jarfile to given path (temp folde) and returns the list of .exp files there
     public static List<Path> extractExps(Path jarfilePath, Path out) throws IOException {
         List<Path> exps = new ArrayList<>();
         try (JarFile jarfile = new JarFile(jarfilePath.toFile())) {

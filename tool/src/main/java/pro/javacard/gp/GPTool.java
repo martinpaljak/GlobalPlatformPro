@@ -131,7 +131,15 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
             showPreamble(argv, args);
 
             if (onlyHasArg(args, OPT_VERSION))
-                System.exit(0);
+                return;
+
+            // FIXME: have "cardlessCommands()"
+            if (onlyHasArg(args, OPT_CAP)) {
+                CAPFile cap = CAPFile.fromFile(args.valueOf(OPT_CAP).toPath());
+                cap.dump(System.out);
+                return;
+            }
+
             TerminalManager terminalManager = TerminalManager.getDefault();
             List<PCSCReader> readers = TerminalManager.listPCSC(terminalManager.terminals().list(), null, false);
 
@@ -192,9 +200,6 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
             if (args.has(OPT_CAP)) {
                 File capfile = args.valueOf(OPT_CAP);
                 cap = CAPFile.fromFile(capfile.toPath());
-
-                if (args.asMap().size() == 1)
-                    return 0;
             }
 
             // Now actually talk to possible terminals

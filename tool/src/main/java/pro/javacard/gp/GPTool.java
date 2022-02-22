@@ -424,6 +424,15 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                     if (!args.has(OPT_FORCE) && !args.has(OPT_SAD))
                         warnIfNoDelegatedManagement(gp);
                     List<CAPFile> caps = getCapFileList(args, OPT_LOAD);
+
+                    GPRegistry reg = gp.getRegistry();
+                    // Remove existing load file if needed
+                    if (args.has(OPT_FORCE)) {
+                        for (CAPFile loadcap : caps) {
+                            if (reg.allPackageAIDs().contains(loadcap.getPackageAID()))
+                                gp.deleteAID(loadcap.getPackageAID(), true);
+                        }
+                    }
                     for (CAPFile loadcap : caps) {
                         if (isVerbose) {
                             loadcap.dump(System.out);
@@ -892,7 +901,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
             AID dapDomain = optional(args, OPT_DAP_DOMAIN).orElse(null);
             GPData.LFDBH lfdbh = args.has(OPT_SHA256) ? GPData.LFDBH.SHA256 : null;
             GPCommands.load(gp, capFile, to, dapDomain, lfdbh);
-            System.out.println(capFile.getFile().map(Path::toString).orElse("CAP") + " loaded");
+            System.out.printf("%s loaded: %s %s%n", capFile.getFile().map(Path::toString).orElse("CAP"), capFile.getPackageName(), capFile.getPackageAID());
         } catch (GPException e) {
             switch (e.sw) {
                 case 0x6A80:

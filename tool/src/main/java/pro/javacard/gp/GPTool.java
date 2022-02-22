@@ -429,8 +429,10 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                     // Remove existing load file if needed
                     if (args.has(OPT_FORCE)) {
                         for (CAPFile loadcap : caps) {
-                            if (reg.allPackageAIDs().contains(loadcap.getPackageAID()))
+                            if (reg.allPackageAIDs().contains(loadcap.getPackageAID())) {
+                                verbose("removing existing package " + loadcap.getPackageName() + " " + loadcap.getPackageAID());
                                 gp.deleteAID(loadcap.getPackageAID(), true);
+                            }
                         }
                     }
                     for (CAPFile loadcap : caps) {

@@ -43,6 +43,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
@@ -437,9 +438,9 @@ public class CAPFile {
 
         URI zip_disk = URI.create("jar:" + cap.toUri());
         try (FileSystem zipfs = FileSystems.newFileSystem(zip_disk, props)) {
-            Files.walk(zipfs.getPath("APPLET-INF", "classes"))
-                    .sorted(Comparator.reverseOrder())
-                    .forEach(CAPFile::uncheckedDelete);
+            List<Path> toDelete = Files.walk(zipfs.getPath("APPLET-INF", "classes")).collect(Collectors.toList());
+            Collections.sort(toDelete, Collections.reverseOrder(Comparator.comparingInt(o -> o.toString().length())));
+            toDelete.stream().forEach(CAPFile::uncheckedDelete);
         }
     }
 }

@@ -422,6 +422,14 @@ public class CAPFile {
         return r;
     }
 
+    public static void uncheckedDelete(Path p) throws UncheckedIOException {
+        try {
+            Files.delete(p);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
     // Remove compiled code from capfile
     public static void strip(Path cap) throws IOException {
         Map<String, String> props = new HashMap<>();
@@ -431,8 +439,7 @@ public class CAPFile {
         try (FileSystem zipfs = FileSystems.newFileSystem(zip_disk, props)) {
             Files.walk(zipfs.getPath("APPLET-INF", "classes"))
                     .sorted(Comparator.reverseOrder())
-                    .map(Path::toFile)
-                    .forEach(File::delete);
+                    .forEach(CAPFile::uncheckedDelete);
         }
     }
 }

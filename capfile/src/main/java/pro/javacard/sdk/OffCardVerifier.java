@@ -127,7 +127,7 @@ public class OffCardVerifier {
     }
 
     private static Path under(Path out, String name) {
-        Path p = out.resolve(name).toAbsolutePath();
+        Path p = out.resolve(name).normalize().toAbsolutePath();
         if (!p.startsWith(out))
             throw new IllegalArgumentException("Invalid path in JAR: " + name);
         return p;

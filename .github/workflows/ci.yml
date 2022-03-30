@@ -28,4 +28,4 @@ jobs:
         with:
           java-version: ${{ matrix.java }}
           distribution: temurin
-      - run: ./mvnw -B verify
+      - run: ./mvnw -B -U -T1C verify

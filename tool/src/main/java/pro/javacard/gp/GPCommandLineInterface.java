@@ -47,6 +47,7 @@ abstract class GPCommandLineInterface {
     protected static OptionSpec<HexBytes> OPT_SECURE_APDU = parser.acceptsAll(Arrays.asList("s", "secure-apdu"), "Send raw APDU via SCP").withRequiredArg().ofType(HexBytes.class).describedAs("APDU");
     protected static OptionSpec<Void> OPT_FORCE = parser.acceptsAll(Arrays.asList("f", "force"), "Force operations");
     protected static OptionSpec<Void> OPT_SAD = parser.acceptsAll(Arrays.asList("F", "no-felix"), "Disable Felix mode DWIM");
+    protected static OptionSpec<Void> OPT_NO_RESET = parser.acceptsAll(Arrays.asList("R", "no-reset"), "Disable resetting card when disconnecting");
 
     // Applet loading operations
     protected static OptionSpec<File> OPT_CAP = parser.accepts("cap", "Use a CAP file as source").withRequiredArg().ofType(File.class).describedAs("capfile");

@@ -122,6 +122,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
     public static void main(String[] argv) {
         Card c = null;
         int ret = 1;
+        boolean resetOnDisconnect = true;
         try {
             OptionSet args = parseArguments(argv);
             setupLogging(args);
@@ -129,7 +130,9 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
 
             if (onlyHasArg(args, OPT_VERSION))
                 System.exit(0);
-
+            if (args.has(OPT_NO_RESET)) {
+                resetOnDisconnect= false;
+            }
             TerminalManager terminalManager = TerminalManager.getDefault();
             List<PCSCReader> readers = TerminalManager.listPCSC(terminalManager.terminals().list(), null, false);
 
@@ -157,7 +160,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
         } finally {
             if (c != null) {
                 try {
-                    c.disconnect(true);
+                    c.disconnect(resetOnDisconnect);
                 } catch (CardException e) {
                     // Warn or ignore
                 }

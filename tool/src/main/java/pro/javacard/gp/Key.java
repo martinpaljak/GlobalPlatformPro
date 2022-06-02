@@ -41,16 +41,10 @@ import java.security.PublicKey;
 import java.security.cert.CertificateException;
 import java.util.Optional;
 
-class Key {
+public class Key {
     byte[] key;
     PublicKey publicKey;
     PrivateKey privateKey;
-
-    private Key(byte[] sym, PublicKey publicKey, PrivateKey privateKey) {
-        this.key = sym;
-        this.publicKey = publicKey;
-        this.privateKey = privateKey;
-    }
 
     public Optional<byte[]> getSymmetric() {
         return Optional.ofNullable(key);
@@ -64,7 +58,7 @@ class Key {
         return Optional.ofNullable(privateKey);
     }
 
-    public static Key valueOf(String v) {
+    public Key(String v) {
         Path p = Paths.get(v);
         if (Files.isReadable(p)) {
             try (InputStream inputStream = Files.newInputStream(p)) {
@@ -73,18 +67,26 @@ class Key {
                     if (ohh instanceof PEMKeyPair) {
                         PEMKeyPair kp = (PEMKeyPair) ohh;
                         KeyPair keyPair = new JcaPEMKeyConverter().getKeyPair(kp);
-                        return new Key(null, keyPair.getPublic(), keyPair.getPrivate());
+                        this.key = null;
+                        this.publicKey = keyPair.getPublic();
+                        this.privateKey = keyPair.getPrivate();
                     } else if (ohh instanceof SubjectPublicKeyInfo) {
-                        return new Key(null, new JcaPEMKeyConverter().getPublicKey((SubjectPublicKeyInfo) ohh), null);
+                        this.key = null;
+                        this.publicKey = new JcaPEMKeyConverter().getPublicKey((SubjectPublicKeyInfo) ohh);
+                        this.privateKey = null; 
                     } else if (ohh instanceof X509CertificateHolder) {
                         X509CertificateHolder certHolder = (X509CertificateHolder) ohh;
                         try {
-                            return new Key(null, new JcaX509CertificateConverter().getCertificate(certHolder).getPublicKey(), null);
+                            this.key = null;
+                            this.publicKey = new JcaX509CertificateConverter().getCertificate(certHolder).getPublicKey();
+                            this.privateKey = null; 
                         } catch (CertificateException ce) {
                             throw new IllegalArgumentException("Can not read certificate from PEM: " + ce.getMessage());
                         }
                     } else if (ohh instanceof PrivateKeyInfo) {
-                        return new Key(null, null, new JcaPEMKeyConverter().getPrivateKey((PrivateKeyInfo) ohh));
+                        this.key = null;
+                        this.publicKey = null;
+                        this.privateKey = new JcaPEMKeyConverter().getPrivateKey((PrivateKeyInfo) ohh);
                     } else throw new IllegalArgumentException("Can not read PEM");
                 }
             } catch (IOException e) {
@@ -93,7 +95,9 @@ class Key {
         } else {
             byte[] k = HexUtils.hex2bin(v);
             if (k.length == 16 || k.length == 24 || k.length == 32) {
-                return new Key(k, null, null);
+                this.key = k;
+                this.publicKey = null;
+                this.privateKey = null;
             } else throw new IllegalArgumentException("Invalid key length: " + k.length);
         }
     }

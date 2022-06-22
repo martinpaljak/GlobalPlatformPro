@@ -66,6 +66,8 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
     static final String ENV_GP_READER_IGNORE = "GP_READER_IGNORE";
     static final String ENV_GP_TRACE = "GP_TRACE";
 
+    static final String ENV_GP_PCSC_RESET = "GP_PCSC_RESET";
+
     static void setupLogging(OptionSet args) {
         // Set up slf4j simple in a way that pleases us
         System.setProperty("org.slf4j.simpleLogger.showThreadName", "false");
@@ -122,6 +124,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
     public static void main(String[] argv) {
         Card c = null;
         int ret = 1;
+        boolean resetOnDisconnect = Boolean.parseBoolean(System.getenv().getOrDefault(ENV_GP_PCSC_RESET, "false"));
         try {
             OptionSet args = parseArguments(argv);
             setupLogging(args);
@@ -129,12 +132,13 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
 
             if (onlyHasArg(args, OPT_VERSION))
                 System.exit(0);
-
             TerminalManager terminalManager = TerminalManager.getDefault();
             List<PCSCReader> readers = TerminalManager.listPCSC(terminalManager.terminals().list(), null, false);
 
             String useReader = args.hasArgument(OPT_READER) ? args.valueOf(OPT_READER) : System.getenv(ENV_GP_READER);
             String ignoreReader = System.getenv(ENV_GP_READER_IGNORE);
+
+
 
             // FIXME: simplify
             Optional<CardTerminal> reader = TerminalManager.getLucky(TerminalManager.dwimify(readers, useReader, ignoreReader), terminalManager.terminals());
@@ -157,7 +161,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
         } finally {
             if (c != null) {
                 try {
-                    c.disconnect(true);
+                    c.disconnect(resetOnDisconnect);
                 } catch (CardException e) {
                     // Warn or ignore
                 }

@@ -5,7 +5,7 @@
     <parent>
         <groupId>com.github.martinpaljak</groupId>
         <artifactId>metacard</artifactId>
-        <version>22.02.22</version>
+        <version>22.09.8-SNAPSHOT</version>
     </parent>
     <version>21.12.32-SNAPSHOT</version>
     <artifactId>gppro</artifactId>
@@ -37,6 +37,15 @@
         <module>library</module>
         <module>tool</module>
     </modules>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.yaml</groupId>
+                <artifactId>snakeyaml</artifactId>
+                <version>1.31</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
     <build>
         <plugins>
             <plugin>

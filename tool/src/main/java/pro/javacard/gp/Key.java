@@ -41,7 +41,7 @@ import java.security.PublicKey;
 import java.security.cert.CertificateException;
 import java.util.Optional;
 
-class Key {
+public class Key {
     byte[] key;
     PublicKey publicKey;
     PrivateKey privateKey;

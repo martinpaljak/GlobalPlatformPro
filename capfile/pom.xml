@@ -8,7 +8,7 @@
         <version>21.12.32-SNAPSHOT</version>
     </parent>
     <artifactId>capfile</artifactId>
-    <name>CAP file library</name>
+    <name>JavaCard CAP file library</name>
     <licenses>
         <license>
             <name>MIT</name>
@@ -19,19 +19,22 @@
         <!-- For PEM parsing in the signing tool -->
         <dependency>
             <groupId>org.bouncycastle</groupId>
-            <artifactId>bcpkix-jdk15on</artifactId>
+            <artifactId>bcpkix-jdk18on</artifactId>
             <optional>true</optional>
         </dependency>
         <!-- For parsing aid_list.yml in WellKnownAID -->
         <dependency>
             <groupId>org.yaml</groupId>
             <artifactId>snakeyaml</artifactId>
-            <version>1.30</version>
         </dependency>
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
-            <version>7.4.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

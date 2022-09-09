@@ -382,7 +382,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                                 System.err.println("Could not delete AID (not present on card): " + aid);
                             } else {
                                 if (e.sw == 0x6985) {
-                                    System.err.println("Could not delete " + aid + ". Some app still active?");
+                                    System.err.printf("Could not delete %s (0x6985). Some app still active?%n", aid);
                                 } else {
                                     System.err.printf("Could not delete AID %s: %s%n", aid, GPData.sw2str(e.sw));
                                 }

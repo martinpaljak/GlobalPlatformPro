@@ -1048,9 +1048,14 @@ public class GPSession {
                 // No data to report
                 return response.getData();
             }
-            // 0x6A86 - no tags support or ISD asked from SSD
-            // 0a6A81 - Same as 6A88 ?
-            logger.warn("GET STATUS failed for " + HexUtils.bin2hex(cmd.getBytes()) + " with " + GPData.sw2str(response.getSW()));
+            // Filter out common noise when modules are not reported by card.
+            if (sw == 0x6A86 && p1 == 0x10) {
+                logger.debug("GET STATUS failed for " + HexUtils.bin2hex(cmd.getBytes()) + " with " + GPData.sw2str(response.getSW()));
+            } else {
+                // 0x6A86 - no tags support or ISD asked from SSD
+                // 0a6A81 - Same as 6A88 ?
+                logger.warn("GET STATUS failed for " + HexUtils.bin2hex(cmd.getBytes()) + " with " + GPData.sw2str(response.getSW()));
+            }
             return response.getData();
         }
 

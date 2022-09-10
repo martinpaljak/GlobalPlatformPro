@@ -66,7 +66,7 @@ public final class GPData {
 
         sw.put(0x6283, "Card Life Cycle State is CARD_LOCKED"); // Table 11-83: SELECT Warning Condition
 
-        sw.put(0x6438, "Import not available"); // XXX: find reference https://github.com/arekinath/PivApplet/issues/2
+        sw.put(0x6438, "Imported package not available"); // Table 9-14 https://docs.oracle.com/javacard/3.0.5/guide/downloading-cap-files-and-creating-applets.htm#JCUGC296
 
         sw.put(0x6581, "Memory failure"); // 2.3 Table 11-26: DELETE Error Conditions
 

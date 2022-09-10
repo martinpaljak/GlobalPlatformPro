@@ -66,12 +66,16 @@ public final class GPData {
 
         sw.put(0x6283, "Card Life Cycle State is CARD_LOCKED"); // Table 11-83: SELECT Warning Condition
 
+        sw.put(0x6438, "Import not available"); // XXX: find reference https://github.com/arekinath/PivApplet/issues/2
+
         sw.put(0x6581, "Memory failure"); // 2.3 Table 11-26: DELETE Error Conditions
 
         sw.put(0x6882, "Secure messaging not supported");  // 2.3 Table 11-63
 
         sw.put(0x6982, "Security status not satisfied");  // 2.3 Table 11-78
         sw.put(0x6985, "Conditions of use not satisfied");  // 2.3 Table 11-78
+
+        sw.put(0x6999, "Applet selection failed"); // JCRE 4.6.1
 
         sw.put(0x6A80, "Wrong data/incorrect values in data"); // Table 11-78
         sw.put(0x6A81, "Function not supported e.g. card Life Cycle State is CARD_LOCKED"); // 2.3 Table 11-63

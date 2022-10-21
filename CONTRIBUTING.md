@@ -5,28 +5,25 @@
   * Questions solely about jcshell/gpshell/gpj/gemexpresso/something else **shall be ignored**.
      * If you DO have a question about how to use GPPro, start the ticket with `Question: `
      * Comparative APDU traces from other software might be handy in debugging if specifications remain unclear and are OK
-  * Re-run your failing command with `-d -v -i` switches and send the output (if possible, use `--dump`) with information about your card and applet/CAP
+  * Re-run your failing command with `-d -v -i` switches and send the output with information about your card and applet/CAP
   * **Only plaintext** logs. **NO** screenshots, pictures, word documents.
   * If unsure, first read about [asking questions](http://www.catb.org/esr/faqs/smart-questions.html)
   * I shall not guide your EMV emulation-cloning adventures, even for some bitcoin(s).
-  * If you are asking for help in a legitimate commercial endeavour, send an e-mail to martin@martinpaljak.net
+  * If you are asking for help in a legitimate commercial (not open source) endeavour, send an e-mail to martin@martinpaljak.net
 
 # Contributing to GlobalPlatformPro
  * Use the software!
  * Send card information
  * Send debug logs (with `--debug` and `--verbose`)
  * All patches must be with MIT license.
+   * Check easy issues: https://github.com/martinpaljak/GlobalPlatformPro/contribute 
 
 ### Debian/Ubuntu
- * Install dependencies: `apt-get install --no-install-recommends libccid openjdk-7-jdk git ant`
+ * Install dependencies: `apt-get install --no-install-recommends libccid openjdk-11-jdk git`
 
 ### Fedora/CentOS
- * Install dependencies: `yum install pcsc-lite-ccid java-1.8.0-openjdk git ant`
+ * Install dependencies: `yum install pcsc-lite-ccid java-11-openjdk-devel git`
  * Start pcscd service: `service pcscd start`
 
 ### FreeBSD
- * Install dependencies: `pkg install devel/libccid java/openjdk7 devel/apache-ant devel/git`
-
-## Note about Oracle JDK
- * Requires "Unlimited Strength Jurisdiction Policy Files"
- * Download for Java 1.8: http://www.oracle.com/technetwork/java/javase/downloads/jce8-download-2133166.html
+ * Install dependencies: `pkg install devel/libccid java/openjdk11 devel/git`

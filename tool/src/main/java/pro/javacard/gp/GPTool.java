@@ -35,7 +35,6 @@ import pro.javacard.capfile.AID;
 import pro.javacard.capfile.CAPFile;
 import pro.javacard.gp.GPRegistryEntry.Privilege;
 import pro.javacard.gp.GPSession.APDUMode;
-import pro.javacard.gp.PlaintextKeys.KDF;
 import pro.javacard.gp.i.CardKeysProvider;
 
 import javax.crypto.Cipher;
@@ -143,10 +142,12 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
             TerminalManager terminalManager = TerminalManager.getDefault();
             List<PCSCReader> readers = TerminalManager.listPCSC(terminalManager.terminals().list(), null, false);
 
+            if (args.has(OPT_READER) && !args.hasArgument(OPT_READER)) {
+                System.out.println("Available readers:");
+                readers.forEach((r) -> System.out.printf("- %s%n", r.getName()));
+            }
             String useReader = args.hasArgument(OPT_READER) ? args.valueOf(OPT_READER) : System.getenv(ENV_GP_READER);
             String ignoreReader = System.getenv(ENV_GP_READER_IGNORE);
-
-
 
             // FIXME: simplify
             Optional<CardTerminal> reader = TerminalManager.getLucky(TerminalManager.dwimify(readers, useReader, ignoreReader), terminalManager.terminals());
@@ -233,10 +234,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                 mode.addAll(args.valuesOf(OPT_SC_MODE));
             }
             final GPSession gp;
-            if (args.has(OPT_SDAID)) {
-                System.err.println("# Warning: --sdaid is deprecated, use -c/--connect <AID>");
-                gp = GPSession.connect(channel, args.valueOf(OPT_SDAID));
-            } else if (args.has(OPT_CONNECT)) {
+            if (args.has(OPT_CONNECT)) {
                 gp = GPSession.connect(channel, args.valueOf(OPT_CONNECT));
             } else if (env.containsKey(ENV_GP_AID)) {
                 AID aid = AID.fromString(env.get(ENV_GP_AID));
@@ -295,30 +293,11 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                 keys = cliKeys.or(() -> envKeys).orElse(PlaintextKeys.defaultKey());
             }
 
-            // Legacy KDF options so that "gp -l -emv" would still work
+            // Legacy KDF option and key version
             if (keys instanceof PlaintextKeys) {
                 PlaintextKeys keyz = (PlaintextKeys) keys;
-                List<OptionSpec<?>> deprecated = Arrays.asList(OPT_VISA2, OPT_EMV, OPT_KDF3);
-                List<OptionSpec<?>> kdfs = new ArrayList<>(deprecated);
-                kdfs.add(OPT_KEY_KDF);
-                List<OptionSpec<?>> present = kdfs.stream().filter(args::has).collect(Collectors.toList());
-                if (deprecated.stream().anyMatch(args::has)) {
-                    String presented = deprecated.stream().filter(args::has).map(OptionSpec::options).flatMap(Collection::stream).map(e -> "--" + e).collect(Collectors.joining(", "));
-                    System.err.printf("# Warning: deprecated options detected (%s) please use \"--key <kdf_name>:<master_key_in_hex>\"%n", presented);
-                }
-                if (present.size() > 1) {
-                    String allowed = kdfs.stream().map(OptionSpec::options).flatMap(Collection::stream).map(e -> "--" + e).collect(Collectors.joining(", "));
-                    String presented = present.stream().map(OptionSpec::options).flatMap(Collection::stream).map(e -> "--" + e).collect(Collectors.joining(", "));
-                    throw new IllegalArgumentException(String.format("Only one of %s is allowed, whereas %s given", allowed, presented));
-                }
 
-                if (args.has(OPT_VISA2)) {
-                    keyz.setDiversifier(KDF.VISA2);
-                } else if (args.has(OPT_EMV)) {
-                    keyz.setDiversifier(PlaintextKeys.KDF.EMV);
-                } else if (args.has(OPT_KDF3)) {
-                    keyz.setDiversifier(KDF.KDF3);
-                } else if (args.has(OPT_KEY_KDF)) {
+                if (args.has(OPT_KEY_KDF)) {
                     keyz.setDiversifier(args.valueOf(OPT_KEY_KDF));
                 }
 
@@ -747,28 +726,6 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                     gp.deleteKey(keyver);
                 }
 
-                // --unlock, same as -lock default
-                if (args.has(OPT_UNLOCK)) {
-                    System.err.println("# Warning: \"--unlock\" is deprecated, please use \"--lock default\"");
-                    List<GPKeyInfo> current = gp.getKeyInfoTemplate();
-                    // Write default keys
-                    final boolean replace;
-                    final int kv;
-                    // Factory keys
-                    if (gp.getScpKeyVersion() == 255 || current.size() == 0) {
-                        replace = false;
-                        kv = args.has(OPT_NEW_KEY_VERSION) ? args.valueOf(OPT_NEW_KEY_VERSION) : 1;
-                    } else {
-                        // Replace current key
-                        kv = gp.getScpKeyVersion();
-                        replace = true;
-                    }
-                    PlaintextKeys new_key = PlaintextKeys.defaultKey();
-                    new_key.setVersion(kv);
-                    new_key.diversify(gp.getSecureChannel().scp, new byte[0]); // Just set the SCP type
-                    gp.putKeys(new_key, replace);
-                    System.out.println("Default " + HexUtils.bin2hex(PlaintextKeys.defaultKeyBytes) + " set as key for " + gp.getAID());
-                }
 
                 // --lock
                 if (args.has(OPT_LOCK) || args.has(OPT_LOCK_ENC) || args.has(OPT_LOCK_MAC) || args.has(OPT_LOCK_DEK)) {
@@ -941,7 +898,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
 
     private static boolean needsAuthentication(OptionSet args) {
         OptionSpec<?>[] yes = new OptionSpec<?>[]{OPT_CONNECT, OPT_LIST, OPT_LOAD, OPT_INSTALL, OPT_DELETE, OPT_DELETE_KEY, OPT_CREATE,
-                OPT_LOCK, OPT_UNLOCK, OPT_LOCK_ENC, OPT_LOCK_MAC, OPT_LOCK_DEK, OPT_MAKE_DEFAULT,
+                OPT_LOCK, OPT_LOCK_ENC, OPT_LOCK_MAC, OPT_LOCK_DEK, OPT_MAKE_DEFAULT,
                 OPT_UNINSTALL, OPT_SECURE_APDU, OPT_DOMAIN, OPT_LOCK_CARD, OPT_UNLOCK_CARD, OPT_LOCK_APPLET, OPT_UNLOCK_APPLET,
                 OPT_STORE_DATA, OPT_STORE_DATA_CHUNK, OPT_INITIALIZE_CARD, OPT_SECURE_CARD, OPT_RENAME_ISD, OPT_SET_PERSO, OPT_SET_PRE_PERSO, OPT_MOVE,
                 OPT_PUT_KEY, OPT_REPLACE_KEY};

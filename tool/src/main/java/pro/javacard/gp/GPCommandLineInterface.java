@@ -36,11 +36,9 @@ abstract class GPCommandLineInterface {
     protected static OptionSpec<Void> OPT_VERSION = parser.acceptsAll(Arrays.asList("V", "version"), "Show information about the program");
     protected static OptionSpec<Void> OPT_HELP = parser.acceptsAll(Arrays.asList("h", "?", "help"), "Shows this help").forHelp();
     protected static OptionSpec<AID> OPT_CONNECT = parser.acceptsAll(Arrays.asList("c", "connect"), "Connect to app/domain").withRequiredArg().ofType(AID.class);
-    protected static OptionSpec<AID> OPT_SDAID = parser.accepts("sdaid", "(deprecated) ISD AID").availableUnless(OPT_CONNECT).withRequiredArg().ofType(AID.class);
-
     protected static OptionSpec<Void> OPT_DEBUG = parser.acceptsAll(Arrays.asList("d", "debug"), "Show PC/SC and APDU trace");
     protected static OptionSpec<Void> OPT_VERBOSE = parser.acceptsAll(Arrays.asList("v", "verbose"), "Be verbose about operations");
-    protected static OptionSpec<String> OPT_READER = parser.acceptsAll(Arrays.asList("r", "reader"), "Use specific reader").withRequiredArg().describedAs("reader");
+    protected static OptionSpec<String> OPT_READER = parser.acceptsAll(Arrays.asList("r", "reader"), "Use specific reader").withOptionalArg().describedAs("reader");
     protected static OptionSpec<Void> OPT_LIST = parser.acceptsAll(Arrays.asList("l", "list"), "List the contents of the card");
     protected static OptionSpec<Void> OPT_INFO = parser.acceptsAll(Arrays.asList("i", "info"), "Show information");
     protected static OptionSpec<HexBytes> OPT_APDU = parser.acceptsAll(Arrays.asList("a", "apdu"), "Send raw APDU").withRequiredArg().ofType(HexBytes.class).describedAs("APDU");
@@ -93,13 +91,6 @@ abstract class GPCommandLineInterface {
     protected static OptionSpec<HexBytes> OPT_LOCK_ENC = parser.accepts("lock-enc", "Set new ENC key").withRequiredArg().ofType(HexBytes.class).describedAs("key");
     protected static OptionSpec<HexBytes> OPT_LOCK_MAC = parser.accepts("lock-mac", "Set new MAC key").withRequiredArg().ofType(HexBytes.class).describedAs("key");
     protected static OptionSpec<HexBytes> OPT_LOCK_DEK = parser.accepts("lock-dek", "Set new DEK key").withRequiredArg().ofType(HexBytes.class).describedAs("key");
-
-    protected static OptionSpec<Void> OPT_UNLOCK = parser.accepts("unlock", "(deprecated) Set default test key");
-
-    // Legacy shorthands
-    protected static OptionSpec<Void> OPT_EMV = parser.accepts("emv", "(deprecated) Use EMV KDF");
-    protected static OptionSpec<Void> OPT_VISA2 = parser.accepts("visa2", " (deprecated) Use VISA2 KDF");
-    protected static OptionSpec<Void> OPT_KDF3 = parser.accepts("kdf3", " (deprecated) Use SCP03 KDF");
 
     // Key management
     protected static OptionSpec<Integer> OPT_KEY_VERSION = parser.accepts("key-ver", "Specify key version").withRequiredArg().ofType(Integer.class).withValuesConvertedBy(new HexIntegerConverter()).describedAs("version");

@@ -19,6 +19,9 @@
  */
 package pro.javacard.gp;
 
+import org.bouncycastle.asn1.ASN1InputStream;
+import org.bouncycastle.asn1.ASN1Integer;
+import org.bouncycastle.asn1.DLSequence;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.cert.X509CertificateHolder;
@@ -32,6 +35,7 @@ import org.bouncycastle.crypto.params.KeyParameter;
 import org.bouncycastle.openssl.PEMKeyPair;
 import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
+import org.bouncycastle.util.encoders.Hex;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -308,5 +312,31 @@ public final class GPCrypto {
             System.arraycopy(key, 0, key8, 0, 8);
             return key8;
         }
+    }
+
+    // Convert DER to R||S
+    public static byte[] der2rs(byte[] der, int len) throws SignatureException {
+        try (ASN1InputStream input = new ASN1InputStream(der)) {
+            DLSequence seq = (DLSequence) input.readObject();
+            ASN1Integer r = (ASN1Integer) seq.getObjectAt(0);
+            ASN1Integer s = (ASN1Integer) seq.getObjectAt(1);
+            return GPUtils.concatenate(leftpad(r.getPositiveValue().toByteArray(), len), leftpad(s.getPositiveValue().toByteArray(), len));
+        } catch (IOException e) {
+            throw new SignatureException("Could not convert DER to R||S: " + e.getMessage());
+        }
+    }
+
+    // Right-align byte array to the specified size, padding with 0 from left
+    public static byte[] leftpad(byte[] bytes, int len) {
+        if (bytes.length < len) {
+            byte[] nv = new byte[len];
+            System.arraycopy(bytes, 0, nv, len - bytes.length, bytes.length);
+            return nv;
+        } else if (bytes.length > len) {
+            byte[] nv = new byte[len];
+            System.arraycopy(bytes, bytes.length - len, nv, 0, len);
+            return nv;
+        }
+        return bytes;
     }
 }

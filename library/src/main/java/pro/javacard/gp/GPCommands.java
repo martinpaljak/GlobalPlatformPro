@@ -99,8 +99,8 @@ public class GPCommands {
     }
 
     static Optional<String> getImplicitString(GPRegistryEntry entry) {
-        Optional<String> contactless = entry.getImplicitlySelectedContactless().isEmpty() ? Optional.empty() : Optional.of(String.format("Contactless(%s)", entry.getImplicitlySelectedContactless().stream().map(Object::toString).collect(Collectors.joining(", "))));
-        Optional<String> contact = entry.getImplicitlySelectedContact().isEmpty() ? Optional.empty() : Optional.of(String.format("Contact(%s)", entry.getImplicitlySelectedContact().stream().map(Object::toString).collect(Collectors.joining(", "))));
+        Optional<String> contactless = entry.getImplicitlySelectedContactless().isEmpty() ? Optional.empty() : Optional.of(String.format("Contactless(%s)", entry.getImplicitlySelectedContactless().stream().map(Object::toString).collect(Collectors.joining(","))));
+        Optional<String> contact = entry.getImplicitlySelectedContact().isEmpty() ? Optional.empty() : Optional.of(String.format("Contact(%s)", entry.getImplicitlySelectedContact().stream().map(Object::toString).collect(Collectors.joining(","))));
         return Stream.of(contactless, contact).filter(Optional::isPresent).map(Optional::get).reduce((a, b) -> a + ", " + b);
     }
 
@@ -120,7 +120,7 @@ public class GPCommands {
         if (dapAID != null) {
             GPRegistryEntry dapTarget = reg.getDomain(targetAID).orElseThrow(() -> new IllegalArgumentException("DAP domain does not exist: " + dapAID));
             if (!(dapTarget.hasPrivilege(Privilege.DAPVerification) || dapTarget.hasPrivilege(Privilege.MandatedDAPVerification))) {
-                throw new IllegalArgumentException("Specified DAP domain does not have (Mandated)DAPVerification privilege: " + dapAID.toString());
+                throw new IllegalArgumentException("Specified DAP domain does not have (Mandated)DAPVerification privilege: " + dapAID);
             }
         }
 

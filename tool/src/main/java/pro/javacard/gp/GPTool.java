@@ -45,6 +45,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.interfaces.RSAPrivateKey;
@@ -218,7 +219,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                     verbose("Selecting " + target);
                     channel.transmit(new CommandAPDU(0x00, GPSession.INS_SELECT, 0x04, 0x00, target.getBytes()));
                 }
-                for (byte[] s : args.valuesOf(OPT_APDU).stream().map(HexBytes::value).collect(Collectors.toList())) {
+                for (byte[] s : args.valuesOf(OPT_APDU).stream().map(APDUParsers::stringToAPDU).collect(Collectors.toList())) {
                     CommandAPDU c = new CommandAPDU(s);
                     channel.transmit(c);
                 }
@@ -326,7 +327,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
 
                 // --secure-apdu or -s
                 if (args.has(OPT_SECURE_APDU)) {
-                    for (byte[] s : args.valuesOf(OPT_SECURE_APDU).stream().map(HexBytes::value).collect(Collectors.toList())) {
+                    for (byte[] s : args.valuesOf(OPT_SECURE_APDU).stream().map(APDUParsers::stringToAPDU).collect(Collectors.toList())) {
                         CommandAPDU c = new CommandAPDU(s);
                         gp.transmit(c);
                     }
@@ -858,8 +859,44 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
         try {
             AID to = optional(args, OPT_TO).orElse(gp.getAID());
             AID dapDomain = optional(args, OPT_DAP_DOMAIN).orElse(null);
-            GPData.LFDBH lfdbh = args.has(OPT_SHA256) ? GPData.LFDBH.SHA256 : null;
-            GPCommands.load(gp, capFile, to, dapDomain, lfdbh);
+            GPData.LFDBH lfdbh = args.has(OPT_SHA256) ? GPData.LFDBH.SHA256 : null; // TODO: reverse assumption (require force to sha-1)
+
+            GPRegistryEntry targetDomain = gp.getRegistry().getDomain(to).orElseThrow(() -> new IllegalArgumentException("Target domain does not exist: " + to));
+
+            if (dapDomain != null) {
+                GPRegistryEntry dapTarget = gp.getRegistry().getDomain(dapDomain).orElseThrow(() -> new IllegalArgumentException("DAP domain does not exist: " + dapDomain));
+                if (!(dapTarget.hasPrivilege(Privilege.DAPVerification) || dapTarget.hasPrivilege(Privilege.MandatedDAPVerification))) {
+                    throw new IllegalArgumentException("Specified DAP domain does not have (Mandated)DAPVerification privilege: " + dapDomain);
+                }
+            }
+
+            boolean dapRequired = targetDomain.hasPrivilege(Privilege.DAPVerification)
+                    || gp.getRegistry().allDomains().stream().anyMatch(e -> e.hasPrivilege(Privilege.MandatedDAPVerification))
+                    || dapDomain != null;
+
+            final byte[] signature;
+            if (dapRequired) {
+                if (args.has(OPT_DAP_SIGNATURE)) {
+                    signature = args.valueOf(OPT_DAP_SIGNATURE).value();
+                } else if (args.has(OPT_DAP_KEY)) {
+                    Key dapKey = args.valueOf(OPT_DAP_KEY);
+                    if (dapKey.getPrivate().isEmpty()) {
+                        throw new IllegalArgumentException("Invalid DAP key: " + dapKey);
+                    }
+                    signature = DAPSigner.sign(capFile, dapKey.getPrivate().get(), Optional.ofNullable(lfdbh).orElse(GPData.LFDBH.SHA1));
+                } else {
+                    // TODO: have some xml/zip parsers for ease of use.
+                    throw new IllegalArgumentException("Need DAP signature!");
+                }
+            } else {
+                signature = null;
+            }
+
+            if (targetDomain.hasPrivilege(Privilege.DelegatedManagement) || dapRequired || lfdbh != null) {
+                lfdbh = Optional.ofNullable(lfdbh).orElse(GPData.LFDBH.SHA1);
+            }
+            gp.loadCapFile(capFile, to, dapDomain, signature, lfdbh);
+
             System.out.printf("%s loaded: %s %s%n", capFile.getFile().map(Path::toString).orElse("CAP"), capFile.getPackageName(), capFile.getPackageAID());
         } catch (GPException e) {
             switch (e.sw) {
@@ -873,6 +910,8 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                     // Do nothing. Here for findbugs
             }
             throw e;
+        } catch (GeneralSecurityException e) {
+            throw new GPException("Failed to generate DAP signature: " + e.getMessage(), e);
         }
     }
 

@@ -270,15 +270,19 @@ In regard to GlobalPlatform, the goal is to make simple operations like installi
  * [ber-tlv](https://github.com/evsinev/ber-tlv) for tag parsing (Apache)
 
 ## Contact
-
-* Generic enquiries: martin@martinpaljak.net
 * **For technical support:**
-  * re-run your failing command with `-d -v -i` switches and send the output, information about your card and applet/CAP
-  * **Only plaintext** logs. **NO** screenshots, pictures, word documents. **NO** generic questions about java/linux/windows/globalplatform. Questions about jcshell/gpshell/gpj/something else **shall be ignored**.
-  * If unsure, first read about [asking questions](http://www.catb.org/esr/faqs/smart-questions.html)
-  * For "How do I ... ?" questions [start a thread in discussions](https://github.com/martinpaljak/GlobalPlatformPro/discussions/categories/q-a)
-* [File an issue on Github](https://github.com/martinpaljak/GlobalPlatformPro/issues/new). Better yet - a pull request!
-* Want to **donate**? E-mail or paypal to martin@martinpaljak.net or [become a sponsor](https://github.com/sponsors/martinpaljak)!
+   * Re-run your failing command with `-d -v -i` switches and send the output, information about your card and applet/CAP
+   * **Only plaintext** logs. **NO** screenshots, pictures, word documents. **NO** generic questions about java/linux/windows/globalplatform. Questions about jcshell/gpshell/gpj/something else **shall be ignored**.
+   * If unsure, first read about [asking questions](http://www.catb.org/esr/faqs/smart-questions.html)
+   * For "How do I ... ?" questions [start a thread in discussions](https://github.com/martinpaljak/GlobalPlatformPro/discussions/categories/q-a)
+ * Generic enquiries
+   * E-mail martin@martinpaljak.net
+ * For reporting bugs and issues (ask for help and questions in discussions)
+   * [File an issue](https://github.com/martinpaljak/GlobalPlatformPro/issues/new)
+   * Better yet - open a pull request!
+   * Security issues - see [SECURITY.md](https://github.com/martinpaljak/.github/blob/master/SECURITY.md))
+ * Please **donate**!
+   * See [sponsors page](https://github.com/sponsors/martinpaljak) or e-mail martin@martinpaljak.net directly
 
 #### Legal disclaimer
  The casual: trademarks to their owners, copyrights to authors, software patents to hell, legal letters to ~~/dev/null~~ PGP key 0x1d86f74c7b9dd593. Everything is provided AS-IS AND THERE IS A CONSTANT RISK OF DEATH FROM SUDDEN LIGHTNING. Writing in all caps made it look like serious, didn't it?

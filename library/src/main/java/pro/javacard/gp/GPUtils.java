@@ -23,10 +23,8 @@
 package pro.javacard.gp;
 
 import apdu4j.core.HexUtils;
-import com.payneteasy.tlv.BerTlvLogger;
-import com.payneteasy.tlv.BerTlvParser;
-import com.payneteasy.tlv.BerTlvs;
-import com.payneteasy.tlv.IBerTlvLogger;
+import com.payneteasy.tlv.*;
+import org.bouncycastle.util.encoders.Hex;
 import org.slf4j.Logger;
 
 import java.io.ByteArrayOutputStream;
@@ -34,6 +32,7 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 public class GPUtils {
@@ -158,29 +157,75 @@ public class GPUtils {
     }
 
     static void trace_lv(byte[] data, Logger logger) {
-        for (int i = 0; i < data.length; ) {
-            int l = getLength(data, i);
-            int lenLen = getLenLen(data, i);
-            logger.trace(String.format("[%s] %s", HexUtils.bin2hex(Arrays.copyOfRange(data, i, i + lenLen)), HexUtils.bin2hex(Arrays.copyOfRange(data, i + lenLen, i + lenLen + l))));
-            i += lenLen + l;
+        try {
+            for (String s : visualize_lv(data))
+                logger.trace(s);
+        } catch (IllegalArgumentException e) {
+            logger.error("Invalid LV data: {}", Hex.toHexString(data), e);
         }
     }
 
-    static void trace_tlv(byte[] data, Logger l) {
-        BerTlvParser parser = new BerTlvParser();
-        BerTlvs tlvs = parser.parse(data);
-        BerTlvLogger.log("", tlvs,
-                new IBerTlvLogger() {
-                    @Override
-                    public boolean isDebugEnabled() {
-                        return true;
-                    }
+    static List<String> visualize_lv(byte[] data) {
+        List<String> result = new ArrayList<>();
+        try {
+            for (int i = 0; i < data.length; ) {
+                int l = getLength(data, i);
+                int lenLen = getLenLen(data, i);
+                result.add(String.format("[%s] %s", HexUtils.bin2hex(Arrays.copyOfRange(data, i, i + lenLen)), HexUtils.bin2hex(Arrays.copyOfRange(data, i + lenLen, i + lenLen + l))));
+                i += lenLen + l;
+            }
+        } catch (ArrayIndexOutOfBoundsException e) {
+            throw new IllegalArgumentException("Not valid LV structure: " + e.getMessage(), e);
+        }
+        return result;
+    }
 
-                    @Override
-                    public void debug(String s, Object... objects) {
-                        l.trace(s, objects);
-                    }
-                }
-        );
+
+    static String spacer(int n) {
+        return new String(new char[n]).replace('\0', ' ');
+    }
+
+
+    static void dump(BerTlv tlv, int depth, List<String> result) {
+        if (tlv.isConstructed()) {
+            result.add(String.format("%s[%s]", spacer(depth * 5), Hex.toHexString(tlv.getTag().bytes)));
+
+            Iterator it = tlv.getValues().iterator();
+            while(it.hasNext()) {
+                BerTlv child = (BerTlv)it.next();
+                dump(child, depth + 1,  result);
+            }
+        } else {
+            result.add(String.format("%s[%s] %s", spacer(depth * 5), Hex.toHexString(tlv.getTag().bytes), Hex.toHexString(tlv.getBytesValue())));
+        }
+    }
+
+    static void dump(BerTlvs tlv, int depth, List<String> result) {
+        Iterator it = tlv.getList().iterator();
+
+        while(it.hasNext()) {
+            BerTlv t = (BerTlv)it.next();
+            dump(t, depth, result);
+        }
+    }
+
+    public static List<String> visualize_tlv(byte[] payload) {
+        ArrayList<String> result = new ArrayList<>();
+        try {
+            BerTlvs tlvs = new BerTlvParser().parse(payload);
+            dump(tlvs, 0, result);
+        } catch (ArrayIndexOutOfBoundsException e) {
+            throw new IllegalArgumentException("Not valid TLVs: " + e.getMessage(), e);
+        }
+        return result;
+    }
+
+    static void trace_tlv(byte[] data, Logger l) {
+        try {
+            for (String s : visualize_tlv(data))
+                l.trace(s);
+        } catch (IllegalArgumentException e) {
+            l.error("Invalid TLV data: {}", Hex.toHexString(data), e);
+        }
     }
 }

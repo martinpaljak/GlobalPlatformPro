@@ -46,10 +46,13 @@ public class Key {
     PublicKey publicKey;
     PrivateKey privateKey;
 
-    private Key(byte[] sym, PublicKey publicKey, PrivateKey privateKey) {
+    String s;
+
+    private Key(String s, byte[] sym, PublicKey publicKey, PrivateKey privateKey) {
         this.key = sym;
         this.publicKey = publicKey;
         this.privateKey = privateKey;
+        this.s = s;
     }
 
     public Optional<byte[]> getSymmetric() {
@@ -73,18 +76,18 @@ public class Key {
                     if (ohh instanceof PEMKeyPair) {
                         PEMKeyPair kp = (PEMKeyPair) ohh;
                         KeyPair keyPair = new JcaPEMKeyConverter().getKeyPair(kp);
-                        return new Key(null, keyPair.getPublic(), keyPair.getPrivate());
+                        return new Key(v, null, keyPair.getPublic(), keyPair.getPrivate());
                     } else if (ohh instanceof SubjectPublicKeyInfo) {
-                        return new Key(null, new JcaPEMKeyConverter().getPublicKey((SubjectPublicKeyInfo) ohh), null);
+                        return new Key(v, null, new JcaPEMKeyConverter().getPublicKey((SubjectPublicKeyInfo) ohh), null);
                     } else if (ohh instanceof X509CertificateHolder) {
                         X509CertificateHolder certHolder = (X509CertificateHolder) ohh;
                         try {
-                            return new Key(null, new JcaX509CertificateConverter().getCertificate(certHolder).getPublicKey(), null);
+                            return new Key(v,null, new JcaX509CertificateConverter().getCertificate(certHolder).getPublicKey(), null);
                         } catch (CertificateException ce) {
                             throw new IllegalArgumentException("Can not read certificate from PEM: " + ce.getMessage());
                         }
                     } else if (ohh instanceof PrivateKeyInfo) {
-                        return new Key(null, null, new JcaPEMKeyConverter().getPrivateKey((PrivateKeyInfo) ohh));
+                        return new Key(v, null, null, new JcaPEMKeyConverter().getPrivateKey((PrivateKeyInfo) ohh));
                     } else throw new IllegalArgumentException("Can not read PEM");
                 }
             } catch (IOException e) {
@@ -92,9 +95,15 @@ public class Key {
             }
         } else {
             byte[] k = HexUtils.hex2bin(v);
+            // TODO: public keys as curve points.
             if (k.length == 16 || k.length == 24 || k.length == 32) {
-                return new Key(k, null, null);
+                return new Key(v, k, null, null);
             } else throw new IllegalArgumentException("Invalid key length: " + k.length);
         }
+    }
+
+    @Override
+    public String toString() {
+        return s;
     }
 }

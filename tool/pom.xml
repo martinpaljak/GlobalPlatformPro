@@ -51,6 +51,12 @@
             <artifactId>testng</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- for CBOR -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-cbor</artifactId>
+            <version>2.14.0</version>
+        </dependency>
     </dependencies>
     <build>
         <plugins>

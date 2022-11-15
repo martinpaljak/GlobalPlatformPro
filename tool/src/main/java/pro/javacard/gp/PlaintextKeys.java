@@ -394,6 +394,9 @@ class PlaintextKeys extends GPCardKeys {
         if (p == KeyPurpose.DEK)
             return cardKey;
 
+        if (p == KeyPurpose.RMAC)
+            return null;
+
         byte[] derivationData = new byte[16];
         System.arraycopy(kdd, 12, derivationData, 0, 4);
         System.arraycopy(kdd, 0, derivationData, 4, 4);
@@ -421,7 +424,8 @@ class PlaintextKeys extends GPCardKeys {
             return cipher.doFinal(derivationData);
         } catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
             throw new IllegalStateException("Session keys calculation failed.", e);
-        } catch (InvalidKeyException | IllegalBlockSizeException | BadPaddingException | InvalidAlgorithmParameterException e) {
+        } catch (InvalidKeyException | IllegalBlockSizeException | BadPaddingException |
+                 InvalidAlgorithmParameterException e) {
             throw new RuntimeException("Session keys calculation failed.", e);
         }
     }

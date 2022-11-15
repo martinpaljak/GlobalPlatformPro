@@ -82,7 +82,7 @@ public class Key {
                     } else if (ohh instanceof X509CertificateHolder) {
                         X509CertificateHolder certHolder = (X509CertificateHolder) ohh;
                         try {
-                            return new Key(v,null, new JcaX509CertificateConverter().getCertificate(certHolder).getPublicKey(), null);
+                            return new Key(v, null, new JcaX509CertificateConverter().getCertificate(certHolder).getPublicKey(), null);
                         } catch (CertificateException ce) {
                             throw new IllegalArgumentException("Can not read certificate from PEM: " + ce.getMessage());
                         }

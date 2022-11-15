@@ -1,7 +1,5 @@
 package pro.javacard.gp;
 
-import org.bouncycastle.asn1.ASN1Sequence;
-import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import pro.javacard.capfile.CAPFile;
 
 import java.security.GeneralSecurityException;

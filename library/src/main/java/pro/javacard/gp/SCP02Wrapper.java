@@ -47,7 +47,7 @@ class SCP02Wrapper extends SecureChannelWrapper {
     private boolean postAPDU = false;
 
 
-    SCP02Wrapper(byte[] enc, byte[] mac, byte[]rmac, int bs) {
+    SCP02Wrapper(byte[] enc, byte[] mac, byte[] rmac, int bs) {
         super(enc, mac, rmac, bs);
         setVariant(0x55);
     }

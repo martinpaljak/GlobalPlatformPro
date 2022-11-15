@@ -98,7 +98,7 @@ public final class GPData {
             if (isdd != null) {
                 // Loop all sub-values
                 for (BerTlv vt : isdd.getValues()) {
-                    if(vt.isTag(new BerTag(0x06))) {
+                    if (vt.isTag(new BerTag(0x06))) {
                         String oid = logAndGetOidFromByteArray(vt.getTag().bytes, vt.getBytesValue());
                         if (oid.equals("1.2.840.114283.1")) {
                             System.out.println("-> Global Platform card");

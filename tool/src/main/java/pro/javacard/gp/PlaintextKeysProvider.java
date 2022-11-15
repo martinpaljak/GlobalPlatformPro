@@ -42,7 +42,7 @@ public class PlaintextKeysProvider implements CardKeysProvider {
             for (PlaintextKeys.KDF d : PlaintextKeys.KDF.values()) {
                 if (spec.toLowerCase().startsWith(d.name().toLowerCase())) {
                     byte[] k = hexOrDefault(spec.substring(d.name().length() + 1));
-                    return Optional.of(PlaintextKeys.fromMasterKey(k,  d));
+                    return Optional.of(PlaintextKeys.fromMasterKey(k, d));
                 }
             }
 

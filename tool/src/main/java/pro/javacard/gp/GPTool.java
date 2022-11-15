@@ -221,7 +221,9 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                 }
                 for (byte[] s : args.valuesOf(OPT_APDU).stream().map(APDUParsers::stringToAPDU).collect(Collectors.toList())) {
                     CommandAPDU c = new CommandAPDU(s);
-                    channel.transmit(c);
+                    ResponseAPDU r = channel.transmit(c);
+                    if (r.getSW() == 0x9000 && r.getData().length > 0)
+                        System.out.println(APDUParsers.visualize_structure(r.getData()));
                 }
             }
 
@@ -329,7 +331,10 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                 if (args.has(OPT_SECURE_APDU)) {
                     for (byte[] s : args.valuesOf(OPT_SECURE_APDU).stream().map(APDUParsers::stringToAPDU).collect(Collectors.toList())) {
                         CommandAPDU c = new CommandAPDU(s);
-                        gp.transmit(c);
+                        ResponseAPDU r = gp.transmit(c);
+                        if (r.getData().length > 0 && r.getSW() == 0x9000) {
+                            System.out.println(APDUParsers.visualize_structure(r.getData()));
+                        }
                     }
                 }
 
@@ -885,7 +890,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                     }
                     signature = DAPSigner.sign(capFile, dapKey.getPrivate().get(), Optional.ofNullable(lfdbh).orElse(GPData.LFDBH.SHA1));
                 } else {
-                    // TODO: have some xml/zip parsers for ease of use.
+                    // TODO: have some xml/zip parsers for ease of use like existing capfile (but deprecate that)
                     throw new IllegalArgumentException("Need DAP signature!");
                 }
             } else {

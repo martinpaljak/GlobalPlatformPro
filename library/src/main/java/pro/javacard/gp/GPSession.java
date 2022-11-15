@@ -71,7 +71,7 @@ public class GPSession {
     public static final byte CLA_GP = (byte) 0x80;
     public static final byte CLA_MAC = (byte) 0x84;
 
-    public static final byte INS_SELECT = (byte)0xA4;
+    public static final byte INS_SELECT = (byte) 0xA4;
     public static final byte INS_INITIALIZE_UPDATE = (byte) 0x50;
     public static final byte INS_INSTALL = (byte) 0xE6;
     public static final byte INS_LOAD = (byte) 0xE8;
@@ -81,8 +81,8 @@ public class GPSession {
     public static final byte INS_PUT_KEY = (byte) 0xD8;
     public static final byte INS_STORE_DATA = (byte) 0xE2;
 
-    public static final byte INS_EXTERNAL_AUTHENTICATE_82 = (byte)0x82;
-    public static final byte INS_GET_DATA = (byte)0xCA;
+    public static final byte INS_EXTERNAL_AUTHENTICATE_82 = (byte) 0x82;
+    public static final byte INS_GET_DATA = (byte) 0xCA;
 
     public static final byte P1_INSTALL_AND_MAKE_SELECTABLE = (byte) 0x0C;
     public static final byte P1_INSTALL_FOR_INSTALL = (byte) 0x04;

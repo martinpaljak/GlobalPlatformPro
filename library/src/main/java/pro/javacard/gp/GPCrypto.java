@@ -35,7 +35,6 @@ import org.bouncycastle.crypto.params.KeyParameter;
 import org.bouncycastle.openssl.PEMKeyPair;
 import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
-import org.bouncycastle.util.encoders.Hex;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;

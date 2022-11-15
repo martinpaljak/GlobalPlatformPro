@@ -438,7 +438,7 @@ public class CAPFile {
 
         URI zip_disk = URI.create("jar:" + cap.toUri());
         try (FileSystem zipfs = FileSystems.newFileSystem(zip_disk, props)) {
-            List<Path> toDelete = Files.walk(zipfs.getPath("APPLET-INF", "classes")).collect(Collectors.toList());
+            List<Path> toDelete = Files.walk(zipfs.getPath("/")).filter(p -> p.toString().endsWith(".class")).collect(Collectors.toList());
             Collections.sort(toDelete, Collections.reverseOrder(Comparator.comparingInt(o -> o.toString().length())));
             toDelete.stream().forEach(CAPFile::uncheckedDelete);
         }

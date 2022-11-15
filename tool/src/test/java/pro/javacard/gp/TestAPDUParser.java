@@ -4,8 +4,6 @@ import org.bouncycastle.util.encoders.Hex;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import static pro.javacard.gp.APDUParsers.visualize_tlv;
-
 public class TestAPDUParser {
 
     @Test
@@ -46,21 +44,8 @@ public class TestAPDUParser {
 
 
     @Test
-    public void testTLVParse() {
-        byte[] t = Hex.decode(" 81 18 01 01 86 02 02 05 05 08 0f 81 0D 01 01 86 02 02 05 05 08 04 01 02 33 44");
-        System.out.println(String.join("\n", visualize_tlv(t)));
-        Assert.assertEquals(visualize_tlv(t).size(), 9);
-    }
-
-    @Test
     public void testShowCBOR() {
         System.out.println(APDUParsers.visualize_structure(Hex.decode("bf6474657374f4ff")));
     }
-    @Test(expectedExceptions = IllegalArgumentException.class)
-    public void testTLVParse2() throws Exception {
 
-        byte[] t = Hex.decode(" 81 02 01");
-        System.out.println(String.join("\n", visualize_tlv(t)));
-
-    }
 }

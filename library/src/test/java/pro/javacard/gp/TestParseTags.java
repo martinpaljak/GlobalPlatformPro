@@ -10,12 +10,7 @@ import pro.javacard.capfile.AID;
 import pro.javacard.gp.GPData.CPLC;
 import pro.javacard.gp.GPRegistryEntry.Privilege;
 
-import javax.crypto.Cipher;
-import javax.crypto.spec.IvParameterSpec;
-import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;

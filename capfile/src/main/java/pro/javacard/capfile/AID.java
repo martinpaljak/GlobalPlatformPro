@@ -48,7 +48,7 @@ public final class AID {
         if (s instanceof String) {
             return new AID(HexUtils.stringToBin((String) s));
         }
-        throw new IllegalArgumentException("Should be string");
+        throw new IllegalArgumentException("AID should be string");
     }
 
     public byte[] getBytes() {

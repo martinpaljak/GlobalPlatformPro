@@ -69,8 +69,8 @@ public class GPCommands {
                 out.println();
             }
 
-            if (e.getDomain() != null) {
-                out.println(tab + "Parent:   " + e.getDomain());
+            if (e.getDomain().isPresent()) {
+                out.println(tab + "Parent:   " + e.getDomain().get());
             }
             if (e.getType() == GPRegistryEntry.Kind.ExecutableLoadFile) {
                 if (e.getVersion() != null) {
@@ -85,8 +85,8 @@ public class GPCommands {
                     }
                 }
             } else {
-                if (e.getLoadFile() != null) {
-                    out.println(tab + "From:     " + e.getLoadFile());
+                if (e.getSource().isPresent()) {
+                    out.println(tab + "From:     " + e.getSource().get());
                 }
                 Optional<String> implicit = getImplicitString(e);
                 implicit.ifPresent(s -> out.println(tab + "Selected: " + s));

@@ -35,7 +35,6 @@ import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 
 public class OffCardVerifier {
-
     private final JavaCardSDK sdk;
 
     public static OffCardVerifier withSDK(JavaCardSDK sdk) {
@@ -129,11 +128,11 @@ public class OffCardVerifier {
     private static Path under(Path out, String name) {
         Path p = out.resolve(name).normalize().toAbsolutePath();
         if (!p.startsWith(out))
-            throw new IllegalArgumentException("Invalid path in JAR: " + name);
+            throw new IllegalArgumentException("Invalid path in JAR: " + p + " vs " + out);
         return p;
     }
 
-    // Extracts .exp files from a jarfile to given path (temp folde) and returns the list of .exp files there
+    // Extracts .exp files from a jarfile to given path (temp folder) and returns the list of .exp files there
     public static List<Path> extractExps(Path jarfilePath, Path out) throws IOException {
         List<Path> exps = new ArrayList<>();
         try (JarFile jarfile = new JarFile(jarfilePath.toFile())) {

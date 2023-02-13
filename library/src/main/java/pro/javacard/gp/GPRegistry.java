@@ -40,9 +40,9 @@ import java.util.function.BinaryOperator;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-public class GPRegistry implements Iterable<GPRegistryEntry> {
+public final class GPRegistry implements Iterable<GPRegistryEntry> {
     private static final Logger logger = LoggerFactory.getLogger(GPRegistry.class);
-    ArrayList<GPRegistryEntry> entries = new ArrayList<>();
+    final ArrayList<GPRegistryEntry> entries = new ArrayList<>();
 
     public void add(GPRegistryEntry entry) {
         // "fix" the kind at a single location.
@@ -56,6 +56,16 @@ public class GPRegistry implements Iterable<GPRegistryEntry> {
             if (entry.getType() != Kind.ExecutableLoadFile)
                 logger.warn("Registry already contains {}", entry);
         }
+    }
+
+    // All children of this domain
+    public List<GPRegistryEntry> byDomain(AID domain) {
+        return entries.stream().filter(e -> e.getDomain().equals(Optional.of(domain))).collect(Collectors.toUnmodifiableList());
+    }
+
+    // Entry with existing applet
+    public Optional<GPRegistryEntry> byModule(AID applet) {
+        return entries.stream().filter(e -> e.getModules().contains(applet)).findFirst();
     }
 
     public Iterator<GPRegistryEntry> iterator() {
@@ -218,7 +228,7 @@ public class GPRegistry implements Iterable<GPRegistryEntry> {
     }
 
     public static <T> BinaryOperator<T> onlyOne() {
-        return onlyOne(() -> new GPException("Expected only one "));
+        return onlyOne(() -> new GPException("Expected only one"));
     }
 
     public static <T, E extends RuntimeException> BinaryOperator<T> onlyOne(Supplier<E> exception) {

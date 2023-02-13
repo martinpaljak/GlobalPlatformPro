@@ -47,16 +47,19 @@ abstract class GPCommandLineInterface {
     protected static OptionSpec<Void> OPT_SAD = parser.acceptsAll(Arrays.asList("F", "no-felix"), "Disable Felix mode DWIM");
 
     // Applet loading operations
-    protected static OptionSpec<File> OPT_CAP = parser.accepts("cap", "Use a CAP file as source").withRequiredArg().ofType(File.class).describedAs("capfile");
-    protected static OptionSpec<AID> OPT_CREATE = parser.accepts("create", "Create new instance of an applet").withRequiredArg().ofType(AID.class).describedAs("AID");
-    protected static OptionSpec<AID> OPT_APPLET = parser.accepts("applet", "Applet AID").withRequiredArg().ofType(AID.class).describedAs("AID");
-    protected static OptionSpec<AID> OPT_PACKAGE = parser.acceptsAll(Arrays.asList("package", "pkg"), "Package AID").withRequiredArg().ofType(AID.class).describedAs("AID");
-
     protected static OptionSpec<File> OPT_LOAD = parser.accepts("load", "Load a CAP file").withRequiredArg().ofType(File.class).describedAs("capfile");
 
-    protected static OptionSpec<File> OPT_INSTALL = parser.accepts("install", "Install applet(s) from CAP").withRequiredArg().ofType(File.class).describedAs("capfile");
+    protected static OptionSpec<File> OPT_CAP = parser.accepts("cap", "Use a CAP file as pkg/app source").availableUnless(OPT_LOAD).withRequiredArg().ofType(File.class).describedAs("capfile");
+    protected static OptionSpec<AID> OPT_CREATE = parser.accepts("create", "Create new instance of an applet (deprecated)").withRequiredArg().ofType(AID.class).describedAs("AID");
+    protected static OptionSpec<AID> OPT_APPLET = parser.accepts("applet", "Applet AID").withRequiredArg().ofType(AID.class).describedAs("AID");
+    protected static OptionSpec<AID> OPT_PACKAGE = parser.acceptsAll(Arrays.asList("package", "pkg"), "Package AID").availableUnless(OPT_CAP).withRequiredArg().ofType(AID.class).describedAs("AID");
+
+
+    protected static OptionSpec<String> OPT_INSTALL = parser.accepts("install", "Install applet(s)").withRequiredArg().describedAs("capfile/AID");
+    protected static OptionSpec<String> OPT_INSTALL_ONLY = parser.accepts("install-only", "Install applet").availableUnless(OPT_INSTALL).withRequiredArg().describedAs("capfile/AID");
+
     protected static OptionSpec<HexBytes> OPT_PARAMS = parser.accepts("params", "Installation parameters").withRequiredArg().ofType(HexBytes.class).describedAs("hex");
-    protected static OptionSpec<String> OPT_PRIVS = parser.accepts("privs", "Specify privileges for installation").withRequiredArg().describedAs("privs");
+    protected static OptionSpec<String> OPT_PRIVS = parser.acceptsAll(Arrays.asList("privs", "privileges"), "Specify privileges for installation").withRequiredArg().describedAs("privs");
 
     protected static OptionSpec<File> OPT_UNINSTALL = parser.accepts("uninstall", "Uninstall applet/package").withRequiredArg().ofType(File.class).describedAs("capfile");
     protected static OptionSpec<AID> OPT_DELETE = parser.accepts("delete", "Delete applet/package").withRequiredArg().ofType(AID.class);
@@ -128,6 +131,7 @@ abstract class GPCommandLineInterface {
     protected static OptionSpec<GPSession.APDUMode> OPT_SC_MODE = parser.accepts("mode", "Secure channel to use").withRequiredArg().ofType(GPSession.APDUMode.class).withValuesConvertedBy(new APDUModeConverter());
     protected static OptionSpec<Integer> OPT_BS = parser.accepts("bs", "Maximum APDU payload size").withRequiredArg().ofType(Integer.class).withValuesConvertedBy(new HexIntegerConverter()).describedAs("bytes");
     protected static OptionSpec<String> OPT_PROFILE = parser.acceptsAll(Arrays.asList("P", "profile"), "Use pre-defined profile").withRequiredArg().describedAs("profile");
+
 
     // argument converters
     static class KDFConverter extends EnumConverter<PlaintextKeys.KDF> {

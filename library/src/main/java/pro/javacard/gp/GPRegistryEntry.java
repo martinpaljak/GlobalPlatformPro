@@ -28,12 +28,12 @@ public class GPRegistryEntry {
 
     AID aid;
     int lifecycle;
-    Kind kind;
-    AID domain; // Associated security domain
+    Kind kind; // domain, application, capfile
+    AID domain; // associated security domain
 
     // Apps and Domains
     private final EnumSet<Privilege> privileges = EnumSet.noneOf(Privilege.class);
-    private AID loadfile; // source
+    private AID from;
 
     // Packages
     private byte[] version;
@@ -50,12 +50,12 @@ public class GPRegistryEntry {
         privileges.addAll(privs);
     }
 
-    public AID getLoadFile() {
-        return loadfile;
+    public Optional<AID> getSource() {
+        return Optional.ofNullable(from);
     }
 
-    public void setLoadFile(AID aid) {
-        this.loadfile = aid;
+    void setLoadFile(AID aid) {
+        this.from = aid;
     }
 
     public boolean hasPrivilege(Privilege p) {
@@ -170,8 +170,8 @@ public class GPRegistryEntry {
         this.aid = aid;
     }
 
-    public AID getDomain() {
-        return domain;
+    public Optional<AID> getDomain() {
+        return Optional.ofNullable(domain);
     }
 
     public int getLifeCycle() {

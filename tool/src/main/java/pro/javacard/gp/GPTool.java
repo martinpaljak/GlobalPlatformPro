@@ -42,9 +42,10 @@ import javax.smartcardio.Card;
 import javax.smartcardio.CardException;
 import javax.smartcardio.CardTerminal;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
@@ -320,6 +321,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
             // Authenticate, only if needed
             if (needsAuthentication(args)) {
                 // IMPORTANT PLACE. Possibly brick the card now, if keys don't match.
+
                 try {
                     gp.openSecureChannel(keys, null, null, mode);
                 } catch (GPException e) {
@@ -457,43 +459,43 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                     }
                 }
 
+                if (args.has(OPT_INSTALL_ONLY)) {
+                    GPRegistry registry = gp.getRegistry();
+                    InstallDefinition dwim = InstallDefinition.fromOptions(registry, args);
+                }
+
                 // --install <applet.cap> (--applet <aid> --create <aid> --privs <privs> --params <params>)
                 if (args.has(OPT_INSTALL)) {
                     if (!args.has(OPT_FORCE) && !args.has(OPT_SAD))
                         warnIfNoDelegatedManagement(gp);
 
-                    final File capfile;
-                    capfile = args.valueOf(OPT_INSTALL);
 
-                    final CAPFile instcap;
-                    try (FileInputStream fin = new FileInputStream(capfile)) {
-                        instcap = CAPFile.fromStream(fin);
-                    }
+                    CAPFile capfile = CAPFile.fromFile(Path.of(args.valueOf(OPT_INSTALL)));
 
                     if (args.has(OPT_VERBOSE)) {
-                        instcap.dump(System.out);
+                        capfile.dump(System.out);
                     }
 
                     GPRegistry reg = gp.getRegistry();
 
                     // Remove existing load file if needed
-                    if (args.has(OPT_FORCE) && reg.allPackageAIDs().contains(instcap.getPackageAID())) {
-                        gp.deleteAID(instcap.getPackageAID(), true);
+                    if (args.has(OPT_FORCE) && reg.allPackageAIDs().contains(capfile.getPackageAID())) {
+                        gp.deleteAID(capfile.getPackageAID(), true);
                     }
 
                     // Get install parameters
                     final AID appaid;
                     final AID instanceaid;
-                    if (instcap.getAppletAIDs().size() == 0) {
+                    if (capfile.getAppletAIDs().size() == 0) {
                         throw new IllegalArgumentException("CAP file has no applets!");
-                    } else if (instcap.getAppletAIDs().size() > 1) {
+                    } else if (capfile.getAppletAIDs().size() > 1) {
                         if (args.has(OPT_APPLET)) {
                             appaid = args.valueOf(OPT_APPLET);
                         } else {
                             throw new IllegalArgumentException("CAP contains more than one applet, specify the right one with --" + OPT_APPLET);
                         }
                     } else {
-                        appaid = instcap.getAppletAIDs().get(0);
+                        appaid = capfile.getAppletAIDs().get(0);
                     }
 
                     // override instance AID
@@ -502,24 +504,29 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                     Set<Privilege> privs = getPrivileges(args);
 
                     // Load CAP
-                    loadCAP(args, gp, instcap);
+                    loadCAP(args, gp, capfile);
 
-                    // Remove existing default app FIXME: this might be non-obvious
+                    // Remove existing default app FIXME: document. this might be non-obvious
                     if (args.has(OPT_FORCE) && (reg.getDefaultSelectedAID().isPresent() && privs.contains(Privilege.CardReset))) {
+                        System.err.println("NOTE: Force-removing current default selected applet instance: " + reg.getDefaultSelectedAID().get());
                         gp.deleteAID(reg.getDefaultSelectedAID().get(), false);
                     }
 
                     // warn
                     if (gp.getRegistry().allAppletAIDs().contains(instanceaid)) {
                         System.err.println("WARNING: Applet " + instanceaid + " already present on card");
+                        if (args.has(OPT_FORCE)) {
+                            gp.deleteAID(instanceaid, false);
+                        }
                     }
 
                     // Parameters
                     byte[] params = args.has(OPT_PARAMS) ? args.valueOf(OPT_PARAMS).value() : new byte[0];
 
                     // shoot
-                    gp.installAndMakeSelectable(instcap.getPackageAID(), appaid, instanceaid, privs, params);
+                    gp.installAndMakeSelectable(capfile.getPackageAID(), appaid, instanceaid, privs, params);
                 }
+
 
                 // --create <aid> (--applet <aid> --package <aid> or --cap <cap>)
                 if (args.has(OPT_CREATE) && !args.has(OPT_INSTALL)) {
@@ -755,7 +762,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                         if (args.has(OPT_NEW_KEY_VERSION)) {
                             keyver = args.valueOf(OPT_NEW_KEY_VERSION);
                             // Key version is indicated, check if already present on card
-                            if (!current.stream().anyMatch(e -> (e.getVersion() == keyver)) || gp.getScpKeyVersion() == 255) {
+                            if (current.stream().noneMatch(e -> (e.getVersion() == keyver)) || gp.getScpKeyVersion() == 255) {
                                 replace = false;
                             }
                         } else {
@@ -920,6 +927,84 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
         }
     }
 
+    // Contains "what" to install
+    static class InstallDefinition {
+        final CAPFile cap;
+        final AID pkg;
+        final AID applet;
+        final AID instance;
+
+        private InstallDefinition(CAPFile cap, AID pkg, AID applet, AID instance) {
+            this.cap = cap;
+            this.pkg = pkg;
+            this.applet = applet;
+            this.instance = instance;
+        }
+
+        static InstallDefinition fromOptions(GPRegistry registry, OptionSet args) throws IOException {
+            final AID applet;
+            final CAPFile cap;
+            final AID pkg;
+            final AID instance;
+
+            // One must be present, jopt-simple makes them mutually exclusive
+            String pathOrAid = optional(args, OPT_INSTALL_ONLY).orElse(args.valueOf(OPT_INSTALL));
+            Path p = Paths.get(pathOrAid);
+
+            // --install refers to a file or --cap given
+            if (Files.exists(p) || args.has(OPT_CAP)) {
+                // Not possible to have both
+                if (Files.exists(p) && args.has(OPT_CAP))
+                    throw new IllegalArgumentException("Can't have --cap and --install(-only) refer to a capfile");
+
+                if (args.has(OPT_CAP)) {
+                    p = args.valueOf(OPT_CAP).toPath();
+                }
+                // Load CAP file
+                cap = CAPFile.fromFile(p);
+
+                // PKG comes from CAP file
+                pkg = cap.getPackageAID();
+                // TODO: gp -install <lib.cap> could still behave like -load <lib.cap>
+                if (cap.getAppletAIDs().size() == 0) {
+                    throw new IllegalArgumentException("Missing UX: load library capfiles with --load");
+                } else if (cap.getAppletAIDs().size() == 1) {
+                    // If argument given, it must match capfile
+                    if (args.has(OPT_APPLET) && !args.valueOf(OPT_APPLET).equals(cap.getAppletAIDs().get(0))) {
+                        throw new IllegalArgumentException(String.format("Capfile %s does not contain applet %s (has %s)", p, args.valueOf(OPT_APPLET), cap.getAppletAIDs()));
+                    }
+                    applet = cap.getAppletAIDs().get(0);
+                } else {
+                    // --applet MUST be given (or default name is searched for)
+                    AID candidate = optional(args, OPT_APPLET).orElseThrow(() -> new IllegalArgumentException("Specify applet tp install with --applet"));
+                    if (!cap.getAppletAIDs().contains(candidate)) {
+                        throw new IllegalArgumentException(String.format("Specify applet to install with --applet (has %s)", cap.getAppletAIDs()));
+                    }
+                    applet = candidate;
+                }
+                // When --install refers a file, the existing name will be used
+                instance = applet;
+            } else {
+                // Instance AID is explicit. Possibly load  package AID
+                instance = AID.fromString(pathOrAid);
+                cap = null;
+                AID searchFor = optional(args, OPT_APPLET).orElse(instance);
+
+                // Do some magic
+                if (args.has(OPT_PACKAGE)) {
+                    pkg = args.valueOf(OPT_PACKAGE);
+                } else {
+                    // Search for existing registry either for explicit applet or applet-with-same-name-as-instance
+                    pkg = registry.byModule(searchFor).map(GPRegistryEntry::getAID).orElseThrow(() -> new IllegalArgumentException("Specify applet to load with --applet"));
+                }
+                // Applet AID is either --applet or instance if not given
+                applet = searchFor;
+            }
+
+            return new InstallDefinition(cap, pkg, applet, instance);
+        }
+    }
+
     private static EnumSet<Privilege> getPrivileges(OptionSet args) {
         EnumSet<Privilege> privs = EnumSet.noneOf(Privilege.class);
         if (args.has(OPT_PRIVS)) {
@@ -941,7 +1026,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
     }
 
     private static boolean needsAuthentication(OptionSet args) {
-        OptionSpec<?>[] yes = new OptionSpec<?>[]{OPT_CONNECT, OPT_LIST, OPT_LOAD, OPT_INSTALL, OPT_DELETE, OPT_DELETE_KEY, OPT_CREATE,
+        OptionSpec<?>[] yes = new OptionSpec<?>[]{OPT_CONNECT, OPT_LIST, OPT_LOAD, OPT_INSTALL, OPT_INSTALL_ONLY, OPT_DELETE, OPT_DELETE_KEY, OPT_CREATE,
                 OPT_LOCK, OPT_LOCK_ENC, OPT_LOCK_MAC, OPT_LOCK_DEK, OPT_MAKE_DEFAULT,
                 OPT_UNINSTALL, OPT_SECURE_APDU, OPT_DOMAIN, OPT_LOCK_CARD, OPT_UNLOCK_CARD, OPT_LOCK_APPLET, OPT_UNLOCK_APPLET,
                 OPT_STORE_DATA, OPT_STORE_DATA_CHUNK, OPT_INITIALIZE_CARD, OPT_SECURE_CARD, OPT_RENAME_ISD, OPT_SET_PERSO, OPT_SET_PRE_PERSO, OPT_MOVE,
@@ -955,5 +1040,4 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
             System.out.println("# " + s);
         }
     }
-
 }

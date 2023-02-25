@@ -671,12 +671,24 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                 // --store-data <XX>
                 // This will split the data, if necessary
                 if (args.has(OPT_STORE_DATA)) {
+                    byte storeP1 = 0x01;
+
+                    if (args.has(OPT_STORE_P1)) {
+                        byte[] tmpP1 = args.valueOf(OPT_STORE_P1).v();
+
+                        if (tmpP1.length != 1) {
+                            System.err.println("Warning: ignoring --store-p1, expected only 1 byte.");
+                        } else {
+                            storeP1 = tmpP1[0];
+                        }
+                    }
+
                     List<byte[]> blobs = args.valuesOf(OPT_STORE_DATA).stream().map(HexBytes::value).collect(Collectors.toList());
                     for (byte[] blob : blobs) {
                         if (args.has(OPT_APPLET)) {
-                            gp.personalize(args.valueOf(OPT_APPLET), blob, 0x01);
+                            gp.personalize(args.valueOf(OPT_APPLET), blob, storeP1);
                         } else {
-                            gp.storeData(blob, 0x1);
+                            gp.storeData(blob, storeP1);
                         }
                     }
                 }

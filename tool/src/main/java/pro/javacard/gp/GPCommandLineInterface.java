@@ -126,6 +126,7 @@ abstract class GPCommandLineInterface {
     // Personalization and store data
     protected static OptionSpec<HexBytes> OPT_STORE_DATA = parser.accepts("store-data", "STORE DATA blob").withRequiredArg().ofType(HexBytes.class).describedAs("data");
     protected static OptionSpec<HexBytes> OPT_STORE_DATA_CHUNK = parser.accepts("store-data-chunk", "Send STORE DATA commands").withRequiredArg().ofType(HexBytes.class).describedAs("data");
+    protected static OptionSpec<HexBytes> OPT_STORE_P1 = parser.accepts("store-p1", "STORE DATA parameter P1 (example: 09)").withRequiredArg().ofType(HexBytes.class).describedAs("data");
 
     protected static OptionSpec<AID> OPT_MAKE_DEFAULT = parser.accepts("make-default", "Make AID the default").withRequiredArg().ofType(AID.class);
     protected static OptionSpec<AID> OPT_RENAME_ISD = parser.accepts("rename-isd", "Rename ISD").withRequiredArg().ofType(AID.class).describedAs("new AID");

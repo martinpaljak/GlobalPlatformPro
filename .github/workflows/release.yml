@@ -11,12 +11,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@3.1.0
+        uses: actions/checkout@3.5.0
       - name: Setup Java
-        uses: actions/setup-java@v3.6.0
+        uses: actions/setup-java@v3.11.0
         with:
           java-version: 11
           distribution: temurin
+          cache: maven
       - name: Set SSH key
         uses: webfactory/ssh-agent@v0.7.0
         with:
@@ -24,36 +25,18 @@ jobs:
       - name: Add known host key
         run: ssh-keyscan javacard.pro >> ~/.ssh/known_hosts
       - name: Build
-        run: ./mvnw -B verify
+        run: ./mvnw -T1C -B verify
       - name: Release
         id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v0.1.15
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: true # Manually promoted to latest release
-      - name: Upload JAR
-        id: jar
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./tool/target/gp.jar
-          asset_name: gp.jar
-          asset_content_type: application/zip
-      - name: Upload EXE
-        id: exe
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./tool/target/gp.exe
-          asset_name: gp.exe
-          asset_content_type: application/x-msdownload
+          files: |
+            tool/target/gp.jar
+            tool/target/gp.exe
+          fail_on_unmatched_files: true
+          body: Release ${{ github.ref_name }}
+          prerelease: true # manually promoted
+
+
       - name: Deploy package
         run: ./mvnw -B deploy

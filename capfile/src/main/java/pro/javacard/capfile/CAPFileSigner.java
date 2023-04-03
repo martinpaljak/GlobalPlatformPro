@@ -52,6 +52,7 @@ public class CAPFileSigner {
         }
     }
 
+    private CAPFileSigner() {}
     // Variant 1
     public static void addSignature(CAPFile cap, PrivateKey key) throws GeneralSecurityException {
         if (key instanceof RSAPrivateKey) {

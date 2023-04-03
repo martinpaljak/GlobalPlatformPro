@@ -190,10 +190,8 @@ public class GPUtils {
         if (tlv.isConstructed()) {
             result.add(String.format("%s[%s]", spacer(depth * 5), Hex.toHexString(tlv.getTag().bytes)));
 
-            Iterator it = tlv.getValues().iterator();
-            while(it.hasNext()) {
-                BerTlv child = (BerTlv)it.next();
-                dump(child, depth + 1,  result);
+            for (BerTlv child : tlv.getValues()) {
+                dump(child, depth + 1, result);
             }
         } else {
             result.add(String.format("%s[%s] %s", spacer(depth * 5), Hex.toHexString(tlv.getTag().bytes), Hex.toHexString(tlv.getBytesValue())));
@@ -201,10 +199,8 @@ public class GPUtils {
     }
 
     static void dump(BerTlvs tlv, int depth, List<String> result) {
-        Iterator it = tlv.getList().iterator();
 
-        while(it.hasNext()) {
-            BerTlv t = (BerTlv)it.next();
+        for (BerTlv t : tlv.getList()) {
             dump(t, depth, result);
         }
     }

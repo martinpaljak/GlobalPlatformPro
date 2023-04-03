@@ -100,6 +100,7 @@
                                 <mainClass>pro.javacard.capfile.tool.CAPFileTool</mainClass>
                             </classPath>
                             <jre>
+                                <path>%JAVA_HOME%</path>
                                 <minVersion>11</minVersion>
                             </jre>
                             <versionInfo>

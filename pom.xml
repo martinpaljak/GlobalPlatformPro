@@ -5,7 +5,7 @@
     <parent>
         <groupId>com.github.martinpaljak</groupId>
         <artifactId>metacard</artifactId>
-        <version>22.11.15</version>
+        <version>23.04.03</version>
     </parent>
     <version>21.12.32-SNAPSHOT</version>
     <artifactId>gppro</artifactId>
@@ -13,6 +13,11 @@
     <name>GlobalPlatformPro</name>
     <url>https://github.com/martinpaljak/GlobalPlatformPro</url>
     <description>Manage applets and keys on JavaCard-s like a pro</description>
+    <inceptionYear>2013</inceptionYear>
+    <organization>
+        <name>Martin Paljak and contributors</name>
+        <url>https://javacard.pro/globalplatformpro</url>
+    </organization>
     <licenses>
         <license>
             <name>LGPL-3.0</name>

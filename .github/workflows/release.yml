@@ -3,7 +3,7 @@ on:
     tags:
     - 'v*'
 
-name: Release CI
+name: Release robot
 
 jobs:
   build:

@@ -218,7 +218,7 @@ public final class GPKeyInfo {
     }
 
 
-    static class GPKeyInfoElement {
+    public static class GPKeyInfoElement {
         final GPKey key;
         final int keyLength;
         final int templateLength;

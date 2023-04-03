@@ -40,6 +40,8 @@ public final class WellKnownAID {
     private static final Map<AID, String> javaCardRegistry = new LinkedHashMap<>();
     private static final Map<AID, String> wellKnownRegistry = new LinkedHashMap<>();
 
+    private WellKnownAID() {}
+
     static {
         // Copied from https://stackoverflow.com/questions/25031338/how-to-get-javacard-version-on-card/25063015#25063015
         // Extended and verified against JC SDK exp files

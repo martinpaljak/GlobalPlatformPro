@@ -46,6 +46,7 @@ import static pro.javacard.gp.GPSession.CLA_GP;
 public final class GPData {
     private static final Logger logger = LoggerFactory.getLogger(GPData.class);
 
+    private GPData() {}
     // SD states
     public static final byte readyStatus = 0x1;
     public static final byte initializedStatus = 0x7;

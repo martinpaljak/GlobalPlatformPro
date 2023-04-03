@@ -34,6 +34,7 @@ import java.security.interfaces.RSAPrivateKey;
 public abstract class DMTokenizer {
     private static final Logger logger = LoggerFactory.getLogger(DMTokenizer.class);
 
+    private DMTokenizer() {}
     abstract protected byte[] getToken(CommandAPDU apdu);
 
     abstract protected boolean canTokenize(CommandAPDU apdu);

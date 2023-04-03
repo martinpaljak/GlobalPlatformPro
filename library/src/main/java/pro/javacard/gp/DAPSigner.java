@@ -13,6 +13,7 @@ import java.util.Arrays;
 
 public class DAPSigner {
 
+    private DAPSigner() {}
     public static byte[] sign(CAPFile cap, PrivateKey key, GPData.LFDBH hash) throws GeneralSecurityException {
         if (key instanceof RSAPrivateKey) {
             RSAPrivateKey rkey = (RSAPrivateKey) key;

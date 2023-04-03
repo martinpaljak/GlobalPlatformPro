@@ -26,6 +26,9 @@ import java.util.*;
 
 public class GPRegistryEntry {
 
+    GPRegistryEntry() {
+    }
+
     AID aid;
     int lifecycle;
     Kind kind; // domain, application, capfile
@@ -266,11 +269,11 @@ public class GPRegistryEntry {
         ContactlessActivation(0x20, 2),
         ContactlessSelfActivation(0x10, 2);
 
-        int value;
+        byte value;
         int pos;
 
         Privilege(int value, int pos) {
-            this.value = value;
+            this.value = (byte) value;
             this.pos = pos;
         }
 

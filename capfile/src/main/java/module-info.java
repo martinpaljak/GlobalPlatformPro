@@ -1,3 +1,4 @@
+@SuppressWarnings({"requires-automatic"})
 module pro.javacard.capfile {
     requires org.bouncycastle.pkix;
     requires org.bouncycastle.provider;

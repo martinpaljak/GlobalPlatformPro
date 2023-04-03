@@ -28,6 +28,8 @@ import java.util.Optional;
 // TODO: WIP, overrides, interface
 public abstract class GPCardProfile {
 
+    private GPCardProfile() {}
+
     static final Map<String, GPCardProfile> profiles;
 
     static {

@@ -37,6 +37,7 @@ import java.util.stream.Stream;
 // Middle layer between GPTool (CLI) and GlobalPlatform (session)
 public class GPCommands {
 
+    private GPCommands() {}
     private static void storeDGI(GPSession gp, byte[] payload) throws GPException, IOException {
         // Single DGI. 0x90 should work as well but 0x80 is actually respected by cards.
         CommandAPDU cmd = new CommandAPDU(GPSession.CLA_GP, GPSession.INS_STORE_DATA, 0x80, 0x00, payload);

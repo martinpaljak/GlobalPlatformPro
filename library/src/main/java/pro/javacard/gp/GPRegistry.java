@@ -42,6 +42,7 @@ import java.util.stream.Collectors;
 
 public final class GPRegistry implements Iterable<GPRegistryEntry> {
     private static final Logger logger = LoggerFactory.getLogger(GPRegistry.class);
+    GPRegistry() {}
     final ArrayList<GPRegistryEntry> entries = new ArrayList<>();
 
     public void add(GPRegistryEntry entry) {

@@ -18,7 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
-package pro.javacard.gp;
+package pro.javacard.gptool;
 
 import apdu4j.core.*;
 import apdu4j.pcsc.CardBIBO;
@@ -33,9 +33,10 @@ import joptsimple.OptionSet;
 import joptsimple.OptionSpec;
 import pro.javacard.capfile.AID;
 import pro.javacard.capfile.CAPFile;
+import pro.javacard.gp.*;
 import pro.javacard.gp.GPRegistryEntry.Privilege;
 import pro.javacard.gp.GPSession.APDUMode;
-import pro.javacard.gp.i.CardKeysProvider;
+import pro.javacard.gp.CardKeysProvider;
 
 import javax.crypto.Cipher;
 import javax.smartcardio.Card;
@@ -315,7 +316,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                     System.err.printf("Unknown profile '%s', known profiles: %s%n", args.valueOf(OPT_PROFILE), String.join(", ", GPCardProfile.profiles.keySet()));
                     return 1;
                 }
-                gp.profile = p.get();
+                gp.setProfile(p.get());
             }
 
             // Authenticate, only if needed
@@ -621,7 +622,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                     privs.add(Privilege.SecurityDomain);
 
                     // By default same SCP as current
-                    if (!args.has(OPT_SAD) && !gp.profile.oldStyleSSDParameters()) {
+                    if (!args.has(OPT_SAD) && !gp.getProfile().oldStyleSSDParameters()) {
                         if (parameters != null && parameters.find(new BerTag(0x81)) == null) {
                             params = GPUtils.concatenate(params, new byte[]{(byte) 0x81, 0x02, gp.getSecureChannel().scp.getValue(), (byte) gp.getSecureChannel().i});
                         } else {
@@ -650,7 +651,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                     }
 
                     // Old style actually only allows one parameter, the 45
-                    if (args.has(OPT_ALLOW_TO) && gp.profile.oldStyleSSDParameters()) {
+                    if (args.has(OPT_ALLOW_TO) && gp.getProfile().oldStyleSSDParameters()) {
                         params = HexUtils.hex2bin("C90145");
                     }
 

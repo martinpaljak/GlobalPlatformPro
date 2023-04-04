@@ -30,6 +30,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
@@ -89,7 +90,7 @@ public class CAPFileSigner {
 
     public static PrivateKey pem2privatekey(String f) throws IOException {
         // This pleases both spotbugs and lgtm.
-        try (InputStream in = new FileInputStream(f); PEMParser pem = new PEMParser(new InputStreamReader(in, "UTF-8"))) {
+        try (InputStream in = new FileInputStream(f); PEMParser pem = new PEMParser(new InputStreamReader(in, StandardCharsets.UTF_8))) {
             Object ohh = pem.readObject();
             if (ohh instanceof PEMKeyPair) {
                 PEMKeyPair kp = (PEMKeyPair) ohh;

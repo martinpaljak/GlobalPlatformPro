@@ -76,7 +76,7 @@
                             <transformers>
                                 <transformer
                                         implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>pro.javacard.gp.GPTool</mainClass>
+                                    <mainClass>pro.javacard.gptool.GPTool</mainClass>
                                 </transformer>
                                 <transformer
                                         implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
@@ -117,7 +117,7 @@
                             <jar>target/gp.jar</jar>
                             <errTitle>GlobalPlatformPro</errTitle>
                             <classPath>
-                                <mainClass>pro.javacard.gp.GPTool</mainClass>
+                                <mainClass>pro.javacard.gptool.GPTool</mainClass>
                             </classPath>
                             <jre>
                                 <path>./</path>

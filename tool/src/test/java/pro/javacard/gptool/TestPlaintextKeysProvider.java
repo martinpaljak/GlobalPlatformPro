@@ -1,8 +1,9 @@
-package pro.javacard.gp;
+package pro.javacard.gptool;
 
 import org.testng.Assert;
 import org.testng.annotations.Test;
-import pro.javacard.gp.i.CardKeysProvider;
+import pro.javacard.gp.GPCardKeys;
+import pro.javacard.gp.CardKeysProvider;
 
 import java.util.Optional;
 

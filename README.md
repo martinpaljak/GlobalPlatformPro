@@ -1,4 +1,4 @@
-[![Build status](https://github.com/martinpaljak/globalplatformpro/workflows/Continuous%20Integration/badge.svg?branch=master)](https://github.com/martinpaljak/globalplatformpro/actions)
+[![Build status](https://github.com/martinpaljak/globalplatformpro/workflows/Build%20robotbadge.svg?branch=master)](https://github.com/martinpaljak/globalplatformpro/actions)
 [![LGPL-3.0 licensed](https://img.shields.io/badge/license-LGPL-blue.svg)](https://github.com/martinpaljak/GlobalPlatformPro/blob/master/LICENSE) 
 
 [![Latest release](https://img.shields.io/github/release/martinpaljak/GlobalPlatformPro.svg)](https://github.com/martinpaljak/GlobalPlatformPro/releases/latest)
@@ -33,7 +33,6 @@ cd GlobalPlatformPro
 ```
 
 ## NEWS
- * SCP03 support in [latest version](https://github.com/martinpaljak/GlobalPlatformPro/releases)
  * [JavaCard Buyer's Guide of 2018](https://github.com/martinpaljak/GlobalPlatformPro/tree/master/docs/JavaCardBuyersGuide)
 
 ### Usage

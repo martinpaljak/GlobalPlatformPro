@@ -1,11 +1,12 @@
-package pro.javacard.gp;
+package pro.javacard.gptool;
 
 import apdu4j.core.HexUtils;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+import pro.javacard.gp.GPCrypto;
+import pro.javacard.gp.GPUtils;
 
 import static pro.javacard.gp.GPCardKeys.KeyPurpose.ENC;
-import static pro.javacard.gp.PlaintextKeys.SCP03_KDF_CONSTANTS;
 
 public class TestSCP03 {
 
@@ -18,7 +19,7 @@ public class TestSCP03 {
         System.out.println("KDD: " + HexUtils.bin2hex(kdd));
 
         byte[] blocka = new byte[]{};
-        byte[] blockb = GPUtils.concatenate(SCP03_KDF_CONSTANTS.get(ENC), kdd);
+        byte[] blockb = GPUtils.concatenate(PlaintextKeys.SCP03_KDF_CONSTANTS.get(ENC), kdd);
 
         final byte[] kv = GPCrypto.scp03_kdf(master, blocka, blockb, master.length);
         System.out.println("ENC: " + HexUtils.bin2hex(kv));

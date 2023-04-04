@@ -1,4 +1,4 @@
-package pro.javacard.gp;
+package pro.javacard.gptool;
 
 import apdu4j.core.CommandAPDU;
 import com.fasterxml.jackson.core.JacksonException;
@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.dataformat.cbor.databind.CBORMapper;
 import org.bouncycastle.util.encoders.DecoderException;
 import org.bouncycastle.util.encoders.Hex;
+import pro.javacard.gp.GPUtils;
 
 import java.io.IOException;
 import java.util.List;

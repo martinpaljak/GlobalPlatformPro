@@ -50,7 +50,7 @@ import java.util.zip.ZipOutputStream;
 
 /**
  * Parses a CAP file as specified in JavaCard 2.2 VM Specification, chapter 6.
- * CAP files are really small, so we keep it in memory.
+ * CAP files are tiny, so we keep it in memory.
  */
 public class CAPFile {
     public static final String DAP_RSA_V1_SHA1_FILE = "dap.rsa.sha1";

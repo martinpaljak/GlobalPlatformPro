@@ -18,11 +18,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
-package pro.javacard.gp;
+package pro.javacard.gptool;
 
 import apdu4j.core.HexUtils;
 import com.google.auto.service.AutoService;
-import pro.javacard.gp.i.CardKeysProvider;
+import pro.javacard.gp.GPCardKeys;
+import pro.javacard.gp.CardKeysProvider;
 
 import java.util.Optional;
 

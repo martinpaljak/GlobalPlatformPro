@@ -30,7 +30,7 @@ public abstract class GPCardProfile {
 
     private GPCardProfile() {}
 
-    static final Map<String, GPCardProfile> profiles;
+    public static final Map<String, GPCardProfile> profiles;
 
     static {
         LinkedHashMap<String, GPCardProfile> tmp = new LinkedHashMap<>();
@@ -75,7 +75,7 @@ public abstract class GPCardProfile {
         return Optional.of(defaultProfile());
     }
 
-    static Optional<GPCardProfile> fromName(String name) {
+    public static Optional<GPCardProfile> fromName(String name) {
         return Optional.ofNullable(profiles.get(name));
     }
 }

@@ -17,12 +17,14 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-package pro.javacard.gp;
+package pro.javacard.gptool;
 
 import apdu4j.core.HexBytes;
 import joptsimple.*;
 import joptsimple.util.EnumConverter;
 import pro.javacard.capfile.AID;
+import pro.javacard.gp.GPSession;
+import pro.javacard.gp.GPUtils;
 
 import java.io.File;
 import java.io.IOException;

@@ -1,4 +1,4 @@
-[![Build status](https://github.com/martinpaljak/globalplatformpro/workflows/Build%20robotbadge.svg?branch=master)](https://github.com/martinpaljak/globalplatformpro/actions)
+[![Build status](https://github.com/martinpaljak/globalplatformpro/workflows/Build%20robot/badge.svg?branch=master)](https://github.com/martinpaljak/globalplatformpro/actions)
 [![LGPL-3.0 licensed](https://img.shields.io/badge/license-LGPL-blue.svg)](https://github.com/martinpaljak/GlobalPlatformPro/blob/master/LICENSE) 
 
 [![Latest release](https://img.shields.io/github/release/martinpaljak/GlobalPlatformPro.svg)](https://github.com/martinpaljak/GlobalPlatformPro/releases/latest)

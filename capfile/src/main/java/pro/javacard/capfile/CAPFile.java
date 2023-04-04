@@ -127,6 +127,8 @@ public class CAPFile {
             if (ai != null) {
                 try {
                     DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+                    // Not really a threat (intended for self-generated local files) but still nice to have
+                    dbFactory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
                     DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
                     appletxml = dBuilder.parse(new ByteArrayInputStream(ai));
                     appletxml.getDocumentElement().normalize();

@@ -1,4 +1,4 @@
-package pro.javacard.gp;
+package pro.javacard.gptool;
 
 import org.bouncycastle.util.encoders.Hex;
 import org.testng.Assert;

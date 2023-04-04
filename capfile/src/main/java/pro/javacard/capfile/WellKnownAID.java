@@ -34,7 +34,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 
-// Static class for translating AID-s into human readable form
+// Static class for translating AID-s into human-readable form
 public final class WellKnownAID {
 
     private static final Map<AID, String> javaCardRegistry = new LinkedHashMap<>();

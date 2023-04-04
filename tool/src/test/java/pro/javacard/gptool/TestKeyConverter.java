@@ -1,4 +1,4 @@
-package pro.javacard.gp;
+package pro.javacard.gptool;
 
 import org.testng.Assert;
 import org.testng.annotations.Test;

@@ -15,4 +15,8 @@
     <Class name="pro.javacard.gp.GPSession"/>
     <Bug pattern="EI_EXPOSE_REP"/>
   </Match>
+  <Match>
+    <Class name="pro.javacard.gp.GPCrypto"/>
+    <Bug pattern="MS_PKGPROTECT"/>
+  </Match>
 </FindBugsFilter>

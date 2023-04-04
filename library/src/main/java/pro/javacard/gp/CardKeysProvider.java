@@ -1,4 +1,4 @@
-package pro.javacard.gp.i;
+package pro.javacard.gp;
 
 import pro.javacard.gp.GPCardKeys;
 

@@ -147,7 +147,7 @@ public final class GPKeyInfo {
         return r;
     }
 
-    final static Map<Integer, String> keyVersionPurposes;
+    public final static Map<Integer, String> keyVersionPurposes;
 
     static {
         LinkedHashMap<Integer, String> tmp = new LinkedHashMap<>();

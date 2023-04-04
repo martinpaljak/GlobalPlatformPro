@@ -52,24 +52,25 @@ import java.util.Arrays;
 // Various cryptographic primitives used for secure channel or plaintext keys
 @SuppressWarnings("lgtm[java/weak-cryptographic-algorithm]")
 public final class GPCrypto {
-    private GPCrypto() {}
+    private GPCrypto() {
+    }
 
-    static final byte[] null_bytes_8 = new byte[]{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-    static final byte[] null_bytes_16 = new byte[]{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-    static final byte[] one_bytes_16 = new byte[]{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01};
+    public static final byte[] null_bytes_8 = new byte[]{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    public static final byte[] null_bytes_16 = new byte[]{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    public static final byte[] one_bytes_16 = new byte[]{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01};
 
     // List of used ciphers.
-    static final String DES3_CBC_CIPHER = "DESede/CBC/NoPadding";
-    static final String DES3_ECB_CIPHER = "DESede/ECB/NoPadding";
+    public static final String DES3_CBC_CIPHER = "DESede/CBC/NoPadding";
+    public static final String DES3_ECB_CIPHER = "DESede/ECB/NoPadding";
     static final String DES_CBC_CIPHER = "DES/CBC/NoPadding";
     static final String DES_ECB_CIPHER = "DES/ECB/NoPadding";
     static final String AES_CBC_CIPHER = "AES/CBC/NoPadding";
 
-    static final IvParameterSpec iv_null_8 = new IvParameterSpec(null_bytes_8);
+    public static final IvParameterSpec iv_null_8 = new IvParameterSpec(null_bytes_8);
     static final IvParameterSpec iv_null_16 = new IvParameterSpec(null_bytes_16);
 
     // Shared random
-    static final SecureRandom random;
+    public static final SecureRandom random;
 
     static {
         try {
@@ -182,7 +183,7 @@ public final class GPCrypto {
     }
 
     // GP 2.2.1 Amendment D v 1.1.1
-    static byte[] scp03_kdf(byte[] key, byte constant, byte[] context, int blocklen_bits) {
+    public static byte[] scp03_kdf(byte[] key, byte constant, byte[] context, int blocklen_bits) {
         // 11 bytes
         byte[] label = new byte[]{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 

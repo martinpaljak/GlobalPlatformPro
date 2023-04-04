@@ -5,7 +5,7 @@ on:
   pull_request:
     branches:
     - master
-name: Builder robot
+name: Build robot
 jobs:
   build:
     runs-on: ubuntu-latest

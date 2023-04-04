@@ -17,11 +17,12 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-package pro.javacard.gp;
+package pro.javacard.gptool;
 
 import apdu4j.core.HexUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pro.javacard.gp.*;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;

@@ -337,7 +337,7 @@ public class GPSession {
         }
     }
 
-    List<GPKeyInfo> getKeyInfoTemplate() throws IOException, GPException {
+    public List<GPKeyInfo> getKeyInfoTemplate() throws IOException, GPException {
         final byte[] tmpl;
         if (wrapper != null) {
             // FIXME: check for 0x9000
@@ -1005,6 +1005,14 @@ public class GPSession {
         GPException.check(response, "PUT KEY failed");
     }
 
+
+    public void setProfile(GPCardProfile profile) {
+        this.profile = profile;
+    }
+
+    public GPCardProfile getProfile() {
+        return profile;
+    }
 
     public GPRegistry getRegistry() throws GPException, IOException {
         if (dirty) {

@@ -6,13 +6,16 @@
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.martinpaljak/globalplatformpro/badge.svg)](https://mvnrepository.com/artifact/com.github.martinpaljak/globalplatformpro)
 
 # GlobalPlatformPro
-_&nbsp;&nbsp; from [JavaCard.pro](https://javacard.pro)_
+_&nbsp;&nbsp;&nbsp;&nbsp; from [JavaCardPro](https://javacard.pro)_
 
 Load and manage applets on compatible JavaCards from command line or from your Java project with a [Do What I Mean](http://en.wikipedia.org/wiki/DWIM) approach ([testimonials](./docs/Testimonials.md)).
 
 > Provides an **easy to use** and **high level** interface that most of the time **JustWorks<sup>(TM)</sup>**, is **flexible** and **[100% open source](#license)**!
 
 Building JavaCard applets is equally pleasing with [ant-javacard](https://github.com/martinpaljak/ant-javacard)
+
+Like it? [Become a sponsor](https://github.com/sponsors/martinpaljak)!
+
 #### Jump to ...
 * [Download](#get-it-now)
 * [Usage](#usage)
@@ -33,8 +36,8 @@ cd GlobalPlatformPro
 ```
 
 ## NEWS
- * SCP03 support in [latest version](https://github.com/martinpaljak/GlobalPlatformPro/releases)
- * [JavaCard Buyer's Guide of 2018](https://github.com/martinpaljak/GlobalPlatformPro/tree/master/docs/JavaCardBuyersGuide)
+ * GlobalPlatformPro [received a small recognition](https://github.com/martinpaljak/martinpaljak/blob/master/README.md#news) from Google Open Source as a Peer Bonus. (Thanks, [@konstantint](https://github.com/konstantint)!)
+ * [JavaCard Buyer's Guide](https://github.com/martinpaljak/GlobalPlatformPro/tree/master/docs/JavaCardBuyersGuide)
 
 ### Usage
 
@@ -260,7 +263,7 @@ In regard to GlobalPlatform, the goal is to make simple operations like installi
 
 #### Included/used open source projects
 
- * [BouncyCastle](http://pholser.github.io/jopt-simple/) for OID parsing and NIST SP 800-108/NIST SP 800-38B (MIT)
+ * [BouncyCastle](https://www.bouncycastle.org/java.html) for OID parsing and NIST SP 800-108/NIST SP 800-38B (MIT)
  * [JOpt Simple](http://pholser.github.io/jopt-simple/) for parsing command line (MIT)
  * [Launch4j](http://launch4j.sourceforge.net/) for generating the .exe (BSD/MIT)
  * [apdu4j](https://github.com/martinpaljak/apdu4j) for APDU level PC/SC access/logging/replaying (MIT)
@@ -273,12 +276,12 @@ In regard to GlobalPlatform, the goal is to make simple operations like installi
   * re-run your failing command with `-d -v -i` switches and send the output, information about your card and applet/CAP
   * **Only plaintext** logs. **NO** screenshots, pictures, word documents. **NO** generic questions about java/linux/windows/globalplatform. Questions about jcshell/gpshell/gpj/something else **shall be ignored**.
   * If unsure, first read about [asking questions](http://www.catb.org/esr/faqs/smart-questions.html)
-  * If you want to have a chat-like experience, try to [![Gitter](https://badges.gitter.im/martinpaljak/GlobalPlatformPro.svg)](https://gitter.im/martinpaljak/GlobalPlatformPro)
+  * For "How do I ... ?" questions [start a thread in discussions](https://github.com/martinpaljak/GlobalPlatformPro/discussions/categories/q-a)
 * [File an issue on Github](https://github.com/martinpaljak/GlobalPlatformPro/issues/new). Better yet - a pull request!
-* Want to **donate**? E-mail or paypal to martin@martinpaljak.net
+* Want to **donate**? E-mail or paypal to martin@martinpaljak.net or [become a sponsor](https://github.com/sponsors/martinpaljak)!
 
 #### Legal disclaimer
  The casual: trademarks to their owners, copyrights to authors, software patents to hell, legal letters to ~~/dev/null~~ PGP key 0x1d86f74c7b9dd593. Everything is provided AS-IS AND THERE IS A CONSTANT RISK OF DEATH FROM SUDDEN LIGHTNING. Writing in all caps made it look like serious, didn't it?
 
 ----
-[JavaCard.pro](http://javacard.pro)
+[JavaCardPro](http://javacard.pro)

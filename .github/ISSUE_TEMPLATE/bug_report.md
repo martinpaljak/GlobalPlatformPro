@@ -9,14 +9,19 @@ If you are sure that this is a bug or missing feature (with available documentat
 
 Also, if the issue seems to come from a specific reader (GPPro depends on a functioning PC/SC stack), do try with with other computers and readers first. A buggy reader can not be fixed.
 
+## Is it a "How do I ... ?" question or ask for help?
+
+Please don't open an issue for that. Start a discussion in the [Q&A section](https://github.com/martinpaljak/GlobalPlatformPro/discussions/categories/q-a) instead, maybe someone in the community knows how to help you.
+
 ### Describe the bug
 A clear and concise description of what the bug is.
 
-### Information about your card
+### Information about your card and used reader
 As much information as you have:
-1. Vendor
-2. Product
-3. Version
+1. Card Vendor
+2. Card Product Name
+3. Card Platform Version
+4. Reader model/name
 
 ### Expected behavior
 

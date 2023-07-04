@@ -7,7 +7,12 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.json.JsonReadFeature;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.TextNode;
+import com.fasterxml.jackson.dataformat.cbor.CBORReadContext;
 import com.fasterxml.jackson.dataformat.cbor.databind.CBORMapper;
+import org.bouncycastle.util.encoders.Base64;
 import org.bouncycastle.util.encoders.DecoderException;
 import org.bouncycastle.util.encoders.Hex;
 import pro.javacard.gp.GPUtils;
@@ -20,6 +25,8 @@ public class APDUParsers {
     static final ObjectMapper cbor;
 
     static final ObjectMapper json;
+
+    public static final ObjectWriter pretty;
 
     static {
         // When using strings, have hex instead of b64
@@ -35,6 +42,9 @@ public class APDUParsers {
         json.enable(JsonReadFeature.ALLOW_SINGLE_QUOTES.mappedFeature());
         json.enable(JsonReadFeature.ALLOW_TRAILING_COMMA.mappedFeature());
 
+        pretty = json.writerWithDefaultPrettyPrinter();
+
+        // TODO: make it fail on trailing bytes
         cbor = new CBORMapper();
     }
 
@@ -55,6 +65,41 @@ public class APDUParsers {
     }
 
 
+    // Recursive and makes a copy of the node
+    public static JsonNode hexify(JsonNode node) {
+        return hexify_(node.deepCopy());
+    }
+
+
+    public static String pretty(Object o) {
+        try {
+            if (o instanceof JsonNode)
+                o = hexify((JsonNode) o);
+            if (o instanceof byte[])
+                o = hexify(cbor.readTree((byte[]) o));
+            return pretty.writeValueAsString(o);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    // Jackson normally uses base64 for binary. We like hex in visual instead. Can't have a BinaryNode serializer in Jackson, thus do deep copy and hexify
+    static JsonNode hexify_(JsonNode node) {
+        if (node.isArray()) {
+            ArrayNode hexified = json.createArrayNode();
+            node.forEach(e -> hexified.add(hexify_(e)));
+            return hexified;
+        } else if (node.isObject()) {
+            ObjectNode obj = (ObjectNode) node;
+            obj.fieldNames().forEachRemaining(fn -> obj.set(fn, hexify_(obj.get(fn))));
+            return obj;
+        } else if (node.isBinary()) {
+            byte[] bytes = Base64.decode(node.asText());
+            return new TextNode(Hex.toHexString(bytes));
+        }
+        return node;
+    }
+
     static String hex_cleanup(String s) {
         // Delete: " ", ":", "0x"
         return s.replaceAll("(\\s+|0x|0X|:)", "");
@@ -69,16 +114,21 @@ public class APDUParsers {
         // Try CBOR
         try {
             JsonNode json = cbor.readTree(b);
-            return json.toPrettyString();
+            // Only if it's an array or object
+            if (json.isArray() || json.isObject())
+                return "# CBOR: " + pretty(json);
         } catch (IOException e) {
-            // Not CBOR. TLV ?
-            try {
-                List<String> tlv = GPUtils.visualize_tlv(b);
-                return String.join("\n", tlv);
-            } catch (IllegalArgumentException e2) {
-                // Do nothing
-            }
+            // Not CBOR
         }
+
+        // Try TLV
+        try {
+            List<String> tlv = GPUtils.visualize_tlv(b);
+            return String.join("\n", tlv);
+        } catch (IllegalArgumentException e) {
+            // Do nothing
+        }
+
         // HEX fallback
         return Hex.toHexString(b);
     }

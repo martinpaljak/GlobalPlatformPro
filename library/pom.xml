@@ -7,7 +7,7 @@
     <parent>
         <groupId>com.github.martinpaljak</groupId>
         <artifactId>gppro</artifactId>
-        <version>21.12.32-SNAPSHOT</version>
+        <version>23.08.10-SNAPSHOT</version>
     </parent>
 
     <artifactId>globalplatformpro</artifactId>
@@ -24,7 +24,7 @@
         <dependency>
             <groupId>com.github.martinpaljak</groupId>
             <artifactId>capfile</artifactId>
-            <version>${project.version}</version>
+            <version>23.08.07</version>
         </dependency>
         <!-- For logging -->
         <dependency>

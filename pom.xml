@@ -5,9 +5,9 @@
     <parent>
         <groupId>com.github.martinpaljak</groupId>
         <artifactId>metacard</artifactId>
-        <version>23.07.04</version>
+        <version>23.08.10</version>
     </parent>
-    <version>21.12.32-SNAPSHOT</version>
+    <version>23.08.10-SNAPSHOT</version>
     <artifactId>gppro</artifactId>
     <packaging>pom</packaging>
     <name>GlobalPlatformPro</name>
@@ -38,7 +38,6 @@
         </repository>
     </repositories>
     <modules>
-        <module>capfile</module>
         <module>library</module>
         <module>tool</module>
     </modules>
@@ -59,11 +58,6 @@
                 <configuration>
                     <excludeFilterFile>spotbugs.xml</excludeFilterFile>
                 </configuration>
-            </plugin>
-            <!-- Reproducible -->
-            <plugin>
-                <groupId>io.github.zlika</groupId>
-                <artifactId>reproducible-build-maven-plugin</artifactId>
             </plugin>
         </plugins>
     </build>

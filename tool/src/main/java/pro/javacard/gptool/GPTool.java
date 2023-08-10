@@ -36,7 +36,6 @@ import pro.javacard.capfile.CAPFile;
 import pro.javacard.gp.*;
 import pro.javacard.gp.GPRegistryEntry.Privilege;
 import pro.javacard.gp.GPSession.APDUMode;
-import pro.javacard.gp.CardKeysProvider;
 
 import javax.crypto.Cipher;
 import javax.smartcardio.Card;

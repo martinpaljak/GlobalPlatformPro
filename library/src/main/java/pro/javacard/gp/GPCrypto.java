@@ -173,7 +173,7 @@ public final class GPCrypto {
     // SCP03 related
     public static byte[] scp03_mac(byte[] keybytes, byte[] msg, int lengthBits) {
         // Use BouncyCastle light interface.
-        BlockCipher cipher = new AESEngine();
+        BlockCipher cipher = AESEngine.newInstance();
         CMac cmac = new CMac(cipher);
         cmac.init(new KeyParameter(keybytes));
         cmac.update(msg, 0, msg.length);
@@ -204,7 +204,7 @@ public final class GPCrypto {
 
     // Generic KDF in counter mode with one byte counter.
     public static byte[] scp03_kdf(byte[] key, byte[] a, byte[] b, int bytes) {
-        BlockCipher cipher = new AESEngine();
+        BlockCipher cipher = AESEngine.newInstance();
         CMac cmac = new CMac(cipher);
         KDFCounterBytesGenerator kdf = new KDFCounterBytesGenerator(cmac);
         kdf.init(new KDFCounterParameters(key, a, b, 8)); // counter size is in bits

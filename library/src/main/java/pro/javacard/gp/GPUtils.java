@@ -23,7 +23,9 @@
 package pro.javacard.gp;
 
 import apdu4j.core.HexUtils;
-import com.payneteasy.tlv.*;
+import com.payneteasy.tlv.BerTlv;
+import com.payneteasy.tlv.BerTlvParser;
+import com.payneteasy.tlv.BerTlvs;
 import org.bouncycastle.util.encoders.Hex;
 import org.slf4j.Logger;
 
@@ -32,7 +34,6 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 
 public class GPUtils {

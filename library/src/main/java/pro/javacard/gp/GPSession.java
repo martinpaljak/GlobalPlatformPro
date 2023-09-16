@@ -836,11 +836,25 @@ public class GPSession {
         dirty = true;
     }
 
-    public void deleteKey(int keyver) throws GPException, IOException {
+    public void deleteKey(Integer keyver, Integer keyid) throws GPException, IOException {
+        // TODO: get id from existing template list
+
+        if (keyid == null && keyver == null)
+            throw new IllegalArgumentException("Must specify either key version or key ID");
+
         ByteArrayOutputStream bo = new ByteArrayOutputStream();
-        bo.write(0xd2);
-        bo.write(1); // length
-        bo.write(keyver);
+        if (keyid != null ) {
+            bo.write(0xd0); // Key Identifier
+            bo.write(1);
+            bo.write(0x01);
+        }
+
+        if (keyver != null) {
+            bo.write(0xd2); // Key Version Number
+            bo.write(1); // length
+            bo.write(keyver);
+        }
+
         CommandAPDU delete = new CommandAPDU(CLA_GP, INS_DELETE, 0x00, 0x00, bo.toByteArray());
         ResponseAPDU response = transmit(delete);
         GPException.check(response, String.format("Could not delete key %s", GPUtils.intString(keyver)));

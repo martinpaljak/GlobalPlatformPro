@@ -66,7 +66,6 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
     static final String ENV_GP_READER = "GP_READER";
     static final String ENV_GP_READER_IGNORE = "GP_READER_IGNORE";
     static final String ENV_GP_TRACE = "GP_TRACE";
-
     static final String ENV_GP_PCSC_RESET = "GP_PCSC_RESET";
 
     static void setupLogging(OptionSet args) {
@@ -736,7 +735,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                 if (args.has(OPT_DELETE_KEY)) {
                     int keyver = args.valueOf(OPT_DELETE_KEY);
                     System.out.println("Deleting key " + GPUtils.intString(keyver));
-                    gp.deleteKey(keyver);
+                    gp.deleteKey(keyver, null);
                 }
 
 

@@ -857,7 +857,9 @@ public class GPSession {
 
         CommandAPDU delete = new CommandAPDU(CLA_GP, INS_DELETE, 0x00, 0x00, bo.toByteArray());
         ResponseAPDU response = transmit(delete);
-        GPException.check(response, String.format("Could not delete key %s", GPUtils.intString(keyver)));
+        // XXX: better message
+        String msg = String.format("DELETE failed for key %s", keyver != null ? GPUtils.intString(keyver) : GPUtils.intString(keyid));
+        GPException.check(response, msg);
     }
 
     public void renameISD(AID newaid) throws GPException, IOException {

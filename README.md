@@ -31,7 +31,9 @@ Like it? [Become a sponsor](https://github.com/sponsors/martinpaljak)!
 
 #### Homebrew
 
-    brew install martinapaljak/gppro/gppro --HEAD # installs the master branch
+```shell
+brew install martinapaljak/gppro/gppro --HEAD # installs the master branch
+```
 
 #### Source
 

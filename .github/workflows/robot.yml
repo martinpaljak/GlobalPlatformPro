@@ -23,7 +23,7 @@ jobs:
         uses: actions/setup-java@v3.12.0
         with:
           java-version: ${{ matrix.java }}
-          distribution: temurin
+          distribution: zulu
           cache: maven
       - run: ./mvnw -B -U -T1C verify
       - name: Release

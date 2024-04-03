@@ -37,7 +37,9 @@ import java.util.stream.Stream;
 // Middle layer between GPTool (CLI) and GlobalPlatform (session)
 public class GPCommands {
 
-    private GPCommands() {}
+    private GPCommands() {
+    }
+
     private static void storeDGI(GPSession gp, byte[] payload) throws GPException, IOException {
         // Single DGI. 0x90 should work as well but 0x80 is actually respected by cards.
         CommandAPDU cmd = new CommandAPDU(GPSession.CLA_GP, GPSession.INS_STORE_DATA, 0x80, 0x00, payload);
@@ -135,12 +137,14 @@ public class GPCommands {
 
         final byte[] dap;
         if (dapRequired) {
+            if (1 == 1) throw new IllegalArgumentException("Broken code, see #304");
+            // FIXME: see #304
             switch (lfdbh) {
                 case SHA1:
-                    dap = cap.getMetaInfEntry(CAPFile.DAP_RSA_V1_SHA1_FILE);
+                    dap = new byte[128]; //cap.getMetaInfEntry(CAPFile.DAP_RSA_V1_SHA1_FILE);
                     break;
                 case SHA256:
-                    dap = cap.getMetaInfEntry(CAPFile.DAP_RSA_V1_SHA256_FILE);
+                    dap = new byte[128]; // cap.getMetaInfEntry(CAPFile.DAP_RSA_V1_SHA256_FILE);
                     break;
                 default:
                     throw new IllegalArgumentException("Unsupported DAP hash algorithm: " + hash);

@@ -8,6 +8,9 @@
     <Bug pattern="RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE"/>
   </Match>
   <Match>
+    <Bug pattern="CT_CONSTRUCTOR_THROW"/>
+  </Match>
+  <Match>
     <Class name="pro.javacard.gp.HexBytes"/>
     <Bug pattern="EI_EXPOSE_REP"/>
   </Match>

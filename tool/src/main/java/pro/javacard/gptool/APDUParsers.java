@@ -170,6 +170,6 @@ public class APDUParsers {
         } catch (IOException e) {
             throw new IllegalArgumentException(String.format("Could not parse \"%s\": %s", s, e.getMessage()), e);
         }
-        throw new IllegalArgumentException(String.format("Don't know how to handle\"%s\"", s));
+        throw new IllegalArgumentException(String.format("Don't know how to handle \"%s\"", s));
     }
 }

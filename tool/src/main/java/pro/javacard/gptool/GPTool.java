@@ -159,6 +159,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
             }
             reader = reader.map(e -> args.has(OPT_DEBUG) ? LoggingCardTerminal.getInstance(e) : e);
             c = reader.get().connect("*");
+            c.beginExclusive();
             ret = new GPTool().run(CardBIBO.wrap(c), argv);
         } catch (IllegalArgumentException e) {
             System.err.println("Invalid argument: " + e.getMessage());
@@ -170,6 +171,11 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                 e.printStackTrace();
         } finally {
             if (c != null) {
+                try {
+                    c.endExclusive();
+                } catch (CardException e) {
+                    // Warn or ignore
+                }
                 try {
                     c.disconnect(resetOnDisconnect);
                 } catch (CardException e) {

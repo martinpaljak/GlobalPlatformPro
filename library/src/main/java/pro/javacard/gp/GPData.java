@@ -46,7 +46,9 @@ import static pro.javacard.gp.GPSession.CLA_GP;
 public final class GPData {
     private static final Logger logger = LoggerFactory.getLogger(GPData.class);
 
-    private GPData() {}
+    private GPData() {
+    }
+
     // SD states
     public static final byte readyStatus = 0x1;
     public static final byte initializedStatus = 0x7;
@@ -382,19 +384,16 @@ public final class GPData {
     }
 
     public static String oid2string(byte[] oid) {
-        try {
-            // Prepend 0x06 tag, if not present
-            // XXX: if ber-tlv allows to fetch constructed data, this is not needed
-            if (oid[0] != 0x06) {
-                oid = GPUtils.concatenate(new byte[]{0x06, (byte) oid.length}, oid);
-            }
-            ASN1ObjectIdentifier realoid = (ASN1ObjectIdentifier) ASN1ObjectIdentifier.fromByteArray(oid);
-            if (realoid == null)
-                throw new IllegalArgumentException("Could not parse OID from " + HexUtils.bin2hex(oid));
-            return realoid.toString();
-        } catch (IOException e) {
-            throw new IllegalArgumentException("Could not handle " + HexUtils.bin2hex(oid));
+        logger.trace("Parsing {} as OID", HexUtils.bin2hex(oid));
+        // XXX: Hardcoded to avoid issue in bc-java 1.78+
+        // See https://github.com/bcgit/bc-java/issues/1758
+        if (Arrays.equals(HexUtils.hex2bin("2A864886FC6B048000"), oid)) {
+            return "1.2.840.114283.4.0";
         }
+        ASN1ObjectIdentifier realoid = ASN1ObjectIdentifier.fromContents(oid);
+        if (realoid == null)
+            throw new IllegalArgumentException("Could not parse OID from " + HexUtils.bin2hex(oid));
+        return realoid.toString();
     }
 
     private static String logAndGetOidFromByteArray(byte[] tag, byte[] tlv) {

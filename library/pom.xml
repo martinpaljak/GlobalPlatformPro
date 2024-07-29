@@ -24,7 +24,7 @@
         <dependency>
             <groupId>com.github.martinpaljak</groupId>
             <artifactId>capfile</artifactId>
-            <version>24.03.15</version>
+            <version>24.04.08</version>
         </dependency>
         <!-- For logging -->
         <dependency>

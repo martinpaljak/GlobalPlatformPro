@@ -160,11 +160,6 @@
                     </execution>
                 </executions>
             </plugin>
-            <!-- Reproducible -->
-            <plugin>
-                <groupId>io.github.zlika</groupId>
-                <artifactId>reproducible-build-maven-plugin</artifactId>
-            </plugin>
         </plugins>
     </build>
 </project>

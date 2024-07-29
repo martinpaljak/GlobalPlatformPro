@@ -14,6 +14,9 @@
     <url>https://github.com/martinpaljak/GlobalPlatformPro</url>
     <description>Manage applets and keys on JavaCard-s like a pro</description>
     <inceptionYear>2013</inceptionYear>
+    <properties>
+        <project.build.outputTimestamp>2024-04-08T12:09:56Z</project.build.outputTimestamp>
+    </properties>
     <organization>
         <name>Martin Paljak and contributors</name>
         <url>https://javacard.pro/globalplatformpro</url>

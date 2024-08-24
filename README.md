@@ -32,7 +32,7 @@ Like it? [Become a sponsor](https://github.com/sponsors/martinpaljak)!
 #### Homebrew
 
 ```shell
-brew install martinapaljak/brew/gppro --HEAD # installs the master branch
+brew install martinpaljak/brew/gppro --HEAD # installs the master branch
 ```
 
 #### Source

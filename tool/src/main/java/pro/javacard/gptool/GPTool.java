@@ -58,6 +58,7 @@ import static pro.javacard.gp.GPSecureChannelVersion.SCP.*;
 // Does the CLI parameter parsing and associated execution
 @AutoService(SmartCardApp.class)
 public final class GPTool extends GPCommandLineInterface implements SimpleSmartCardApp {
+    // NOTE: can't have a logger here, as it is set up based on args and env. This class should only use stdout/stderr.
 
     private static boolean isVerbose = false;
     private static boolean isTrace = false;
@@ -67,6 +68,8 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
     static final String ENV_GP_READER_IGNORE = "GP_READER_IGNORE";
     static final String ENV_GP_TRACE = "GP_TRACE";
     static final String ENV_GP_PCSC_RESET = "GP_PCSC_RESET";
+    static final String ENV_GP_PCSC_EXCLUSIVE = "GP_PCSC_EXCLUSIVE";
+    static final String ENV_GP_PCSC_TRANSACT = "GP_PCSC_TRANSACT";
 
     static void setupLogging(OptionSet args) {
         // Set up slf4j simple in a way that pleases us
@@ -111,7 +114,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                 // Test for unlimited crypto
                 if (Cipher.getMaxAllowedKeyLength("AES") == 128) {
                     System.err.println("# Error: unlimited crypto policy is NOT installed!");
-                    System.err.println("# Please install and use JDK 11 LTS");
+                    System.err.println("# Please install and use JDK 11 LTS or later");
                 }
             } catch (NoSuchAlgorithmException e) {
                 System.err.println("# Error: no AES support in JRE?");
@@ -124,7 +127,11 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
     public static void main(String[] argv) {
         Card c = null;
         int ret = 1;
+
         boolean resetOnDisconnect = Boolean.parseBoolean(System.getenv().getOrDefault(ENV_GP_PCSC_RESET, "false"));
+        boolean exclusive = Boolean.parseBoolean(System.getenv().getOrDefault(ENV_GP_PCSC_EXCLUSIVE, "false"));
+        boolean transact = Boolean.parseBoolean(System.getenv().getOrDefault(ENV_GP_PCSC_TRANSACT, "true"));
+
         try {
             OptionSet args = parseArguments(argv);
             setupLogging(args);
@@ -154,11 +161,20 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
             Optional<CardTerminal> reader = TerminalManager.getLucky(TerminalManager.dwimify(readers, useReader, ignoreReader), terminalManager.terminals());
 
             if (reader.isEmpty()) {
-                System.err.println("Specify reader with -r/$GP_READER");
+                System.err.println("Specify reader with -r/$GP_READER; available readers:");
+                readers.forEach((r) -> System.err.printf("- %s%n", r.getName()));
                 System.exit(1);
             }
+            if (args.has(OPT_PCSC_EXCLUSIVE))
+                exclusive = true;
+            if (args.has(OPT_PCSC_TRANSACT))
+                transact = true;
+
             reader = reader.map(e -> args.has(OPT_DEBUG) ? LoggingCardTerminal.getInstance(e) : e);
-            c = reader.get().connect("*");
+            String protocol = exclusive ? "EXCLUSIVE;*" : "*";
+            c = reader.get().connect(protocol);
+            if (transact)
+                c.beginExclusive();
             ret = new GPTool().run(CardBIBO.wrap(c), argv);
         } catch (IllegalArgumentException e) {
             System.err.println("Invalid argument: " + e.getMessage());
@@ -170,10 +186,21 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                 e.printStackTrace();
         } finally {
             if (c != null) {
+                if (transact) {
+                    try {
+                        c.endExclusive();
+                    } catch (CardException e) {
+                        System.err.println("Exception when ending card transaction: " + e.getMessage());
+                        if (isTrace)
+                            e.printStackTrace();
+                    }
+                }
                 try {
                     c.disconnect(resetOnDisconnect);
                 } catch (CardException e) {
-                    // Warn or ignore
+                    System.err.println("Exception when disconnecting card: " + e.getMessage());
+                    if (isTrace)
+                        e.printStackTrace();
                 }
             }
         }
@@ -301,7 +328,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                 PlaintextKeys keyz = (PlaintextKeys) keys;
 
                 if (args.has(OPT_KEY_KDF)) {
-                    keyz.setDiversifier(args.valueOf(OPT_KEY_KDF));
+                    keyz.setDiversifier(PlaintextKeys.kdf_templates.getOrDefault(args.valueOf(OPT_KEY_KDF), args.valueOf(OPT_KEY_KDF)));
                 }
 
                 // Set/override key version
@@ -747,9 +774,11 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
 
                     // Get new key values
                     Optional<GPCardKeys> lockKey = keyFromPlugin(args.valueOf(OPT_LOCK));
+
+                    String kdf = PlaintextKeys.kdf_templates.getOrDefault(args.valueOf(OPT_LOCK_KDF), args.valueOf(OPT_LOCK_KDF));
                     // From provider
                     newKeys = lockKey.
-                            orElseGet(() -> PlaintextKeys.fromBytes(args.valueOf(OPT_LOCK_ENC).value(), args.valueOf(OPT_LOCK_MAC).value(), args.valueOf(OPT_LOCK_DEK).value(), HexBytes.v(args.valueOf(OPT_LOCK)).v(), args.valueOf(OPT_LOCK_KDF), null, args.valueOf(OPT_NEW_KEY_VERSION)).
+                            orElseGet(() -> PlaintextKeys.fromBytes(args.valueOf(OPT_LOCK_ENC).value(), args.valueOf(OPT_LOCK_MAC).value(), args.valueOf(OPT_LOCK_DEK).value(), HexBytes.v(args.valueOf(OPT_LOCK)).v(), kdf, null, args.valueOf(OPT_NEW_KEY_VERSION)).
                                     orElseThrow(() -> new IllegalArgumentException("Can not lock without keys :)")));
 
                     if (newKeys instanceof PlaintextKeys) {
@@ -897,7 +926,10 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                     signature = DAPSigner.sign(capFile, dapKey.getPrivate().get(), Optional.ofNullable(lfdbh).orElse(GPData.LFDBH.SHA1));
                 } else {
                     // TODO: have some xml/zip parsers for ease of use like existing capfile (but deprecate that)
-                    throw new IllegalArgumentException("Need DAP signature!");
+                    if (!args.has(OPT_FORCE))
+                        throw new IllegalArgumentException("Need DAP signature!");
+                    else
+                        signature = null;
                 }
             } else {
                 signature = null;

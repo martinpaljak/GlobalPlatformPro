@@ -29,12 +29,16 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.Signature;
 import java.security.interfaces.RSAPrivateKey;
+import java.security.spec.MGF1ParameterSpec;
+import java.security.spec.PSSParameterSpec;
 
 // NOTE: Thanks goes to Gregor Johannson for initial implementation
 public abstract class DMTokenizer {
-    private static final Logger logger = LoggerFactory.getLogger(DMTokenizer.class);
+    private static final Logger log = LoggerFactory.getLogger(DMTokenizer.class);
 
-    private DMTokenizer() {}
+    private DMTokenizer() {
+    }
+
     abstract protected byte[] getToken(CommandAPDU apdu);
 
     abstract protected boolean canTokenize(CommandAPDU apdu);
@@ -105,13 +109,30 @@ public abstract class DMTokenizer {
 
         @Override
         protected byte[] getToken(CommandAPDU apdu) {
+            int keylen = (privateKey.getModulus().bitLength() + 7) / 8;
+            byte[] dtbs = dtbs(apdu);
+            log.info("Signing DM with {} RSA", privateKey.getModulus().bitLength());
+            log.debug("DM token contents: {}", HexUtils.bin2hex(dtbs));
             try {
-                Signature signer = Signature.getInstance("SHA1withRSA");
-                signer.initSign(privateKey);
-                signer.update(dtbs(apdu));
-                byte[] signature = signer.sign();
-                logger.debug("Generated DM token: {}", HexUtils.bin2hex(signature));
-                return signature;
+                final byte[] token;
+                if (keylen == 128) {
+                    // B.3.1 Scheme1 of RSA keys up to 1k
+                    final Signature signer = Signature.getInstance("SHA1withRSA");
+                    signer.initSign(privateKey);
+                    signer.update(dtbs);
+                    token = signer.sign();
+                } else {
+                    // B.3.2 Scheme2 of RSA keys above 1k
+                    MGF1ParameterSpec mgf = MGF1ParameterSpec.SHA256;
+                    PSSParameterSpec spec = new PSSParameterSpec(mgf.getDigestAlgorithm(), "MGF1", mgf, 32, PSSParameterSpec.TRAILER_FIELD_BC);
+                    Signature signer = Signature.getInstance("RSASSA-PSS");
+                    signer.setParameter(spec);
+                    signer.initSign(privateKey);
+                    signer.update(dtbs);
+                    token = signer.sign();
+                }
+                log.debug("DM token: {}", HexUtils.bin2hex(token));
+                return token;
             } catch (GeneralSecurityException e) {
                 throw new GPException("Can not calculate DM token: " + e.getMessage(), e);
             }

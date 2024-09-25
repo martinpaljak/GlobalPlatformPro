@@ -84,14 +84,14 @@ abstract class GPCommandLineInterface {
 
     // SCP key handling
     protected static OptionSpec<String> OPT_KEY = parser.acceptsAll(Arrays.asList("k", "key"), "Specify key").withRequiredArg().describedAs("key");
-    protected static OptionSpec<PlaintextKeys.KDF> OPT_KEY_KDF = parser.accepts("key-kdf", "Use KDF with master key").withRequiredArg().withValuesConvertedBy(new KDFConverter());
+    protected static OptionSpec<String> OPT_KEY_KDF = parser.accepts("key-kdf", "Use KDF/template with master key").withRequiredArg();
 
     protected static OptionSpec<HexBytes> OPT_KEY_ENC = parser.accepts("key-enc", "Specify card ENC key").withRequiredArg().ofType(HexBytes.class).describedAs("key");
     protected static OptionSpec<HexBytes> OPT_KEY_MAC = parser.accepts("key-mac", "Specify card MAC key").withRequiredArg().ofType(HexBytes.class).describedAs("key");
     protected static OptionSpec<HexBytes> OPT_KEY_DEK = parser.accepts("key-dek", "Specify card DEK key").withRequiredArg().ofType(HexBytes.class).describedAs("key");
 
     protected static OptionSpec<String> OPT_LOCK = parser.accepts("lock", "Set new key").withRequiredArg().describedAs("key");
-    protected static OptionSpec<PlaintextKeys.KDF> OPT_LOCK_KDF = parser.accepts("lock-kdf", "Use KDF with lock key").withRequiredArg().withValuesConvertedBy(new KDFConverter());
+    protected static OptionSpec<String> OPT_LOCK_KDF = parser.accepts("lock-kdf", "Use KDF/template with lock key").withRequiredArg();
 
     protected static OptionSpec<HexBytes> OPT_LOCK_ENC = parser.accepts("lock-enc", "Set new ENC key").withRequiredArg().ofType(HexBytes.class).describedAs("key");
     protected static OptionSpec<HexBytes> OPT_LOCK_MAC = parser.accepts("lock-mac", "Set new MAC key").withRequiredArg().ofType(HexBytes.class).describedAs("key");
@@ -118,6 +118,7 @@ abstract class GPCommandLineInterface {
     // DAP
     protected static OptionSpec<AID> OPT_DAP_DOMAIN = parser.accepts("dap-domain", "Domain to use for DAP verification").withRequiredArg().ofType(AID.class);
     protected static OptionSpec<Void> OPT_SHA256 = parser.accepts("sha256", "Use SHA-256 for LFDB hash, not SHA-1");
+
     protected static OptionSpec<Key> OPT_DAP_KEY = parser.accepts("dap-key", "DAP key").withRequiredArg().ofType(Key.class).describedAs("PEM or hex");
     protected static OptionSpec<HexBytes> OPT_DAP_SIGNATURE = parser.accepts("dap-signature", "DAP signature").availableUnless(OPT_DAP_KEY).withRequiredArg().ofType(HexBytes.class).describedAs("signature");
     protected static OptionSpec<File> OPT_DAP_SIGN = parser.accepts("dap-sign", "Create DAP signature").availableIf(OPT_DAP_KEY).withRequiredArg().ofType(File.class).describedAs("CAP file");
@@ -131,16 +132,13 @@ abstract class GPCommandLineInterface {
 
     // MISC options
     protected static OptionSpec<GPSession.APDUMode> OPT_SC_MODE = parser.accepts("mode", "Secure channel to use").withRequiredArg().ofType(GPSession.APDUMode.class).withValuesConvertedBy(new APDUModeConverter());
-    protected static OptionSpec<Integer> OPT_BS = parser.accepts("bs", "Maximum APDU payload size").withRequiredArg().ofType(Integer.class).withValuesConvertedBy(new HexIntegerConverter()).describedAs("bytes");
+    protected static OptionSpec<Integer> OPT_BS = parser.accepts("bs", "Maximum APDU payload block size").withRequiredArg().ofType(Integer.class).withValuesConvertedBy(new HexIntegerConverter()).describedAs("bytes");
     protected static OptionSpec<String> OPT_PROFILE = parser.acceptsAll(Arrays.asList("P", "profile"), "Use pre-defined profile").withRequiredArg().describedAs("profile");
 
+    // PC/SC options
+    protected static OptionSpec<Void> OPT_PCSC_EXCLUSIVE = parser.acceptsAll(Arrays.asList("X", "pcsc-exclusive"), "Exclusive PC/SC access to the reader");
+    protected static OptionSpec<Void> OPT_PCSC_TRANSACT = parser.acceptsAll(Arrays.asList("L", "pcsc-locking"), "Use PC/SC transactions");
 
-    // argument converters
-    static class KDFConverter extends EnumConverter<PlaintextKeys.KDF> {
-        public KDFConverter() {
-            super(PlaintextKeys.KDF.class);
-        }
-    }
 
     static class APDUModeConverter extends EnumConverter<GPSession.APDUMode> {
         public APDUModeConverter() {

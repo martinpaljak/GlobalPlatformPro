@@ -186,6 +186,7 @@ public final class GPData {
         }
     }
 
+    // GPC 2.3.1 Table H-9 and Table H-10
     enum SIGNATURE {
         // First byte
         RSA1024_SHA1(0x01, 0),

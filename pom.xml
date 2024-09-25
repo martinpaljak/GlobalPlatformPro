@@ -5,7 +5,7 @@
     <parent>
         <groupId>com.github.martinpaljak</groupId>
         <artifactId>metacard</artifactId>
-        <version>24.04.05-SNAPSHOT</version>
+        <version>24.09.25</version>
     </parent>
     <version>23.08.10-SNAPSHOT</version>
     <artifactId>gppro</artifactId>

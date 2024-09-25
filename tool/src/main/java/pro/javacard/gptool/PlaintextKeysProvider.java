@@ -40,10 +40,10 @@ public class PlaintextKeysProvider implements CardKeysProvider {
         spec = spec.trim();
         try {
             // <kdf>:<hex> or <kdf>:default
-            for (PlaintextKeys.KDF d : PlaintextKeys.KDF.values()) {
-                if (spec.toLowerCase().startsWith(d.name().toLowerCase())) {
-                    byte[] k = hexOrDefault(spec.substring(d.name().length() + 1));
-                    return Optional.of(PlaintextKeys.fromMasterKey(k, d));
+            for (String d : PlaintextKeys.kdf_templates.keySet()) {
+                if (spec.toLowerCase().startsWith(d)) {
+                    byte[] k = hexOrDefault(spec.substring(d.length() + 1));
+                    return Optional.of(PlaintextKeys.fromMasterKey(k, PlaintextKeys.kdf_templates.get(d)));
                 }
             }
 

@@ -28,8 +28,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
-
-// Provides a interface for session keys. Session keys are derived from card keys
+// Provides an interface for session keys. Session keys are derived from card keys
 // Session keys are PLAINTEXT keys.
 // Providers are free to derive session keys based on hardware backed master keys
 // PlaintextKeys provides card keys, that are ... plaintext (not backed by hardware)
@@ -100,4 +99,6 @@ public abstract class GPCardKeys {
     public String toString() {
         return String.format("KCV-s (%s) ENC=%s MAC=%s DEK=%s", scp, HexUtils.bin2hex(kcv(KeyPurpose.ENC)), HexUtils.bin2hex(kcv(KeyPurpose.MAC)), HexUtils.bin2hex(kcv(KeyPurpose.DEK)));
     }
+
+    public abstract byte[] scp3_kdf(KeyPurpose purpose, byte[] a, byte[] b, int bytes);
 }

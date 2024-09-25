@@ -171,7 +171,7 @@ public final class GPCrypto {
     }
 
     // SCP03 related
-    public static byte[] scp03_mac(byte[] keybytes, byte[] msg, int lengthBits) {
+    static byte[] scp03_mac(byte[] keybytes, byte[] msg, int lengthBits) {
         // Use BouncyCastle light interface.
         BlockCipher cipher = AESEngine.newInstance();
         CMac cmac = new CMac(cipher);
@@ -182,8 +182,7 @@ public final class GPCrypto {
         return Arrays.copyOf(out, lengthBits / 8);
     }
 
-    // GP 2.2.1 Amendment D v 1.1.1
-    public static byte[] scp03_kdf(byte[] key, byte constant, byte[] context, int blocklen_bits) {
+    static byte[] scp03_kdf_blocka(byte constant, int blocklen_bits) {
         // 11 bytes
         byte[] label = new byte[]{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
@@ -197,7 +196,11 @@ public final class GPCrypto {
         } catch (IOException ioe) {
             throw new RuntimeException(ioe);
         }
-        byte[] blocka = bo.toByteArray();
+        return bo.toByteArray();
+    }
+    // GP 2.2.1 Amendment D v 1.1.1
+    public static byte[] scp03_kdf(byte[] key, byte constant, byte[] context, int blocklen_bits) {
+        byte[] blocka = scp03_kdf_blocka(constant, blocklen_bits);
         byte[] blockb = context;
         return scp03_kdf(key, blocka, blockb, blocklen_bits / 8);
     }

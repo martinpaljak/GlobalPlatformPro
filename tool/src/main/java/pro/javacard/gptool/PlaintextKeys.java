@@ -32,10 +32,7 @@ import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import static pro.javacard.gp.GPSecureChannelVersion.SCP.*;
 
@@ -47,10 +44,9 @@ class PlaintextKeys extends GPCardKeys {
     // After diversify() we know for which protocol we have keys for, unless known before
     static final byte[] defaultKeyBytes = HexUtils.hex2bin("404142434445464748494A4B4C4D4E4F");
 
-    // Derivation constants
+    // Derivation constants for session keys
     public static final Map<KeyPurpose, byte[]> SCP02_CONSTANTS;
     public static final Map<KeyPurpose, Byte> SCP03_CONSTANTS;
-    public static final Map<KeyPurpose, byte[]> SCP03_KDF_CONSTANTS;
 
     static {
         HashMap<KeyPurpose, byte[]> scp2 = new HashMap<>();
@@ -65,16 +61,21 @@ class PlaintextKeys extends GPCardKeys {
         scp3.put(KeyPurpose.MAC, (byte) 0x06);
         scp3.put(KeyPurpose.RMAC, (byte) 0x07);
         SCP03_CONSTANTS = Collections.unmodifiableMap(scp3);
+    }
 
-        HashMap<KeyPurpose, byte[]> scp3kdf = new HashMap<>();
-        scp3kdf.put(KeyPurpose.ENC, HexUtils.hex2bin("0000000100"));
-        scp3kdf.put(KeyPurpose.MAC, HexUtils.hex2bin("0000000200"));
-        scp3kdf.put(KeyPurpose.DEK, HexUtils.hex2bin("0000000300"));
-        SCP03_KDF_CONSTANTS = Collections.unmodifiableMap(scp3kdf);
+    public static final Map<String, String> kdf_templates;
+
+    static {
+        HashMap<String, String> kdfs = new HashMap<>();
+        kdfs.put("emv", "$4 $5 $6 $7 $8 $9 0xF0 $k $4 $5 $6 $7 $8 $9 0x0F $k");
+        kdfs.put("visa2", "$0 $1 $4 $5 $6 $7 0xF0 $k $0 $1 $4 $5 $6 $7 0x0F $k");
+        kdfs.put("visa", "$0 $1 $2 $3 $8 $9 0xF0 $k $0 $1 $2 $3 $8 $9 0x0F $k");
+        kdfs.put("kdf3", "$_ 0x00 0x00 0x00 $k 0x00 $0 $1 $2 $3 $4 $5 $6 $7 $8 $9");
+        kdf_templates = Collections.unmodifiableMap(kdfs);
     }
 
     // If diverisification is to be used
-    KDF kdf;
+    String kdf;
 
     // Keyset version
     private int version = 0x00;
@@ -85,12 +86,12 @@ class PlaintextKeys extends GPCardKeys {
     // Holds card-specific keys. They shall be diversified in-place, as needed
     private HashMap<KeyPurpose, byte[]> cardKeys = new HashMap<>();
 
-    private PlaintextKeys(byte[] master, KDF d) {
+    private PlaintextKeys(byte[] master, String d) {
         this(master, master, master, d);
         masterKey = master.clone();
     }
 
-    private PlaintextKeys(byte[] enc, byte[] mac, byte[] dek, KDF d) {
+    private PlaintextKeys(byte[] enc, byte[] mac, byte[] dek, String d) {
         cardKeys.put(KeyPurpose.ENC, enc.clone());
         cardKeys.put(KeyPurpose.MAC, mac.clone());
         cardKeys.put(KeyPurpose.DEK, dek.clone());
@@ -108,7 +109,7 @@ class PlaintextKeys extends GPCardKeys {
         return k;
     }
 
-    public static Optional<PlaintextKeys> fromBytes(byte[] enc, byte[] mac, byte[] dek, byte[] mk, KDF kdf, byte[] kdd, int ver) {
+    public static Optional<PlaintextKeys> fromBytes(byte[] enc, byte[] mac, byte[] dek, byte[] mk, String kdf, byte[] kdd, int ver) {
         if ((enc != null || mac != null || dek != null) && (enc == null || mac == null || dek == null || mk != null)) {
             throw new IllegalArgumentException("Either all or nothing of enc/mac/dek keys must be set, and no mk at the same time!");
         }
@@ -165,7 +166,7 @@ class PlaintextKeys extends GPCardKeys {
                 keys.setVersion(GPUtils.intValue(ver));
             }
             if (div != null) {
-                KDF kdf = KDF.valueOf(div.toUpperCase());
+                String kdf = kdf_templates.getOrDefault(div, div);
                 logger.warn("Different keys and using derivation, is this right?");
                 keys.setDiversifier(kdf);
             }
@@ -175,7 +176,7 @@ class PlaintextKeys extends GPCardKeys {
             byte[] master = validateKey(HexUtils.stringToBin(mk));
             PlaintextKeys keys = PlaintextKeys.fromMasterKey(master);
             if (div != null) {
-                keys.setDiversifier(KDF.valueOf(div.toUpperCase()));
+                keys.setDiversifier(div);
             } else {
                 logger.warn("Using master key without derivation, is this right?");
             }
@@ -212,7 +213,7 @@ class PlaintextKeys extends GPCardKeys {
         return new PlaintextKeys(master, null);
     }
 
-    public static PlaintextKeys fromMasterKey(byte[] master, KDF kdf) {
+    public static PlaintextKeys fromMasterKey(byte[] master, String kdf) {
         return new PlaintextKeys(master, kdf);
     }
 
@@ -224,22 +225,19 @@ class PlaintextKeys extends GPCardKeys {
         return new PlaintextKeys(enc, mac, dek, null);
     }
 
-    // Purpose defines the magic constants for diversification
-    public static byte[] diversify(byte[] k, KeyPurpose usage, byte[] kdd, KDF method) throws GPException {
+    public byte[] diversify(byte[] k, KeyPurpose usage, byte[] kdd, String kdf) throws GPException {
+        String template = kdf_template_expand(kdf, kdd, usage.getValue());
+        logger.debug("KDF: applying '{}' to {}", kdf, HexUtils.bin2hex(kdd));
         try {
             final byte[] kv;
-            if (method == KDF.KDF3) {
-                return GPCrypto.scp03_kdf(k, new byte[]{}, GPUtils.concatenate(SCP03_KDF_CONSTANTS.get(usage), kdd), k.length);
-            } else {
-                // All DES methods rely on encryption
-                // shift around and fill initialize update data as required.
-                if (method == KDF.VISA2) {
-                    kv = fillVisa2(kdd, usage);
-                } else if (method == KDF.EMV) {
-                    kv = fillEmv(kdd, usage);
-                } else
-                    throw new IllegalStateException("Unknown diversification method");
+            if (scp == SCP03) {
+                template = kdf_template_bitlength(template, k.length * 8);
 
+                byte[] a = kdf_template_finalize(kdf_template_blocka(template));
+                byte[] b = kdf_template_finalize(kdf_template_blockb(template));
+                return GPCrypto.scp03_kdf(k, a, b, k.length);
+            } else {
+                kv = kdf_template_finalize(template);
                 Cipher cipher = Cipher.getInstance(GPCrypto.DES3_ECB_CIPHER);
                 cipher.init(Cipher.ENCRYPT_MODE, GPCrypto.des3key(k));
                 return cipher.doFinal(kv);
@@ -249,45 +247,6 @@ class PlaintextKeys extends GPCardKeys {
         } catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
             throw new RuntimeException("Can not diversify", e);
         }
-    }
-
-    public static byte[] fillVisa2(byte[] kdd, KeyPurpose key) {
-        byte[] data = new byte[16];
-        System.arraycopy(kdd, 0, data, 0, 2);
-        System.arraycopy(kdd, 4, data, 2, 4);
-        data[6] = (byte) 0xF0;
-        data[7] = key.getValue();
-        System.arraycopy(kdd, 0, data, 8, 2);
-        System.arraycopy(kdd, 4, data, 10, 4);
-        data[14] = (byte) 0x0F;
-        data[15] = key.getValue();
-        return data;
-    }
-
-    // Unknown origin
-    public static byte[] fillVisa(byte[] kdd, KeyPurpose key) {
-        byte[] data = new byte[16];
-        System.arraycopy(kdd, 0, data, 0, 4);
-        System.arraycopy(kdd, 8, data, 4, 2);
-        data[6] = (byte) 0xF0;
-        data[7] = key.getValue();
-        System.arraycopy(kdd, 0, data, 8, 4);
-        System.arraycopy(kdd, 8, data, 12, 2);
-        data[14] = (byte) 0x0F;
-        data[15] = key.getValue();
-        return data;
-    }
-
-    public static byte[] fillEmv(byte[] kdd, KeyPurpose key) {
-        byte[] data = new byte[16];
-        // 6 rightmost bytes of init update response (which is 10 bytes)
-        System.arraycopy(kdd, 4, data, 0, 6);
-        data[6] = (byte) 0xF0;
-        data[7] = key.getValue();
-        System.arraycopy(kdd, 4, data, 8, 6);
-        data[14] = (byte) 0x0F;
-        data[15] = key.getValue();
-        return data;
     }
 
     public Optional<byte[]> getMasterKey() {
@@ -438,7 +397,6 @@ class PlaintextKeys extends GPCardKeys {
         return GPCrypto.scp03_kdf(cardKey, SCP03_CONSTANTS.get(p), kdd, cardKey.length * 8);
     }
 
-
     @Override
     public PlaintextKeys diversify(GPSecureChannelVersion.SCP scp, byte[] kdd) {
         // Set SCP and KDD and diversification state
@@ -470,14 +428,57 @@ class PlaintextKeys extends GPCardKeys {
         return String.format("ENC=%s (KCV: %s) MAC=%s (KCV: %s) DEK=%s (KCV: %s) for %s%s", enc, enc_kcv, mac, mac_kcv, dek, dek_kcv, scp, kdf == null ? "" : String.format(" with %s", kdf));
     }
 
-    public void setDiversifier(KDF kdf) {
+    public void setDiversifier(String template) {
         if (this.kdf != null)
             throw new IllegalStateException("KDF already set");
-        this.kdf = kdf;
+        this.kdf = template;
     }
 
-    // diversification methods
-    public enum KDF {
-        VISA2, EMV, KDF3
+    @Override
+    public byte[] scp3_kdf(KeyPurpose purpose, byte[] a, byte[] b, int bytes) {
+        return GPCrypto.scp03_kdf(cardKeys.get(purpose), a, b, bytes);
+    }
+
+    static String kdf_template_expand(String template, byte[] kdd, byte keytype) {
+        // Make everything lower case
+        template = template.toLowerCase(Locale.ENGLISH);
+        // Remove spaces
+        template = template.replace(" ", "");
+        // Remove hex indicators
+        template = template.replace("0x", "");
+
+        // replace $0..$f - KDD data
+        for (int i = 0; i < kdd.length; i++) {
+            template = template.replace(String.format("$%x", i), String.format("%02x", kdd[i]));
+        }
+        // replace $k - key type
+        template = template.replace("$k", String.format("%02x", keytype));
+
+        // $_ and $l$l will be replaced in KDF3 code.
+        return template;
+    }
+
+    static String kdf_template_bitlength(String template, int bits) {
+        return template.replace("$l$l", String.format("%04x", bits));
+    }
+
+    static String kdf_template_blocka(String template) {
+        int pos = template.indexOf("$_");
+        if (pos == -1)
+            throw new IllegalArgumentException("Invalid template (missing '$_'): " + template);
+        return template.substring(0, pos);
+    }
+
+    static String kdf_template_blockb(String template) {
+        int pos = template.indexOf("$_");
+        if (pos == -1)
+            throw new IllegalArgumentException("Invalid template (missing '$_'): " + template);
+        return template.substring(pos + 2);
+    }
+
+    static byte[] kdf_template_finalize(String template) throws IllegalArgumentException {
+        if (template.contains("$"))
+            throw new IllegalArgumentException("Invalid template (still includes '$'): " + template);
+        return HexUtils.hex2bin(template);
     }
 }

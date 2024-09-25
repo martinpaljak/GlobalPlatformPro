@@ -1,5 +1,7 @@
 package pro.javacard.gp;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import pro.javacard.capfile.CAPFile;
 
 import java.security.GeneralSecurityException;
@@ -13,10 +15,16 @@ import java.util.Arrays;
 
 public class DAPSigner {
 
-    private DAPSigner() {}
+
+    private static final Logger log = LoggerFactory.getLogger(DAPSigner.class);
+
+    private DAPSigner() {
+    }
+
     public static byte[] sign(CAPFile cap, PrivateKey key, GPData.LFDBH hash) throws GeneralSecurityException {
         if (key instanceof RSAPrivateKey) {
             RSAPrivateKey rkey = (RSAPrivateKey) key;
+            log.info("Signing DAP with {} RSA and {}", rkey.getModulus().bitLength(), hash);
             if ((rkey.getModulus().bitLength() + 7) / 8 == 128) {
                 // B.3.1 Scheme1 of RSA keys up to 1k
                 if (!Arrays.asList(GPData.LFDBH.SHA1, GPData.LFDBH.SHA256).contains(hash))
@@ -30,7 +38,7 @@ public class DAPSigner {
                 // B.3.2 Scheme2 of RSA keys above 1k
                 MGF1ParameterSpec mgf = MGF1ParameterSpec.SHA256;
                 PSSParameterSpec spec = new PSSParameterSpec(mgf.getDigestAlgorithm(), "MGF1", mgf, 32, PSSParameterSpec.TRAILER_FIELD_BC);
-                Signature signer = Signature.getInstance("SHA256withRSAandMGF1");
+                Signature signer = Signature.getInstance("RSASSA-PSS");
                 signer.setParameter(spec);
                 signer.initSign(key);
                 signer.update(cap.getLoadFileDataHash(hash.algo));

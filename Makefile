@@ -1,7 +1,10 @@
+TZ = UTC # same as Github
+export TZ
 MVN_OPTS = -Dmaven.javadoc.skip=true -Dmaven.test.skip=true -Dspotbugs.skip=true
 
 SOURCES = $(shell find tool library -name '*.java' -o -name 'pom.xml')
-default: install
+
+default: tool/target/gp.jar
 
 tool/target/gp.jar: $(SOURCES)
 	./mvnw $(MVN_OPTS) package

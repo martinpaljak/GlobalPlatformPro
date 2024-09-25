@@ -302,7 +302,8 @@ public class GPSession {
                                 }
                             }
                         } else {
-                            throw new GPDataException("Invalid CardRecognitionData", oidtag.getBytesValue());
+                            // FIXME: this is BS here.
+                            logger.warn("Invalid CardRecognitionData", oidtag.getBytesValue());
                         }
                     } else {
                         logger.warn("Not global platform OID");
@@ -378,7 +379,8 @@ public class GPSession {
 
         // P1 key version (all)
         // P2 either key ID (SCP01) or 0 (SCP02)
-        CommandAPDU initUpdate = new CommandAPDU(CLA_GP, INS_INITIALIZE_UPDATE, keys.getKeyInfo().getVersion(), (scp != null && scp.scp == GPSecureChannelVersion.SCP.SCP01) ? keys.getKeyInfo().getID() : 0, host_challenge, 256);
+        int init_p2 = (scp != null && scp.scp == GPSecureChannelVersion.SCP.SCP01) ? keys.getKeyInfo().getID() : 0;
+        CommandAPDU initUpdate = new CommandAPDU(CLA_GP, INS_INITIALIZE_UPDATE, keys.getKeyInfo().getVersion(), init_p2, host_challenge, 256);
 
         ResponseAPDU response = channel.transmit(initUpdate);
         int sw = response.getSW();
@@ -403,6 +405,7 @@ public class GPSession {
         // Get used key version from response
         scpKeyVersion = update_response[offset] & 0xFF;
         offset++;
+
         // Get major SCP version from Key Information field in response
         int scpv = update_response[offset] & 0xFF;
         offset++;
@@ -430,9 +433,21 @@ public class GPSession {
         } else if (this.scpVersion.scp == SCP03 && update_response.length == 32) {
             seq = Arrays.copyOfRange(update_response, offset, 32);
             offset += seq.length;
+
+            if ((scpVersion.i & 0x10) == 0x10) {
+                byte[] ctx = GPUtils.concatenate(seq, this.sdAID.getBytes());
+                logger.trace("Challenge calculation context: {}", HexUtils.bin2hex(ctx));
+                byte[] my_card_challenge = keys.scp3_kdf(KeyPurpose.ENC, GPCrypto.scp03_kdf_blocka((byte) 0x02, 64), ctx, 8);
+                if (!Arrays.equals(my_card_challenge, card_challenge)) {
+                    logger.warn("Pseudorandom card challenge does not match expected: {} vs {}", HexUtils.bin2hex(my_card_challenge), HexUtils.bin2hex(card_challenge));
+                } else {
+                    logger.debug("Pseudorandom card challenge matches expected value: {}", HexUtils.bin2hex(my_card_challenge));
+                }
+            }
         } else {
             seq = null;
         }
+
         if (offset != update_response.length) {
             logger.error("Unhandled data in INITIALIZE UPDATE response: {}", HexUtils.bin2hex(Arrays.copyOfRange(update_response, offset, update_response.length)));
             //throw new GPDataException("Unhandled data in INITIALIZE UPDATE response", Arrays.copyOfRange(update_response, offset, update_response.length));

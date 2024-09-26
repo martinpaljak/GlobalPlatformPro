@@ -25,6 +25,7 @@ import com.google.auto.service.AutoService;
 import pro.javacard.gp.CardKeysProvider;
 import pro.javacard.gp.GPCardKeys;
 
+import java.util.Map;
 import java.util.Optional;
 
 @AutoService(CardKeysProvider.class)
@@ -40,10 +41,10 @@ public class PlaintextKeysProvider implements CardKeysProvider {
         spec = spec.trim();
         try {
             // <kdf>:<hex> or <kdf>:default
-            for (String d : PlaintextKeys.kdf_templates.keySet()) {
-                if (spec.toLowerCase().startsWith(d)) {
-                    byte[] k = hexOrDefault(spec.substring(d.length() + 1));
-                    return Optional.of(PlaintextKeys.fromMasterKey(k, PlaintextKeys.kdf_templates.get(d)));
+            for (Map.Entry<String, String> d : PlaintextKeys.kdf_templates.entrySet()) {
+                if (spec.toLowerCase().startsWith(d.getKey())) {
+                    byte[] k = hexOrDefault(spec.substring(d.getKey().length() + 1));
+                    return Optional.of(PlaintextKeys.fromMasterKey(k, d.getValue()));
                 }
             }
 

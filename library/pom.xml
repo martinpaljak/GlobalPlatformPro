@@ -18,13 +18,13 @@
         <dependency>
             <groupId>com.github.martinpaljak</groupId>
             <artifactId>apdu4j-core</artifactId>
-            <version>2020r3</version>
+            <version>24.09.26.2</version>
         </dependency>
         <!-- For CAP file parsing -->
         <dependency>
             <groupId>com.github.martinpaljak</groupId>
             <artifactId>capfile</artifactId>
-            <version>24.04.08</version>
+            <version>24.07.30</version>
         </dependency>
         <!-- For logging -->
         <dependency>

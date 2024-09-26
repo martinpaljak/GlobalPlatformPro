@@ -167,8 +167,6 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
             }
             if (args.has(OPT_PCSC_EXCLUSIVE))
                 exclusive = true;
-            if (args.has(OPT_PCSC_TRANSACT))
-                transact = true;
 
             reader = reader.map(e -> args.has(OPT_DEBUG) ? LoggingCardTerminal.getInstance(e) : e);
             String protocol = exclusive ? "EXCLUSIVE;*" : "*";
@@ -827,8 +825,8 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                         PlaintextKeys pk = (PlaintextKeys) newKeys;
                         if (pk.getMasterKey().isPresent())
                             System.out.println(gp.getAID() + " locked with: " + HexUtils.bin2hex(pk.getMasterKey().get()));
-                        if (pk.kdf != null)
-                            System.out.println("Keys were diversified with " + pk.kdf + " and " + HexUtils.bin2hex(kdd));
+                        if (pk.kdf_template != null)
+                            System.out.println("Keys were diversified with " + pk.kdf_template + " and " + HexUtils.bin2hex(kdd));
                         System.out.println("Write this down, DO NOT FORGET/LOSE IT!");
                     } else {
                         System.out.println("Card locked with new keys.");

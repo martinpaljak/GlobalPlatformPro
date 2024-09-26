@@ -75,7 +75,7 @@ class PlaintextKeys extends GPCardKeys {
     }
 
     // If diverisification is to be used
-    String kdf;
+    String kdf_template;
 
     // Keyset version
     private int version = 0x00;
@@ -95,7 +95,7 @@ class PlaintextKeys extends GPCardKeys {
         cardKeys.put(KeyPurpose.ENC, enc.clone());
         cardKeys.put(KeyPurpose.MAC, mac.clone());
         cardKeys.put(KeyPurpose.DEK, dek.clone());
-        kdf = d;
+        kdf_template = d;
     }
 
     public static Optional<PlaintextKeys> fromEnvironment() {
@@ -201,6 +201,9 @@ class PlaintextKeys extends GPCardKeys {
         String dek = env.get(prefix + "_DEK");
         String mk = env.get(prefix);
         String div = env.get(prefix + "_KDF");
+        if (div != null) {
+            div = kdf_templates.getOrDefault(div, div);
+        }
         String kdd = env.get(prefix + "_KDD");
         String ver = env.get(prefix + "_VER");
         Optional<PlaintextKeys> r = fromStrings(enc, mac, dek, mk, div, kdd, ver);
@@ -225,9 +228,8 @@ class PlaintextKeys extends GPCardKeys {
         return new PlaintextKeys(enc, mac, dek, null);
     }
 
-    public byte[] diversify(byte[] k, KeyPurpose usage, byte[] kdd, String kdf) throws GPException {
+    byte[] diversify(byte[] k, KeyPurpose usage, byte[] kdd, String kdf) throws GPException {
         String template = kdf_template_expand(kdf, kdd, usage.getValue());
-        logger.debug("KDF: applying '{}' to {}", kdf, HexUtils.bin2hex(kdd));
         try {
             final byte[] kv;
             if (scp == SCP03) {
@@ -403,12 +405,14 @@ class PlaintextKeys extends GPCardKeys {
         super.diversify(scp, kdd);
 
         // Do nothing
-        if (kdf == null)
+        if (kdf_template == null)
             return this;
+
+        logger.debug("KDF: applying '{}' to {} KDD {}", kdf_template, scp, HexUtils.bin2hex(kdd));
 
         // Calculate per-card keys from master key(s), if needed
         for (Map.Entry<KeyPurpose, byte[]> e : cardKeys.entrySet()) {
-            cardKeys.put(e.getKey(), diversify(e.getValue(), e.getKey(), kdd, kdf));
+            cardKeys.put(e.getKey(), diversify(e.getValue(), e.getKey(), kdd, kdf_template));
         }
         return this;
     }
@@ -425,13 +429,13 @@ class PlaintextKeys extends GPCardKeys {
         String dek = HexUtils.bin2hex(cardKeys.get(KeyPurpose.DEK));
         String dek_kcv = HexUtils.bin2hex(kcv(KeyPurpose.DEK));
 
-        return String.format("ENC=%s (KCV: %s) MAC=%s (KCV: %s) DEK=%s (KCV: %s) for %s%s", enc, enc_kcv, mac, mac_kcv, dek, dek_kcv, scp, kdf == null ? "" : String.format(" with %s", kdf));
+        return String.format("ENC=%s (KCV: %s) MAC=%s (KCV: %s) DEK=%s (KCV: %s) for %s%s", enc, enc_kcv, mac, mac_kcv, dek, dek_kcv, scp, kdf_template == null ? "" : String.format(" with %s", kdf_template));
     }
 
     public void setDiversifier(String template) {
-        if (this.kdf != null)
+        if (this.kdf_template != null)
             throw new IllegalStateException("KDF already set");
-        this.kdf = template;
+        this.kdf_template = template;
     }
 
     @Override

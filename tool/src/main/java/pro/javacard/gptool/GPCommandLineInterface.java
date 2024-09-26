@@ -137,8 +137,6 @@ abstract class GPCommandLineInterface {
 
     // PC/SC options
     protected static OptionSpec<Void> OPT_PCSC_EXCLUSIVE = parser.acceptsAll(Arrays.asList("X", "pcsc-exclusive"), "Exclusive PC/SC access to the reader");
-    protected static OptionSpec<Void> OPT_PCSC_TRANSACT = parser.acceptsAll(Arrays.asList("L", "pcsc-locking"), "Use PC/SC transactions");
-
 
     static class APDUModeConverter extends EnumConverter<GPSession.APDUMode> {
         public APDUModeConverter() {

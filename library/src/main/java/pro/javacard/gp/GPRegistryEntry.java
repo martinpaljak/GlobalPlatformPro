@@ -267,7 +267,8 @@ public class GPRegistryEntry {
         ReceiptGeneration(0x80, 2),
         CipheredLoadFileDataBlock(0x40, 2),
         ContactlessActivation(0x20, 2),
-        ContactlessSelfActivation(0x10, 2);
+        ContactlessSelfActivation(0x10, 2),
+        PrivacyTrusted(0x8, 2);
 
         byte value;
         int pos;

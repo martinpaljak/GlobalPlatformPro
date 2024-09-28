@@ -111,8 +111,7 @@ public abstract class DMTokenizer {
         protected byte[] getToken(CommandAPDU apdu) {
             int keylen = (privateKey.getModulus().bitLength() + 7) / 8;
             byte[] dtbs = dtbs(apdu);
-            log.info("Signing DM with {} RSA", privateKey.getModulus().bitLength());
-            log.debug("DM token contents: {}", HexUtils.bin2hex(dtbs));
+
             try {
                 final byte[] token;
                 if (keylen == 128) {
@@ -131,7 +130,7 @@ public abstract class DMTokenizer {
                     signer.update(dtbs);
                     token = signer.sign();
                 }
-                log.debug("DM token: {}", HexUtils.bin2hex(token));
+                log.trace("DM token: {}", HexUtils.bin2hex(token));
                 return token;
             } catch (GeneralSecurityException e) {
                 throw new GPException("Can not calculate DM token: " + e.getMessage(), e);

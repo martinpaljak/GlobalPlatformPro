@@ -51,6 +51,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static pro.javacard.gp.GPSecureChannelVersion.SCP.*;
@@ -290,6 +291,11 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                 gp.setTokenizer(DMTokenizer.forToken(token));
             }
 
+            if (args.has(OPT_RECEIPT_KEY)) {
+                ReceiptVerifier verifier = new ReceiptVerifier.AESReceiptVerifier(args.valueOf(OPT_RECEIPT_KEY).v());
+                gp.setVerifier(verifier);
+            }
+
             // Extract information
             if (args.has(OPT_INFO)) {
                 GPData.dump(channel);
@@ -510,7 +516,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                     // Get install parameters
                     final AID appaid;
                     final AID instanceaid;
-                    if (capfile.getAppletAIDs().size() == 0) {
+                    if (capfile.getAppletAIDs().isEmpty()) {
                         throw new IllegalArgumentException("CAP file has no applets!");
                     } else if (capfile.getAppletAIDs().size() > 1) {
                         if (args.has(OPT_APPLET)) {
@@ -892,25 +898,46 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
     }
 
 
+    static Predicate<Privilege> dapPrivileges = e -> e == Privilege.MandatedDAPVerification || e == Privilege.DAPVerification;
+    static Predicate<GPRegistryEntry> dapDomainFilter = e -> e.hasPrivilege(Privilege.MandatedDAPVerification) || e.hasPrivilege(Privilege.DAPVerification);
+
     // Extract parameters and call GPCommands.load()
     private static void loadCAP(OptionSet args, GPSession gp, CAPFile capFile) throws GPException, IOException {
         try {
             AID to = optional(args, OPT_TO).orElse(gp.getAID());
-            AID dapDomain = optional(args, OPT_DAP_DOMAIN).orElse(null);
-            GPData.LFDBH lfdbh = args.has(OPT_SHA256) ? GPData.LFDBH.SHA256 : null; // TODO: reverse assumption (require force to sha-1)
-
             GPRegistryEntry targetDomain = gp.getRegistry().getDomain(to).orElseThrow(() -> new IllegalArgumentException("Target domain does not exist: " + to));
 
-            if (dapDomain != null) {
-                GPRegistryEntry dapTarget = gp.getRegistry().getDomain(dapDomain).orElseThrow(() -> new IllegalArgumentException("DAP domain does not exist: " + dapDomain));
+            GPData.LFDBH lfdbh = args.has(OPT_SHA256) ? GPData.LFDBH.SHA256 : null; // TODO: reverse assumption (require force to sha-1)
+
+            // Automatic DAP domain discovery
+            AID dapAid = null;
+            Optional<GPRegistryEntry> dapDomain = gp.getRegistry().allDomains().stream().filter(dapDomainFilter).findFirst();
+            if (dapDomain.isPresent()) {
+                GPRegistryEntry entry = dapDomain.get();
+                String privs = entry.getPrivileges().stream().filter(dapPrivileges).map(Privilege::toString).collect(Collectors.joining(", "));
+                System.out.println("# Found DAP domain: " + entry.getAID() + " (" + privs + ")");
+                dapAid = entry.getAID();
+            }
+
+            // Validate DAP override
+            if (args.has(OPT_DAP_DOMAIN)) {
+                dapAid = args.valueOf(OPT_DAP_DOMAIN);
+                AID finalDapAid = dapAid;
+                GPRegistryEntry dapTarget = gp.getRegistry().getDomain(dapAid).orElseThrow(() -> new IllegalArgumentException("DAP domain does not exist: " + finalDapAid));
                 if (!(dapTarget.hasPrivilege(Privilege.DAPVerification) || dapTarget.hasPrivilege(Privilege.MandatedDAPVerification))) {
-                    throw new IllegalArgumentException("Specified DAP domain does not have (Mandated)DAPVerification privilege: " + dapDomain);
+                    String message = "Specified DAP domain does not have (Mandated)DAPVerification privilege: " + dapAid;
+                    if (args.has(OPT_FORCE)) {
+                        System.err.println("Warning: " + message);
+                    } else {
+                        throw new IllegalArgumentException(message);
+                    }
                 }
             }
 
+            // Target has DAP, Mandated DAP is present, or manual DAP AID given
             boolean dapRequired = targetDomain.hasPrivilege(Privilege.DAPVerification)
                     || gp.getRegistry().allDomains().stream().anyMatch(e -> e.hasPrivilege(Privilege.MandatedDAPVerification))
-                    || dapDomain != null;
+                    || args.has(OPT_DAP_DOMAIN);
 
             final byte[] signature;
             if (dapRequired) {
@@ -924,19 +951,21 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                     signature = DAPSigner.sign(capFile, dapKey.getPrivate().get(), Optional.ofNullable(lfdbh).orElse(GPData.LFDBH.SHA1));
                 } else {
                     // TODO: have some xml/zip parsers for ease of use like existing capfile (but deprecate that)
-                    if (!args.has(OPT_FORCE))
+                    if (!args.has(OPT_FORCE)) {
                         throw new IllegalArgumentException("Need DAP signature!");
-                    else
+                    } else {
                         signature = null;
+                    }
                 }
             } else {
                 signature = null;
             }
 
+            // If/when to include lfdbh
             if (targetDomain.hasPrivilege(Privilege.DelegatedManagement) || dapRequired || lfdbh != null) {
                 lfdbh = Optional.ofNullable(lfdbh).orElse(GPData.LFDBH.SHA1);
             }
-            gp.loadCapFile(capFile, to, dapDomain, signature, lfdbh);
+            gp.loadCapFile(capFile, to, dapAid, signature, lfdbh);
 
             System.out.printf("%s loaded: %s %s%n", capFile.getFile().map(Path::toString).orElse("CAP"), capFile.getPackageName(), capFile.getPackageAID());
         } catch (GPException e) {

@@ -108,6 +108,7 @@ abstract class GPCommandLineInterface {
     // Delegated management
     protected static OptionSpec<Key> OPT_DM_KEY = parser.accepts("dm-key", "Delegated Management key").withRequiredArg().ofType(Key.class).describedAs("PEM or hex");
     protected static OptionSpec<HexBytes> OPT_DM_TOKEN = parser.accepts("dm-token", "Delegated Management token").availableUnless(OPT_DM_KEY).withRequiredArg().ofType(HexBytes.class).describedAs("token");
+    protected static OptionSpec<HexBytes> OPT_RECEIPT_KEY = parser.accepts("receipt-key", "Receipt verification key (AES)").withRequiredArg().ofType(HexBytes.class).describedAs("key");
 
     // SSD-s
     protected static OptionSpec<AID> OPT_MOVE = parser.accepts("move", "Move something").withRequiredArg().ofType(AID.class);
@@ -117,11 +118,11 @@ abstract class GPCommandLineInterface {
 
     // DAP
     protected static OptionSpec<AID> OPT_DAP_DOMAIN = parser.accepts("dap-domain", "Domain to use for DAP verification").withRequiredArg().ofType(AID.class);
-    protected static OptionSpec<Void> OPT_SHA256 = parser.accepts("sha256", "Use SHA-256 for LFDB hash, not SHA-1");
+    protected static OptionSpec<Void> OPT_SHA256 = parser.accepts("sha256", "Use SHA-256 for LFDB hash");
+    protected static OptionSpec<Void> OPT_SHA1 = parser.accepts("sha1", "Use SHA-1 for LFDB hash");
 
     protected static OptionSpec<Key> OPT_DAP_KEY = parser.accepts("dap-key", "DAP key").withRequiredArg().ofType(Key.class).describedAs("PEM or hex");
     protected static OptionSpec<HexBytes> OPT_DAP_SIGNATURE = parser.accepts("dap-signature", "DAP signature").availableUnless(OPT_DAP_KEY).withRequiredArg().ofType(HexBytes.class).describedAs("signature");
-    protected static OptionSpec<File> OPT_DAP_SIGN = parser.accepts("dap-sign", "Create DAP signature").availableIf(OPT_DAP_KEY).withRequiredArg().ofType(File.class).describedAs("CAP file");
 
     // Personalization and store data
     protected static OptionSpec<HexBytes> OPT_STORE_DATA = parser.accepts("store-data", "STORE DATA blob").withRequiredArg().ofType(HexBytes.class).describedAs("data");

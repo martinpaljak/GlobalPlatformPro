@@ -429,7 +429,7 @@ class PlaintextKeys extends GPCardKeys {
         String dek = HexUtils.bin2hex(cardKeys.get(KeyPurpose.DEK));
         String dek_kcv = HexUtils.bin2hex(kcv(KeyPurpose.DEK));
 
-        return String.format("ENC=%s (KCV: %s) MAC=%s (KCV: %s) DEK=%s (KCV: %s) for %s%s", enc, enc_kcv, mac, mac_kcv, dek, dek_kcv, scp, kdf_template == null ? "" : String.format(" with %s", kdf_template));
+        return String.format("ENC=%s (KCV: %s) MAC=%s (KCV: %s) DEK=%s (KCV: %s) for %s", enc, enc_kcv, mac, mac_kcv, dek, dek_kcv, scp);
     }
 
     public void setDiversifier(String template) {

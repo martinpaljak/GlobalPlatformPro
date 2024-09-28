@@ -99,7 +99,7 @@ class SCP03Wrapper extends SecureChannelWrapper {
                 // 8 bytes for actual mac
                 cmd_mac = Arrays.copyOf(cmac, 8);
             }
-            // Constructing new a new command APDU ensures that the coding of LC and NE is correct; especially for Extend Length APDUs
+            // Constructing a new command APDU ensures that the coding of LC and NE is correct; especially for Extend Length APDUs
             CommandAPDU newAPDU = null;
 
             ByteArrayOutputStream newData = new ByteArrayOutputStream();

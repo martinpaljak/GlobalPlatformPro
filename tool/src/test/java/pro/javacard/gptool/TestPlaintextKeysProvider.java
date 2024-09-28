@@ -3,7 +3,10 @@ package pro.javacard.gptool;
 import apdu4j.core.HexUtils;
 import org.testng.Assert;
 import org.testng.annotations.Test;
-import pro.javacard.gp.*;
+import pro.javacard.gp.CardKeysProvider;
+import pro.javacard.gp.GPCardKeys;
+import pro.javacard.gp.GPCrypto;
+import pro.javacard.gp.GPSecureChannelVersion;
 
 import java.util.Optional;
 

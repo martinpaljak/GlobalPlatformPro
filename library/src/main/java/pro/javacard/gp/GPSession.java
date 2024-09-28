@@ -105,6 +105,8 @@ public class GPSession {
     private APDUBIBO channel;
     private GPRegistry registry = null;
     private DMTokenizer tokenizer = DMTokenizer.none();
+    private ReceiptVerifier verifier = new ReceiptVerifier.NullVerifier();
+
     private boolean dirty = true; // True if registry is dirty.
 
     /*
@@ -218,6 +220,10 @@ public class GPSession {
 
     public void setTokenizer(DMTokenizer tokenizer) {
         this.tokenizer = tokenizer;
+    }
+
+    public void setVerifier(ReceiptVerifier verifier) {
+        this.verifier = verifier;
     }
 
     public DMTokenizer getTokenizer() {
@@ -433,24 +439,12 @@ public class GPSession {
         } else if (this.scpVersion.scp == SCP03 && update_response.length == 32) {
             seq = Arrays.copyOfRange(update_response, offset, 32);
             offset += seq.length;
-
-            if ((scpVersion.i & 0x10) == 0x10) {
-                byte[] ctx = GPUtils.concatenate(seq, this.sdAID.getBytes());
-                logger.trace("Challenge calculation context: {}", HexUtils.bin2hex(ctx));
-                byte[] my_card_challenge = keys.scp3_kdf(KeyPurpose.ENC, GPCrypto.scp03_kdf_blocka((byte) 0x02, 64), ctx, 8);
-                if (!Arrays.equals(my_card_challenge, card_challenge)) {
-                    logger.warn("Pseudorandom card challenge does not match expected: {} vs {}", HexUtils.bin2hex(my_card_challenge), HexUtils.bin2hex(card_challenge));
-                } else {
-                    logger.debug("Pseudorandom card challenge matches expected value: {}", HexUtils.bin2hex(my_card_challenge));
-                }
-            }
         } else {
             seq = null;
         }
 
         if (offset != update_response.length) {
             logger.error("Unhandled data in INITIALIZE UPDATE response: {}", HexUtils.bin2hex(Arrays.copyOfRange(update_response, offset, update_response.length)));
-            //throw new GPDataException("Unhandled data in INITIALIZE UPDATE response", Arrays.copyOfRange(update_response, offset, update_response.length));
         }
 
         logger.debug("KDD: {}", HexUtils.bin2hex(diversification_data));
@@ -476,6 +470,19 @@ public class GPSession {
         cardKeys = keys.diversify(this.scpVersion.scp, diversification_data);
 
         logger.info("Diversified card keys: {}", cardKeys);
+
+        // Check pseudorandom card challenge. This must happen _after_ key diversification.
+        if (scpVersion.scp == SCP03 && (scpVersion.i & 0x10) == 0x10) {
+            byte[] ctx = GPUtils.concatenate(seq, this.sdAID.getBytes());
+            logger.trace("Challenge calculation context: {}", HexUtils.bin2hex(ctx));
+            byte[] my_card_challenge = keys.scp3_kdf(KeyPurpose.ENC, GPCrypto.scp03_kdf_blocka((byte) 0x02, 64), ctx, 8);
+            if (!Arrays.equals(my_card_challenge, card_challenge)) {
+                logger.warn("Pseudorandom card challenge does not match expected: {} vs {}", HexUtils.bin2hex(my_card_challenge), HexUtils.bin2hex(card_challenge));
+            } else {
+                logger.debug("Pseudorandom card challenge matches expected value: {}", HexUtils.bin2hex(my_card_challenge));
+            }
+        }
+
 
         // Derive session keys
         if (this.scpVersion.scp == GPSecureChannelVersion.SCP.SCP02) {
@@ -540,11 +547,23 @@ public class GPSession {
     // Pipe through secure channel
     public ResponseAPDU transmit(CommandAPDU command) throws IOException {
         try {
-            // TODO: BIBO pretty printer
-            //logger.trace("PT> {}", HexUtils.bin2hex(command.getBytes()));
-            ResponseAPDU unwrapped = wrapper.unwrap(channel.transmit(wrapper.wrap(command)));
-            //logger.trace("PT < {}", HexUtils.bin2hex(unwrapped.getBytes()));
-            return unwrapped;
+            CommandAPDU wrapped = wrapper.wrap(command);
+            ResponseAPDU resp = null;
+
+            // GPC 2.3.1 11.1.5.1
+            List<byte[]> chunks = GPUtils.splitArray(wrapped.getData(), blockSize);
+            if (chunks.size() > 1)
+                logger.debug("Chaining in {} chunks", chunks.size());
+
+            for (int i = 0; i < chunks.size(); i++) {
+                boolean last = i == chunks.size() - 1;
+                int p1 = last ? command.getP1() : command.getP1() | 0x80; // XXX: should check if instruction is eligible for this treatment
+                resp = channel.transmit(new CommandAPDU(wrapped.getCLA(), wrapped.getINS(), p1, wrapped.getP2(), chunks.get(i), 256));
+                if (!last) {
+                    GPException.check(resp);
+                }
+            }
+            return wrapper.unwrap(resp);
         } catch (GPException e) {
             throw new IOException("Secure channel failure: " + e.getMessage(), e);
         }
@@ -584,13 +603,13 @@ public class GPSession {
         byte[] hash = hashFunction == null ? new byte[0] : cap.getLoadFileDataHash(hashFunction.algo);
         byte[] code = cap.getCode();
         byte[] loadParams = new byte[0]; // FIXME
-
+        AID pkg = cap.getPackageAID();
 
         ByteArrayOutputStream bo = new ByteArrayOutputStream();
 
         try {
-            bo.write(cap.getPackageAID().getLength());
-            bo.write(cap.getPackageAID().getBytes());
+            bo.write(pkg.getLength());
+            bo.write(pkg.getBytes());
 
             bo.write(targetDomain.getLength());
             bo.write(targetDomain.getBytes());
@@ -609,6 +628,7 @@ public class GPSession {
         command = tokenizer.tokenize(command);
         ResponseAPDU response = transmitLV(command);
         GPException.check(response, "INSTALL [for load] failed");
+        verifier.check(response, ReceiptVerifier.load(pkg, targetDomain));
 
         // Construct load block
         ByteArrayOutputStream loadBlock = new ByteArrayOutputStream();
@@ -637,7 +657,7 @@ public class GPSession {
 
         for (int i = 0; i < blocks.size(); i++) {
             byte p1 = (i == (blocks.size() - 1)) ? P1_LAST_BLOCK : P1_MORE_BLOCKS;
-            CommandAPDU load = new CommandAPDU(CLA_GP, INS_LOAD, p1, (byte) i, blocks.get(i));
+            CommandAPDU load = new CommandAPDU(CLA_GP, INS_LOAD, p1, (byte) i, blocks.get(i), 256);
             response = transmit(load);
             GPException.check(response, "LOAD failed");
         }
@@ -654,6 +674,8 @@ public class GPSession {
         command = tokenizer.tokenize(command);
         ResponseAPDU response = transmitLV(command);
         GPException.check(response, "INSTALL [for install and make selectable] failed");
+
+        verifier.check(response, ReceiptVerifier.install_make_selectable(packageAID, instanceAID));
         dirty = true;
     }
 
@@ -664,6 +686,7 @@ public class GPSession {
         if (installParams == null || installParams.length == 0) {
             installParams = new byte[]{(byte) 0xC9, 0x00};
         }
+        // FIXME: if the parameters parse as tlv, check for presence of 0xC9 before prepending
         // Simple use: only application parameters without tag, prepend 0xC9
         if (installParams[0] != (byte) 0xC9) {
             byte[] newparams = new byte[installParams.length + 2];
@@ -719,6 +742,8 @@ public class GPSession {
         command = tokenizer.tokenize(command);
         ResponseAPDU response = transmitLV(command);
         GPException.check(response, "INSTALL [for extradition] failed");
+
+        verifier.check(response, ReceiptVerifier.extradite(sdAID, what, to));
         dirty = true;
     }
 
@@ -848,6 +873,7 @@ public class GPSession {
         command = tokenizer.tokenize(command);
         ResponseAPDU response = transmitTLV(command);
         GPException.check(response, "DELETE failed");
+        verifier.check(response, ReceiptVerifier.delete(aid));
         dirty = true;
     }
 
@@ -858,7 +884,7 @@ public class GPSession {
             throw new IllegalArgumentException("Must specify either key version or key ID");
 
         ByteArrayOutputStream bo = new ByteArrayOutputStream();
-        if (keyid != null ) {
+        if (keyid != null) {
             bo.write(0xd0); // Key Identifier
             bo.write(1);
             bo.write(0x01);
@@ -981,10 +1007,10 @@ public class GPSession {
             byte[] exponent = GPUtils.positive(key.getPublicExponent());
 
             bo.write(0xA1); // Modulus
-            bo.write(modulus.length);
+            bo.write(GPUtils.encodeLength(modulus.length));
             bo.write(modulus);
             bo.write(0xA0);
-            bo.write(exponent.length);
+            bo.write(GPUtils.encodeLength(exponent.length));
             bo.write(exponent);
             bo.write(0x00); // No KCV
         } catch (IOException e) {

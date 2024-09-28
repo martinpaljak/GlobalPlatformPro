@@ -32,6 +32,7 @@ import java.util.Arrays;
 
 public abstract class ReceiptVerifier {
 
+    protected ReceiptVerifier() {}
     private static final Logger log = LoggerFactory.getLogger(ReceiptVerifier.class);
 
     static byte[] get_receipt(byte[] response) {

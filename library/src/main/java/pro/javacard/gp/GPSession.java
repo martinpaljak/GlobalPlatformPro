@@ -1061,14 +1061,23 @@ public class GPSession {
         } else if (key instanceof SecretKey) {
             SecretKey sk = (SecretKey) key;
             if (sk.getAlgorithm().equals("DESede")) {
+                logger.info("PUT KEY KCV: {}", HexUtils.bin2hex(GPCrypto.kcv_3des(sk.getEncoded())));
                 bo.write(encodeKey(cardKeys, Arrays.copyOf(sk.getEncoded(), 16), GPKey.DES3));
+            } if (sk.getAlgorithm().equals("AES")) {
+                logger.info("PUT KEY KCV: {}", HexUtils.bin2hex(GPCrypto.kcv_aes(sk.getEncoded())));
+                bo.write(encodeKey(cardKeys, sk.getEncoded(), GPKey.AES));
             } else
-                throw new IllegalArgumentException("Only 3DES symmetric keys are supported: " + sk.getAlgorithm());
+                throw new IllegalArgumentException("Only 3DES and AES symmetric keys are supported: " + sk.getAlgorithm());
         }
 
         CommandAPDU command = new CommandAPDU(CLA_GP, INS_PUT_KEY, replace ? version : 0x00, 0x01, bo.toByteArray(), 256);
         ResponseAPDU response = transmit(command);
         GPException.check(response, "PUT KEY failed");
+        if (response.getData().length == 4) {
+            int kv = response.getData()[0] & 0xFF;
+            byte[] kcv = Arrays.copyOfRange(response.getData(), 1, 4);
+            logger.info("Card stored key {} with KCV {}", GPUtils.intString(kv), HexUtils.bin2hex(kcv));
+        }
     }
 
 

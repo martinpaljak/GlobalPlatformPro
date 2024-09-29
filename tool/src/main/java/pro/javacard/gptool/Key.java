@@ -27,6 +27,7 @@ import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.openssl.PEMKeyPair;
 import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
+import pro.javacard.gp.GPCrypto;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -41,22 +42,24 @@ import java.security.PublicKey;
 import java.security.cert.CertificateException;
 import java.util.Optional;
 
+// Helper to convert command line parameters to meaningful key objects.
+// XXX: unfortunate name and unfortunate implementation.
 public class Key {
-    byte[] key;
+    java.security.Key symmetricKey;
     PublicKey publicKey;
     PrivateKey privateKey;
 
     String s;
 
-    private Key(String s, byte[] sym, PublicKey publicKey, PrivateKey privateKey) {
-        this.key = sym;
+    private Key(String s, java.security.Key sym, PublicKey publicKey, PrivateKey privateKey) {
+        this.symmetricKey = sym;
         this.publicKey = publicKey;
         this.privateKey = privateKey;
         this.s = s;
     }
 
-    public Optional<byte[]> getSymmetric() {
-        return Optional.ofNullable(key);
+    public Optional<java.security.Key> getSymmetric() {
+        return Optional.ofNullable(symmetricKey);
     }
 
     public Optional<PublicKey> getPublic() {
@@ -94,11 +97,27 @@ public class Key {
                 throw new IllegalArgumentException("Could not read PEM: " + e.getMessage(), e);
             }
         } else {
-            byte[] k = HexUtils.hex2bin(v);
+            if (v.startsWith("aes:")) {
+                byte[] bv = HexUtils.hex2bin(v.substring(4));
+                if (bv.length == 16 || bv.length == 24 || bv.length == 32) {
+                    return new Key(v, GPCrypto.aeskey(bv), null, null);
+                } else throw new IllegalArgumentException("Invalid key length: " + bv.length);
+
+            } else if (v.startsWith("3des:")) {
+                byte[] bv = HexUtils.hex2bin(v.substring(5));
+                if (bv.length == 16) {
+                    return new Key(v, GPCrypto.des3key(bv), null, null);
+                } else throw new IllegalArgumentException("Invalid key length: " + bv.length);
+            } else {
+                byte[] k = HexUtils.hex2bin(v);
+                if (k.length == 24 || k.length == 32) {
+                    return new Key(v, GPCrypto.aeskey(k), null, null);
+                } else if (k.length == 16) {
+                    return new Key(v, GPCrypto.des3key(k), null, null);
+
+                } else throw new IllegalArgumentException("Invalid key length: " + k.length);
+            }
             // TODO: public keys as curve points.
-            if (k.length == 16 || k.length == 24 || k.length == 32) {
-                return new Key(v, k, null, null);
-            } else throw new IllegalArgumentException("Invalid key length: " + k.length);
         }
     }
 

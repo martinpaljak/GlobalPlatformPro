@@ -171,6 +171,10 @@ public final class GPData {
             return Arrays.stream(values()).filter(e -> e.value == byteValue).findFirst();
         }
 
+        public static Optional<LFDBH> fromString(String s) {
+            return Arrays.stream(values()).filter(e -> e.name().equalsIgnoreCase(s)).findFirst();
+        }
+
         public static ArrayList<LFDBH> fromBytes(byte[] v) {
             ArrayList<LFDBH> r = new ArrayList<>();
             for (int i = 0; i < v.length; i++) {

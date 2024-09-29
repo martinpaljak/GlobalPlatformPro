@@ -655,7 +655,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                         if (parameters != null && parameters.find(new BerTag(0x81)) == null) {
                             params = GPUtils.concatenate(params, new byte[]{(byte) 0x81, 0x02, gp.getSecureChannel().scp.getValue(), (byte) gp.getSecureChannel().i});
                         } else {
-                            System.err.println("Notice: 0x81 already in parameters or no parameters");
+                            System.err.println("Notice: 0x81 (secure channel) already in parameters or no parameters");
                         }
                     }
 
@@ -906,8 +906,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
         try {
             AID to = optional(args, OPT_TO).orElse(gp.getAID());
             GPRegistryEntry targetDomain = gp.getRegistry().getDomain(to).orElseThrow(() -> new IllegalArgumentException("Target domain does not exist: " + to));
-
-            GPData.LFDBH lfdbh = args.has(OPT_SHA256) ? GPData.LFDBH.SHA256 : null; // TODO: reverse assumption (require force to sha-1)
+            GPData.LFDBH lfdbh = args.has(OPT_SHA256) ? GPData.LFDBH.SHA256 : (args.has(OPT_HASH) ? args.valueOf(OPT_HASH) : null);
 
             // Automatic DAP domain discovery
             AID dapAid = null;
@@ -915,7 +914,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
             if (dapDomain.isPresent()) {
                 GPRegistryEntry entry = dapDomain.get();
                 String privs = entry.getPrivileges().stream().filter(dapPrivileges).map(Privilege::toString).collect(Collectors.joining(", "));
-                System.out.println("# Found DAP domain: " + entry.getAID() + " (" + privs + ")");
+                System.out.println("# Found DAP domain: " + entry.getAID() + " (" + privs + "); override with --" + OPT_DAP_DOMAIN);
                 dapAid = entry.getAID();
             }
 
@@ -948,7 +947,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                     if (dapKey.getPrivate().isEmpty()) {
                         throw new IllegalArgumentException("Invalid DAP key: " + dapKey);
                     }
-                    signature = DAPSigner.sign(capFile, dapKey.getPrivate().get(), Optional.ofNullable(lfdbh).orElse(GPData.LFDBH.SHA1));
+                    signature = DAPSigner.sign(capFile, dapKey.getPrivate().get(), Optional.ofNullable(lfdbh).orElse(GPData.LFDBH.SHA256));
                 } else {
                     // TODO: have some xml/zip parsers for ease of use like existing capfile (but deprecate that)
                     if (!args.has(OPT_FORCE)) {
@@ -963,7 +962,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
 
             // If/when to include lfdbh
             if (targetDomain.hasPrivilege(Privilege.DelegatedManagement) || dapRequired || lfdbh != null) {
-                lfdbh = Optional.ofNullable(lfdbh).orElse(GPData.LFDBH.SHA1);
+                lfdbh = Optional.ofNullable(lfdbh).orElse(GPData.LFDBH.SHA256);
             }
             gp.loadCapFile(capFile, to, dapAid, signature, lfdbh);
 

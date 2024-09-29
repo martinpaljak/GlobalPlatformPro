@@ -23,6 +23,7 @@ import apdu4j.core.HexBytes;
 import joptsimple.*;
 import joptsimple.util.EnumConverter;
 import pro.javacard.capfile.AID;
+import pro.javacard.gp.GPData;
 import pro.javacard.gp.GPSession;
 import pro.javacard.gp.GPUtils;
 
@@ -118,8 +119,8 @@ abstract class GPCommandLineInterface {
 
     // DAP
     protected static OptionSpec<AID> OPT_DAP_DOMAIN = parser.accepts("dap-domain", "Domain to use for DAP verification").withRequiredArg().ofType(AID.class);
-    protected static OptionSpec<Void> OPT_SHA256 = parser.accepts("sha256", "Use SHA-256 for LFDB hash");
-    protected static OptionSpec<Void> OPT_SHA1 = parser.accepts("sha1", "Use SHA-1 for LFDB hash");
+    protected static OptionSpec<Void> OPT_SHA256 = parser.accepts("sha256", "Use SHA-256 for LFDB hash (deprecated; default)");
+    protected static OptionSpec<GPData.LFDBH> OPT_HASH = parser.accepts("hash", "Use <hash> for LFDB hash instead of SHA-256").withRequiredArg().ofType(GPData.LFDBH.class).withValuesConvertedBy(new LFDBHConverter()).describedAs("hash");
 
     protected static OptionSpec<Key> OPT_DAP_KEY = parser.accepts("dap-key", "DAP key").withRequiredArg().ofType(Key.class).describedAs("PEM or hex");
     protected static OptionSpec<HexBytes> OPT_DAP_SIGNATURE = parser.accepts("dap-signature", "DAP signature").availableUnless(OPT_DAP_KEY).withRequiredArg().ofType(HexBytes.class).describedAs("signature");
@@ -161,6 +162,25 @@ abstract class GPCommandLineInterface {
             return "Integer";
         }
     }
+
+    static class LFDBHConverter implements ValueConverter<GPData.LFDBH> {
+        @Override
+        public GPData.LFDBH convert(String s) {
+            String valid = String.join(",", Arrays.stream(GPData.LFDBH.values()).map(e -> e.name().toLowerCase()).collect(Collectors.toList()));
+            return GPData.LFDBH.fromString(s).orElseThrow(() -> new IllegalArgumentException(s + " is not a valid hash (valid are: " + valid + ")"));
+        }
+
+        @Override
+        public Class<? extends GPData.LFDBH> valueType() {
+            return GPData.LFDBH.class;
+        }
+
+        @Override
+        public String valuePattern() {
+            return "Hash";
+        }
+    }
+
 
     protected static <V> Optional<V> optional(OptionSet args, OptionSpec<V> v) {
         return args.has(v) ? Optional.of(args.valueOf(v)) : Optional.empty();

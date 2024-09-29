@@ -27,10 +27,7 @@ import apdu4j.core.APDUBIBO;
 import apdu4j.core.CommandAPDU;
 import apdu4j.core.HexUtils;
 import apdu4j.core.ResponseAPDU;
-import com.payneteasy.tlv.BerTag;
-import com.payneteasy.tlv.BerTlv;
-import com.payneteasy.tlv.BerTlvParser;
-import com.payneteasy.tlv.BerTlvs;
+import com.payneteasy.tlv.*;
 import org.bouncycastle.asn1.x9.ECNamedCurveTable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -683,18 +680,30 @@ public class GPSession {
         if (instanceAID == null) {
             instanceAID = appletAID;
         }
+        // Empty mandatory app parameters
         if (installParams == null || installParams.length == 0) {
             installParams = new byte[]{(byte) 0xC9, 0x00};
+        } else {
+            boolean valid = false;
+            // Handle #360 - only modify/fixup installation parameters when needed.
+            try {
+                BerTlvParser parser = new BerTlvParser();
+                final BerTlvs tlvs = parser.parse(installParams);
+                GPUtils.trace_tlv(installParams, logger);
+                // If applications parameters are already present (must not be first tag), do not add anything
+                if (tlvs.find(new BerTag(0xC9)) != null) {
+                    valid = true;
+                }
+            } catch (ArrayIndexOutOfBoundsException | IllegalStateException e) {
+                logger.warn("Installation parameters did not parse as valid TLV, assuming simple app parameters!");
+            }
+            // Simple use: only unstructured application parameters without existing tag, prepend 0xC9
+            if (!valid) {
+                installParams = new BerTlvBuilder().addBytes(new BerTag(0xC9), installParams).buildArray();
+            }
         }
-        // FIXME: if the parameters parse as tlv, check for presence of 0xC9 before prepending
-        // Simple use: only application parameters without tag, prepend 0xC9
-        if (installParams[0] != (byte) 0xC9) {
-            byte[] newparams = new byte[installParams.length + 2];
-            newparams[0] = (byte) 0xC9;
-            newparams[1] = (byte) installParams.length;
-            System.arraycopy(installParams, 0, newparams, 2, installParams.length);
-            installParams = newparams;
-        }
+        logger.trace("Installation parameters: {}", HexUtils.bin2hex(installParams));
+
         // Try to use the minimal
         byte[] privs = Privilege.toByteOrBytes(privileges);
         ByteArrayOutputStream bo = new ByteArrayOutputStream();

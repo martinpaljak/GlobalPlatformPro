@@ -26,6 +26,7 @@ import pro.javacard.capfile.AID;
 import pro.javacard.gp.GPData;
 import pro.javacard.gp.GPSession;
 import pro.javacard.gp.GPUtils;
+import pro.javacard.pace.PACE;
 
 import java.io.File;
 import java.io.IOException;
@@ -84,14 +85,14 @@ abstract class GPCommandLineInterface {
     protected static OptionSpec<Void> OPT_TODAY = parser.accepts("today", "Set date to today when updating CPLC");
 
     // SCP key handling
-    protected static OptionSpec<String> OPT_KEY = parser.acceptsAll(Arrays.asList("k", "key"), "Specify key").withRequiredArg().describedAs("key");
+    protected static OptionSpec<String> OPT_KEY = parser.acceptsAll(Arrays.asList("k", "key"), "Specify (master) key").withRequiredArg().describedAs("key");
     protected static OptionSpec<String> OPT_KEY_KDF = parser.accepts("key-kdf", "Use KDF/template with master key").withRequiredArg();
 
     protected static OptionSpec<HexBytes> OPT_KEY_ENC = parser.accepts("key-enc", "Specify card ENC key").withRequiredArg().ofType(HexBytes.class).describedAs("key");
     protected static OptionSpec<HexBytes> OPT_KEY_MAC = parser.accepts("key-mac", "Specify card MAC key").withRequiredArg().ofType(HexBytes.class).describedAs("key");
     protected static OptionSpec<HexBytes> OPT_KEY_DEK = parser.accepts("key-dek", "Specify card DEK key").withRequiredArg().ofType(HexBytes.class).describedAs("key");
 
-    protected static OptionSpec<String> OPT_LOCK = parser.accepts("lock", "Set new key").withRequiredArg().describedAs("key");
+    protected static OptionSpec<String> OPT_LOCK = parser.accepts("lock", "Set new SCP key").withRequiredArg().describedAs("key");
     protected static OptionSpec<String> OPT_LOCK_KDF = parser.accepts("lock-kdf", "Use KDF/template with lock key").withRequiredArg();
 
     protected static OptionSpec<HexBytes> OPT_LOCK_ENC = parser.accepts("lock-enc", "Set new ENC key").withRequiredArg().ofType(HexBytes.class).describedAs("key");
@@ -131,6 +132,13 @@ abstract class GPCommandLineInterface {
 
     protected static OptionSpec<AID> OPT_MAKE_DEFAULT = parser.accepts("make-default", "Make AID the default").withRequiredArg().ofType(AID.class);
     protected static OptionSpec<AID> OPT_RENAME_ISD = parser.accepts("rename-isd", "Rename ISD").withRequiredArg().ofType(AID.class).describedAs("new AID");
+
+    // PACE
+    protected static OptionSpec<AID> OPT_PACE = parser.accepts("pace", "Run PACE with CAN against AID").withRequiredArg().ofType(AID.class);
+    protected static OptionSpec<AID> OPT_PACE_SM = parser.accepts("pace-sm", "Run PACE with CAN and SM against AID").availableUnless(OPT_PACE).withRequiredArg().ofType(AID.class);
+
+    protected static OptionSpec<String> OPT_CAN = parser.accepts("can", "CAN for PACE").withRequiredArg().ofType(String.class).describedAs("can");
+    protected static OptionSpec<PACE.PACECurve> OPT_PACE_CURVE = parser.accepts("pace-curve", "Curve to use").requiredIf(OPT_PACE, OPT_PACE_SM).withRequiredArg().ofType(PACE.PACECurve.class).describedAs("curve");
 
     // MISC options
     protected static OptionSpec<GPSession.APDUMode> OPT_SC_MODE = parser.accepts("mode", "Secure channel to use").withRequiredArg().ofType(GPSession.APDUMode.class).withValuesConvertedBy(new APDUModeConverter());

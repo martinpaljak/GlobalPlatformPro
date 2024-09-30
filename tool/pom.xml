@@ -26,6 +26,12 @@
             <artifactId>globalplatformpro</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <!-- For PACE auth -->
+        <dependency>
+            <groupId>com.github.martinpaljak</groupId>
+            <artifactId>pace</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <!-- For logging in the command line tool -->
         <dependency>
             <groupId>org.slf4j</groupId>

@@ -2,6 +2,7 @@
 @SuppressWarnings({"requires-automatic"})
 module gptool {
     requires pro.javacard.globalplatform;
+    requires pro.javacard.pace;
     requires java.smartcardio;
     requires jopt.simple;
     requires com.google.auto.service;

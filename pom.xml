@@ -46,6 +46,7 @@
     </repositories>
     <modules>
         <module>library</module>
+        <module>pace</module>
         <module>tool</module>
     </modules>
     <build>
@@ -66,4 +67,23 @@
             </plugin>
         </plugins>
     </build>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.github.martinpaljak</groupId>
+                <artifactId>apdu4j-core</artifactId>
+                <version>24.09.26.2</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.martinpaljak</groupId>
+                <artifactId>apdu4j-pcsc</artifactId>
+                <version>24.09.26.2</version>
+            </dependency>
+            <dependency>
+                <groupId>com.payneteasy</groupId>
+                <artifactId>ber-tlv</artifactId>
+                <version>1.0-11</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 </project>

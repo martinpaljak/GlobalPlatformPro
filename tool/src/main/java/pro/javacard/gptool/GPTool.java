@@ -36,6 +36,9 @@ import pro.javacard.capfile.CAPFile;
 import pro.javacard.gp.*;
 import pro.javacard.gp.GPRegistryEntry.Privilege;
 import pro.javacard.gp.GPSession.APDUMode;
+import pro.javacard.pace.AESSecureChannel;
+import pro.javacard.pace.PACE;
+import pro.javacard.pace.PACEException;
 
 import javax.crypto.Cipher;
 import javax.smartcardio.Card;
@@ -232,6 +235,20 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
 
             // Now actually talk to possible terminals
             APDUBIBO channel = new APDUBIBO(bibo);
+            // Run PACE to enable contactless interface
+            if (args.has(OPT_PACE) || args.has(OPT_PACE_SM)) {
+                byte[] aid = args.has(OPT_PACE) ? args.valueOf(OPT_PACE).getBytes() : args.valueOf(OPT_PACE_SM).getBytes();
+                try {
+                    PACE pace = PACE.executePACE(channel, aid, args.valueOf(OPT_CAN), args.valueOf(OPT_PACE_CURVE));
+                    if (args.has(OPT_PACE_SM)) {
+                        channel = new APDUBIBO(new AESSecureChannel(pace.getENC(), pace.getMAC(), bibo));
+                    }
+                } catch (PACEException | GeneralSecurityException e) {
+                    System.err.println("Could not run PACE: " + e.getMessage());
+                    return 1;
+                }
+            }
+
             // Send all raw APDU-s to the default-selected application of the card
             if (args.has(OPT_APDU)) {
                 // Select the application, if present
@@ -870,6 +887,8 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
             System.err.println("ERROR: " + e.getMessage());
             if (isTrace)
                 e.printStackTrace();
+        } catch (ReceiptVerifier.ReceiptVerificationException e) {
+            System.err.println("WARNING: Operation completed, but receipt verification failed");
         }
         // Other exceptions escape. fin.
         return 1;

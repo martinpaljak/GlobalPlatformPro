@@ -53,7 +53,7 @@ public abstract class ReceiptVerifier {
         }
 
         @Override
-        boolean check(ResponseAPDU response, byte[] context) {
+        boolean check(ResponseAPDU response, byte[] context) throws ReceiptVerificationException {
             byte[] data = response.getData();
             if (data[0] == 0x00) {
                 log.debug("No receipt");
@@ -71,6 +71,7 @@ public abstract class ReceiptVerifier {
             boolean verified = Arrays.equals(my, card);
             if (!verified) {
                 log.error("Receipt verification: {}", verified);
+                throw new ReceiptVerificationException("Receipt verification failed");
             } else {
                 log.info("Receipt verification: {}", verified);
             }
@@ -143,6 +144,12 @@ public abstract class ReceiptVerifier {
         }
     }
 
+    public static class ReceiptVerificationException extends RuntimeException {
+        private static final long serialVersionUID = -453299698747234135L;
+        public ReceiptVerificationException(String message) {
+            super(message);
+        }
+    }
     // TODO: registry update
     // TODO: Combined Load, Install and Make Selectable
 }

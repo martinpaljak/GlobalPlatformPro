@@ -211,7 +211,7 @@ public class GPUtils {
         try {
             BerTlvs tlvs = new BerTlvParser().parse(payload);
             dump(tlvs, 0, result);
-        } catch (ArrayIndexOutOfBoundsException e) {
+        } catch (ArrayIndexOutOfBoundsException | IllegalStateException e) {
             throw new IllegalArgumentException("Not valid TLVs: " + e.getMessage(), e);
         }
         return result;

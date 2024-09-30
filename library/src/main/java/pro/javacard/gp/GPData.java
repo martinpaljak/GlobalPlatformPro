@@ -124,11 +124,10 @@ public final class GPData {
                         for (BerTlv ot : vt.getValues()) {
                             byte[] oidBytes = ot.getBytesValue();
                             String oid = logAndGetOidFromByteArray(ot.getTag().bytes, oidBytes);
-                            if (oid.startsWith("1.2.840.114283.4")) {
+                            // This also works with the invalid encoding for SCP80 i=00
+                            if (oid.startsWith("1.2.840.114283.4.")) {
                                 byte[] scp = Arrays.copyOfRange(oidBytes, oidBytes.length - 2, oidBytes.length);
-                                if (scp.length == 2) {
-                                    System.out.printf("-> GP SCP%02x i=%02x%n", scp[0], scp[1]);
-                                }
+                                System.out.printf("-> GP %s%n", GPSecureChannelVersion.valueOf(scp[0] & 0xFF, scp[1] & 0xFF));
                             }
                         }
                     } else if (vt.isTag(new BerTag(0x65))) {

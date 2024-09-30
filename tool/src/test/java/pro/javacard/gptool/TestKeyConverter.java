@@ -40,7 +40,7 @@ public class TestKeyConverter {
     public void testPrivateOnly() {
         Key k = Key.valueOf("../library/src/test/resources/test-dap-rsa-1k-priv.pem");
         Assert.assertFalse(k.getSymmetric().isPresent());
-        Assert.assertFalse(k.getPublic().isPresent());
+        Assert.assertTrue(k.getPublic().isPresent());
         Assert.assertTrue(k.getPrivate().isPresent());
     }
 

@@ -21,6 +21,7 @@ package pro.javacard.gptool;
 
 import apdu4j.core.HexUtils;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
+import org.bouncycastle.asn1.pkcs.RSAPrivateKey;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
@@ -32,14 +33,15 @@ import pro.javacard.gp.GPCrypto;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.KeyPair;
-import java.security.PrivateKey;
-import java.security.PublicKey;
+import java.security.*;
 import java.security.cert.CertificateException;
+import java.security.interfaces.RSAPrivateCrtKey;
+import java.security.spec.RSAPublicKeySpec;
 import java.util.Optional;
 
 // Helper to convert command line parameters to meaningful key objects.
@@ -90,10 +92,24 @@ public class Key {
                             throw new IllegalArgumentException("Can not read certificate from PEM: " + ce.getMessage());
                         }
                     } else if (ohh instanceof PrivateKeyInfo) {
-                        return new Key(v, null, null, new JcaPEMKeyConverter().getPrivateKey((PrivateKeyInfo) ohh));
+                        PrivateKey pk = new JcaPEMKeyConverter().getPrivateKey((PrivateKeyInfo) ohh);
+                        // TODO: do this for other key types as well
+                        if (pk instanceof RSAPrivateKey) {
+                            BigInteger modulus = ((RSAPrivateKey) pk).getModulus();
+                            BigInteger exponent = ((RSAPrivateKey) pk).getPublicExponent();
+                            PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(new RSAPublicKeySpec(modulus, exponent));
+                            return new Key(v, null, publicKey, pk);
+                        } else if (pk instanceof RSAPrivateCrtKey) {
+                            BigInteger modulus = ((RSAPrivateCrtKey) pk).getModulus();
+                            BigInteger exponent = ((RSAPrivateCrtKey) pk).getPublicExponent();
+                            PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(new RSAPublicKeySpec(modulus, exponent));
+                            return new Key(v, null, publicKey, pk);
+                        } else {
+                            return new Key(v, null, null, pk);
+                        }
                     } else throw new IllegalArgumentException("Can not read PEM");
                 }
-            } catch (IOException e) {
+            } catch (IOException | GeneralSecurityException e) {
                 throw new IllegalArgumentException("Could not read PEM: " + e.getMessage(), e);
             }
         } else {

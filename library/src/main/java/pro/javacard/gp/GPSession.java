@@ -304,9 +304,12 @@ public class GPSession {
                                     logger.debug("Auto-detected GP version: " + GPData.oid2version(veroid.getBytesValue()));
                                 }
                             }
+                        } else if (GPData.oid2string(oidtag.getBytesValue()).startsWith("1.2.840.114283.4.") && oidtag.getBytesValue().length == 9) {
+                            byte[] data = oidtag.getBytesValue();
+                            // SCP version
+                            logger.debug("Auto-detected SCP version: {}", GPSecureChannelVersion.valueOf(data[7] & 0xFF, data[8] & 0xFF));
                         } else {
-                            // FIXME: this is BS here.
-                            logger.warn("Invalid CardRecognitionData", oidtag.getBytesValue());
+                            logger.warn("Unrecognized card recgnition data: {}", HexUtils.bin2hex(oidtag.getBytesValue()));
                         }
                     } else {
                         logger.warn("Not global platform OID");

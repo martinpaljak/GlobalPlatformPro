@@ -4,7 +4,7 @@
 &nbsp;[![Maven version](https://img.shields.io/maven-metadata/v?label=javacard.pro%20version&metadataUrl=https%3A%2F%2Fjavacard.pro%2Fmaven%2Fcom%2Fgithub%2Fmartinpaljak%2Fglobalplatformpro%2Fmaven-metadata.xml)](https://gist.github.com/martinpaljak/c77d11d671260e24eef6c39123345cae)
 &nbsp;[![Build status](https://github.com/martinpaljak/globalplatformpro/workflows/Build%20robot/badge.svg?branch=master)](https://github.com/martinpaljak/globalplatformpro/actions)
 
-👉 Load and manage applets on compatible JavaCards from command line or from your Java project with a [Do What I Mean](http://en.wikipedia.org/wiki/DWIM) approach ([testimonials](https://github.com/martinpaljak/GlobalPlatformPro/wiki/Testimonials)).
+Load and manage applets on compatible JavaCards from command line or from your Java project with a [Do What I Mean](http://en.wikipedia.org/wiki/DWIM) approach ([testimonials](https://github.com/martinpaljak/GlobalPlatformPro/wiki/Testimonials)).
 
 GPPro provides an **easy to use** and **high level** interface that most of the time **JustWorks<sup>(TM)</sup>**, is **flexible** and **[100% open source](#license)**!
 

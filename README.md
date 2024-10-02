@@ -4,15 +4,53 @@
 &nbsp;[![Maven version](https://img.shields.io/maven-metadata/v?label=javacard.pro%20version&metadataUrl=https%3A%2F%2Fjavacard.pro%2Fmaven%2Fcom%2Fgithub%2Fmartinpaljak%2Fglobalplatformpro%2Fmaven-metadata.xml)](https://gist.github.com/martinpaljak/c77d11d671260e24eef6c39123345cae)
 &nbsp;[![Build status](https://github.com/martinpaljak/globalplatformpro/workflows/Build%20robot/badge.svg?branch=master)](https://github.com/martinpaljak/globalplatformpro/actions)
 
-Load and manage applets on compatible JavaCards from command line or from your Java project with a [Do What I Mean](http://en.wikipedia.org/wiki/DWIM) approach ([testimonials](https://github.com/martinpaljak/GlobalPlatformPro/wiki/Testimonials)).
+Load and manage applets and keys on JavaCards from command line or from your Java project with a [Do What I Mean](http://en.wikipedia.org/wiki/DWIM) approach ([testimonials](https://github.com/martinpaljak/GlobalPlatformPro/wiki/Testimonials)).
 
 GPPro provides an **easy to use** and **high level** interface that most of the time **JustWorks<sup>(TM)</sup>**, is **flexible** and **[100% open source](#license)**!
 
-> [!IMPORTANT]
-> 1. Use it?
->    - Add a ⭐
-> 2. Like it?
->    - **[Become a sponsor](https://github.com/sponsors/martinpaljak)**
+
+```
+$ gp -install HelloWorld.cap -privs CardReset -params 48692074686572652C2077686174277320796F7572206E616D653F
+# Warning: no keys given, defaulting to 404142434445464748494A4B4C4D4E4F
+HelloWorld.cap loaded: com.example.helloworld A048656C6C6F576F726C64
+
+$ gp -l
+# Warning: no keys given, defaulting to 404142434445464748494A4B4C4D4E4F
+ISD: A000000151000000 (OP_READY)
+     Parent:   A000000151000000
+     From:     A0000001515350
+     Privs:    SecurityDomain, CardLock, CardTerminate, CVMManagement, TrustedPath, AuthorizedManagement, TokenVerification, GlobalDelete, GlobalLock, GlobalRegistry, FinalApplication, ReceiptGeneration
+
+APP: A048656C6C6F576F726C64 (SELECTABLE) (|.HelloWorld|)
+     Parent:   A000000151000000
+     From:     A048656C6C6F576F726C64
+     Privs:    CardReset
+
+PKG: A0000001515350 (LOADED) (SSD creation package)
+     Parent:   A000000151000000
+     Version:  255.255
+     Applet:   A000000151535041 (SSD creation applet)
+
+PKG: A0000000620204 (LOADED) (javacardx.biometry1toN)
+     Parent:   A000000151000000
+     Version:  1.0
+
+PKG: A0000000620202 (LOADED) (javacardx.biometry)
+     Parent:   A000000151000000
+     Version:  1.3
+
+PKG: A048656C6C6F576F726C6401 (LOADED) (|.HelloWorld.|)
+     Parent:   A000000151000000
+     Version:  1.0
+     Applet:   A048656C6C6F576F726C64 (|.HelloWorld|)
+
+```
+
+It's that simple!
+
+> [!TIP]
+> Building JavaCard applets is equally pleasing with **[ant-javacard](https://github.com/martinpaljak/ant-javacard)**
+
 
 ## NEWS &middot; `Q4 2024`
  - [JavaCard Buyer's Guide](https://github.com/martinpaljak/GlobalPlatformPro/wiki/JavaCard-Buyer%27s-Guide) has been updated to 2024
@@ -23,11 +61,7 @@ GPPro provides an **easy to use** and **high level** interface that most of the 
    - Key Diversification templates
    - many bugs fixed, UX improved.
 
-# Get started!
-#### Grab the latest pre-built .JAR or .EXE from [release area](https://github.com/martinpaljak/GlobalPlatformPro/releases) and head to the [Getting Started guide in the wiki](https://github.com/martinpaljak/GlobalPlatformPro/wiki)
-
-> [!TIP]
-> Building JavaCard applets is equally pleasing with **[ant-javacard](https://github.com/martinpaljak/ant-javacard)**
+# Start from [Getting Started guide](https://github.com/martinpaljak/GlobalPlatformPro/wiki/Getting-Started) in the wiki
 
 ### License
 

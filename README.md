@@ -63,6 +63,12 @@ It's that simple!
 
 # Start from [Getting Started guide](https://github.com/martinpaljak/GlobalPlatformPro/wiki/Getting-Started) in the wiki
 
+> [!IMPORTANT]
+> 1. Use it?
+>    - Add a ⭐
+> 2. Like it?
+>    - **[Become a sponsor](https://github.com/sponsors/martinpaljak)**
+
 ### License
 
  * [LGPL-3.0](https://github.com/martinpaljak/GlobalPlatformPro/blob/master/LICENSE) for derived code and MIT/LGPL3 for original code.

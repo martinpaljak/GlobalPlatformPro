@@ -309,7 +309,8 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
             }
 
             if (args.has(OPT_RECEIPT_KEY)) {
-                ReceiptVerifier verifier = new ReceiptVerifier.AESReceiptVerifier(args.valueOf(OPT_RECEIPT_KEY).v());
+                // XXX: refactor receipts.
+                ReceiptVerifier verifier = new ReceiptVerifier.AESReceiptVerifier(args.valueOf(OPT_RECEIPT_KEY).v(), args.has(OPT_FORCE));
                 gp.setVerifier(verifier);
             }
 
@@ -888,6 +889,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
             if (isTrace)
                 e.printStackTrace();
         } catch (ReceiptVerifier.ReceiptVerificationException e) {
+            /// XXX: refactor
             System.err.println("WARNING: Operation completed, but receipt verification failed");
         }
         // Other exceptions escape. fin.

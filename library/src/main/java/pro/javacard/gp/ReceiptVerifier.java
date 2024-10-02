@@ -44,6 +44,7 @@ public abstract class ReceiptVerifier {
     }
 
     abstract boolean check(ResponseAPDU response, byte[] context);
+    boolean log_only = false;
 
     static public class AESReceiptVerifier extends ReceiptVerifier {
         private final byte[] aes_key;
@@ -52,6 +53,12 @@ public abstract class ReceiptVerifier {
             aes_key = aesKey.clone();
         }
 
+        public AESReceiptVerifier(byte[] aesKey, boolean log_only) {
+            aes_key = aesKey.clone();
+            this.log_only = log_only;
+        }
+
+        // XXX: the use of "log only" arguments, boolean function and exceptions is not nice. Refactor
         @Override
         boolean check(ResponseAPDU response, byte[] context) throws ReceiptVerificationException {
             byte[] data = response.getData();
@@ -71,11 +78,12 @@ public abstract class ReceiptVerifier {
             boolean verified = Arrays.equals(my, card);
             if (!verified) {
                 log.error("Receipt verification: {}", verified);
-                throw new ReceiptVerificationException("Receipt verification failed");
+                if (!log_only) {
+                    throw new ReceiptVerificationException("Receipt verification failed");
+                }
             } else {
                 log.info("Receipt verification: {}", verified);
             }
-
             return verified;
         }
     }

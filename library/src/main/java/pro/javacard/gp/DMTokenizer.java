@@ -157,6 +157,7 @@ public abstract class DMTokenizer {
 
         // TODO: different existing tokens for different operations
         private final byte[] token;
+        private boolean used = false;
 
         StaticTokenizer(byte[] token) {
             this.token = token;
@@ -164,12 +165,13 @@ public abstract class DMTokenizer {
 
         @Override
         protected byte[] getToken(CommandAPDU apdu) {
+            used = true;
             return token;
         }
 
         @Override
         protected boolean canTokenize(CommandAPDU apdu) {
-            return true;
+            return !used;
         }
     }
 }

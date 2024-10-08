@@ -133,7 +133,7 @@ public final class GPRegistry implements Iterable<GPRegistryEntry> {
                 if (type == Kind.IssuerSecurityDomain || type == Kind.Application) {
                     e.setType(type);
                     e.setAID(aid);
-                    e.getPrivileges().addAll(Privilege.fromBytes(new byte[]{privileges}));
+                    e.setPrivileges(Privilege.fromBytes(new byte[]{privileges}));
                     e.setLifeCycle(lifecycle);
                 } else if (type == Kind.ExecutableLoadFile) {
                     if (privileges != 0x00) {

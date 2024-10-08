@@ -23,9 +23,7 @@ import apdu4j.core.CommandAPDU;
 import apdu4j.core.HexUtils;
 import apdu4j.core.ResponseAPDU;
 
-import javax.crypto.Cipher;
 import javax.crypto.NoSuchPaddingException;
-import javax.crypto.spec.IvParameterSpec;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -70,12 +68,9 @@ class SCP03Wrapper extends SecureChannelWrapper {
                 if (command.getData().length > 0) {
                     byte[] d = GPCrypto.pad80(command.getData(), 16);
                     // Encrypt with S-ENC, after increasing the counter
-                    Cipher c = Cipher.getInstance(GPCrypto.AES_CBC_CIPHER);
-                    c.init(Cipher.ENCRYPT_MODE, GPCrypto.aeskey(encKey), GPCrypto.iv_null_16);
-                    byte[] iv = c.doFinal(encryption_counter);
+                    byte[] iv = GPCrypto.aes_cbc(encryption_counter, encKey, new byte[16]);
                     // Now encrypt the data with S-ENC.
-                    c.init(Cipher.ENCRYPT_MODE, GPCrypto.aeskey(encKey), new IvParameterSpec(iv));
-                    data = c.doFinal(d);
+                    data = GPCrypto.aes_cbc(d, encKey, iv);
                     lc = data.length;
                 }
             }
@@ -93,7 +88,7 @@ class SCP03Wrapper extends SecureChannelWrapper {
                 bo.write(GPUtils.encodeLcLength(lc, command.getNe()));
                 bo.write(data);
                 byte[] cmac_input = bo.toByteArray();
-                byte[] cmac = GPCrypto.scp03_mac(macKey, cmac_input, 128);
+                byte[] cmac = GPCrypto.aes_cmac(macKey, cmac_input, 128);
                 // Set new chaining value
                 System.arraycopy(cmac, 0, chaining_value, 0, chaining_value.length);
                 // 8 bytes for actual mac
@@ -152,7 +147,7 @@ class SCP03Wrapper extends SecureChannelWrapper {
 
                 byte[] cmac_input = bo.toByteArray();
 
-                byte[] cmac = GPCrypto.scp03_mac(rmacKey, cmac_input, 128);
+                byte[] cmac = GPCrypto.aes_cmac(rmacKey, cmac_input, 128);
 
                 // 8 bytes for actual mac
                 byte[] resp_mac = Arrays.copyOf(cmac, 8);
@@ -169,14 +164,11 @@ class SCP03Wrapper extends SecureChannelWrapper {
             }
             if (renc && response.getData().length > 0) {
                 // Encrypt with S-ENC, after changing the first byte of the counter
-                byte[] response_encryption_counter = Arrays.copyOf(encryption_counter, encryption_counter.length);
+                byte[] response_encryption_counter = encryption_counter.clone();
                 response_encryption_counter[0] = (byte) 0x80;
-                Cipher c = Cipher.getInstance(GPCrypto.AES_CBC_CIPHER);
-                c.init(Cipher.ENCRYPT_MODE, GPCrypto.aeskey(encKey), GPCrypto.iv_null_16);
-                byte[] iv = c.doFinal(response_encryption_counter);
+                byte[] iv = GPCrypto.aes_cbc(response_encryption_counter, encKey, new byte[16]);
                 // Now decrypt the data with S-ENC, with the new IV
-                c.init(Cipher.DECRYPT_MODE, GPCrypto.aeskey(encKey), new IvParameterSpec(iv));
-                byte[] data = c.doFinal(response.getData());
+                byte[] data = GPCrypto.aes_cbc_decrypt(response.getData(), encKey, iv);
                 ByteArrayOutputStream o = new ByteArrayOutputStream();
                 o.write(GPCrypto.unpad80(data));
                 o.write(response.getSW1());

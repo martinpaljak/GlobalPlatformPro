@@ -55,9 +55,7 @@ public final class GPCrypto {
     private GPCrypto() {
     }
 
-    public static final byte[] null_bytes_8 = new byte[]{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-    public static final byte[] null_bytes_16 = new byte[]{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-    public static final byte[] one_bytes_16 = new byte[]{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01};
+    private static final byte[] one_bytes_16 = new byte[]{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01};
 
     // List of used ciphers.
     public static final String DES3_CBC_CIPHER = "DESede/CBC/NoPadding";
@@ -65,9 +63,6 @@ public final class GPCrypto {
     static final String DES_CBC_CIPHER = "DES/CBC/NoPadding";
     static final String DES_ECB_CIPHER = "DES/ECB/NoPadding";
     static final String AES_CBC_CIPHER = "AES/CBC/NoPadding";
-
-    public static final IvParameterSpec iv_null_8 = new IvParameterSpec(null_bytes_8);
-    static final IvParameterSpec iv_null_16 = new IvParameterSpec(null_bytes_16);
 
     // Shared random
     public static final SecureRandom random;
@@ -117,66 +112,84 @@ public final class GPCrypto {
         buffer_increment(buffer, 0, buffer.length);
     }
 
-    // 3des mac
-    public static byte[] mac_3des(byte[] key, byte[] text, byte[] iv) {
-        byte[] d = pad80(text, 8);
-        return mac_3des(new SecretKeySpec(resizeDES(key, 24), "DESede"), d, 0, d.length, iv);
+    public static byte[] aes_cbc(byte[] data, byte[] key, byte[] iv) throws GeneralSecurityException {
+        Cipher c = Cipher.getInstance(AES_CBC_CIPHER);
+        c.init(Cipher.ENCRYPT_MODE, aeskey(key), new IvParameterSpec(iv));
+        return c.doFinal(data);
+    }
+
+    public static byte[] aes_cbc_decrypt(byte[] data, byte[] key, byte[] iv) throws GeneralSecurityException {
+        Cipher c = Cipher.getInstance(AES_CBC_CIPHER);
+        c.init(Cipher.DECRYPT_MODE, aeskey(key), new IvParameterSpec(iv));
+        return c.doFinal(data);
     }
 
 
-    public static byte[] mac_3des_nulliv(byte[] key, byte[] d) {
-        return mac_3des(key, d, null_bytes_8);
+    public static byte[] des3_cbc(byte[] data, byte[] key, byte[] iv) throws GeneralSecurityException {
+        Cipher cipher = Cipher.getInstance(DES3_CBC_CIPHER);
+        cipher.init(Cipher.ENCRYPT_MODE, des3key(key), new IvParameterSpec(iv));
+        return cipher.doFinal(data);
     }
 
-    static byte[] mac_3des(Key key, byte[] text, int offset, int length, byte[] iv) {
+    public static byte[] des_cbc(byte[] data, byte[] key, byte[] iv) throws GeneralSecurityException {
+        Cipher cipher = Cipher.getInstance(DES_CBC_CIPHER);
+        cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(resize_des(key, 8), "DES"), new IvParameterSpec(iv));
+        return cipher.doFinal(data);
+    }
+
+    public static byte[] des_ecb(byte[] data, byte[] key) throws GeneralSecurityException {
+        Cipher cipher = Cipher.getInstance(DES_ECB_CIPHER);
+        cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(resize_des(key, 8), "DES"));
+        return cipher.doFinal(data);
+    }
+
+    public static byte[] des3_ecb(byte[] data, byte[] key) throws GeneralSecurityException {
+        Cipher cipher = Cipher.getInstance(DES3_ECB_CIPHER);
+        cipher.init(Cipher.ENCRYPT_MODE, des3key(key));
+        return cipher.doFinal(data);
+    }
+
+    // 3des mac over unpadded data
+    public static byte[] mac_3des(byte[] text, byte[] key, byte[] iv) {
         try {
-            Cipher cipher = Cipher.getInstance(DES3_CBC_CIPHER);
-            cipher.init(Cipher.ENCRYPT_MODE, key, new IvParameterSpec(iv));
-            byte[] result = new byte[8];
-            byte[] res = cipher.doFinal(text, offset, length);
-            System.arraycopy(res, res.length - 8, result, 0, 8);
-            return result;
+            byte[] d = pad80(text, 8);
+            byte[] cgram = des3_cbc(d, key, iv);
+            // rightmost 8 bytes
+            return Arrays.copyOfRange(cgram, cgram.length - 8, cgram.length);
         } catch (GeneralSecurityException e) {
-            throw new RuntimeException("MAC computation failed.", e);
+            throw new RuntimeException("MAC computation failed", e);
         }
     }
 
-    // The weird mac
-    public static byte[] mac_des_3des(byte[] key, byte[] text, byte[] iv) {
-        byte[] d = pad80(text, 8);
-        return mac_des_3des(key, d, 0, d.length, iv);
-    }
-
-    private static byte[] mac_des_3des(byte[] key, byte[] text, int offset, int length, byte[] iv) {
+    // The weird mac used in SCP02, over unpadded data
+    public static byte[] mac_des_3des(byte[] key, byte[] data, byte[] iv) {
         try {
-            Cipher cipher1 = Cipher.getInstance(DES_CBC_CIPHER);
-            cipher1.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(resizeDES(key, 8), "DES"), new IvParameterSpec(iv));
-            Cipher cipher2 = Cipher.getInstance(DES3_CBC_CIPHER);
-            cipher2.init(Cipher.ENCRYPT_MODE, des3key(key), new IvParameterSpec(iv));
+            // Pad input data
+            byte[] d = pad80(data, 8);
 
-            byte[] result = new byte[8];
-            byte[] temp;
-
-            if (length > 8) {
-                temp = cipher1.doFinal(text, offset, length - 8);
-                System.arraycopy(temp, temp.length - 8, result, 0, 8);
-                cipher2.init(Cipher.ENCRYPT_MODE, des3key(key), new IvParameterSpec(result));
+            // If payload is more than 8 bytes, do one pass of des_cbc of everything but the last 8 (padded) bytes
+            // and use the rightmost 8 bytes of that as the IV for the full cbc.
+            if (d.length > 8) {
+                iv = GPCrypto.des_cbc(Arrays.copyOf(d, d.length - 8), key, iv);
             }
-            temp = cipher2.doFinal(text, (offset + length) - 8, 8);
-            System.arraycopy(temp, temp.length - 8, result, 0, 8);
-            return result;
+
+            // Do des3_cbc of either last or only 8 bytes with the IV depending on payload length
+            byte[] cgram = GPCrypto.des3_cbc(Arrays.copyOfRange(d, d.length - 8, d.length), key, iv);
+
+            // Rightmost 8 bytes is the MAC
+            return Arrays.copyOfRange(cgram, cgram.length - 8, cgram.length);
         } catch (GeneralSecurityException e) {
-            throw new RuntimeException("MAC computation failed.", e);
+            throw new RuntimeException("MAC computation failed", e);
         }
     }
 
     // SCP03 related
-    static byte[] scp03_mac(byte[] keybytes, byte[] msg, int lengthBits) {
+    static byte[] aes_cmac(byte[] key, byte[] data, int lengthBits) {
         // Use BouncyCastle light interface.
         BlockCipher cipher = AESEngine.newInstance();
         CMac cmac = new CMac(cipher);
-        cmac.init(new KeyParameter(keybytes));
-        cmac.update(msg, 0, msg.length);
+        cmac.init(new KeyParameter(key));
+        cmac.update(data, 0, data.length);
         byte[] out = new byte[cmac.getMacSize()];
         cmac.doFinal(out, 0);
         return Arrays.copyOf(out, lengthBits / 8);
@@ -198,6 +211,7 @@ public final class GPCrypto {
         }
         return bo.toByteArray();
     }
+
     // GP 2.2.1 Amendment D v 1.1.1
     public static byte[] scp03_kdf(byte[] key, byte constant, byte[] context, int blocklen_bits) {
         byte[] blocka = scp03_kdf_blocka(constant, blocklen_bits);
@@ -216,61 +230,39 @@ public final class GPCrypto {
         return cgram;
     }
 
-
     // GPC 2.2.1 Amendment D 7.2.2
     public static byte[] kcv_aes(byte[] key) {
         try {
-            Cipher c = Cipher.getInstance(AES_CBC_CIPHER);
-            c.init(Cipher.ENCRYPT_MODE, aeskey(key), iv_null_16);
-            byte[] cv = c.doFinal(one_bytes_16);
-            return Arrays.copyOfRange(cv, 0, 3);
+            return Arrays.copyOfRange(aes_cbc(one_bytes_16, key, new byte[16]), 0, 3);
         } catch (GeneralSecurityException e) {
-            throw new GPException("Could not calculate KCV", e);
+            throw new RuntimeException("Could not calculate KCV", e);
         }
     }
 
+    // Some cards/vendors do KCV-s over 0x00 bytes, not 0x01 bytes
     public static byte[] kcv_aes0(byte[] key) {
         try {
-            Cipher c = Cipher.getInstance(AES_CBC_CIPHER);
-            c.init(Cipher.ENCRYPT_MODE, aeskey(key), iv_null_16);
-            byte[] cv = c.doFinal(null_bytes_16);
-            return Arrays.copyOfRange(cv, 0, 3);
+            return Arrays.copyOfRange(aes_cbc(new byte[16], key, new byte[16]), 0, 3);
         } catch (GeneralSecurityException e) {
-            throw new GPException("Could not calculate KCV", e);
+            throw new RuntimeException("Could not calculate KCV", e);
         }
     }
 
     public static byte[] kcv_3des(byte[] key) {
         try {
-            Cipher cipher = Cipher.getInstance(DES3_ECB_CIPHER);
-            cipher.init(Cipher.ENCRYPT_MODE, des3key(key));
-            byte[] check = cipher.doFinal(GPCrypto.null_bytes_8);
-            return Arrays.copyOf(check, 3);
+            return Arrays.copyOf(des3_ecb(new byte[8], key), 3);
         } catch (GeneralSecurityException e) {
-            throw new GPException("Could not calculate KCV", e);
+            throw new RuntimeException("Could not calculate KCV", e);
         }
     }
 
     public static Key des3key(byte[] v) {
-        return new SecretKeySpec(resizeDES(v, 24), "DESede");
+        return new SecretKeySpec(resize_des(v, 24), "DESede");
     }
 
     public static Key aeskey(byte[] v) {
         return new SecretKeySpec(v, "AES");
     }
-
-    public static byte[] dek_encrypt_des(byte[] key, byte[] data) throws GeneralSecurityException {
-        Cipher cipher = Cipher.getInstance(DES3_ECB_CIPHER);
-        cipher.init(Cipher.ENCRYPT_MODE, des3key(key));
-        return cipher.doFinal(data);
-    }
-
-    public static byte[] dek_encrypt_aes(byte[] key, byte[] data) throws GeneralSecurityException {
-        Cipher cipher = Cipher.getInstance(AES_CBC_CIPHER);
-        cipher.init(Cipher.ENCRYPT_MODE, aeskey(key), iv_null_16);
-        return cipher.doFinal(data);
-    }
-
 
     // Get a public key from a PEM file, either public key or keypair
     public static PublicKey pem2PublicKey(InputStream in) throws IOException {
@@ -306,16 +298,14 @@ public final class GPCrypto {
     }
 
     // Do shuffling as necessary
-    static byte[] resizeDES(byte[] key, int length) {
-        if (length == 24) {
-            byte[] key24 = new byte[24];
-            System.arraycopy(key, 0, key24, 0, 16);
-            System.arraycopy(key, 0, key24, 16, 8);
-            return key24;
-        } else {
-            byte[] key8 = new byte[8];
-            System.arraycopy(key, 0, key8, 0, 8);
-            return key8;
+    static byte[] resize_des(byte[] key, int length) {
+        switch (length) {
+            case 24:
+                return GPUtils.concatenate(Arrays.copyOf(key, 16), Arrays.copyOf(key, 8));
+            case 8:
+                return Arrays.copyOf(key, 8);
+            default:
+                throw new IllegalArgumentException("Invalid DES key length: " + length);
         }
     }
 

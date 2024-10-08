@@ -500,7 +500,7 @@ public class GPSession {
         byte[] my_card_cryptogram;
         byte[] cntx = GPUtils.concatenate(host_challenge, card_challenge);
         if (this.scpVersion.scp == SCP01 || this.scpVersion.scp == SCP02) {
-            my_card_cryptogram = GPCrypto.mac_3des_nulliv(encKey, cntx);
+            my_card_cryptogram = GPCrypto.mac_3des(cntx, encKey, new byte[8]);
         } else {
             my_card_cryptogram = GPCrypto.scp03_kdf(macKey, (byte) 0x00, cntx, 64);
         }
@@ -519,11 +519,11 @@ public class GPSession {
         final byte[] host_cryptogram;
         switch (scpVersion.scp) {
             case SCP01:
-                host_cryptogram = GPCrypto.mac_3des_nulliv(encKey, GPUtils.concatenate(card_challenge, host_challenge));
+                host_cryptogram = GPCrypto.mac_3des(GPUtils.concatenate(card_challenge, host_challenge), encKey, new byte[8]);
                 wrapper = new SCP01Wrapper(encKey, macKey, blockSize);
                 break;
             case SCP02:
-                host_cryptogram = GPCrypto.mac_3des_nulliv(encKey, GPUtils.concatenate(card_challenge, host_challenge));
+                host_cryptogram = GPCrypto.mac_3des(GPUtils.concatenate(card_challenge, host_challenge), encKey, new byte[8]);
                 wrapper = new SCP02Wrapper(encKey, macKey, rmacKey, blockSize);
                 break;
             case SCP03:
@@ -1066,7 +1066,8 @@ public class GPSession {
             if (sk.getAlgorithm().equals("DESede")) {
                 logger.info("PUT KEY KCV: {}", HexUtils.bin2hex(GPCrypto.kcv_3des(sk.getEncoded())));
                 bo.write(encodeKey(cardKeys, Arrays.copyOf(sk.getEncoded(), 16), GPKey.DES3));
-            } if (sk.getAlgorithm().equals("AES")) {
+            }
+            if (sk.getAlgorithm().equals("AES")) {
                 logger.info("PUT KEY KCV: {}", HexUtils.bin2hex(GPCrypto.kcv_aes(sk.getEncoded())));
                 bo.write(encodeKey(cardKeys, sk.getEncoded(), GPKey.AES));
             } else

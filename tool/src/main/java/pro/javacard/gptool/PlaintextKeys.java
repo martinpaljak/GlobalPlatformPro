@@ -24,13 +24,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pro.javacard.gp.*;
 
-import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import java.security.GeneralSecurityException;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
@@ -240,14 +235,10 @@ class PlaintextKeys extends GPCardKeys {
                 return GPCrypto.scp03_kdf(k, a, b, k.length);
             } else {
                 kv = kdf_template_finalize(template);
-                Cipher cipher = Cipher.getInstance(GPCrypto.DES3_ECB_CIPHER);
-                cipher.init(Cipher.ENCRYPT_MODE, GPCrypto.des3key(k));
-                return cipher.doFinal(kv);
+                return GPCrypto.des3_ecb(kv, k);
             }
-        } catch (BadPaddingException | InvalidKeyException | IllegalBlockSizeException e) {
-            throw new GPException("KDF failed", e);
-        } catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
-            throw new RuntimeException("Can not diversify", e);
+        } catch (GeneralSecurityException e) {
+            throw new RuntimeException("KDF failed", e);
         }
     }
 
@@ -272,11 +263,11 @@ class PlaintextKeys extends GPCardKeys {
     public byte[] encrypt(byte[] data, byte[] sessionContext) throws GeneralSecurityException {
         if (scp == SCP02) {
             byte[] sdek = deriveSessionKeySCP02(cardKeys.get(KeyPurpose.DEK), KeyPurpose.DEK, sessionContext);
-            return GPCrypto.dek_encrypt_des(sdek, data);
+            return GPCrypto.des3_ecb(data, sdek);
         } else if (scp == SCP01) {
-            return GPCrypto.dek_encrypt_des(cardKeys.get(KeyPurpose.DEK), data);
+            return GPCrypto.des3_ecb(data, cardKeys.get(KeyPurpose.DEK));
         } else if (scp == SCP03) {
-            return GPCrypto.dek_encrypt_aes(cardKeys.get(KeyPurpose.DEK), data);
+            return GPCrypto.aes_cbc(data, cardKeys.get(KeyPurpose.DEK), new byte[16]);
         } else throw new IllegalStateException("Unknown SCP version");
     }
 
@@ -288,11 +279,11 @@ class PlaintextKeys extends GPCardKeys {
         switch (scp) {
             case SCP01:
                 logger.debug("Encrypting {} value (KCV={}) with DEK (KCV={})", p, HexUtils.bin2hex(other.kcv(p)), HexUtils.bin2hex(kcv(KeyPurpose.DEK)));
-                return GPCrypto.dek_encrypt_des(cardKeys.get(KeyPurpose.DEK), other.cardKeys.get(p));
+                return GPCrypto.des3_ecb(other.cardKeys.get(p), cardKeys.get(KeyPurpose.DEK));
             case SCP02:
                 byte[] sdek = deriveSessionKeySCP02(cardKeys.get(KeyPurpose.DEK), KeyPurpose.DEK, sessionContext);
                 logger.debug("Encrypting {} value (KCV={}) with S-DEK (KCV={})", p, HexUtils.bin2hex(other.kcv(p)), HexUtils.bin2hex(GPCrypto.kcv_3des(sdek)));
-                return GPCrypto.dek_encrypt_des(sdek, other.cardKeys.get(p));
+                return GPCrypto.des3_ecb(other.cardKeys.get(p), sdek);
             case SCP03:
                 logger.debug("Encrypting {} value (KCV={}) with DEK (KCV={})", p, HexUtils.bin2hex(other.kcv(p)), HexUtils.bin2hex(kcv(KeyPurpose.DEK)));
                 byte[] otherkey = other.cardKeys.get(p);
@@ -302,7 +293,7 @@ class PlaintextKeys extends GPCardKeys {
                 GPCrypto.random.nextBytes(plaintext);
                 System.arraycopy(otherkey, 0, plaintext, 0, otherkey.length);
                 // encrypt
-                return GPCrypto.dek_encrypt_aes(cardKeys.get(KeyPurpose.DEK), plaintext);
+                return GPCrypto.aes_cbc(plaintext, cardKeys.get(KeyPurpose.DEK), new byte[16]);
             default:
                 throw new GPException("Illegal SCP");
         }
@@ -325,7 +316,7 @@ class PlaintextKeys extends GPCardKeys {
                 } else
                     return deriveSessionKeySCP03(cardKeys.get(p), p, session_kdd);
             default:
-                throw new IllegalStateException("Illegal SCP");
+                throw new IllegalStateException("Unknown SCP");
         }
     }
 
@@ -366,28 +357,22 @@ class PlaintextKeys extends GPCardKeys {
         System.arraycopy(kdd, 4, derivationData, 12, 4);
 
         try {
-            Cipher cipher = Cipher.getInstance(GPCrypto.DES3_ECB_CIPHER);
-            cipher.init(Cipher.ENCRYPT_MODE, GPCrypto.des3key(cardKey));
-            return cipher.doFinal(derivationData);
+            return GPCrypto.des3_ecb(derivationData, cardKey);
         } catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
             throw new IllegalStateException("Can not calculate session keys", e);
-        } catch (InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
+        } catch (GeneralSecurityException e) {
             throw new RuntimeException("Session key calculation failed", e);
         }
     }
 
     private byte[] deriveSessionKeySCP02(byte[] cardKey, KeyPurpose p, byte[] sequence) {
         try {
-            Cipher cipher = Cipher.getInstance(GPCrypto.DES3_CBC_CIPHER);
             byte[] derivationData = new byte[16];
-            System.arraycopy(sequence, 0, derivationData, 2, 2);
+            // constant(2) | counter(2) | 0x00(12)
             System.arraycopy(SCP02_CONSTANTS.get(p), 0, derivationData, 0, 2);
-            cipher.init(Cipher.ENCRYPT_MODE, GPCrypto.des3key(cardKey), GPCrypto.iv_null_8);
-            return cipher.doFinal(derivationData);
-        } catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
-            throw new IllegalStateException("Session keys calculation failed.", e);
-        } catch (InvalidKeyException | IllegalBlockSizeException | BadPaddingException |
-                 InvalidAlgorithmParameterException e) {
+            System.arraycopy(sequence, 0, derivationData, 2, 2);
+            return GPCrypto.des3_cbc(derivationData, cardKey, new byte[8]);
+        } catch (GeneralSecurityException e) {
             throw new RuntimeException("Session keys calculation failed.", e);
         }
     }

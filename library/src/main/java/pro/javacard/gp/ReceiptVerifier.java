@@ -74,7 +74,7 @@ public abstract class ReceiptVerifier {
             byte[] card = get_receipt(data);
             byte[] confdata = get_confirmation_data(data);
 
-            byte[] my = GPCrypto.scp03_mac(aes_key, GPUtils.concatenate(confdata, context), 128);
+            byte[] my = GPCrypto.aes_cmac(aes_key, GPUtils.concatenate(confdata, context), 128);
             boolean verified = Arrays.equals(my, card);
             if (!verified) {
                 log.error("Receipt verification: {}", verified);

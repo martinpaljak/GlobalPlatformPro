@@ -25,9 +25,7 @@ import apdu4j.core.ResponseAPDU;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.crypto.Cipher;
 import javax.crypto.NoSuchPaddingException;
-import javax.crypto.spec.SecretKeySpec;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -79,6 +77,7 @@ class SCP02Wrapper extends SecureChannelWrapper {
                     rMac.write(command.getData());
                 }
             }
+
             if (!mac && !enc) {
                 return command;
             }
@@ -105,10 +104,7 @@ class SCP02Wrapper extends SecureChannelWrapper {
                 if (icv == null) {
                     icv = new byte[8];
                 } else if (icvEnc) {
-                    Cipher c = Cipher.getInstance(GPCrypto.DES_ECB_CIPHER);
-                    c.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(GPCrypto.resizeDES(macKey, 8), "DES"));
-                    // encrypts the future ICV ?
-                    icv = c.doFinal(icv);
+                    icv = GPCrypto.des_ecb(icv, macKey);
                 }
 
                 if (macModifiedAPDU) {
@@ -138,9 +134,7 @@ class SCP02Wrapper extends SecureChannelWrapper {
                 t.write(GPCrypto.pad80(origData, 8));
                 newLc += t.size() - origData.length;
 
-                Cipher c = Cipher.getInstance(GPCrypto.DES3_CBC_CIPHER);
-                c.init(Cipher.ENCRYPT_MODE, GPCrypto.des3key(encKey), GPCrypto.iv_null_8);
-                newData = c.doFinal(t.toByteArray());
+                newData = GPCrypto.des3_cbc(t.toByteArray(), encKey, new byte[8]);
                 t.reset();
             }
 
@@ -150,7 +144,7 @@ class SCP02Wrapper extends SecureChannelWrapper {
             t.write(origP1);
             t.write(origP2);
             if (newLc > 0) {
-                t.write(newLc);
+                t.write(newLc); // XXX: extended length
                 t.write(newData);
             }
             if (mac) {

@@ -22,7 +22,6 @@ package pro.javacard.gp;
 import apdu4j.core.CommandAPDU;
 import apdu4j.core.ResponseAPDU;
 
-import javax.crypto.Cipher;
 import javax.crypto.NoSuchPaddingException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -78,9 +77,7 @@ class SCP01Wrapper extends SecureChannelWrapper {
                 if (icv == null) {
                     icv = new byte[8];
                 } else if (icvEnc) {
-                    Cipher c = Cipher.getInstance(GPCrypto.DES3_ECB_CIPHER);
-                    c.init(Cipher.ENCRYPT_MODE, GPCrypto.des3key(macKey));
-                    icv = c.doFinal(icv);
+                    icv = GPCrypto.des3_ecb(icv, macKey);
                 }
 
                 if (preAPDU) {
@@ -94,7 +91,7 @@ class SCP01Wrapper extends SecureChannelWrapper {
                 t.write(newLc);
                 t.write(origData);
 
-                icv = GPCrypto.mac_3des(macKey, t.toByteArray(), icv);
+                icv = GPCrypto.mac_3des(t.toByteArray(), macKey, icv);
 
                 if (postAPDU) {
                     newCLA = setBits((byte) newCLA, (byte) 0x04);
@@ -117,9 +114,7 @@ class SCP01Wrapper extends SecureChannelWrapper {
 
                 newLc += t.size() - origData.length;
 
-                Cipher c = Cipher.getInstance(GPCrypto.DES3_CBC_CIPHER);
-                c.init(Cipher.ENCRYPT_MODE, GPCrypto.des3key(encKey), GPCrypto.iv_null_8);
-                newData = c.doFinal(t.toByteArray());
+                newData = GPCrypto.des3_cbc(t.toByteArray(), encKey, new byte[8]);
                 t.reset();
             }
 

@@ -173,7 +173,8 @@ public final class GPCrypto {
             // If payload is more than 8 bytes, do one pass of des_cbc of everything but the last 8 (padded) bytes
             // and use the rightmost 8 bytes of that as the IV for the full cbc.
             if (d.length > 8) {
-                iv = GPCrypto.des_cbc(Arrays.copyOf(d, d.length - 8), key, iv);
+                byte[] des = GPCrypto.des_cbc(Arrays.copyOf(d, d.length - 8), key, iv);
+                iv = Arrays.copyOfRange(des, des.length - 8, des.length);
             }
 
             // Do des3_cbc of either last or only 8 bytes with the IV depending on payload length

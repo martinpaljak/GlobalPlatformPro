@@ -61,6 +61,7 @@ public abstract class ReceiptVerifier {
         // XXX: the use of "log only" arguments, boolean function and exceptions is not nice. Refactor
         @Override
         boolean check(ResponseAPDU response, byte[] context) throws ReceiptVerificationException {
+            // Context is the concatenation of command parameters sent to the card before receiving the receipt.
             byte[] data = response.getData();
             if (data[0] == 0x00) {
                 log.debug("No receipt");
@@ -77,17 +78,18 @@ public abstract class ReceiptVerifier {
             byte[] my = GPCrypto.aes_cmac(aes_key, GPUtils.concatenate(confdata, context), 128);
             boolean verified = Arrays.equals(my, card);
             if (!verified) {
-                log.error("Receipt verification: {}", verified);
+                log.error("Receipt verification failed");
                 if (!log_only) {
                     throw new ReceiptVerificationException("Receipt verification failed");
                 }
             } else {
-                log.info("Receipt verification: {}", verified);
+                log.info("Receipt verified successfully");
             }
             return verified;
         }
     }
 
+    // Verifier that never complains.
     static public class NullVerifier extends ReceiptVerifier {
 
         public NullVerifier() {
@@ -99,6 +101,7 @@ public abstract class ReceiptVerifier {
         }
     }
 
+    // Context data generators for different operatings and receipt types.
     public static byte[] load(AID pkg, AID sd) {
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();

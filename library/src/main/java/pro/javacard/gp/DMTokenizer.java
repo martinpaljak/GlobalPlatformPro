@@ -109,27 +109,10 @@ public abstract class DMTokenizer {
 
         @Override
         protected byte[] getToken(CommandAPDU apdu) {
-            int keylen = (privateKey.getModulus().bitLength() + 7) / 8;
             byte[] dtbs = dtbs(apdu);
 
             try {
-                final byte[] token;
-                if (keylen == 128) {
-                    // B.3.1 Scheme1 of RSA keys up to 1k
-                    final Signature signer = Signature.getInstance("SHA1withRSA");
-                    signer.initSign(privateKey);
-                    signer.update(dtbs);
-                    token = signer.sign();
-                } else {
-                    // B.3.2 Scheme2 of RSA keys above 1k
-                    MGF1ParameterSpec mgf = MGF1ParameterSpec.SHA256;
-                    PSSParameterSpec spec = new PSSParameterSpec(mgf.getDigestAlgorithm(), "MGF1", mgf, 32, PSSParameterSpec.TRAILER_FIELD_BC);
-                    Signature signer = Signature.getInstance("RSASSA-PSS");
-                    signer.setParameter(spec);
-                    signer.initSign(privateKey);
-                    signer.update(dtbs);
-                    token = signer.sign();
-                }
+                final byte[] token = GPCrypto.rsa_sign(privateKey, dtbs);
                 log.trace("DM token: {}", HexUtils.bin2hex(token));
                 return token;
             } catch (GeneralSecurityException e) {

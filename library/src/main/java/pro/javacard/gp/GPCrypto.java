@@ -47,6 +47,9 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.cert.CertificateException;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.spec.MGF1ParameterSpec;
+import java.security.spec.PSSParameterSpec;
 import java.util.Arrays;
 
 // Various cryptographic primitives used for secure channel or plaintext keys
@@ -262,6 +265,34 @@ public final class GPCrypto {
 
     public static Key aeskey(byte[] v) {
         return new SecretKeySpec(v, "AES");
+    }
+
+    public static byte[] rsa_sign(RSAPrivateKey key, byte[] dtbs) throws GeneralSecurityException {
+        int keylen = (key.getModulus().bitLength() + 7) / 8;
+        if (keylen == 128) {
+            return rsa_scheme1(key, dtbs);
+        } else {
+            return rsa_scheme2(key, dtbs);
+        }
+    }
+
+    public static byte[] rsa_scheme2(RSAPrivateKey key, byte[] dtbs) throws GeneralSecurityException {
+        // B.3.2 Scheme2 of RSA keys above 1k
+        MGF1ParameterSpec mgf = MGF1ParameterSpec.SHA256;
+        PSSParameterSpec spec = new PSSParameterSpec(mgf.getDigestAlgorithm(), "MGF1", mgf, 32, PSSParameterSpec.TRAILER_FIELD_BC);
+        Signature signer = Signature.getInstance("RSASSA-PSS");
+        signer.setParameter(spec);
+        signer.initSign(key);
+        signer.update(dtbs);
+        return signer.sign();
+    }
+
+    public static byte[] rsa_scheme1(RSAPrivateKey key, byte[] dtbs) throws GeneralSecurityException {
+        // B.3.1 Scheme1 of RSA keys up to 1k
+        final Signature signer = Signature.getInstance("SHA1withRSA");
+        signer.initSign(key);
+        signer.update(dtbs);
+        return signer.sign();
     }
 
     // Get a public key from a PEM file, either public key or keypair

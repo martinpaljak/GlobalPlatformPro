@@ -15,36 +15,17 @@ import java.util.Arrays;
 
 public class DAPSigner {
 
-
     private static final Logger log = LoggerFactory.getLogger(DAPSigner.class);
 
     private DAPSigner() {
     }
 
     public static byte[] sign(CAPFile cap, PrivateKey key, GPData.LFDBH hash) throws GeneralSecurityException {
+        byte[] dtbs = cap.getLoadFileDataHash(hash.algo);
         if (key instanceof RSAPrivateKey) {
             RSAPrivateKey rkey = (RSAPrivateKey) key;
             log.info("Signing DAP with {} RSA and {}", rkey.getModulus().bitLength(), hash);
-            if ((rkey.getModulus().bitLength() + 7) / 8 == 128) {
-                // B.3.1 Scheme1 of RSA keys up to 1k
-                if (!Arrays.asList(GPData.LFDBH.SHA1, GPData.LFDBH.SHA256).contains(hash))
-                    throw new IllegalArgumentException("Unsupported hash for DAP: " + hash);
-                final Signature signer = Signature.getInstance(String.format("%swithRSA", hash.algo.replace("-", "")));
-                signer.initSign(key);
-                signer.update(cap.getLoadFileDataHash(hash.algo));
-                byte[] dap = signer.sign();
-                return dap;
-            } else {
-                // B.3.2 Scheme2 of RSA keys above 1k
-                MGF1ParameterSpec mgf = MGF1ParameterSpec.SHA256;
-                PSSParameterSpec spec = new PSSParameterSpec(mgf.getDigestAlgorithm(), "MGF1", mgf, 32, PSSParameterSpec.TRAILER_FIELD_BC);
-                Signature signer = Signature.getInstance("RSASSA-PSS");
-                signer.setParameter(spec);
-                signer.initSign(key);
-                signer.update(cap.getLoadFileDataHash(hash.algo));
-                byte[] dap = signer.sign();
-                return dap;
-            }
+            return GPCrypto.rsa_sign(rkey, dtbs);
         } else if (key instanceof ECPrivateKey) {
             // B.4.3 ECDSA of GPC 2.3.1
             Signature signer = Signature.getInstance("SHA256withECDSA");

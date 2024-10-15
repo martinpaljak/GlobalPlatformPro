@@ -59,6 +59,7 @@ It's that simple!
    - receipt verification
    - PACE authentication and secure channel
    - Key Diversification templates
+   - S16 mode for SCP03
    - many bugs fixed, UX improved.
 
 # Start from [Getting Started guide](https://github.com/martinpaljak/GlobalPlatformPro/wiki/Getting-Started) in the wiki

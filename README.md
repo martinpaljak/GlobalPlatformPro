@@ -54,14 +54,13 @@ It's that simple!
 
 ## NEWS &middot; `Q4 2024`
  - [JavaCard Buyer's Guide](https://github.com/martinpaljak/GlobalPlatformPro/wiki/JavaCard-Buyer%27s-Guide) has been updated to 2024
- - Upcoming GlobalPlatformPro v24.10.XX release with many new features
+ - GlobalPlatformPro v24.10.15 released with many new features
    - enhanced support for Delegated Management and DAP keys
    - receipt verification
    - PACE authentication and secure channel
    - Key Diversification templates
    - S16 mode for SCP03
    - many bugs fixed, UX improved.
-   - currently available in `master` branch
 
 # Start from [Getting Started guide](https://github.com/martinpaljak/GlobalPlatformPro/wiki/Getting-Started) in the wiki
 

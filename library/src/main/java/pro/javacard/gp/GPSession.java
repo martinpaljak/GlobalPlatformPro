@@ -441,7 +441,7 @@ public class GPSession {
                 }
                 if ((i & 0x01) == 0x01) {
                     if (!s16) {
-                        logger.warn("S16 mode requested but not reported by card!");
+                        logger.warn("S16 mode reported by card but not requested!");
                     }
                     update_len += 16; // +8 for both challenges
                 }

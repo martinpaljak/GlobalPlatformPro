@@ -289,8 +289,7 @@ class PlaintextKeys extends GPCardKeys {
                 byte[] otherkey = other.cardKeys.get(p);
                 // Pad with random
                 int n = otherkey.length % 16 + 1;
-                byte[] plaintext = new byte[n * otherkey.length];
-                GPCrypto.random.nextBytes(plaintext);
+                byte[] plaintext = GPCrypto.random(n * otherkey.length);
                 System.arraycopy(otherkey, 0, plaintext, 0, otherkey.length);
                 // encrypt
                 return GPCrypto.aes_cbc(plaintext, cardKeys.get(KeyPurpose.DEK), new byte[16]);

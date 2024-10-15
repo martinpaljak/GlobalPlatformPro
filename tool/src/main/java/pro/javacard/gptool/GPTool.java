@@ -371,7 +371,8 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                 // IMPORTANT PLACE. Possibly brick the card now, if keys don't match.
 
                 try {
-                    gp.openSecureChannel(keys, null, null, mode);
+                    // S16 will be gracefully tried if default (S8) returns wrong length, but can be forced by challenge length
+                    gp.openSecureChannel(keys, null, args.has(OPT_S16) ? GPCrypto.random(16) : null, mode);
                 } catch (GPException e) {
                     System.err.println("Failed to open secure channel: " + e.getMessage() + "\nRead more from https://github.com/martinpaljak/GlobalPlatformPro/wiki/Keys");
                     return 1;

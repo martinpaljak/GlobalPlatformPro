@@ -68,15 +68,21 @@ public final class GPCrypto {
     static final String AES_CBC_CIPHER = "AES/CBC/NoPadding";
 
     // Shared random
-    public static final SecureRandom random;
+    private static final SecureRandom rnd;
 
     static {
         try {
-            random = SecureRandom.getInstance("SHA1PRNG");
-            random.nextBytes(new byte[2]); // Force seeding
+            rnd = SecureRandom.getInstance("SHA1PRNG");
+            rnd.nextBytes(new byte[2]); // Force seeding
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("Need SecureRandom to run");
         }
+    }
+
+    public static byte[] random(int num) {
+        byte[] bytes = new byte[num];
+        rnd.nextBytes(bytes);
+        return bytes;
     }
 
     public static byte[] pad80(byte[] text, int blocksize) {

@@ -41,6 +41,8 @@ abstract class GPCommandLineInterface {
     protected static OptionSpec<Void> OPT_HELP = parser.acceptsAll(Arrays.asList("h", "?", "help"), "Shows this help").forHelp();
     protected static OptionSpec<AID> OPT_CONNECT = parser.acceptsAll(Arrays.asList("c", "connect"), "Connect to app/domain").withRequiredArg().ofType(AID.class);
     protected static OptionSpec<Void> OPT_DEBUG = parser.acceptsAll(Arrays.asList("d", "debug"), "Show PC/SC and APDU trace");
+    protected static OptionSpec<Void> OPT_S16 = parser.accepts("s16", "Use SCP03 S16 mode");
+
     protected static OptionSpec<Void> OPT_VERBOSE = parser.acceptsAll(Arrays.asList("v", "verbose"), "Be verbose about operations");
     protected static OptionSpec<String> OPT_READER = parser.acceptsAll(Arrays.asList("r", "reader"), "Use specific reader").withOptionalArg().describedAs("reader");
     protected static OptionSpec<Void> OPT_LIST = parser.acceptsAll(Arrays.asList("l", "list"), "List the contents of the card");
@@ -69,6 +71,9 @@ abstract class GPCommandLineInterface {
     protected static OptionSpec<AID> OPT_DELETE = parser.accepts("delete", "Delete applet/package").withRequiredArg().ofType(AID.class);
 
     protected static OptionSpec<Void> OPT_DEFAULT = parser.accepts("default", "Indicate Default Selected privilege");
+    protected static OptionSpec<Void> OPT_DEFAULT_CONTACT = parser.accepts("default-contact", "Default Selected on contact interface");
+    protected static OptionSpec<Void> OPT_DEFAULT_CONTACTLESS = parser.accepts("default-contactless", "Default Selected on contactless interface");
+
     protected static OptionSpec<AID> OPT_DOMAIN = parser.accepts("domain", "Create supplementary security domain").withRequiredArg().ofType(AID.class);
 
     // Card an applet lifecycle management

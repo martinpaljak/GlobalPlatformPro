@@ -255,10 +255,10 @@ public class GPSession {
 
         // If the ISD is locked, log it, but do not stop
         if (resp.getSW() == 0x6283) {
-            logger.warn("SELECT ISD returned 6283 - CARD_LOCKED");
+            logger.warn("SELECT returned 6283 - CARD_LOCKED");
         }
 
-        GPException.check(resp, "Could not SELECT Security Domain", 0x6283);
+        GPException.check(resp, "Could not SELECT", 0x6283);
         parse_select_response(resp.getData());
     }
 
@@ -309,10 +309,10 @@ public class GPSession {
                             // SCP version
                             logger.debug("Auto-detected SCP version: {}", GPSecureChannelVersion.valueOf(data[7] & 0xFF, data[8] & 0xFF));
                         } else {
-                            logger.warn("Unrecognized card recgnition data: {}", HexUtils.bin2hex(oidtag.getBytesValue()));
+                            logger.warn("Unrecognized card recognition data: {}", HexUtils.bin2hex(oidtag.getBytesValue()));
                         }
                     } else {
-                        logger.warn("Not global platform OID");
+                        logger.warn("No Global Platform OID found");
                     }
                 }
 
@@ -368,18 +368,25 @@ public class GPSession {
     }
 
     /*
-     * Establishes a secure channel to the security domain or application
+     * Establishes a secure channel (INITIALIZE UPDATE + EXTERNAL AUTHENTICATE) to a security domain or application
      */
     public void openSecureChannel(GPCardKeys keys, GPSecureChannelVersion scp, byte[] host_challenge, EnumSet<APDUMode> securityLevel)
             throws IOException, GPException {
 
         normalizeSecurityLevel(securityLevel);
 
-        logger.info("Using card master keys with version {} for setting up session with {} ", keys.getKeyInfo().getVersion(), securityLevel.stream().map(Enum::name).collect(Collectors.joining(", ")));
+        logger.info("Using card master key(s) with version {} for setting up session with {} ", keys.getKeyInfo().getVersion(), securityLevel.stream().map(Enum::name).collect(Collectors.joining(", ")));
+
+        // XXX: more explicit SCP indication from tool
+        boolean s16 = (scp != null && scp.scp == SCP03 && (scp.i & 0x01) == 0x01) || (host_challenge != null && host_challenge.length == 16);
+
+        if (s16) {
+            logger.debug("Using S16 mode");
+        }
+
         // DWIM: Generate host challenge
         if (host_challenge == null) {
-            host_challenge = new byte[8];
-            GPCrypto.random.nextBytes(host_challenge);
+            host_challenge = GPCrypto.random(s16 ? 16 : 8);
             logger.trace("Generated host challenge: " + HexUtils.bin2hex(host_challenge));
         }
 
@@ -391,6 +398,14 @@ public class GPSession {
         ResponseAPDU response = channel.transmit(initUpdate);
         int sw = response.getSW();
 
+        // XXX: Handle 6700 and try again with S16 mode
+        if (sw == 0x6700 && !s16) {
+            logger.warn("Wrong length with implicit S8 mode. Hoping for S16 mode and trying again.");
+            s16 = true;
+            host_challenge = GPCrypto.random(s16 ? 16 : 8);
+            response = channel.transmit(new CommandAPDU(CLA_GP, INS_INITIALIZE_UPDATE, keys.getKeyInfo().getVersion(), init_p2, host_challenge, 256));
+        }
+
         // Detect and report locked cards in a more sensible way.
         if ((sw == SW_SECURITY_STATUS_NOT_SATISFIED) || (sw == SW_AUTHENTICATION_METHOD_BLOCKED)) {
             throw new GPException(sw, "INITIALIZE UPDATE failed, card LOCKED?");
@@ -400,14 +415,51 @@ public class GPSession {
         GPException.check(response, "INITIALIZE UPDATE failed");
         byte[] update_response = response.getData();
 
-        // Verify response length (SCP01/SCP02 + SCP03 + SCP03 w/ pseudorandom)
-        if (update_response.length != 28 && update_response.length != 29 && update_response.length != 32) {
+        // SCP01:  kdd (10) | key info (2) | card challenge (8) | card cryptogram (8) = 28
+        // SCP02:  kdd (10) | key info (2) | seq (2) | card challenge (6) | card cryptogram (8) = 28
+        // SCP03 S8:  kdd (10) | key info (3) | card challenge (8) | card cryptogram (8) | seq (3, optional) = 29 (32)
+        // SCP03 S16: kdd (10) | key info (3) | card challenge (16) | card cryptogram (16) | seq (3, optional) = 45 (48)
+        // key info = kvn | scp | i (scp03) or kvn | scp (scp01/02)
+
+        // Minimal length, as we look into fixed offsets
+        if (update_response.length < 28) {
+            throw new GPDataException("INITIALIZE UPDATE response with too small length", update_response);
+        }
+
+        int update_len = 0;
+
+        switch (update_response[11]) {
+            case 0x01:
+            case 0x02:
+                update_len = 28;
+                break;
+            case 0x03:
+                update_len = 29;
+                int i = update_response[12];
+                if ((i & 0x10) == 0x10) {
+                    update_len += 3;
+                }
+                if ((i & 0x01) == 0x01) {
+                    if (!s16) {
+                        logger.warn("S16 mode requested but not reported by card!");
+                    }
+                    update_len += 16; // +8 for both challenges
+                }
+                break;
+            default:
+                throw new GPDataException("Unsupported SCP version", update_response);
+        }
+
+        // Verify response length (SCP01/SCP02 + SCP03 + SCP03 w/ pseudorandom + SCP03 w/ S16)
+        if (update_len != update_response.length) {
             throw new GPException("Invalid INITIALIZE UPDATE response length: " + update_response.length);
         }
+
         // Parse the response
         int offset = 0;
         byte[] diversification_data = Arrays.copyOfRange(update_response, 0, 10);
         offset += diversification_data.length;
+
         // Get used key version from response
         scpKeyVersion = update_response[offset] & 0xFF;
         offset++;
@@ -425,26 +477,22 @@ public class GPSession {
         }
 
         // get card challenge
-        byte[] card_challenge = Arrays.copyOfRange(update_response, offset, offset + 8);
+        byte[] card_challenge = Arrays.copyOfRange(update_response, offset, offset + (s16 ? 16 : 8));
         offset += card_challenge.length;
 
         // get card cryptogram
-        byte[] card_cryptogram = Arrays.copyOfRange(update_response, offset, offset + 8);
+        byte[] card_cryptogram = Arrays.copyOfRange(update_response, offset, offset + (s16 ? 16 : 8));
         offset += card_cryptogram.length;
 
         // Extract ssc
         final byte[] seq;
         if (this.scpVersion.scp == SCP02) {
             seq = Arrays.copyOfRange(update_response, 12, 14);
-        } else if (this.scpVersion.scp == SCP03 && update_response.length == 32) {
-            seq = Arrays.copyOfRange(update_response, offset, 32);
-            offset += seq.length;
+        } else if (this.scpVersion.scp == SCP03 && (this.scpVersion.i & 0x10) == 0x10) {
+            // XXX instead of throwing if missing, show an error.
+            seq = Arrays.copyOfRange(update_response, offset, offset + 3);
         } else {
             seq = null;
-        }
-
-        if (offset != update_response.length) {
-            logger.error("Unhandled data in INITIALIZE UPDATE response: {}", HexUtils.bin2hex(Arrays.copyOfRange(update_response, offset, update_response.length)));
         }
 
         logger.debug("KDD: {}", HexUtils.bin2hex(diversification_data));
@@ -466,23 +514,23 @@ public class GPSession {
             logger.warn("SCP01 does not support RMAC, removing.");
         }
 
-        // Give the card key a chance to be automatically diversifed based on KDD from INITIALIZE UPDATE
+        // Give the card key a chance to be automatically diversified based on KDD from INITIALIZE UPDATE
         cardKeys = keys.diversify(this.scpVersion.scp, diversification_data);
 
         logger.info("Diversified card keys: {}", cardKeys);
 
-        // Check pseudorandom card challenge. This must happen _after_ key diversification.
+        // Check pseudorandom card challenge. NOTE: this MUST happen _after_ key diversification.
         if (scpVersion.scp == SCP03 && (scpVersion.i & 0x10) == 0x10) {
             byte[] ctx = GPUtils.concatenate(seq, this.sdAID.getBytes());
             logger.trace("Challenge calculation context: {}", HexUtils.bin2hex(ctx));
-            byte[] my_card_challenge = keys.scp3_kdf(KeyPurpose.ENC, GPCrypto.scp03_kdf_blocka((byte) 0x02, 64), ctx, 8);
+            // XXX: remove double length in kdf invocation and harmonize bits vs bytes
+            byte[] my_card_challenge = keys.scp3_kdf(KeyPurpose.ENC, GPCrypto.scp03_kdf_blocka((byte) 0x02, s16 ? 128 : 64), ctx, s16 ? 16 : 8);
             if (!Arrays.equals(my_card_challenge, card_challenge)) {
                 logger.warn("Pseudorandom card challenge does not match expected: {} vs {}", HexUtils.bin2hex(my_card_challenge), HexUtils.bin2hex(card_challenge));
             } else {
                 logger.debug("Pseudorandom card challenge matches expected value: {}", HexUtils.bin2hex(my_card_challenge));
             }
         }
-
 
         // Derive session keys
         if (this.scpVersion.scp == GPSecureChannelVersion.SCP.SCP02) {
@@ -502,7 +550,7 @@ public class GPSession {
         if (this.scpVersion.scp == SCP01 || this.scpVersion.scp == SCP02) {
             my_card_cryptogram = GPCrypto.mac_3des(cntx, encKey, new byte[8]);
         } else {
-            my_card_cryptogram = GPCrypto.scp03_kdf(macKey, (byte) 0x00, cntx, 64);
+            my_card_cryptogram = GPCrypto.scp03_kdf(macKey, (byte) 0x00, cntx, s16 ? 128 : 64);
         }
 
         // This is the main check for possible successful authentication.
@@ -527,8 +575,8 @@ public class GPSession {
                 wrapper = new SCP02Wrapper(encKey, macKey, rmacKey, blockSize);
                 break;
             case SCP03:
-                host_cryptogram = GPCrypto.scp03_kdf(macKey, (byte) 0x01, cntx, 64);
-                wrapper = new SCP03Wrapper(encKey, macKey, rmacKey, blockSize);
+                host_cryptogram = GPCrypto.scp03_kdf(macKey, (byte) 0x01, cntx, s16 ? 128 : 64);
+                wrapper = new SCP03Wrapper(encKey, macKey, rmacKey, blockSize, s16);
                 break;
             default:
                 throw new IllegalStateException("Unknown SCP");
@@ -927,8 +975,7 @@ public class GPSession {
             if (type == GPKey.AES) {
                 // Pad with random
                 int n = other.length % 16 + 1;
-                byte[] plaintext = new byte[n * other.length];
-                GPCrypto.random.nextBytes(plaintext);
+                byte[] plaintext = GPCrypto.random(n * other.length);
                 System.arraycopy(other, 0, plaintext, 0, other.length);
 
                 byte[] cgram = dek.encrypt(plaintext, sessionContext);

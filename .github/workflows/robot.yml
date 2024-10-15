@@ -1,13 +1,13 @@
 on:
   push:
     branches:
-    - master
-    - next
+      - master
+      - next
     tags:
-    - 'v*'
+      - 'v*'
   pull_request:
     branches:
-    - master
+      - master
 name: Build robot
 jobs:
   build:
@@ -19,6 +19,9 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # To make git describe give the intended output
+          fetch-tags: true
       - name: Setup java
         uses: actions/setup-java@v4
         with:

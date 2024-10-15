@@ -7,7 +7,7 @@
     <parent>
         <groupId>com.github.martinpaljak</groupId>
         <artifactId>gppro</artifactId>
-        <version>23.08.10-SNAPSHOT</version>
+        <version>24.10.15</version>
     </parent>
 
     <artifactId>gptool</artifactId>

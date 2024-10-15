@@ -7,7 +7,7 @@
         <artifactId>metacard</artifactId>
         <version>24.09.25</version>
     </parent>
-    <version>23.08.10-SNAPSHOT</version>
+    <version>24.10.15</version>
     <artifactId>gppro</artifactId>
     <packaging>pom</packaging>
     <name>GlobalPlatformPro</name>
@@ -15,7 +15,7 @@
     <description>Manage applets and keys on JavaCard-s like a pro</description>
     <inceptionYear>2013</inceptionYear>
     <properties>
-        <project.build.outputTimestamp>2024-04-08T12:09:56Z</project.build.outputTimestamp>
+        <project.build.outputTimestamp>2024-10-15T09:06:28Z</project.build.outputTimestamp>
     </properties>
     <organization>
         <name>Martin Paljak and contributors</name>

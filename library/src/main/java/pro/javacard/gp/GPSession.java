@@ -204,6 +204,10 @@ public class GPSession {
     public static String getVersion() {
         Properties prop = new Properties();
         try (InputStream versionfile = GPSession.class.getResourceAsStream("git.properties")) {
+            // if built from targzip and/or with -Dmaven.gitcommitid.skip=true
+            if (versionfile == null) {
+                return "unsupported";
+            }
             prop.load(versionfile);
             return prop.getProperty("git.commit.id.describe", "unknown-development");
         } catch (IOException e) {

@@ -1060,6 +1060,14 @@ public class GPSession {
         CommandAPDU command = new CommandAPDU(CLA_GP, INS_PUT_KEY, P1, P2, bo.toByteArray());
         ResponseAPDU response = transmit(command);
         GPException.check(response, "PUT KEY failed");
+        // TODO: compare and complain
+        if (response.getData().length > 1) {
+            byte [] resp = response.getData();
+            int kv = resp[0] & 0xFF;
+            byte[] kcvs = Arrays.copyOfRange(resp, 1, resp.length);
+            List<String> kcvstrings = GPUtils.splitArray(kcvs, 3).stream().map(HexUtils::bin2hex).collect(Collectors.toList());
+            logger.info("Card stored keys with KVN {} and with KCV-s: {}", GPUtils.intString(kv), String.join(", ", kcvstrings));
+        }
     }
 
 
@@ -1092,7 +1100,7 @@ public class GPSession {
             bo.write(0xB0); // EC Public key
             bo.write(key.length);
             bo.write(key);
-            bo.write(0xF0);
+            bo.write(0xF0); // ECC key parameters reference
             bo.write(0x01);
             bo.write(0x00); // P-256
             bo.write(0x00); // No KCV
@@ -1128,10 +1136,12 @@ public class GPSession {
         CommandAPDU command = new CommandAPDU(CLA_GP, INS_PUT_KEY, replace ? version : 0x00, 0x01, bo.toByteArray(), 256);
         ResponseAPDU response = transmit(command);
         GPException.check(response, "PUT KEY failed");
-        if (response.getData().length == 4) {
-            int kv = response.getData()[0] & 0xFF;
-            byte[] kcv = Arrays.copyOfRange(response.getData(), 1, 4);
-            logger.info("Card stored key {} with KCV {}", GPUtils.intString(kv), HexUtils.bin2hex(kcv));
+        if (response.getData().length > 1) {
+            byte [] resp = response.getData();
+            int kv = resp[0] & 0xFF;
+            byte[] kcvs = Arrays.copyOfRange(resp, 1, resp.length);
+            List<String> kcvstrings = GPUtils.splitArray(kcvs, 3).stream().map(HexUtils::bin2hex).collect(Collectors.toList());
+            logger.info("Card stored key(s) {} with KCV(s) {}", GPUtils.intString(kv), String.join(", ", kcvstrings));
         }
     }
 

@@ -8,7 +8,12 @@ on:
   pull_request:
     branches:
       - master
+
+permissions:
+  contents: write
+
 name: Build robot
+
 jobs:
   build:
     runs-on: ubuntu-24.04
@@ -32,7 +37,7 @@ jobs:
       - name: Release
         if: startsWith(github.ref, 'refs/tags/v') && matrix.java == '11'
         id: create_release
-        uses: softprops/action-gh-release@v2.0.8
+        uses: softprops/action-gh-release@v2.2.1
         with:
           files: |
             tool/target/gp.jar
@@ -45,7 +50,7 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_KEY }}
       - name: Add known host key
-        run: ssh-keyscan javacard.pro >> ~/.ssh/known_hosts
+        run: ssh-keyscan mvn.javacard.pro >> ~/.ssh/known_hosts
       - name: Deploy package
         if: (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/next' || github.ref == 'refs/heads/master') && matrix.java == '11'
         run: ./mvnw -B deploy

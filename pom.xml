@@ -5,7 +5,7 @@
     <parent>
         <groupId>com.github.martinpaljak</groupId>
         <artifactId>metacard</artifactId>
-        <version>24.09.25</version>
+        <version>25.03.11</version>
     </parent>
     <version>24.10.16-SNAPSHOT</version>
     <artifactId>gppro</artifactId>
@@ -72,12 +72,12 @@
             <dependency>
                 <groupId>com.github.martinpaljak</groupId>
                 <artifactId>apdu4j-core</artifactId>
-                <version>24.09.26.2</version>
+                <version>25.03.11</version>
             </dependency>
             <dependency>
                 <groupId>com.github.martinpaljak</groupId>
                 <artifactId>apdu4j-pcsc</artifactId>
-                <version>24.09.26.2</version>
+                <version>25.03.11</version>
             </dependency>
             <dependency>
                 <groupId>com.payneteasy</groupId>

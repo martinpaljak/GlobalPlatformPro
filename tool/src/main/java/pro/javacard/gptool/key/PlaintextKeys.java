@@ -17,7 +17,7 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-package pro.javacard.gptool;
+package pro.javacard.gptool.key;
 
 import apdu4j.core.HexUtils;
 import org.slf4j.Logger;
@@ -33,11 +33,11 @@ import static pro.javacard.gp.GPSecureChannelVersion.SCP.*;
 
 // Handles plaintext card keys.
 // Supports diversification of card keys with a few known algorithms.
-class PlaintextKeys extends GPCardKeys {
+public class PlaintextKeys extends GPCardKeys {
     private static final Logger logger = LoggerFactory.getLogger(PlaintextKeys.class);
 
     // After diversify() we know for which protocol we have keys for, unless known before
-    static final byte[] defaultKeyBytes = HexUtils.hex2bin("404142434445464748494A4B4C4D4E4F");
+    public static final byte[] defaultKeyBytes = HexUtils.hex2bin("404142434445464748494A4B4C4D4E4F");
 
     // Derivation constants for session keys
     public static final Map<KeyPurpose, byte[]> SCP02_CONSTANTS;
@@ -70,7 +70,7 @@ class PlaintextKeys extends GPCardKeys {
     }
 
     // If diverisification is to be used
-    String kdf_template;
+    public String kdf_template;
 
     // Keyset version
     private int version = 0x00;

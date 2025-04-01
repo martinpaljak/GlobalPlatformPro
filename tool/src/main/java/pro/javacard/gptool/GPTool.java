@@ -36,6 +36,7 @@ import pro.javacard.capfile.CAPFile;
 import pro.javacard.gp.*;
 import pro.javacard.gp.GPRegistryEntry.Privilege;
 import pro.javacard.gp.GPSession.APDUMode;
+import pro.javacard.gptool.key.PlaintextKeys;
 import pro.javacard.pace.AESSecureChannel;
 import pro.javacard.pace.PACE;
 import pro.javacard.pace.PACEException;

@@ -70,7 +70,7 @@ public class PlaintextKeys extends GPCardKeys {
     }
 
     // If diverisification is to be used
-    public String kdf_template;
+    private String kdf_template = null;
 
     // Keyset version
     private int version = 0x00;
@@ -420,6 +420,10 @@ public class PlaintextKeys extends GPCardKeys {
         if (this.kdf_template != null)
             throw new IllegalStateException("KDF already set");
         this.kdf_template = template;
+    }
+
+    public String getDiversifier() {
+        return kdf_template;
     }
 
     @Override

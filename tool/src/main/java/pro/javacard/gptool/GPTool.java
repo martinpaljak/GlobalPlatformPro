@@ -848,8 +848,8 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                         PlaintextKeys pk = (PlaintextKeys) newKeys;
                         if (pk.getMasterKey().isPresent())
                             System.out.println(gp.getAID() + " locked with: " + HexUtils.bin2hex(pk.getMasterKey().get()));
-                        if (pk.kdf_template != null)
-                            System.out.println("Keys were diversified with " + pk.kdf_template + " and " + HexUtils.bin2hex(kdd));
+                        if (pk.getDiversifier() != null)
+                            System.out.println("Keys were diversified with " + pk.getDiversifier() + " and " + HexUtils.bin2hex(kdd));
                         System.out.println("Write this down, DO NOT FORGET/LOSE IT!");
                     } else {
                         System.out.println("Card locked with new keys.");

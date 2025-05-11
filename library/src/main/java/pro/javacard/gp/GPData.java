@@ -389,12 +389,12 @@ public final class GPData {
 
     public static String oid2string(byte[] oid) {
         logger.trace("Parsing {} as OID", HexUtils.bin2hex(oid));
-        // XXX: Hardcoded to avoid issue in bc-java 1.78+
         // See https://github.com/bcgit/bc-java/issues/1758
-        if (Arrays.equals(HexUtils.hex2bin("2A864886FC6B048000"), oid)) {
-            return "1.2.840.114283.4.0";
-        }
+        // BC 1.78 and 1.79 were affected.
+        // 2A864886FC6B048000 would throw exception instead of returning "1.2.840.114283.4.0" without this
+        System.setProperty("org.bouncycastle.asn1.allow_wrong_oid_enc", "true");
         ASN1ObjectIdentifier realoid = ASN1ObjectIdentifier.fromContents(oid);
+        System.clearProperty("org.bouncycastle.asn1.allow_wrong_oid_enc");
         if (realoid == null)
             throw new IllegalArgumentException("Could not parse OID from " + HexUtils.bin2hex(oid));
         return realoid.toString();

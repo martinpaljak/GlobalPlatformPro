@@ -7,6 +7,7 @@ import pro.javacard.gp.CardKeysProvider;
 import pro.javacard.gp.GPCardKeys;
 import pro.javacard.gp.GPCrypto;
 import pro.javacard.gp.GPSecureChannelVersion;
+import pro.javacard.gptool.keys.PlaintextKeys;
 
 import java.util.Optional;
 

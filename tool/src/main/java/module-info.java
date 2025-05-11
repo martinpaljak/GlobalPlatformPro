@@ -1,7 +1,7 @@
 // https://stackoverflow.com/a/67895919/44289
 @SuppressWarnings({"requires-automatic"})
 module gptool {
-    requires pro.javacard.globalplatform;
+    requires transitive pro.javacard.globalplatform;
     requires pro.javacard.pace;
     requires java.smartcardio;
     requires jopt.simple;
@@ -14,4 +14,6 @@ module gptool {
     requires org.bouncycastle.provider;
     requires org.bouncycastle.pkix;
     requires org.slf4j;
+
+    exports pro.javacard.gptool.keys;
 }

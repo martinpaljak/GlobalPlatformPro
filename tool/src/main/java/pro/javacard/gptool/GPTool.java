@@ -36,6 +36,7 @@ import pro.javacard.capfile.CAPFile;
 import pro.javacard.gp.*;
 import pro.javacard.gp.GPRegistryEntry.Privilege;
 import pro.javacard.gp.GPSession.APDUMode;
+import pro.javacard.gptool.keys.PlaintextKeys;
 import pro.javacard.pace.AESSecureChannel;
 import pro.javacard.pace.PACE;
 import pro.javacard.pace.PACEException;
@@ -340,7 +341,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                         System.err.println("Error: no keys given");
                         return 1;
                     } else
-                        System.err.println("# Warning: no keys given, defaulting to " + HexUtils.bin2hex(PlaintextKeys.defaultKeyBytes));
+                        System.err.println("# Warning: no keys given, defaulting to " + HexUtils.bin2hex(PlaintextKeys.DEFAULT_KEY()));
                 }
                 keys = cliKeys.or(() -> envKeys).orElse(PlaintextKeys.defaultKey());
             }
@@ -847,8 +848,8 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                         PlaintextKeys pk = (PlaintextKeys) newKeys;
                         if (pk.getMasterKey().isPresent())
                             System.out.println(gp.getAID() + " locked with: " + HexUtils.bin2hex(pk.getMasterKey().get()));
-                        if (pk.kdf_template != null)
-                            System.out.println("Keys were diversified with " + pk.kdf_template + " and " + HexUtils.bin2hex(kdd));
+                        if (pk.getTemplate() != null)
+                            System.out.println("Keys were diversified with " + pk.getTemplate() + " and " + HexUtils.bin2hex(kdd));
                         System.out.println("Write this down, DO NOT FORGET/LOSE IT!");
                     } else {
                         System.out.println("Card locked with new keys.");

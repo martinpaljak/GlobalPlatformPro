@@ -17,7 +17,7 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-package pro.javacard.gptool;
+package pro.javacard.gptool.keys;
 
 import apdu4j.core.HexUtils;
 import org.slf4j.Logger;
@@ -33,11 +33,15 @@ import static pro.javacard.gp.GPSecureChannelVersion.SCP.*;
 
 // Handles plaintext card keys.
 // Supports diversification of card keys with a few known algorithms.
-class PlaintextKeys extends GPCardKeys {
+public class PlaintextKeys extends GPCardKeys {
     private static final Logger logger = LoggerFactory.getLogger(PlaintextKeys.class);
 
     // After diversify() we know for which protocol we have keys for, unless known before
-    static final byte[] defaultKeyBytes = HexUtils.hex2bin("404142434445464748494A4B4C4D4E4F");
+    private static final byte[] defaultKeyBytes = HexUtils.hex2bin("404142434445464748494A4B4C4D4E4F");
+
+    public static byte[] DEFAULT_KEY() {
+        return defaultKeyBytes.clone();
+    }
 
     // Derivation constants for session keys
     public static final Map<KeyPurpose, byte[]> SCP02_CONSTANTS;
@@ -70,7 +74,11 @@ class PlaintextKeys extends GPCardKeys {
     }
 
     // If diverisification is to be used
-    String kdf_template;
+    private String kdf_template;
+
+    public String getTemplate() {
+        return kdf_template;
+    }
 
     // Keyset version
     private int version = 0x00;
@@ -202,8 +210,9 @@ class PlaintextKeys extends GPCardKeys {
         String kdd = env.get(prefix + "_KDD");
         String ver = env.get(prefix + "_VER");
         Optional<PlaintextKeys> r = fromStrings(enc, mac, dek, mk, div, kdd, ver);
-        if (r.isPresent())
+        if (r.isPresent()) {
             logger.debug("Got keys from environment, prefix=" + prefix);
+        }
         return r;
     }
 

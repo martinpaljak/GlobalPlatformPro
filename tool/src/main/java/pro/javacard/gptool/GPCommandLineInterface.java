@@ -30,6 +30,7 @@ import pro.javacard.pace.PACE;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -137,6 +138,11 @@ abstract class GPCommandLineInterface {
 
     protected static OptionSpec<AID> OPT_MAKE_DEFAULT = parser.accepts("make-default", "Make AID the default").withRequiredArg().ofType(AID.class);
     protected static OptionSpec<AID> OPT_RENAME_ISD = parser.accepts("rename-isd", "Rename ISD").withRequiredArg().ofType(AID.class).describedAs("new AID");
+
+    // EMV personalization
+    protected static OptionSpec<File> OPT_STORE_DGI_FILE = parser.accepts("store-dgi-file", "Send DGI-s from file").withRequiredArg().ofType(File.class).describedAs("DGI file");
+    protected static OptionSpec<String> OPT_DGI_PADDED = parser.accepts("dgi-padded", "List of padded encrypted DGI-s").availableIf(OPT_STORE_DGI_FILE).withRequiredArg().ofType(String.class);
+    protected static OptionSpec<String> OPT_DGI_UNPADDED = parser.accepts("dgi-unpadded", "List of unpadded encrypted DGI-s").availableIf(OPT_STORE_DGI_FILE).withRequiredArg().ofType(String.class);
 
     // PACE
     protected static OptionSpec<AID> OPT_PACE = parser.accepts("pace", "Run PACE with CAN against AID").withRequiredArg().ofType(AID.class);

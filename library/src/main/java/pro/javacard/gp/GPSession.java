@@ -973,6 +973,10 @@ public class GPSession {
         GPException.check(response, "Rename failed");
     }
 
+    public byte[] encryptDEK(byte[] plaintext) throws GeneralSecurityException {
+        return cardKeys.encrypt(plaintext, sessionContext);
+    }
+
     private byte[] encodeKey(GPCardKeys dek, byte[] other, GPKeyInfo.GPKey type) {
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();

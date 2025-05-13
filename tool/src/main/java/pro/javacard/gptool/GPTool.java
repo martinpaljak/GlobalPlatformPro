@@ -36,6 +36,7 @@ import pro.javacard.capfile.CAPFile;
 import pro.javacard.gp.*;
 import pro.javacard.gp.GPRegistryEntry.Privilege;
 import pro.javacard.gp.GPSession.APDUMode;
+import pro.javacard.gptool.emv.DGI;
 import pro.javacard.gptool.keys.PlaintextKeys;
 import pro.javacard.pace.AESSecureChannel;
 import pro.javacard.pace.PACE;
@@ -55,6 +56,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.util.*;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -741,6 +743,27 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                     }
                 }
 
+                // --store-dgi-file <file>
+                // Will collect DGI-s and send them one by one, applying necessary encryption on the fly.
+                if (args.has(OPT_STORE_DGI_FILE)) {
+                    var oracle = paddingOracle(args);
+                    var blocks = DGI.parse(args.valueOf(OPT_STORE_DGI_FILE).toPath(), oracle);
+                    for (int i = 0; i < blocks.size(); i++) {
+                        var dgi = blocks.get(i);
+                        System.out.println("Processing: " + dgi);
+                        // Mark as DGI and encrypted if needed TODO: profile...
+                        int p1 = dgi.type() == DGI.Type.PLAINTEXT ? 0x00 : 0x60; // NOTE: there NO no format indicator
+                        // Construct the payload
+                        var payload = dgi.type() == DGI.Type.PADDING ? GPCrypto.pad80(dgi.value(), 8) : dgi.value(); // FIXME: padding fixed for des.
+                        if (dgi.type() != DGI.Type.PLAINTEXT) payload = gp.encryptDEK(payload);
+                        payload = GPUtils.concatenate(dgi.tag(), dgi.length(), payload);
+                        // Handle last block
+                        p1 = (i == (blocks.size() - 1)) ? p1 | 0x80 : p1 & 0x7F;
+                        CommandAPDU store = new CommandAPDU(GPSession.CLA_GP, GPSession.INS_STORE_DATA, p1, i, payload, 256);
+                        GPException.check(gp.transmit(store), "STORE DATA failed");
+                    }
+                }
+
                 // --lock-card
                 if (args.has(OPT_LOCK_CARD)) {
                     gp.setCardStatus(GPData.lockedStatus);
@@ -893,6 +916,8 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
         } catch (ReceiptVerifier.ReceiptVerificationException e) {
             /// XXX: refactor
             System.err.println("WARNING: Operation completed, but receipt verification failed");
+        } catch (GeneralSecurityException e) {
+            throw new RuntimeException(e);
         }
         // Other exceptions escape. fin.
         return 1;
@@ -1082,6 +1107,55 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
         }
     }
 
+    // NOTE: Integer is used because byte[] is not good for a set.
+    static List<Integer> split(String s) {
+        // remove whitespace and "0x" instances
+        s = s.replaceAll("\\s+", "").replaceAll("0[xX]", "");
+
+        // If longer than 4 and contains comma - try to parse as list
+        if (s.contains(",") && s.length() > 4) {
+            String[] parts = s.split(",");
+            List<Integer> result = new ArrayList<>();
+
+            for (String part : parts) {
+                result.add(hex2int(part));
+            }
+
+            return result;
+        } else {
+            return Collections.singletonList(hex2int(s));
+        }
+    }
+
+    static int hex2int(String s) {
+        try {
+            int value = Integer.parseInt(s, 16);
+            if (value < 0x0000 || value > 0xFFFF) {
+                throw new IllegalArgumentException("Value out of range (0x0000-0xFFFF): 0x" + Integer.toHexString(value));
+            }
+            return value;
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Invalid hex: " + s);
+        }
+    }
+
+    // Create a small oracle that knows how to handle padding for different DGI-s
+    private static Function<byte[], DGI.Type> paddingOracle(OptionSet args) {
+        var padded = args.valuesOf(OPT_DGI_PADDED).stream().flatMap(s -> GPTool.split(s).stream()).collect(Collectors.toSet());
+        var unpadded = args.valuesOf(OPT_DGI_UNPADDED).stream().flatMap(s -> GPTool.split(s).stream()).collect(Collectors.toSet());
+
+        return s -> {
+            var k = ((s[0] & 0xFF) << 8) | (s[1] & 0xFF);
+            if (padded.contains(k)) {
+                return DGI.Type.PADDING;
+            } else if (unpadded.contains(k)) {
+                return DGI.Type.NOPADDING;
+            } else {
+                return DGI.Type.PLAINTEXT;
+            }
+        };
+    }
+
     private static EnumSet<Privilege> getPrivileges(OptionSet args) {
         EnumSet<Privilege> privs = EnumSet.noneOf(Privilege.class);
         if (args.has(OPT_PRIVS)) {
@@ -1107,7 +1181,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                 OPT_LOCK, OPT_LOCK_ENC, OPT_LOCK_MAC, OPT_LOCK_DEK, OPT_MAKE_DEFAULT,
                 OPT_UNINSTALL, OPT_SECURE_APDU, OPT_DOMAIN, OPT_LOCK_CARD, OPT_UNLOCK_CARD, OPT_LOCK_APPLET, OPT_UNLOCK_APPLET,
                 OPT_STORE_DATA, OPT_STORE_DATA_CHUNK, OPT_INITIALIZE_CARD, OPT_SECURE_CARD, OPT_RENAME_ISD, OPT_SET_PERSO, OPT_SET_PRE_PERSO, OPT_MOVE,
-                OPT_PUT_KEY, OPT_REPLACE_KEY};
+                OPT_PUT_KEY, OPT_REPLACE_KEY, OPT_STORE_DGI_FILE};
 
         return Arrays.stream(yes).anyMatch(args::has);
     }

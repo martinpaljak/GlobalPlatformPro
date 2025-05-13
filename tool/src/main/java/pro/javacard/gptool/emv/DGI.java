@@ -44,8 +44,7 @@ public final class DGI {
         return type;
     }
 
-    public byte[] length() {
-        int len = value.length;
+    public static byte[] length(int len) {
         if (len <= 254) {
             return new byte[]{(byte) len};
         } else {

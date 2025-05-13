@@ -750,13 +750,12 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                     var blocks = DGI.parse(args.valueOf(OPT_STORE_DGI_FILE).toPath(), oracle);
                     for (int i = 0; i < blocks.size(); i++) {
                         var dgi = blocks.get(i);
-                        System.out.println("Processing: " + dgi);
                         // Mark as DGI and encrypted if needed TODO: profile...
                         int p1 = dgi.type() == DGI.Type.PLAINTEXT ? 0x00 : 0x60; // NOTE: there NO no format indicator
                         // Construct the payload
                         var payload = dgi.type() == DGI.Type.PADDING ? GPCrypto.pad80(dgi.value(), 8) : dgi.value(); // FIXME: padding fixed for des.
                         if (dgi.type() != DGI.Type.PLAINTEXT) payload = gp.encryptDEK(payload);
-                        payload = GPUtils.concatenate(dgi.tag(), dgi.length(), payload);
+                        payload = GPUtils.concatenate(dgi.tag(), DGI.length(payload.length), payload);
                         // Handle last block
                         p1 = (i == (blocks.size() - 1)) ? p1 | 0x80 : p1 & 0x7F;
                         CommandAPDU store = new CommandAPDU(GPSession.CLA_GP, GPSession.INS_STORE_DATA, p1, i, payload, 256);

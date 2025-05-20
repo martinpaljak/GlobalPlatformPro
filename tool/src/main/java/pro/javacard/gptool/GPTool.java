@@ -752,8 +752,8 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                         var dgi = blocks.get(i);
                         // Mark as DGI and encrypted if needed TODO: profile...
                         int p1 = dgi.type() == DGI.Type.PLAINTEXT ? 0x00 : 0x60; // NOTE: there NO no format indicator
-                        // Construct the payload
-                        var payload = dgi.type() == DGI.Type.PADDING ? GPCrypto.pad80(dgi.value(), 8) : dgi.value(); // FIXME: padding fixed for des.
+                        // Construct the payload WTF is this scp code, need refactor
+                        var payload = dgi.type() == DGI.Type.PADDING ? GPCrypto.pad80(dgi.value(), gp.getSecureChannel().scp == SCP03 ? 16 : 8) : dgi.value(); // FIXME: padding fixed for des.
                         if (dgi.type() != DGI.Type.PLAINTEXT) payload = gp.encryptDEK(payload);
                         payload = GPUtils.concatenate(dgi.tag(), DGI.length(payload.length), payload);
                         // Handle last block

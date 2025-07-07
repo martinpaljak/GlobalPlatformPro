@@ -194,7 +194,7 @@ public final class GPCrypto {
     }
 
     // SCP03 related
-    static byte[] aes_cmac(byte[] key, byte[] data, int lengthBits) {
+    public static byte[] aes_cmac(byte[] key, byte[] data, int lengthBits) {
         // Use BouncyCastle light interface.
         BlockCipher cipher = AESEngine.newInstance();
         CMac cmac = new CMac(cipher);
@@ -205,7 +205,7 @@ public final class GPCrypto {
         return Arrays.copyOf(out, lengthBits / 8);
     }
 
-    static byte[] scp03_kdf_blocka(byte constant, int blocklen_bits) {
+    public static byte[] scp03_kdf_blocka(byte constant, int blocklen_bits) {
         // 11 bytes
         byte[] label = new byte[]{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 

@@ -5,7 +5,7 @@ MVN_OPTS = -Dmaven.javadoc.skip=true -Dmaven.test.skip=true -Dspotbugs.skip=true
 
 SOURCES = $(shell find pace tool library -name '*.java' -o -name 'pom.xml') pom.xml Makefile
 
-default: tool/target/gp.jar
+default: today tool/target/gp.jar
 
 tool/target/gp.jar: $(SOURCES)
 	./mvnw $(MVN_OPTS) package
@@ -29,3 +29,7 @@ test:
 
 fast:
 	./mvnw -T1C install -Dmaven.test.skip=true -Dspotbugs.skip=true
+
+today:
+	# for a dirty tree, set the date to today
+	test -z "$(shell git status --porcelain)" || ./mvnw versions:set -DnewVersion=$(shell date +%y.%m.%d)-SNAPSHOT -DgenerateBackupPoms=false

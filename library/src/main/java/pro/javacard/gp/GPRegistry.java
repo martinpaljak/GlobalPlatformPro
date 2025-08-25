@@ -124,14 +124,6 @@ public final class GPRegistry implements Iterable<GPRegistryEntry> {
         try {
             while (offset < data.length) {
                 int len = data[offset++];
-                if (len <= 0) {
-                    logger.warn("Skipping registry entry with invalid AID length: {}", len);
-                    // Skip this entry by advancing to next entry (try to recover)
-                    if (offset + 1 < data.length) {
-                        offset += 2; // Skip lifecycle and privileges bytes
-                    }
-                    continue;
-                }
                 AID aid = new AID(data, offset, len);
                 offset += len;
                 int lifecycle = (data[offset++] & 0xFF);
@@ -155,10 +147,6 @@ public final class GPRegistry implements Iterable<GPRegistryEntry> {
                         int num = data[offset++];
                         for (int i = 0; i < num; i++) {
                             len = data[offset++] & 0xFF;
-                            if (len <= 0) {
-                                logger.warn("Skipping module with invalid AID length: {}", len);
-                                continue;
-                            }
                             aid = new AID(data, offset, len);
                             offset += len;
                             e.addModule(aid);
@@ -172,18 +160,6 @@ public final class GPRegistry implements Iterable<GPRegistryEntry> {
         }
     }
 
-    private static Optional<AID> safeAID(byte[] bytes) {
-        try {
-            if (bytes == null || bytes.length == 0) {
-                return Optional.empty();
-            }
-            return Optional.of(new AID(bytes));
-        } catch (IllegalArgumentException e) {
-            // AID validation failed, log and skip
-            return Optional.empty();
-        }
-    }
-
     private void populate_tags(byte[] data, Kind type) throws GPDataException {
         BerTlvParser parser = new BerTlvParser();
         BerTlvs tlvs = parser.parse(data);
@@ -194,14 +170,8 @@ public final class GPRegistry implements Iterable<GPRegistryEntry> {
             if (t.isConstructed()) {
                 BerTlv aid = t.find(new BerTag(0x4f));
                 if (aid != null) {
-                    Optional<AID> aidv = safeAID(aid.getBytesValue());
-                    if (aidv.isPresent()) {
-                        e.setAID(aidv.get());
-                    } else {
-                        // Skip entries with invalid main AID
-                        logger.warn("Skipping registry entry with invalid main AID (length: {})", aid.getBytesValue().length);
-                        continue;
-                    }
+                    AID aidv = new AID(aid.getBytesValue());
+                    e.setAID(aidv);
                 }
                 BerTlv lifecycletag = t.find(new BerTag(0x9F, 0x70));
                 if (lifecycletag != null) {
@@ -229,11 +199,11 @@ public final class GPRegistry implements Iterable<GPRegistryEntry> {
 
                 BerTlv loadfiletag = t.find(new BerTag(0xC4));
                 if (loadfiletag != null) {
-                    Optional<AID> loadFileAid = safeAID(loadfiletag.getBytesValue());
-                    if (loadFileAid.isPresent()) {
-                        e.setLoadFile(loadFileAid.get());
+                    byte[] loadfileBytes = loadfiletag.getBytesValue();
+                    if (loadfileBytes.length > 0) {
+                        e.setLoadFile(new AID(loadfileBytes));
                     } else {
-                        logger.warn("Skipping invalid load file AID (length: {})", loadfiletag.getBytesValue().length);
+                        logger.warn("Skipping invalid load file AID (length: {})", loadfileBytes.length);
                     }
                 }
                 BerTlv versiontag = t.find(new BerTag(0xCE));
@@ -242,22 +212,12 @@ public final class GPRegistry implements Iterable<GPRegistryEntry> {
                 }
 
                 for (BerTlv lf : t.findAll(new BerTag(0x84))) {
-                    Optional<AID> moduleAid = safeAID(lf.getBytesValue());
-                    if (moduleAid.isPresent()) {
-                        e.addModule(moduleAid.get());
-                    } else {
-                        logger.warn("Skipping invalid module AID (length: {})", lf.getBytesValue().length);
-                    }
+                    e.addModule(new AID(lf.getBytesValue()));
                 }
 
                 BerTlv domaintag = t.find(new BerTag(0xCC));
                 if (domaintag != null) {
-                    Optional<AID> domainAid = safeAID(domaintag.getBytesValue());
-                    if (domainAid.isPresent()) {
-                        e.setDomain(domainAid.get());
-                    } else {
-                        logger.warn("Skipping invalid domain AID (length: {})", domaintag.getBytesValue().length);
-                    }
+                    e.setDomain(new AID(domaintag.getBytesValue()));
                 }
             }
             e.setType(type);

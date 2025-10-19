@@ -36,7 +36,7 @@ import java.security.spec.PSSParameterSpec;
 public abstract class DMTokenizer {
     private static final Logger log = LoggerFactory.getLogger(DMTokenizer.class);
 
-    private DMTokenizer() {
+    protected DMTokenizer() {
     }
 
     abstract protected byte[] getToken(CommandAPDU apdu);
@@ -47,9 +47,9 @@ public abstract class DMTokenizer {
         try {
             ByteArrayOutputStream data = new ByteArrayOutputStream();
             data.write(apdu.getData());
-            if (!canTokenize(apdu))
+            if (!canTokenize(apdu)) {
                 throw new IllegalArgumentException("No DM token for APDU: " + apdu);
-
+            }
             byte[] token = getToken(apdu);
 
             if (token.length > 0) {
@@ -59,8 +59,9 @@ public abstract class DMTokenizer {
                 data.write(GPUtils.encodeLength(token.length));
                 data.write(token);
             } else {
-                if (apdu.getINS() != 0xE4)
+                if (apdu.getINS() != 0xE4) {
                     data.write(0); // No token in LV chain and no tag in TLV case
+                }
             }
             return new CommandAPDU(apdu.getCLA(), apdu.getINS(), apdu.getP1(), apdu.getP2(), data.toByteArray()); // FIXME: Le handling
         } catch (IOException e) {

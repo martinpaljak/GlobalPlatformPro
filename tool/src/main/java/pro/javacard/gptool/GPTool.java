@@ -183,29 +183,25 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
             ret = new GPTool().run(CardBIBO.wrap(c), argv);
         } catch (IllegalArgumentException e) {
             System.err.println("Invalid argument: " + e.getMessage());
-            if (isTrace)
-                e.printStackTrace();
+            trace(e);
         } catch (Exception e) {
             System.err.println("Error: " + e.getMessage());
-            if (isTrace)
-                e.printStackTrace();
+            trace(e);
         } finally {
             if (c != null) {
                 if (transact) {
                     try {
                         c.endExclusive();
                     } catch (CardException e) {
-                        System.err.println("Exception when ending card transaction: " + e.getMessage());
-                        if (isTrace)
-                            e.printStackTrace();
+                        verbose("Exception when ending card transaction: " + e.getMessage());
+                        trace(e);
                     }
                 }
                 try {
                     c.disconnect(resetOnDisconnect);
                 } catch (CardException e) {
-                    System.err.println("Exception when disconnecting card: " + e.getMessage());
-                    if (isTrace)
-                        e.printStackTrace();
+                    verbose("Exception when disconnecting card: " + e.getMessage());
+                    trace(e);
                 }
             }
         }
@@ -910,8 +906,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
             return 0;
         } catch (IOException e) {
             System.err.println("ERROR: " + e.getMessage());
-            if (isTrace)
-                e.printStackTrace();
+            trace(e);
         } catch (ReceiptVerifier.ReceiptVerificationException e) {
             /// XXX: refactor
             System.err.println("WARNING: Operation completed, but receipt verification failed");
@@ -1185,9 +1180,15 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
         return Arrays.stream(yes).anyMatch(args::has);
     }
 
-    private void verbose(String s) {
+    private static void verbose(String s) {
         if (isVerbose) {
             System.out.println("# " + s);
+        }
+    }
+
+    private static void trace(Exception e) {
+        if (isTrace) {
+            e.printStackTrace();
         }
     }
 }

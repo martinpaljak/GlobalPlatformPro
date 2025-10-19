@@ -19,11 +19,11 @@ jobs:
     runs-on: ubuntu-24.04
     strategy:
       matrix:
-        java: [ 11, 17, 21 ]
+        java: [ 11, 17, 21, 25 ]
     name: Java ${{ matrix.java }}
     steps:
       - name: Check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0 # To make git describe give the intended output
           fetch-tags: true
@@ -37,7 +37,7 @@ jobs:
       - name: Release
         if: startsWith(github.ref, 'refs/tags/v') && matrix.java == '11'
         id: create_release
-        uses: softprops/action-gh-release@v2.2.1
+        uses: softprops/action-gh-release@v2.4.1
         with:
           files: |
             tool/target/gp.jar

@@ -14,6 +14,4 @@ module gptool {
     requires org.bouncycastle.provider;
     requires org.bouncycastle.pkix;
     requires org.slf4j;
-
-    exports pro.javacard.gptool.keys;
 }

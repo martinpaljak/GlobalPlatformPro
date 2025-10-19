@@ -9,4 +9,6 @@ module pro.javacard.globalplatform {
     requires transitive pro.javacard.capfile;
 
     exports pro.javacard.gp;
+    exports pro.javacard.gp.emv;
+    exports pro.javacard.gp.keys;
 }

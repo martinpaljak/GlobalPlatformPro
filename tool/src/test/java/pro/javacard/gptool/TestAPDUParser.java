@@ -10,7 +10,8 @@ public class TestAPDUParser {
     public void testCBOR() throws Exception {
         String a = "00220000 {pin: false}";
         byte[] apdu = APDUParsers.stringToAPDU(a);
-        Assert.assertEquals(Hex.decode("0022000007bf6370696ef4ff"), apdu);
+        // NOTE: Jackson 2.20.x started generating fixed length, yay! Was: 0022000007bf6370696ef4ff
+        Assert.assertEquals(Hex.decode("0022000006a16370696ef4"), apdu);
     }
 
 

@@ -811,20 +811,30 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                     // By default we try to change an existing key
                     boolean replace = true;
 
-                    // Get new key values
-                    Optional<GPCardKeys> lockKey = keyFromPlugin(args.valueOf(OPT_LOCK));
-
                     String kdf = PlaintextKeys.kdf_templates.getOrDefault(args.valueOf(OPT_LOCK_KDF), args.valueOf(OPT_LOCK_KDF));
-                    // From provider
-                    newKeys = lockKey.
-                            orElseGet(() -> PlaintextKeys.fromBytes(args.valueOf(OPT_LOCK_ENC).value(), args.valueOf(OPT_LOCK_MAC).value(), args.valueOf(OPT_LOCK_DEK).value(), HexBytes.v(args.valueOf(OPT_LOCK)).v(), kdf, null, args.valueOf(OPT_NEW_KEY_VERSION)).
-                                    orElseThrow(() -> new IllegalArgumentException("Can not lock without keys :)")));
 
+
+                    // XXX: remove the combined "keys or master" interfaces from PlaintextKeys
+                    final Optional<GPCardKeys> lockKey;
+                    // Get new key values
+                    if (args.has(OPT_LOCK)) {
+                        lockKey = keyFromPlugin(args.valueOf(OPT_LOCK));
+                    } else if (args.has(OPT_LOCK_ENC) && args.has(OPT_LOCK_MAC) && args.has(OPT_LOCK_DEK)) {
+                        lockKey = Optional.of(PlaintextKeys.fromKeys(args.valueOf(OPT_LOCK_ENC).value(), args.valueOf(OPT_LOCK_MAC).value(), args.valueOf(OPT_LOCK_DEK).value()));
+                    } else {
+                        throw new IllegalArgumentException("Use either --lock or --lock-enc/mac/dek");
+                    }
+
+                    // From provider
+                    newKeys = lockKey.orElseThrow(() -> new IllegalArgumentException("Can not lock without keys :)"));
                     if (newKeys instanceof PlaintextKeys) {
                         // Adjust the mode and version with plaintext keys
                         PlaintextKeys pk = (PlaintextKeys) newKeys;
                         List<GPKeyInfo> current = gp.getKeyInfoTemplate();
-                        // By default use key version 1
+                        if (kdf != null) {
+                            pk.setDiversifier(kdf);
+                        }
+                        // By default, use key version 1
                         final int keyver;
                         if (args.has(OPT_NEW_KEY_VERSION)) {
                             keyver = args.valueOf(OPT_NEW_KEY_VERSION);
@@ -833,7 +843,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                                 replace = false;
                             }
                         } else {
-                            if (current.size() == 0 || gp.getScpKeyVersion() == 255) {
+                            if (current.isEmpty() || gp.getScpKeyVersion() == 255) {
                                 keyver = 1;
                                 replace = false;
                             } else {

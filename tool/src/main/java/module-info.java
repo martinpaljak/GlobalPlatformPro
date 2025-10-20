@@ -1,6 +1,7 @@
 // https://stackoverflow.com/a/67895919/44289
 @SuppressWarnings({"requires-automatic"})
 module gptool {
+    uses pro.javacard.gp.CardKeysProvider;
     requires transitive pro.javacard.globalplatform;
     requires pro.javacard.pace;
     requires java.smartcardio;

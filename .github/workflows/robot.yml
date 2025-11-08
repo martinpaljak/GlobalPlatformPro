@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-24.04
     strategy:
       matrix:
-        java: [ 11, 17, 21, 25 ]
+        java: [ 17, 21, 25 ]
     name: Java ${{ matrix.java }}
     steps:
       - name: Check out code
@@ -35,7 +35,7 @@ jobs:
           cache: maven
       - run: ./mvnw --no-transfer-progress -P exe -B -U -T1C verify
       - name: Release
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.java == '11'
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.java == '17'
         id: create_release
         uses: softprops/action-gh-release@v2.4.1
         with:

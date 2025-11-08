@@ -47,21 +47,21 @@ public final class GPRegistry implements Iterable<GPRegistryEntry> {
 
     public void add(GPRegistryEntry entry) {
         // "fix" the kind at a single location.
-        if (entry.hasPrivilege(Privilege.SecurityDomain) && entry.getType() == Kind.Application) {
-            entry.setType(Kind.SecurityDomain);
+        if (entry.hasPrivilege(Privilege.SecurityDomain) && entry.getType() == Kind.APP) {
+            entry.setType(Kind.SSD);
         }
         if (!entries.contains(entry)) {
             entries.add(entry);
         } else {
             // We populate the package with applets if card returns them, so not an error
-            if (entry.getType() != Kind.ExecutableLoadFile)
+            if (entry.getType() != Kind.PKG)
                 logger.warn("Registry already contains {}", entry);
         }
     }
 
     // All children of this domain
     public List<GPRegistryEntry> byDomain(AID domain) {
-        return entries.stream().filter(e -> e.getDomain().equals(Optional.of(domain))).collect(Collectors.toUnmodifiableList());
+        return entries.stream().filter(e -> e.getDomain().equals(Optional.of(domain))).toList();
     }
 
     // Entry with existing applet
@@ -116,7 +116,7 @@ public final class GPRegistry implements Iterable<GPRegistryEntry> {
     // Shorthand
     public Optional<GPRegistryEntry> getISD() {
         // Could be empty if registry is a view from SSD
-        return allDomains().stream().filter(e -> e.getType() == Kind.IssuerSecurityDomain).reduce(onlyOne());
+        return allDomains().stream().filter(e -> e.getType() == Kind.ISD).reduce(onlyOne());
     }
 
     private void populate_legacy(int p1, byte[] data, Kind type, GPCardProfile spec) throws GPDataException {
@@ -126,16 +126,16 @@ public final class GPRegistry implements Iterable<GPRegistryEntry> {
                 int len = data[offset++];
                 AID aid = new AID(data, offset, len);
                 offset += len;
-                int lifecycle = (data[offset++] & 0xFF);
+                byte lifecycle = data[offset++];
                 byte privileges = data[offset++];
                 GPRegistryEntry e = new GPRegistryEntry();
 
-                if (type == Kind.IssuerSecurityDomain || type == Kind.Application) {
+                if (type == Kind.ISD || type == Kind.APP) {
                     e.setType(type);
                     e.setAID(aid);
-                    e.setPrivileges(Privilege.fromBytes(new byte[]{privileges}));
+                    e.setPrivileges(Privilege.fromByte(privileges));
                     e.setLifeCycle(lifecycle);
-                } else if (type == Kind.ExecutableLoadFile) {
+                } else if (type == Kind.PKG) {
                     if (privileges != 0x00) {
                         throw new GPDataException(String.format("Privileges of Load File is not 0x00 but %02X", privileges & 0xFF));
                     }
@@ -175,7 +175,7 @@ public final class GPRegistry implements Iterable<GPRegistryEntry> {
                 }
                 BerTlv lifecycletag = t.find(new BerTag(0x9F, 0x70));
                 if (lifecycletag != null) {
-                    e.setLifeCycle(lifecycletag.getBytesValue()[0] & 0xFF);
+                    e.setLifeCycle(lifecycletag.getBytesValue()[0]);
                 }
 
                 BerTlv privstag = t.find(new BerTag(0xC5));

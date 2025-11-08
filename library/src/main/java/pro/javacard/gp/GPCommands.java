@@ -65,9 +65,9 @@ public class GPCommands {
         String tab = "     ";
         for (GPRegistryEntry e : reg) {
             AID aid = e.getAID();
-            out.print(e.getType().toShortString() + ": " + HexUtils.bin2hex(aid.getBytes()) + " (" + e.getLifeCycleString() + ")");
-            if (e.getType() != GPRegistryEntry.Kind.IssuerSecurityDomain && verbose) {
-                out.println(" (" + WellKnownAID.getName(aid).orElse(GPUtils.byteArrayToReadableString(aid.getBytes())) + ")");
+            out.print(e.getType() + ": " + HexUtils.bin2hex(aid.getBytes()) + " (" + e.getLifeCycleString() + ")");
+            if (e.getType() != GPRegistryEntry.Kind.ISD && verbose) {
+                out.println(" (" + WellKnownAID.getName(aid).orElse(GPUtils.bin2readable(aid.getBytes())) + ")");
             } else {
                 out.println();
             }
@@ -75,14 +75,14 @@ public class GPCommands {
             if (e.getDomain().isPresent()) {
                 out.println(tab + "Parent:   " + e.getDomain().get());
             }
-            if (e.getType() == GPRegistryEntry.Kind.ExecutableLoadFile) {
+            if (e.getType() == GPRegistryEntry.Kind.PKG) {
                 if (e.getVersion() != null) {
                     out.println(tab + "Version:  " + e.getVersionString());
                 }
                 for (AID a : e.getModules()) {
                     out.print(tab + "Applet:   " + HexUtils.bin2hex(a.getBytes()));
                     if (verbose) {
-                        out.println(" (" + WellKnownAID.getName(a).orElse(GPUtils.byteArrayToReadableString(a.getBytes())) + ")");
+                        out.println(" (" + WellKnownAID.getName(a).orElse(GPUtils.bin2readable(a.getBytes())) + ")");
                     } else {
                         out.println();
                     }

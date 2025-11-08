@@ -11,4 +11,5 @@ module pro.javacard.globalplatform {
     exports pro.javacard.gp;
     exports pro.javacard.gp.emv;
     exports pro.javacard.gp.keys;
+    exports pro.javacard.gp.data;
 }

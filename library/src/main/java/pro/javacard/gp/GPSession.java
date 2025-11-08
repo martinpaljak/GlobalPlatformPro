@@ -81,8 +81,10 @@ public class GPSession {
     public static final byte INS_EXTERNAL_AUTHENTICATE_82 = (byte) 0x82;
     public static final byte INS_GET_DATA = (byte) 0xCA;
 
-    public static final byte P1_INSTALL_AND_MAKE_SELECTABLE = (byte) 0x0C;
+    public static final byte P1_INSTALL_FOR_MAKE_SELECTABLE = (byte) 0x08;
     public static final byte P1_INSTALL_FOR_INSTALL = (byte) 0x04;
+    public static final byte P1_INSTALL_AND_MAKE_SELECTABLE = P1_INSTALL_FOR_INSTALL | P1_INSTALL_FOR_MAKE_SELECTABLE;
+
     public static final byte P1_INSTALL_FOR_LOAD = (byte) 0x02;
     public static final byte P1_MORE_BLOCKS = (byte) 0x00;
     public static final byte P1_LAST_BLOCK = (byte) 0x80;
@@ -760,7 +762,7 @@ public class GPSession {
         logger.trace("Installation parameters: {}", HexUtils.bin2hex(installParams));
 
         // Try to use the minimal
-        byte[] privs = Privilege.toByteOrBytes(privileges);
+        byte[] privs = Privilege.toBytes(privileges);
         ByteArrayOutputStream bo = new ByteArrayOutputStream();
         try {
             bo.write(packageAID.getLength());
@@ -881,24 +883,23 @@ public class GPSession {
     }
 
     public void makeDefaultSelected(AID aid) throws IOException, GPException {
-        // FIXME: only works for some 2.1.1 cards ? Clarify and document
         ByteArrayOutputStream bo = new ByteArrayOutputStream();
         // Only supported privilege.
-        byte privileges = Privilege.toByte(EnumSet.of(Privilege.CardReset));
+        byte[] privileges = Privilege.toBytes(EnumSet.of(Privilege.CardReset));
 
         try {
             bo.write(0);
             bo.write(0);
             bo.write(aid.getLength());
             bo.write(aid.getBytes());
-            bo.write(1);
+            bo.write(privileges.length);
             bo.write(privileges);
             bo.write(0);
         } catch (IOException ioe) {
             throw new RuntimeException(ioe);
         }
 
-        CommandAPDU command = new CommandAPDU(CLA_GP, INS_INSTALL, 0x08, 0x00, bo.toByteArray());
+        CommandAPDU command = new CommandAPDU(CLA_GP, INS_INSTALL, P1_INSTALL_FOR_MAKE_SELECTABLE, 0x00, bo.toByteArray());
         command = tokenizer.tokenize(command);
         ResponseAPDU response = transmitLV(command);
         GPException.check(response, "INSTALL [for make selectable] failed");
@@ -912,9 +913,9 @@ public class GPSession {
         dirty = true;
     }
 
-    public void setCardStatus(byte status) throws IOException, GPException {
-        logger.debug("Setting status to {}", GPRegistryEntry.getLifeCycleString(Kind.IssuerSecurityDomain, status));
-        CommandAPDU cmd = new CommandAPDU(CLA_GP, INS_SET_STATUS, 0x80, status);
+    public void setCardStatus(GPRegistryEntry.ISDLifeCycle status) throws IOException, GPException {
+        logger.debug("Setting status to {}", status);
+        CommandAPDU cmd = new CommandAPDU(CLA_GP, INS_SET_STATUS, 0x80, status.getValue());
         ResponseAPDU response = transmit(cmd);
         GPException.check(response, "SET STATUS failed");
         dirty = true;
@@ -1231,23 +1232,23 @@ public class GPSession {
 
         // Issuer security domain
         byte[] data = getConcatenatedStatus(0x80, new byte[]{0x4F, 0x00}, profile.getStatusUsesTags());
-        registry.parse_and_populate(0x80, data, Kind.IssuerSecurityDomain, profile);
+        registry.parse_and_populate(0x80, data, Kind.ISD, profile);
 
         // Apps and security domains
         data = getConcatenatedStatus(0x40, new byte[]{0x4F, 0x00}, profile.getStatusUsesTags());
-        registry.parse_and_populate(0x40, data, Kind.Application, profile);
+        registry.parse_and_populate(0x40, data, Kind.APP, profile);
 
         // Load files with modules is better than just load files. Registry does not allow to update
         // existing entries
         if (profile.doesReportModules()) {
             // Load files with modules
             data = getConcatenatedStatus(0x10, new byte[]{0x4F, 0x00}, profile.getStatusUsesTags());
-            registry.parse_and_populate(0x10, data, Kind.ExecutableLoadFile, profile);
+            registry.parse_and_populate(0x10, data, Kind.PKG, profile);
         }
 
         // Load files
         data = getConcatenatedStatus(0x20, new byte[]{0x4F, 0x00}, profile.getStatusUsesTags());
-        registry.parse_and_populate(0x20, data, Kind.ExecutableLoadFile, profile);
+        registry.parse_and_populate(0x20, data, Kind.PKG, profile);
 
         return registry;
     }

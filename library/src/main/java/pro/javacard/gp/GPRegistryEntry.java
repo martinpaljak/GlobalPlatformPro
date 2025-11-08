@@ -21,8 +21,12 @@ package pro.javacard.gp;
 
 import apdu4j.core.HexUtils;
 import pro.javacard.capfile.AID;
+import pro.javacard.gp.data.BitField;
 
 import java.util.*;
+import java.util.function.Predicate;
+
+import static pro.javacard.gp.data.BitField.byte_mask;
 
 public class GPRegistryEntry {
 
@@ -30,7 +34,7 @@ public class GPRegistryEntry {
     }
 
     AID aid;
-    int lifecycle;
+    byte lifecycle;
     Kind kind; // domain, application, capfile
     AID domain; // associated security domain
 
@@ -107,61 +111,95 @@ public class GPRegistryEntry {
         return new ArrayList<>(modules);
     }
 
-    static String getLifeCycleString(Kind kind, int lifeCycleState) {
-        switch (kind) {
-            case IssuerSecurityDomain:
-                switch (lifeCycleState) {
-                    case 0x01:
-                        return "OP_READY";
-                    case 0x07:
-                        return "INITIALIZED";
-                    case 0x0F:
-                        return "SECURED";
-                    case 0x7F:
-                        return "CARD_LOCKED";
-                    case 0xFF:
-                        return "TERMINATED";
-                    default:
-                        return "ERROR (0x" + Integer.toHexString(lifeCycleState) + ")";
+    public interface ByteEnum {
+        default Predicate<Byte> matcher() {
+            return p -> true;
+        }
+
+        static <T extends Enum<T> & ByteEnum> T fromByte(Class<T> klass, byte value) {
+            for (var state : klass.getEnumConstants()) {
+                if (state.matcher().test(value)) {
+                    return state;
                 }
-            case Application:
-                if (lifeCycleState == 0x3) {
-                    return "INSTALLED";
-                } else if (lifeCycleState <= 0x7F) {
-                    if ((lifeCycleState & 0x78) != 0x00) {
-                        return "SELECTABLE (0x" + Integer.toHexString(lifeCycleState) + ")";
-                    } else {
-                        return "SELECTABLE";
-                    }
-                } else if (lifeCycleState > 0x83) {
-                    return "LOCKED";
-                } else {
-                    return "ERROR (0x" + Integer.toHexString(lifeCycleState) + ")";
-                }
-            case ExecutableLoadFile:
-                // GP 2.2.1 Table 11-3
-                if (lifeCycleState == 0x1) {
-                    return "LOADED";
-                } else if (lifeCycleState == 0x00) {
-                    return "LOGICALLY_DELETED"; // From OP201
-                } else {
-                    return "ERROR (0x" + Integer.toHexString(lifeCycleState) + ")";
-                }
-            case SecurityDomain:
-                // GP 2.2.1 Table 11-5
-                if (lifeCycleState == 0x3) {
-                    return "INSTALLED";
-                } else if (lifeCycleState == 0x7) {
-                    return "SELECTABLE";
-                } else if (lifeCycleState == 0xF) {
-                    return "PERSONALIZED";
-                } else if ((lifeCycleState & 0x83) == 0x83) {
-                    return "LOCKED";
-                } else {
-                    return "ERROR (0x" + Integer.toHexString(lifeCycleState) + ")";
-                }
-            default:
-                return "ERROR";
+            }
+            throw new IllegalArgumentException("Unknown %s value: 0x%02X".formatted(klass.getSimpleName(), value & 0xFF));
+        }
+    }
+
+
+    public enum ISDLifeCycle implements ByteEnum {
+        OP_READY(0x01),
+        INITIALIZED(0x07),
+        SECURED(0x0F),
+        CARD_LOCKED(0x7F),
+        TERMINATED(0xFF);
+
+        private final byte value;
+
+        ISDLifeCycle(int value) {
+            this.value = (byte) (value & 0xFF);
+        }
+
+        @Override
+        public Predicate<Byte> matcher() {
+            return v -> v == value;
+        }
+
+        public byte getValue() {
+            return (byte) ordinal();
+        }
+    }
+
+    public enum SSDLifeCycle implements ByteEnum {
+        // GP 2.2.1 Table 11-5
+        INSTALLED(v -> v == 0x03),
+        SELECTABLE(v -> v == 0x07),
+        PERSONALIZED(v -> v == 0x0F),
+        LOCKED(v -> (v & 0x83) == 0x83);
+
+        private final Predicate<Byte> matcher;
+
+        SSDLifeCycle(Predicate<Byte> matcher) {
+            this.matcher = matcher;
+        }
+
+        @Override
+        public Predicate<Byte> matcher() {
+            return matcher;
+        }
+    }
+
+    public enum APPLifeCycle implements ByteEnum {
+        INSTALLED(v -> v == 0x03),
+        SELECTABLE(v -> (v & 0xFF) <= 0x7F),
+        LOCKED(v -> (v & 0x83) == 0x83);
+
+        private final Predicate<Byte> matcher;
+
+        APPLifeCycle(Predicate<Byte> matcher) {
+            this.matcher = matcher;
+        }
+
+        @Override
+        public Predicate<Byte> matcher() {
+            return matcher;
+        }
+    }
+
+    public enum PKGLifeCycle implements ByteEnum {
+        // GP 2.2.1 Table 11-3
+        LOADED(v -> v == 0x01),
+        LOGICALLY_DELETED(v -> v == 0x00);
+
+        private final Predicate<Byte> matcher;
+
+        PKGLifeCycle(Predicate<Byte> matcher) {
+            this.matcher = matcher;
+        }
+
+        @Override
+        public Predicate<Byte> matcher() {
+            return matcher;
         }
     }
 
@@ -177,11 +215,11 @@ public class GPRegistryEntry {
         return Optional.ofNullable(domain);
     }
 
-    public int getLifeCycle() {
+    public byte getLifeCycle() {
         return lifecycle;
     }
 
-    void setLifeCycle(int lifecycle) {
+    void setLifeCycle(byte lifecycle) {
         this.lifecycle = lifecycle;
     }
 
@@ -194,15 +232,15 @@ public class GPRegistryEntry {
     }
 
     public boolean isPackage() {
-        return kind == Kind.ExecutableLoadFile;
+        return kind == Kind.PKG;
     }
 
     public boolean isApplet() {
-        return kind == Kind.Application;
+        return kind == Kind.APP;
     }
 
     public boolean isDomain() {
-        return kind == Kind.SecurityDomain || kind == Kind.IssuerSecurityDomain;
+        return kind == Kind.SSD || kind == Kind.ISD;
     }
 
     void setDomain(AID dom) {
@@ -210,11 +248,19 @@ public class GPRegistryEntry {
     }
 
     public String toString() {
-        return String.format("%s: %s, %s", kind.toShortString(), HexUtils.bin2hex(aid.getBytes()), getLifeCycleString());
+        return String.format("%s: %s, %s", kind, HexUtils.bin2hex(aid.getBytes()), getLifeCycleString());
     }
 
     public String getLifeCycleString() {
-        return getLifeCycleString(kind, lifecycle);
+        if (kind == Kind.ISD) {
+            return ByteEnum.fromByte(ISDLifeCycle.class, lifecycle).name();
+        } else if (kind == Kind.SSD) {
+            return ByteEnum.fromByte(SSDLifeCycle.class, lifecycle).name();
+        } else if (kind == Kind.PKG) {
+            return ByteEnum.fromByte(PKGLifeCycle.class, lifecycle).name();
+        } else {
+            return ByteEnum.fromByte(APPLifeCycle.class, lifecycle).name();
+        }
     }
 
     public Set<Integer> getImplicitlySelectedContact() {
@@ -225,57 +271,42 @@ public class GPRegistryEntry {
         return Collections.unmodifiableSet(implicitContactless);
     }
 
-    public enum Kind {
-        IssuerSecurityDomain, Application, SecurityDomain, ExecutableLoadFile;
-
-
-        public String toShortString() {
-            switch (this) {
-                case IssuerSecurityDomain:
-                    return "ISD";
-                case Application:
-                    return "APP";
-                case SecurityDomain:
-                    return "DOM";
-                case ExecutableLoadFile:
-                    return "PKG";
-                default:
-                    throw new IllegalStateException("Unknown entry type");
-            }
-        }
-    }
+    public enum Kind {ISD, APP, SSD, PKG}
 
     // See GP 2.2.1 11.1.2 Tables 11-7, 11-8, 11-9
     // See GP 2.1.1 Table 9-7 (matches 2.2 Table 11-7)
-    public enum Privilege {
-        SecurityDomain(0x80, 0),
-        DAPVerification(0xC0, 0),
-        DelegatedManagement(0xA0, 0),
-        CardLock(0x10, 0),
-        CardTerminate(0x8, 0),
-        CardReset(0x4, 0),
-        CVMManagement(0x2, 0),
-        MandatedDAPVerification(0xC1, 0),
-        TrustedPath(0x80, 1),
-        AuthorizedManagement(0x40, 1),
-        TokenVerification(0x20, 1),
-        GlobalDelete(0x10, 1),
-        GlobalLock(0x8, 1),
-        GlobalRegistry(0x4, 1),
-        FinalApplication(0x2, 1),
-        GlobalService(0x1, 1),
-        ReceiptGeneration(0x80, 2),
-        CipheredLoadFileDataBlock(0x40, 2),
-        ContactlessActivation(0x20, 2),
-        ContactlessSelfActivation(0x10, 2),
-        PrivacyTrusted(0x8, 2);
+    public enum Privilege implements BitField<Privilege> {
+        // 1st byte
+        SecurityDomain(byte_mask(0, 0x80)),
+        DAPVerification(byte_mask(0, 0xC0)),
+        DelegatedManagement(byte_mask(0, 0xA0)),
+        CardLock(byte_mask(0, 0x10)),
+        CardTerminate(byte_mask(0, 0x8)),
+        CardReset(byte_mask(0, 0x4)),
+        CVMManagement(byte_mask(0, 0x2)),
+        MandatedDAPVerification(byte_mask(0, 0xC1)),
+        // 2nd byte
+        TrustedPath(byte_mask(1, 0x80)),
+        AuthorizedManagement(byte_mask(1, 0x40)),
+        TokenVerification(byte_mask(1, 0x20)),
+        GlobalDelete(byte_mask(1, 0x10)),
+        GlobalLock(byte_mask(1, 0x8)),
+        GlobalRegistry(byte_mask(1, 0x4)),
+        FinalApplication(byte_mask(1, 0x2)),
+        GlobalService(byte_mask(1, 0x1)),
+        // 3rd byte
+        ReceiptGeneration(byte_mask(2, 0x80)),
+        CipheredLoadFileDataBlock(byte_mask(2, 0x40)),
+        ContactlessActivation(byte_mask(2, 0x20)),
+        ContactlessSelfActivation(byte_mask(2, 0x10)),
+        PrivacyTrusted(byte_mask(2, 0x8)),
+        // Last 3 bits RFU
+        RFU(new Def.RFU(byte_mask(2, 0x7)));
 
-        byte value;
-        int pos;
+        private final Def def;
 
-        Privilege(int value, int pos) {
-            this.value = (byte) value;
-            this.pos = pos;
+        Privilege(Def def) {
+            this.def = def;
         }
 
         public static Optional<Privilege> lookup(String v) {
@@ -286,45 +317,24 @@ public class GPRegistryEntry {
             if (v.length != 1 && v.length != 3) {
                 throw new IllegalArgumentException("Privileges must be encoded on 1 or 3 bytes: " + HexUtils.bin2hex(v));
             }
-            if (v.length == 3 && (v[2] & 0x0F) != 0x00) {
-                // RFU
+            var r = BitField.parse(Privilege.class, v);
+            if (r.contains(Privilege.RFU)) {
                 throw new GPDataException("RFU bits set in privileges", v);
-            }
-
-            LinkedHashSet<Privilege> r = new LinkedHashSet<>();
-            for (int i = 0; i < v.length; i++) {
-                final int p = i;
-                Arrays.stream(values()).filter(e -> e.pos == p).forEach(e -> {
-                    if (e.value == (e.value & v[p]))
-                        r.add(e);
-                });
             }
             return r;
         }
 
-        static boolean isOneByte(Set<Privilege> privs) {
-            return privs.stream().noneMatch(e -> e.pos != 0);
+        public static Set<Privilege> fromByte(byte v) {
+            return fromBytes(new byte[]{v});
         }
 
         public static byte[] toBytes(Set<Privilege> privs) {
-            byte[] r = new byte[3];
-            for (Privilege p : privs) {
-                r[p.pos] |= p.value;
-            }
-            return r;
+            return BitField.toBytes(EnumSet.copyOf(privs), 3);
         }
 
-        public static byte[] toByteOrBytes(Set<Privilege> privs) {
-            byte[] r = toBytes(privs);
-            if (isOneByte(privs))
-                r = Arrays.copyOf(r, 1);
-            return r;
-        }
-
-        public static byte toByte(Set<Privilege> privs) {
-            if (!isOneByte(privs))
-                throw new IllegalStateException("This privileges set can not be encoded in one byte");
-            return toBytes(privs)[0];
+        @Override
+        public Def def() {
+            return def;
         }
     }
 }

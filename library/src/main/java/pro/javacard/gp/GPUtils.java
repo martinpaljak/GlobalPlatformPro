@@ -36,7 +36,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class GPUtils {
+public final class GPUtils {
     private GPUtils() {}
     // Knows both hex and dec
     public static int intValue(String s) {
@@ -51,16 +51,16 @@ public class GPUtils {
         return String.format("%d (0x%02X)", i, i);
     }
 
-    public static String byteArrayToReadableString(byte[] array) {
-        if (array == null) {
+    public static String bin2readable(byte[] bytes) {
+        if (bytes == null) {
             return "(null)";
         }
         StringBuilder s = new StringBuilder();
-        for (byte b : array) {
+        for (byte b : bytes) {
             char c = (char) b;
             s.append(((c >= 0x20) && (c < 0x7f)) ? (c) : ("."));
         }
-        return "|" + s.toString() + "|";
+        return "|" + s + "|";
     }
 
     public static byte[] concatenate(byte[]... args) {

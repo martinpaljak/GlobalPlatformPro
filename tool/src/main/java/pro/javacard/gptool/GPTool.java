@@ -36,7 +36,7 @@ import pro.javacard.capfile.CAPFile;
 import pro.javacard.gp.*;
 import pro.javacard.gp.GPRegistryEntry.Privilege;
 import pro.javacard.gp.GPSession.APDUMode;
-import pro.javacard.gp.emv.DGI;
+import pro.javacard.gp.emv.DGIData;
 import pro.javacard.gp.keys.PlaintextKeys;
 import pro.javacard.pace.AESSecureChannel;
 import pro.javacard.pace.PACE;
@@ -743,15 +743,15 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                 // Will collect DGI-s and send them one by one, applying necessary encryption on the fly.
                 if (args.has(OPT_STORE_DGI_FILE)) {
                     var oracle = paddingOracle(args);
-                    var blocks = DGI.parse(args.valueOf(OPT_STORE_DGI_FILE).toPath(), oracle);
+                    var blocks = DGIData.parse(args.valueOf(OPT_STORE_DGI_FILE).toPath(), oracle);
                     for (int i = 0; i < blocks.size(); i++) {
                         var dgi = blocks.get(i);
                         // Mark as DGI and encrypted if needed TODO: profile...
-                        int p1 = dgi.type() == DGI.Type.PLAINTEXT ? 0x00 : 0x60; // NOTE: there NO no format indicator
+                        int p1 = dgi.type() == DGIData.Type.PLAINTEXT ? 0x00 : 0x60; // NOTE: there NO no format indicator
                         // Construct the payload WTF is this scp code, need refactor
-                        var payload = dgi.type() == DGI.Type.PADDING ? GPCrypto.pad80(dgi.value(), gp.getSecureChannel().scp == SCP03 ? 16 : 8) : dgi.value(); // FIXME: padding fixed for des.
-                        if (dgi.type() != DGI.Type.PLAINTEXT) payload = gp.encryptDEK(payload);
-                        payload = GPUtils.concatenate(dgi.tag(), DGI.length(payload.length), payload);
+                        var payload = dgi.type() == DGIData.Type.PADDING ? GPCrypto.pad80(dgi.value(), gp.getSecureChannel().scp == SCP03 ? 16 : 8) : dgi.value(); // FIXME: padding fixed for des.
+                        if (dgi.type() != DGIData.Type.PLAINTEXT) payload = gp.encryptDEK(payload);
+                        payload = GPUtils.concatenate(dgi.tag(), DGIData.length(payload.length), payload);
                         // Handle last block
                         p1 = (i == (blocks.size() - 1)) ? p1 | 0x80 : p1 & 0x7F;
                         CommandAPDU store = new CommandAPDU(GPSession.CLA_GP, GPSession.INS_STORE_DATA, p1, i, payload, 256);
@@ -761,25 +761,26 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
 
                 // --lock-card
                 if (args.has(OPT_LOCK_CARD)) {
-                    gp.setCardStatus(GPData.lockedStatus);
+                    gp.setCardStatus(GPRegistryEntry.ISDLifeCycle.CARD_LOCKED);
                 }
                 // --unlock-card
                 if (args.has(OPT_UNLOCK_CARD)) {
-                    gp.setCardStatus(GPData.securedStatus);
+                    gp.setCardStatus(GPRegistryEntry.ISDLifeCycle.SECURED);
                 }
                 // --initialize-card
                 if (args.has(OPT_INITIALIZE_CARD)) {
-                    gp.setCardStatus(GPData.initializedStatus);
+                    gp.setCardStatus(GPRegistryEntry.ISDLifeCycle.INITIALIZED);
                 }
                 // --secure-card
                 if (args.has(OPT_SECURE_CARD)) {
                     // Skip INITIALIZED
                     GPRegistryEntry isd = gp.getRegistry().getISD().orElseThrow(() -> new GPException("ISD not present, are you in a subtree?"));
-                    if (isd.getLifeCycle() != GPData.initializedStatus && args.has(OPT_FORCE)) {
+                    GPRegistryEntry.ISDLifeCycle lc = GPRegistryEntry.ByteEnum.fromByte(GPRegistryEntry.ISDLifeCycle.class, isd.getLifeCycle());
+                    if (lc == GPRegistryEntry.ISDLifeCycle.OP_READY && args.has(OPT_FORCE)) {
                         System.out.println("Note: forcing status to INITIALIZED");
-                        gp.setCardStatus(GPData.initializedStatus);
+                        gp.setCardStatus(GPRegistryEntry.ISDLifeCycle.INITIALIZED);
                     }
-                    gp.setCardStatus(GPData.securedStatus);
+                    gp.setCardStatus(GPRegistryEntry.ISDLifeCycle.SECURED);
                 }
 
                 // --lock-applet <aid>
@@ -899,7 +900,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                 if (args.has(OPT_SET_PRE_PERSO)) {
                     byte[] payload = args.valueOf(OPT_SET_PRE_PERSO).value();
                     if (args.has(OPT_TODAY)) {
-                        System.arraycopy(GPData.CPLC.today(), 0, payload, 2, 2);
+                        System.arraycopy(CPLC.today(), 0, payload, 2, 2);
                     }
                     GPCommands.setPrePerso(gp, payload);
                 }
@@ -908,7 +909,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                 if (args.has(OPT_SET_PERSO)) {
                     byte[] payload = args.valueOf(OPT_SET_PERSO).value();
                     if (args.has(OPT_TODAY)) {
-                        System.arraycopy(GPData.CPLC.today(), 0, payload, 2, 2);
+                        System.arraycopy(CPLC.today(), 0, payload, 2, 2);
                     }
                     GPCommands.setPerso(gp, payload);
                 }
@@ -1144,18 +1145,18 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
     }
 
     // Create a small oracle that knows how to handle padding for different DGI-s
-    private static Function<byte[], DGI.Type> paddingOracle(OptionSet args) {
+    private static Function<byte[], DGIData.Type> paddingOracle(OptionSet args) {
         var padded = args.valuesOf(OPT_DGI_PADDED).stream().flatMap(s -> GPTool.split(s).stream()).collect(Collectors.toSet());
         var unpadded = args.valuesOf(OPT_DGI_UNPADDED).stream().flatMap(s -> GPTool.split(s).stream()).collect(Collectors.toSet());
 
         return s -> {
             var k = ((s[0] & 0xFF) << 8) | (s[1] & 0xFF);
             if (padded.contains(k)) {
-                return DGI.Type.PADDING;
+                return DGIData.Type.PADDING;
             } else if (unpadded.contains(k)) {
-                return DGI.Type.NOPADDING;
+                return DGIData.Type.NOPADDING;
             } else {
-                return DGI.Type.PLAINTEXT;
+                return DGIData.Type.PLAINTEXT;
             }
         };
     }

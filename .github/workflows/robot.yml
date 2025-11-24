@@ -52,5 +52,5 @@ jobs:
       - name: Add known host key
         run: ssh-keyscan mvn.javacard.pro >> ~/.ssh/known_hosts
       - name: Deploy package
-        if: (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/next' || github.ref == 'refs/heads/master') && matrix.java == '11'
+        if: (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/next' || github.ref == 'refs/heads/master') && matrix.java == '17'
         run: ./mvnw --no-transfer-progress -B deploy

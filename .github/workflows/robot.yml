@@ -34,6 +34,17 @@ jobs:
           distribution: zulu
           cache: maven
       - run: ./mvnw --no-transfer-progress -P exe -B -U -T1C verify
+
+      - name: Set SSH key
+        if: (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/next' || github.ref == 'refs/heads/master') && matrix.java == '17'
+        uses: webfactory/ssh-agent@v0.9.1
+        with:
+          ssh-private-key: ${{ secrets.SSH_KEY }}
+      - name: Add known host key
+        run: ssh-keyscan mvn.javacard.pro >> ~/.ssh/known_hosts
+      - name: Deploy package
+        if: (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/next' || github.ref == 'refs/heads/master') && matrix.java == '17'
+        run: ./mvnw --no-transfer-progress -B deploy
       - name: Release
         if: startsWith(github.ref, 'refs/tags/v') && matrix.java == '17'
         id: create_release
@@ -45,12 +56,3 @@ jobs:
           fail_on_unmatched_files: true
           body: Release ${{ github.ref_name }}
           prerelease: true # manually promoted
-      - name: Set SSH key
-        uses: webfactory/ssh-agent@v0.9.1
-        with:
-          ssh-private-key: ${{ secrets.SSH_KEY }}
-      - name: Add known host key
-        run: ssh-keyscan mvn.javacard.pro >> ~/.ssh/known_hosts
-      - name: Deploy package
-        if: (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/next' || github.ref == 'refs/heads/master') && matrix.java == '17'
-        run: ./mvnw --no-transfer-progress -B deploy

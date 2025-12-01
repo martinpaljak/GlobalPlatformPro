@@ -3,7 +3,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.github.martinpaljak</groupId>
-    <version>25.12.01</version>
+    <version>25.12.02-SNAPSHOT</version>
     <artifactId>gppro</artifactId>
     <packaging>pom</packaging>
     <name>GlobalPlatformPro</name>
@@ -15,7 +15,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <!-- GH Actions fails sometimes on first try -->
         <maven.wagon.http.retryHandler.count>2</maven.wagon.http.retryHandler.count>
-        <project.build.outputTimestamp>2025-12-01T11:32:38Z</project.build.outputTimestamp>
+        <project.build.outputTimestamp>2025-12-01T11:32:47Z</project.build.outputTimestamp>
         <apdu4j.version>25.11.24.1</apdu4j.version>
     </properties>
     <organization>

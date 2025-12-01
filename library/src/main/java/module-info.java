@@ -5,7 +5,7 @@ module pro.javacard.globalplatform {
     requires ber.tlv;
     requires org.bouncycastle.pkix;
     requires org.bouncycastle.provider; // FIXME: Hex. uses this
-    requires org.slf4j;
+    requires transitive org.slf4j;
     requires transitive pro.javacard.capfile;
 
     exports pro.javacard.gp;

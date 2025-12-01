@@ -157,7 +157,7 @@ public final class GPUtils {
         return positive(bytes);
     }
 
-    static void trace_lv(byte[] data, Logger logger) {
+    public static void trace_lv(byte[] data, Logger logger) {
         try {
             for (String s : visualize_lv(data))
                 logger.trace(s);

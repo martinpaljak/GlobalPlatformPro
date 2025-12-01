@@ -1,9 +1,11 @@
-package pro.javacard.gp;
+package pro.javacard.gp.test;
 
 import apdu4j.core.CommandAPDU;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import pro.javacard.gp.DMTokenizer;
+import pro.javacard.gp.GPCrypto;
 
 import java.io.FileInputStream;
 import java.security.interfaces.RSAPrivateKey;

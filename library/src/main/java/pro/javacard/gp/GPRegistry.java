@@ -42,7 +42,7 @@ import java.util.stream.Collectors;
 
 public final class GPRegistry implements Iterable<GPRegistryEntry> {
     private static final Logger logger = LoggerFactory.getLogger(GPRegistry.class);
-    GPRegistry() {}
+    public GPRegistry() {}
     final ArrayList<GPRegistryEntry> entries = new ArrayList<>();
 
     public void add(GPRegistryEntry entry) {
@@ -220,7 +220,8 @@ public final class GPRegistry implements Iterable<GPRegistryEntry> {
         }
     }
 
-    void parse_and_populate(int p1, byte[] data, Kind type, GPCardProfile profile) throws GPDataException {
+    // TODO: remove with new parser
+    public void parse_and_populate(int p1, byte[] data, Kind type, GPCardProfile profile) throws GPDataException {
         if (profile.getStatusUsesTags()) {
             populate_tags(data, type);
         } else {

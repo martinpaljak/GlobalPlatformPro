@@ -1,4 +1,4 @@
-package pro.javacard.gp;
+package pro.javacard.gp.test;
 
 import apdu4j.core.HexUtils;
 import org.bouncycastle.util.encoders.Hex;
@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import pro.javacard.capfile.AID;
+import pro.javacard.gp.*;
 import pro.javacard.gp.GPRegistryEntry.Privilege;
 
 import java.time.LocalDate;

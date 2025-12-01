@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.Optional;
 
 // Various per-device configurations and workarounds
-// TODO: WIP, overrides, interface
+// TODO: retire with preferences
 public abstract class GPCardProfile {
 
     private GPCardProfile() {}
@@ -67,7 +67,7 @@ public abstract class GPCardProfile {
         }
     }
 
-    static GPCardProfile defaultProfile() {
+    public static GPCardProfile defaultProfile() {
         return new DefaultModernProfile();
     }
 

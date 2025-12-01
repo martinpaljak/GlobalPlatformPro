@@ -1,8 +1,9 @@
-package pro.javacard.gp;
+package pro.javacard.gp.test;
 
 import apdu4j.core.HexUtils;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+import pro.javacard.gp.GPKeyInfo;
 
 import java.util.List;
 

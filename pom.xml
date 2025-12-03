@@ -57,6 +57,7 @@
         </snapshotRepository>
     </distributionManagement>
     <modules>
+        <module>prefs</module>
         <module>library</module>
         <module>pace</module>
         <module>tool</module>

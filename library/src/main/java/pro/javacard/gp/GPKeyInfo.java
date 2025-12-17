@@ -20,11 +20,11 @@
 package pro.javacard.gp;
 
 import apdu4j.core.HexUtils;
-import com.payneteasy.tlv.BerTag;
-import com.payneteasy.tlv.BerTlv;
-import com.payneteasy.tlv.BerTlvParser;
-import com.payneteasy.tlv.BerTlvs;
 import org.slf4j.Logger;
+import pro.javacard.tlv.Tag;
+import pro.javacard.tlv.TLV;
+
+import java.nio.ByteBuffer;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
@@ -101,14 +101,13 @@ public final class GPKeyInfo {
             return r;
         }
 
-        BerTlvParser parser = new BerTlvParser();
-        BerTlvs tlvs = parser.parse(data);
+        var tlvs = TLV.parse(data);
         GPUtils.trace_tlv(data, logger);
 
-        BerTlv keys = tlvs.find(new BerTag(0xE0));
-        if (keys != null && keys.isConstructed()) {
-            for (BerTlv key : keys.findAll(new BerTag(0xC0))) {
-                final byte[] tmpl = key.getBytesValue();
+        var keysOpt = TLV.find(tlvs, Tag.ber(0xE0));
+        if (keysOpt.isPresent() && keysOpt.get().hasChildren()) {
+            for (TLV key : keysOpt.get().findAll(Tag.ber(0xC0))) {
+                final byte[] tmpl = key.value();
                 if (tmpl.length == 0) {
                     // Fresh SSD with an empty template.
                     logger.info("Key template has zero length (empty). Skipping.");

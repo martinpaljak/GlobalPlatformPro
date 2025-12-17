@@ -8,7 +8,7 @@ module gptool {
     requires jopt.simple;
     requires com.google.auto.service;
     requires apdu4j.pcsc;
-    requires ber.tlv;
+    requires pro.javacard.tlv;
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.databind;
     requires com.fasterxml.jackson.dataformat.cbor;

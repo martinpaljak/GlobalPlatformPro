@@ -4,8 +4,11 @@ import apdu4j.core.APDUBIBO;
 import apdu4j.core.CommandAPDU;
 import apdu4j.core.HexUtils;
 import apdu4j.core.ResponseAPDU;
-import com.payneteasy.tlv.*;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
+import pro.javacard.tlv.Tag;
+import pro.javacard.tlv.TLV;
+
+import java.nio.ByteBuffer;
 import org.bouncycastle.crypto.engines.AESEngine;
 import org.bouncycastle.crypto.generators.ECKeyPairGenerator;
 import org.bouncycastle.crypto.macs.CMac;
@@ -71,7 +74,6 @@ public final class PACE {
         }
     }
 
-    private final static BerTlvParser parser = new BerTlvParser();
 
     // B.1.PACE.
     public static PACE executePACE(APDUBIBO c, byte[] aid, String can, PACECurve curve) throws PACEException, IOException, GeneralSecurityException {
@@ -90,12 +92,12 @@ public final class PACE {
         SCHelpers.trace_tlv(r.getData(), log);
 
         // Get encrypted nonce
-        BerTlv encryptedNonce = require_tag(r.getData(), 0x80);
+        TLV encryptedNonce = require_tag(r.getData(), 0x80);
 
         // Decrypt with derived CAN PI
         // A.3.3.Encrypted Nonce
         byte[] key = kdf(can.getBytes(StandardCharsets.UTF_8), COUNTER_PI);
-        byte[] nonce = AESSecureChannel.decrypt(key, new byte[16], encryptedNonce.getBytesValue());
+        byte[] nonce = AESSecureChannel.decrypt(key, new byte[16], encryptedNonce.value());
 
         // Step 2: mapping ephemeral key
         // Generate ephemeral pace mapping key on curve
@@ -105,19 +107,19 @@ public final class PACE {
         byte[] host_map_pub = ((ECPublicKeyParameters) host_map.getPublic()).getQ().getEncoded(false);
 
         // GENERAL AUTHENTICATE 81 - Challenge - contains the mapping key public key point in uncompressed format
-        BerTlvBuilder payload = new BerTlvBuilder(new BerTag(0x7C)).addBytes(new BerTag(0x81), host_map_pub);
+        byte[] payload = TLV.build(Tag.ber(0x7C)).add(Tag.ber(0x81), host_map_pub).encode();
 
-        CommandAPDU apdu2 = general_authenticate(payload.buildArray());
+        CommandAPDU apdu2 = general_authenticate(payload);
 
         SCHelpers.trace_tlv(apdu2.getData(), log);
         r = PACEException.check(c.transmit(apdu2));
         SCHelpers.trace_tlv(r.getData(), log);
 
         // Response is card mapping public key on curve
-        BerTlv card_map_tag = require_tag(r.getData(), 0x82);
+        TLV card_map_tag = require_tag(r.getData(), 0x82);
 
         // Decode key on mapping curve
-        byte[] card_map_pub = decodePublic(curve.spec, card_map_tag.getBytesValue());
+        byte[] card_map_pub = decodePublic(curve.spec, card_map_tag.value());
 
         // Check
         if (Arrays.equals(card_map_pub, host_map_pub)) {
@@ -133,18 +135,18 @@ public final class PACE {
 
         // Perform key agreement
         // GENERAL AUTHENTICATE 83 - Commited challenge
-        payload = new BerTlvBuilder(new BerTag(0x7C)).addBytes(new BerTag(0x83), ephemeral_host_pub);
-        CommandAPDU apdu3 = general_authenticate(payload.buildArray());
+        payload = TLV.build(Tag.ber(0x7C)).add(Tag.ber(0x83), ephemeral_host_pub).encode();
+        CommandAPDU apdu3 = general_authenticate(payload);
 
         SCHelpers.trace_tlv(apdu3.getData(), log);
         r = PACEException.check(c.transmit(apdu3));
         SCHelpers.trace_tlv(r.getData(), log);
 
         // We receive a point on the ephemeral curve
-        BerTlv ephemeral_card_tag = require_tag(r.getData(), 0x84);
+        TLV ephemeral_card_tag = require_tag(r.getData(), 0x84);
 
         // Decode card public key
-        byte[] ephemeral_card_pub = decodePublic(parameters, ephemeral_card_tag.getBytesValue());
+        byte[] ephemeral_card_pub = decodePublic(parameters, ephemeral_card_tag.value());
 
         // Keys can't be equal
         if (Arrays.equals(ephemeral_host_pub, ephemeral_card_pub))
@@ -161,18 +163,18 @@ public final class PACE {
 
         // Calculate our authentication token.
         byte[] host_auth_token = aes_mac8(keyMAC, auth_token(ephemeral_card_pub));
-        payload = new BerTlvBuilder(new BerTag(0x7C)).addBytes(new BerTag(0x85), host_auth_token);
+        payload = TLV.build(Tag.ber(0x7C)).add(Tag.ber(0x85), host_auth_token).encode();
 
-        CommandAPDU apdu4 = general_authenticate_last(payload.buildArray());
+        CommandAPDU apdu4 = general_authenticate_last(payload);
 
         SCHelpers.trace_tlv(apdu4.getData(), log);
         r = PACEException.check(c.transmit(apdu4));
         SCHelpers.trace_tlv(r.getData(), log);
 
         // Verify card auth token
-        BerTlv auth_token_card = require_tag(r.getData(), 0x86);
+        TLV auth_token_card = require_tag(r.getData(), 0x86);
         byte[] my_auth_token_card = aes_mac8(keyMAC, auth_token(ephemeral_host_pub));
-        if (!Arrays.equals(auth_token_card.getBytesValue(), my_auth_token_card)) {
+        if (!Arrays.equals(auth_token_card.value(), my_auth_token_card)) {
             throw new PACEException("PACE: invalid card auth token: " + HexUtils.bin2hex(r.getData()));
         } else {
             log.info("Card authenticated");
@@ -180,9 +182,9 @@ public final class PACE {
         return new PACE(keyENC, keyMAC);
     }
 
-    static BerTlv require_tag(byte[] response, int tag) throws PACEException {
-        BerTlvs tlvs = parser.parse(response);
-        BerTlv found = tlvs.find(new BerTag(tag));
+    static TLV require_tag(byte[] response, int tag) throws PACEException {
+        var tlvs = TLV.parse(response);
+        var found = TLV.find(tlvs, Tag.ber(tag)).orElse(null);
         if (found == null)
             throw new PACEException(String.format("PACE: invalid response, missing tag 0x%02X: %s", tag, HexUtils.bin2hex(response)));
         return found;
@@ -216,9 +218,9 @@ public final class PACE {
     // B.14.1. MSE:Set AT
     private static CommandAPDU set_at(byte[] oid, byte password, PACECurve curve) throws IOException {
         ByteArrayOutputStream payload = new ByteArrayOutputStream();
-        payload.write(new BerTlvBuilder().addBytes(new BerTag(0x80), oid).buildArray()); // Cryptographic mechanism reference
-        payload.write(new BerTlvBuilder().addByte(new BerTag(0x83), password).buildArray()); // Password reference - CAN
-        payload.write(new BerTlvBuilder().addByte(new BerTag(0x84), curve.code).buildArray());
+        payload.write(TLV.of(Tag.ber(0x80), oid).encode()); // Cryptographic mechanism reference
+        payload.write(TLV.of(Tag.ber(0x83), new byte[]{password}).encode()); // Password reference - CAN
+        payload.write(TLV.of(Tag.ber(0x84), new byte[]{curve.code}).encode());
         // P1/P2: PACE: Set Authentication Template for mutual authentication.
         return new CommandAPDU(0x00, 0x22, 0xC1, 0xA4, payload.toByteArray(), 256);
     }
@@ -287,9 +289,9 @@ public final class PACE {
     private static byte[] auth_token(byte[] key) {
         // D.3.3. Elliptic Curve Public Keys for OID and key,
         // D.2. Data Objects for 0x7F49 (Public Key)
-        BerTlvBuilder payload = new BerTlvBuilder(new BerTag(0x7F, 0x49))
-                .addBytes(new BerTag(0x06), oid)
-                .addBytes(new BerTag(0x86), key);
-        return payload.buildArray();
+        return TLV.build(Tag.ber(0x7F, 0x49))
+                .add(Tag.ber(0x06), oid)
+                .add(Tag.ber(0x86), key)
+                .encode();
     }
 }

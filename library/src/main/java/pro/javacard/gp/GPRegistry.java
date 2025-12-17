@@ -22,16 +22,15 @@
 
 package pro.javacard.gp;
 
-import com.payneteasy.tlv.BerTag;
-import com.payneteasy.tlv.BerTlv;
-import com.payneteasy.tlv.BerTlvParser;
-import com.payneteasy.tlv.BerTlvs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pro.javacard.capfile.AID;
 import pro.javacard.gp.GPRegistryEntry.Kind;
 import pro.javacard.gp.GPRegistryEntry.Privilege;
+import pro.javacard.tlv.Tag;
+import pro.javacard.tlv.TLV;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -42,7 +41,10 @@ import java.util.stream.Collectors;
 
 public final class GPRegistry implements Iterable<GPRegistryEntry> {
     private static final Logger logger = LoggerFactory.getLogger(GPRegistry.class);
-    public GPRegistry() {}
+
+    public GPRegistry() {
+    }
+
     final ArrayList<GPRegistryEntry> entries = new ArrayList<>();
 
     public void add(GPRegistryEntry entry) {
@@ -102,13 +104,15 @@ public final class GPRegistry implements Iterable<GPRegistryEntry> {
     }
 
     public Optional<AID> getDefaultSelectedAID() {
-        return allApplets().stream().filter(e -> e.hasPrivilege(Privilege.CardReset)).map(GPRegistryEntry::getAID).reduce(onlyOne());
+        return allApplets().stream().filter(e -> e.hasPrivilege(Privilege.CardReset)).map(GPRegistryEntry::getAID)
+                .reduce(onlyOne());
     }
 
     public Optional<AID> getDefaultSelectedPackageAID() {
         Optional<AID> defaultAID = getDefaultSelectedAID();
         if (defaultAID.isPresent()) {
-            return allPackages().stream().filter(e -> e.getModules().contains(defaultAID.get())).map(GPRegistryEntry::getAID).reduce(onlyOne());
+            return allPackages().stream().filter(e -> e.getModules().contains(defaultAID.get()))
+                    .map(GPRegistryEntry::getAID).reduce(onlyOne());
         }
         return defaultAID;
     }
@@ -137,7 +141,8 @@ public final class GPRegistry implements Iterable<GPRegistryEntry> {
                     e.setLifeCycle(lifecycle);
                 } else if (type == Kind.PKG) {
                     if (privileges != 0x00) {
-                        throw new GPDataException(String.format("Privileges of Load File is not 0x00 but %02X", privileges & 0xFF));
+                        throw new GPDataException(
+                                String.format("Privileges of Load File is not 0x00 but %02X", privileges & 0xFF));
                     }
                     e.setAID(aid);
                     e.setLifeCycle(lifecycle);
@@ -161,31 +166,30 @@ public final class GPRegistry implements Iterable<GPRegistryEntry> {
     }
 
     private void populate_tags(byte[] data, Kind type) throws GPDataException {
-        BerTlvParser parser = new BerTlvParser();
-        BerTlvs tlvs = parser.parse(data);
+        var tlvs = TLV.parse(data);
         GPUtils.trace_tlv(data, logger);
 
-        for (BerTlv t : tlvs.findAll(new BerTag(0xE3))) {
+        for (TLV t : TLV.findAll(tlvs, Tag.ber(0xE3))) {
             GPRegistryEntry e = new GPRegistryEntry();
-            if (t.isConstructed()) {
-                BerTlv aid = t.find(new BerTag(0x4f));
+            if (t.hasChildren()) {
+                var aid = t.find(Tag.ber(0x4f));
                 if (aid != null) {
-                    AID aidv = new AID(aid.getBytesValue());
+                    AID aidv = new AID(aid.value());
                     e.setAID(aidv);
                 }
-                BerTlv lifecycletag = t.find(new BerTag(0x9F, 0x70));
+                var lifecycletag = t.find(Tag.ber(0x9F, 0x70));
                 if (lifecycletag != null) {
-                    e.setLifeCycle(lifecycletag.getBytesValue()[0]);
+                    e.setLifeCycle(lifecycletag.value()[0]);
                 }
 
-                BerTlv privstag = t.find(new BerTag(0xC5));
+                var privstag = t.find(Tag.ber(0xC5));
                 if (privstag != null) {
-                    e.setPrivileges(Privilege.fromBytes(privstag.getBytesValue()));
+                    e.setPrivileges(Privilege.fromBytes(privstag.value()));
                 }
 
                 // 11.1.7 of GPC 2.3
-                for (BerTlv cf : t.findAll(new BerTag(0xCF))) {
-                    byte[] cfb = cf.getBytesValue();
+                for (TLV cf : t.findAll(Tag.ber(0xCF))) {
+                    byte[] cfb = cf.value();
                     if (cfb.length != 1)
                         throw new GPDataException("Tag CF not single byte", cfb);
                     int v = cfb[0] & 0xFF;
@@ -197,22 +201,22 @@ public final class GPRegistry implements Iterable<GPRegistryEntry> {
                     }
                 }
 
-                BerTlv loadfiletag = t.find(new BerTag(0xC4));
+                var loadfiletag = t.find(Tag.ber(0xC4));
                 if (loadfiletag != null) {
-                    e.setLoadFile(new AID(loadfiletag.getBytesValue()));
+                    e.setLoadFile(new AID(loadfiletag.value()));
                 }
-                BerTlv versiontag = t.find(new BerTag(0xCE));
+                var versiontag = t.find(Tag.ber(0xCE));
                 if (versiontag != null) {
-                    e.setVersion(versiontag.getBytesValue());
+                    e.setVersion(versiontag.value());
                 }
 
-                for (BerTlv lf : t.findAll(new BerTag(0x84))) {
-                    e.addModule(new AID(lf.getBytesValue()));
+                for (TLV lf : t.findAll(Tag.ber(0x84))) {
+                    e.addModule(new AID(lf.value()));
                 }
 
-                BerTlv domaintag = t.find(new BerTag(0xCC));
+                var domaintag = t.find(Tag.ber(0xCC));
                 if (domaintag != null) {
-                    e.setDomain(new AID(domaintag.getBytesValue()));
+                    e.setDomain(new AID(domaintag.value()));
                 }
             }
             e.setType(type);

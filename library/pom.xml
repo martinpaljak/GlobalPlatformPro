@@ -37,8 +37,9 @@
         </dependency>
         <!-- For TLV handling -->
         <dependency>
-            <groupId>com.payneteasy</groupId>
-            <artifactId>ber-tlv</artifactId>
+            <groupId>com.github.martinpaljak</groupId>
+            <artifactId>tlv</artifactId>
+            <version>${project.version}</version>
         </dependency>
         <!-- For tests -->
         <dependency>

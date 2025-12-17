@@ -27,8 +27,10 @@ import apdu4j.core.APDUBIBO;
 import apdu4j.core.CommandAPDU;
 import apdu4j.core.HexUtils;
 import apdu4j.core.ResponseAPDU;
-import com.payneteasy.tlv.*;
 import org.bouncycastle.asn1.x9.ECNamedCurveTable;
+import pro.javacard.tlv.Tag;
+import pro.javacard.tlv.TLV;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pro.javacard.capfile.AID;
@@ -160,11 +162,10 @@ public class GPSession {
         if (response.getSW() == 0x6283)
             logger.warn("Card Manager is LOCKED");
 
-        final BerTlvs tlvs;
+        final List<TLV> tlvs;
         try {
             // Detect security domain based on default select
-            BerTlvParser parser = new BerTlvParser();
-            tlvs = parser.parse(response.getData());
+            tlvs = TLV.parse(response.getData());
             GPUtils.trace_tlv(response.getData(), logger);
         } catch (ArrayIndexOutOfBoundsException | IllegalStateException e) {
             // WORKAROUND: Exists a card, which returns plain AID as response
@@ -172,12 +173,12 @@ public class GPSession {
             throw new GPDataException("Could not auto-detect ISD AID", response.getData());
         }
 
-        BerTlv fcitag = tlvs.find(new BerTag(0x6F));
-        if (fcitag != null) {
-            BerTlv isdaid = fcitag.find(new BerTag(0x84));
+        var fcitag = TLV.find(tlvs, Tag.ber(0x6F));
+        if (fcitag.isPresent()) {
+            var isdaid = fcitag.get().find(Tag.ber(0x84));
             // WORKAROUND: exists a card that returns a zero length AID in template
-            if (isdaid != null && isdaid.getBytesValue().length > 0) {
-                AID detectedAID = new AID(isdaid.getBytesValue());
+            if (isdaid != null && isdaid.value().length > 0) {
+                AID detectedAID = new AID(isdaid.value());
                 logger.debug("Auto-detected ISD: " + detectedAID);
                 return new GPSession(channel, detectedAID);
             }
@@ -269,20 +270,20 @@ public class GPSession {
     }
 
     private void parse_select_response(byte[] fci) throws GPException {
-        final BerTlvs tlvs;
+        final List<TLV> tlvs;
         try {
-            BerTlvParser parser = new BerTlvParser();
-            tlvs = parser.parse(fci);
+            tlvs = TLV.parse(fci);
             GPUtils.trace_tlv(fci, logger);
         } catch (ArrayIndexOutOfBoundsException | IllegalStateException e) {
             logger.warn("Could not parse SELECT response: " + e.getMessage());
             return;
         }
-        BerTlv fcitag = tlvs.find(new BerTag(0x6F));
-        if (fcitag != null) {
-            BerTlv isdaid = fcitag.find(new BerTag(0x84));
+        var fcitagOpt = TLV.find(tlvs, Tag.ber(0x6F));
+        if (fcitagOpt.isPresent()) {
+            var fcitag = fcitagOpt.get();
+            var isdaid = fcitag.find(Tag.ber(0x84));
             if (isdaid != null) {
-                AID detectedAID = new AID(isdaid.getBytesValue());
+                AID detectedAID = new AID(isdaid.value());
                 if (!detectedAID.equals(sdAID)) {
                     logger.warn(String.format("SD AID in FCI (%s) does not match the requested AID (%s). Using reported AID!", detectedAID, sdAID));
                     // So one can select only the prefix
@@ -291,31 +292,31 @@ public class GPSession {
             }
 
             //
-            BerTlv prop = fcitag.find(new BerTag(0xA5));
+            var prop = fcitag.find(Tag.ber(0xA5));
             if (prop != null) {
 
-                BerTlv isdd = prop.find(new BerTag(0x73));
+                var isdd = prop.find(Tag.ber(0x73));
                 if (isdd != null) {
                     // Tag 73 is a constructed tag.
-                    BerTlv oidtag = isdd.find(new BerTag(0x06));
+                    var oidtag = isdd.find(Tag.ber(0x06));
                     if (oidtag != null) {
                         // 1.2.840.114283.1
-                        if (Arrays.equals(oidtag.getBytesValue(), HexUtils.hex2bin("2A864886FC6B01"))) {
+                        if (Arrays.equals(oidtag.value(), HexUtils.hex2bin("2A864886FC6B01"))) {
                             // Detect versions
-                            BerTlv vertag = isdd.find(new BerTag(0x60));
+                            var vertag = isdd.find(Tag.ber(0x60));
                             if (vertag != null) {
-                                BerTlv veroid = vertag.find(new BerTag(0x06));
+                                var veroid = vertag.find(Tag.ber(0x06));
                                 if (veroid != null) {
                                     // TODO: react to it maybe? Not that relevant in 2.2 era
-                                    logger.debug("Auto-detected GP version: " + GPData.oid2version(veroid.getBytesValue()));
+                                    logger.debug("Auto-detected GP version: " + GPData.oid2version(veroid.value()));
                                 }
                             }
-                        } else if (GPData.oid2string(oidtag.getBytesValue()).startsWith("1.2.840.114283.4.") && oidtag.getBytesValue().length == 9) {
-                            byte[] data = oidtag.getBytesValue();
+                        } else if (GPData.oid2string(oidtag.value()).startsWith("1.2.840.114283.4.") && oidtag.value().length == 9) {
+                            byte[] data = oidtag.value();
                             // SCP version
                             logger.debug("Auto-detected SCP version: {}", GPSecureChannelVersion.valueOf(data[7] & 0xFF, data[8] & 0xFF));
                         } else {
-                            logger.warn("Unrecognized card recognition data: {}", HexUtils.bin2hex(oidtag.getBytesValue()));
+                            logger.warn("Unrecognized card recognition data: {}", HexUtils.bin2hex(oidtag.value()));
                         }
                     } else {
                         logger.warn("No Global Platform OID found");
@@ -323,14 +324,14 @@ public class GPSession {
                 }
 
                 // Lifecycle
-                BerTlv lc = prop.find(new BerTag(0x9F, 0x6E));
+                var lc = prop.find(Tag.ber(0x9F, 0x6E));
                 if (lc != null) {
-                    logger.debug("Lifecycle data (ignored): " + HexUtils.bin2hex(lc.getBytesValue()));
+                    logger.debug("Lifecycle data (ignored): " + HexUtils.bin2hex(lc.value()));
                 }
                 // Max block size
-                BerTlv maxbs = prop.find(new BerTag(0x9F, 0x65));
+                var maxbs = prop.find(Tag.ber(0x9F, 0x65));
                 if (maxbs != null) {
-                    setBlockSize(maxbs.getBytesValue());
+                    setBlockSize(maxbs.value());
                 }
             } else {
                 logger.warn("No mandatory proprietary info present in FCI");
@@ -744,11 +745,10 @@ public class GPSession {
             boolean valid = false;
             // Handle #360 - only modify/fixup installation parameters when needed.
             try {
-                BerTlvParser parser = new BerTlvParser();
-                final BerTlvs tlvs = parser.parse(installParams);
+                final var tlvs = TLV.parse(installParams);
                 GPUtils.trace_tlv(installParams, logger);
                 // If applications parameters are already present (must not be first tag), do not add anything
-                if (tlvs.find(new BerTag(0xC9)) != null) {
+                if (TLV.find(tlvs, Tag.ber(0xC9)).isPresent()) {
                     valid = true;
                 }
             } catch (ArrayIndexOutOfBoundsException | IllegalStateException e) {
@@ -756,7 +756,7 @@ public class GPSession {
             }
             // Simple use: only unstructured application parameters without existing tag, prepend 0xC9
             if (!valid) {
-                installParams = new BerTlvBuilder().addBytes(new BerTag(0xC9), installParams).buildArray();
+                installParams = TLV.of(Tag.ber(0xC9), installParams).encode();
             }
         }
         logger.trace("Installation parameters: {}", HexUtils.bin2hex(installParams));

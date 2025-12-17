@@ -7,7 +7,7 @@ import java.util.HexFormat;
 import java.util.List;
 import java.util.Optional;
 
-public class TestTLV {
+class TestTLV {
     static byte[] hex(String s) {
         return HexFormat.of().parseHex(s.replaceAll("\\s", ""));
     }
@@ -21,13 +21,13 @@ public class TestTLV {
                 .add("9f46", hex("333333"))
                 .add("9f45", hex("444444"));
 
-
         var bin = tlv1.encode();
         Assert.assertEquals(bin, hex("7F42129F45032222229F46033333339F4503444444"));
 
         var result = TLV.parse(bin);
         var strings = result.get(0).visualize();
-        Assert.assertEquals(strings, List.of("[7F42]", "      [9F45] 222222", "      [9F46] 333333", "      [9F45] 444444"));
+        Assert.assertEquals(strings,
+                List.of("[7F42]", "      [9F45] 222222", "      [9F46] 333333", "      [9F45] 444444"));
 
         var lookup = TLV.find(result, Tag.ber("9f45"));
         Assert.assertEquals(lookup, Optional.of(TLV.of("9f45", hex("222222"))));
@@ -39,11 +39,11 @@ public class TestTLV {
     public void testTagFactories() {
         // Single byte tags
         var tag1 = Tag.ber(0x66);
-        Assert.assertEquals(tag1.bytes(), new byte[]{0x66});
+        Assert.assertEquals(tag1.bytes(), new byte[] { 0x66 });
 
         // Two byte tags
         var tag2 = Tag.ber(0x9F, 0x70);
-        Assert.assertEquals(tag2.bytes(), new byte[]{(byte) 0x9F, 0x70});
+        Assert.assertEquals(tag2.bytes(), new byte[] { (byte) 0x9F, 0x70 });
     }
 
     @Test

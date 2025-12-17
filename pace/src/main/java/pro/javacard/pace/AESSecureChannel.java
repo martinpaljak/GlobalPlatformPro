@@ -1,8 +1,11 @@
 package pro.javacard.pace;
 
 import apdu4j.core.*;
-import com.payneteasy.tlv.*;
 import org.slf4j.Logger;
+import pro.javacard.tlv.Tag;
+import pro.javacard.tlv.TLV;
+
+import java.nio.ByteBuffer;
 import org.slf4j.LoggerFactory;
 
 import javax.crypto.BadPaddingException;
@@ -119,15 +122,14 @@ public final class AESSecureChannel implements BIBO {
 
         byte[] cardmac = null;
 
-        BerTlvParser parser = new BerTlvParser();
-        BerTlvs tlvs = parser.parse(apdu.getData());
+        var tlvs = TLV.parse(apdu.getData());
 
-        BerTlv payloadtag = tlvs.find(new BerTag(0x87));
+        var payloadtag = TLV.find(tlvs, Tag.ber(0x87)).orElse(null);
         if (payloadtag != null) {
             byte[] iv = encrypt(enc_key, new byte[16], ssc);
             log.trace("IV           : {}", HexUtils.bin2hex(iv));
 
-            byte[] payload = payloadtag.getBytesValue();
+            byte[] payload = payloadtag.value();
             byte[] cgram = Arrays.copyOfRange(payload, 1, payload.length);
             log.trace("cgram        : {}", HexUtils.bin2hex(cgram));
 
@@ -135,17 +137,17 @@ public final class AESSecureChannel implements BIBO {
             log.trace("plaintext    : {}", HexUtils.bin2hex(plaintext));
 
             fresh.write(unpad80(plaintext));
-            macinput.write(new BerTlvBuilder().addBytes(new BerTag(0x87), payload).buildArray());
+            macinput.write(TLV.of(Tag.ber(0x87), payload).encode());
         }
 
-        BerTlv swtag = tlvs.find(new BerTag(0x99));
+        var swtag = TLV.find(tlvs, Tag.ber(0x99)).orElse(null);
         if (swtag != null) {
-            macinput.write(new BerTlvBuilder().addBytes(new BerTag(0x99), swtag.getBytesValue()).buildArray());
-            fresh.write(swtag.getBytesValue());
+            macinput.write(TLV.of(Tag.ber(0x99), swtag.value()).encode());
+            fresh.write(swtag.value());
         }
-        BerTlv mactag = tlvs.find(new BerTag(0x8e));
+        var mactag = TLV.find(tlvs, Tag.ber(0x8e)).orElse(null);
         if (mactag != null) {
-            cardmac = mactag.getBytesValue();
+            cardmac = mactag.value();
         }
 
         // Calculate mac

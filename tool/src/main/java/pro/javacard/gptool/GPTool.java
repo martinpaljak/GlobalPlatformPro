@@ -26,10 +26,11 @@ import apdu4j.pcsc.PCSCReader;
 import apdu4j.pcsc.TerminalManager;
 import apdu4j.pcsc.terminals.LoggingCardTerminal;
 import com.google.auto.service.AutoService;
-import com.payneteasy.tlv.BerTag;
-import com.payneteasy.tlv.BerTlvParser;
-import com.payneteasy.tlv.BerTlvs;
 import joptsimple.OptionSet;
+import pro.javacard.tlv.Tag;
+import pro.javacard.tlv.TLV;
+
+import java.nio.ByteBuffer;
 import joptsimple.OptionSpec;
 import pro.javacard.capfile.AID;
 import pro.javacard.capfile.CAPFile;
@@ -622,8 +623,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                 // --domain <AID>
                 if (args.has(OPT_DOMAIN)) {
                     // Validate parameters
-                    BerTlvParser tlvparser = new BerTlvParser();
-                    BerTlvs parameters = null;
+                    List<TLV> parameters = null;
 
                     byte[] params;
                     // If parameters given by user
@@ -631,7 +631,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                         params = args.valueOf(OPT_PARAMS).value();
                         // Try to parse
                         try {
-                            parameters = tlvparser.parse(params); // this throws
+                            parameters = TLV.parse(params); // this throws
                         } catch (Exception e) {
                             // and fail if what is given is not TLV that we can modify.
                             if (args.has(OPT_ALLOW_FROM) || args.has(OPT_ALLOW_TO))
@@ -642,7 +642,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                     } else {
                         params = new byte[0];
                         // This results in empty non-null parameters
-                        parameters = tlvparser.parse(params);
+                        parameters = TLV.parse(params);
                     }
 
                     // Default AID-s
@@ -667,7 +667,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
 
                     // By default same SCP as current
                     if (!args.has(OPT_SAD) && !gp.getProfile().oldStyleSSDParameters()) {
-                        if (parameters != null && parameters.find(new BerTag(0x81)) == null) {
+                        if (parameters != null && TLV.find(parameters, Tag.ber(0x81)).isEmpty()) {
                             params = GPUtils.concatenate(params, new byte[]{(byte) 0x81, 0x02, gp.getSecureChannel().scp.getValue(), (byte) gp.getSecureChannel().i});
                         } else {
                             System.err.println("Notice: 0x81 (secure channel) already in parameters or no parameters");
@@ -677,7 +677,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                     // Extradition rules
                     if (args.has(OPT_ALLOW_TO)) {
                         if (parameters != null)
-                            if (parameters.find(new BerTag(0x82)) == null) {
+                            if (TLV.find(parameters, Tag.ber(0x82)).isEmpty()) {
                                 params = GPUtils.concatenate(params, new byte[]{(byte) 0x82, 0x02, 0x20, 0x20});
                             } else {
                                 System.err.println("Warning: 0x82 already in parameters, " + OPT_ALLOW_TO + " not applied");
@@ -686,7 +686,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
 
                     if (args.has(OPT_ALLOW_FROM)) {
                         if (parameters != null) {
-                            if (parameters.find(new BerTag(0x87)) == null) {
+                            if (TLV.find(parameters, Tag.ber(0x87)).isEmpty()) {
                                 params = GPUtils.concatenate(params, new byte[]{(byte) 0x87, 0x02, 0x20, 0x20});
                             } else {
                                 System.err.println("Warning: 0x87 already in parameters, " + OPT_ALLOW_FROM + " not applied");

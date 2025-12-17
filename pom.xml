@@ -58,6 +58,7 @@
     </distributionManagement>
     <modules>
         <module>prefs</module>
+        <module>tlv</module>
         <module>library</module>
         <module>pace</module>
         <module>tool</module>

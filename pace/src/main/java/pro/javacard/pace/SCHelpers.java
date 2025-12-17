@@ -1,33 +1,27 @@
 package pro.javacard.pace;
 
-import com.payneteasy.tlv.BerTlv;
-import com.payneteasy.tlv.BerTlvParser;
-import com.payneteasy.tlv.BerTlvs;
 import org.bouncycastle.util.encoders.Hex;
 import org.slf4j.Logger;
+import pro.javacard.tlv.TLV;
 
 import java.util.ArrayList;
 import java.util.List;
 
 class SCHelpers {
-    static String spacer(int n) {
-        return new String(new char[n]).replace('\0', ' ');
-    }
+    static void dump(TLV tlv, int depth, List<String> result) {
+        if (tlv.hasChildren()) {
+            result.add(String.format("%s[%s]", " ".repeat(depth * 5), Hex.toHexString(tlv.tag().bytes())));
 
-    static void dump(BerTlv tlv, int depth, List<String> result) {
-        if (tlv.isConstructed()) {
-            result.add(String.format("%s[%s]", spacer(depth * 5), Hex.toHexString(tlv.getTag().bytes)));
-
-            for (BerTlv child : tlv.getValues()) {
+            for (TLV child : tlv.children()) {
                 dump(child, depth + 1, result);
             }
         } else {
-            result.add(String.format("%s[%s] %s", spacer(depth * 5), Hex.toHexString(tlv.getTag().bytes), Hex.toHexString(tlv.getBytesValue())));
+            result.add(String.format("%s[%s] %s", " ".repeat(depth * 5), Hex.toHexString(tlv.tag().bytes()), Hex.toHexString(tlv.value())));
         }
     }
 
-    static void dump(BerTlvs tlv, int depth, List<String> result) {
-        for (BerTlv t : tlv.getList()) {
+    static void dump(List<TLV> list, int depth, List<String> result) {
+        for (TLV t : list) {
             dump(t, depth, result);
         }
     }
@@ -35,7 +29,7 @@ class SCHelpers {
     public static List<String> visualize_tlv(byte[] payload) {
         ArrayList<String> result = new ArrayList<>();
         try {
-            BerTlvs tlvs = new BerTlvParser().parse(payload);
+            var tlvs = TLV.parse(payload);
             dump(tlvs, 0, result);
         } catch (ArrayIndexOutOfBoundsException e) {
             throw new IllegalArgumentException("Not valid TLVs: " + e.getMessage(), e);

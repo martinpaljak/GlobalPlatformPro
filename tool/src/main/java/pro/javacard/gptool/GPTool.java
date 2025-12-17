@@ -44,6 +44,7 @@ import pro.javacard.pace.PACE;
 import pro.javacard.pace.PACEException;
 
 import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
 import javax.smartcardio.Card;
 import javax.smartcardio.CardException;
 import javax.smartcardio.CardTerminal;
@@ -297,12 +298,17 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
 
             // Delegated management
             if (args.has(OPT_DM_KEY)) {
-                Optional<PrivateKey> dmkey = args.valueOf(OPT_DM_KEY).getPrivate();
+                Key key = args.valueOf(OPT_DM_KEY);
+                Optional<PrivateKey> dmkey = key.getPrivate();
+                Optional<java.security.Key> symkey = key.getSymmetric();
 
-                if (dmkey.isEmpty() || !(dmkey.get() instanceof RSAPrivateKey)) {
-                    throw new IllegalArgumentException("Only RSA private keys are supported for DM");
+                if (dmkey.isPresent() && dmkey.get() instanceof RSAPrivateKey) {
+                    gp.setTokenizer(DMTokenizer.forPrivateKey((RSAPrivateKey) dmkey.get()));
+                } else if (symkey.isPresent() && symkey.get() instanceof SecretKey) {
+                    gp.setTokenizer(DMTokenizer.forAESKey((SecretKey) symkey.get()));
+                } else {
+                    throw new IllegalArgumentException("Only RSA private or AES/secret keys are supported for DM");
                 }
-                gp.setTokenizer(DMTokenizer.forPrivateKey((RSAPrivateKey) dmkey.get()));
             } else if (args.has(OPT_DM_TOKEN)) {
                 byte[] token = args.valueOf(OPT_DM_TOKEN).value();
                 gp.setTokenizer(DMTokenizer.forToken(token));

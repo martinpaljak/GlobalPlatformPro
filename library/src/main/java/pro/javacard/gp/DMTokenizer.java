@@ -31,6 +31,7 @@ import java.security.Signature;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.spec.MGF1ParameterSpec;
 import java.security.spec.PSSParameterSpec;
+import javax.crypto.SecretKey;
 
 // NOTE: Thanks goes to Gregor Johannson for initial implementation
 public abstract class DMTokenizer {
@@ -86,6 +87,10 @@ public abstract class DMTokenizer {
         return new RSATokenizer(pkey);
     }
 
+    public static DMTokenizer forAESKey(SecretKey key) {
+        return new AESTokenizer(key);
+    }
+
     public static DMTokenizer forToken(byte[] token) {
         return new StaticTokenizer(token);
     }
@@ -119,6 +124,28 @@ public abstract class DMTokenizer {
             } catch (GeneralSecurityException e) {
                 throw new GPException("Can not calculate DM token: " + e.getMessage(), e);
             }
+        }
+    }
+
+    static class AESTokenizer extends DMTokenizer {
+
+        private final SecretKey key;
+
+        AESTokenizer(SecretKey key) {
+            this.key = key;
+        }
+
+        @Override
+        protected byte[] getToken(CommandAPDU apdu) {
+            byte[] dtbs = dtbs(apdu);
+            byte[] token = GPCrypto.aes_cmac(key.getEncoded(), dtbs, 64);
+            log.trace("DM token: {}", HexUtils.bin2hex(token));
+            return token;
+        }
+
+        @Override
+        protected boolean canTokenize(CommandAPDU apdu) {
+            return true;
         }
     }
 

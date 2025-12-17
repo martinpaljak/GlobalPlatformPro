@@ -1,3 +1,24 @@
+/*
+ * Copyright (c) 2025 Martin Paljak
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 package pro.javacard.tlv;
 
 import org.testng.Assert;
@@ -353,5 +374,100 @@ class TestTLV {
         java.util.List<TLV> list = new java.util.ArrayList<>();
         list.add(null);
         Assert.assertThrows(NullPointerException.class, () -> TLV.of(Tag.ber("E0"), list));
+    }
+
+    @Test
+    public void testThreeByteBERTag() {
+        // 9F 81 01 -> 1st byte 9F (1F, constructed), 2nd 81 (continuation), 3rd 01
+        // (end)
+        // This exercises the `for` loop in validate() which runs for middle bytes.
+        // For a 2-byte tag like 9F 01, loop i=1; i<1 is false. Loop doesn't run.
+        // For 3-byte tag, i=1; i<2. Loop runs once.
+        var tag = new BERTag(hex("9F 81 01"));
+        Assert.assertNotNull(tag);
+        Assert.assertEquals(tag.bytes().length, 3);
+    }
+
+    @Test
+    public void testEqualsMixedState() {
+        // Compare TLV with value vs TLV with children (value=null)
+        // using package-private constructor to force specific state if needed
+        // but TLV.of(Tag, byte[]) makes value != null.
+        // TLV.build(Tag) makes value == null.
+
+        var t1 = TLV.of("9F01", hex("01")); // value != null
+        var t2 = TLV.build("9F01"); // value == null
+
+        // This hits Arrays.equals(value, other.value) -> Arrays.equals(byte[], null) ->
+        // false
+        Assert.assertNotEquals(t1, t2);
+
+        // Arrays.equals(null, byte[]) -> false
+        Assert.assertNotEquals(t2, t1);
+    }
+
+    @Test
+    public void testInvalidBerTagMiddleByte() {
+        // 9F 01 01 -> 2nd byte 01 missing 0x80 bit.
+        // Should throw "Tag continuation byte missing 0x80 bit"
+        var data = hex("9F 01 01");
+        Assert.assertThrows(IllegalArgumentException.class, () -> new BERTag(data));
+    }
+
+    @Test
+    public void testEqualsSystematic() {
+        // A && B && C && D
+        var t1 = TLV.of("9F01", hex("01"));
+
+        // A false: instanceof
+        Assert.assertNotEquals(t1, "string");
+
+        // A true, B false: tag mismatch
+        var t2 = TLV.of("9F02", hex("01"));
+        Assert.assertNotEquals(t1, t2);
+
+        // A true, B true, C false: value mismatch
+        var t3 = TLV.of("9F01", hex("02"));
+        Assert.assertNotEquals(t1, t3);
+
+        // A true, B true, C true, D false: children mismatch
+        // Need constructed TLVs for this.
+        var p1 = TLV.build("E0").add(t1);
+        var p2 = TLV.build("E0").add(t3); // t3 has diff value, so child is diff
+        Assert.assertNotEquals(p1, p2);
+
+        // All true
+        var p3 = TLV.build("E0").add(t1);
+        Assert.assertEquals(p1, p3);
+    }
+
+    @Test
+    public void testParseInvalidFourByteTag() {
+        // 9F 81 81 81.
+        // Parse loop will run for i=1, i=2, i=3.
+        // i=1 (81): cont.
+        // i=2 (81): cont.
+        // i=3 (81): cont.
+        // i=4 Loop ends.
+        // new BERTag called. Last byte 81 has high bit set. Throws.
+        // This covers the "loop finishes without break" path in parse()
+        var data = hex("9F 81 81 81");
+        Assert.assertThrows(IllegalArgumentException.class, () -> BERTag.parse(java.nio.ByteBuffer.wrap(data)));
+    }
+
+    @Test
+    public void testOfNullCollection() {
+        Assert.assertThrows(NullPointerException.class, () -> TLV.of(Tag.ber("E0"), (java.util.Collection<TLV>) null));
+    }
+
+    @Test
+    public void testEmptyBERTag() {
+        Assert.assertThrows(IllegalArgumentException.class, () -> new BERTag(new byte[0]));
+    }
+
+    @Test
+    public void testEqualsObject() {
+        var t = TLV.build("9F01");
+        Assert.assertNotEquals(t, new Object());
     }
 }

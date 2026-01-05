@@ -179,7 +179,7 @@ public class PlaintextKeys extends GPCardKeys {
             byte[] master = validateKey(HexUtils.stringToBin(mk));
             PlaintextKeys keys = PlaintextKeys.fromMasterKey(master);
             if (div != null) {
-                keys.setDiversifier(div);
+                keys.setDiversifier(kdf_templates.getOrDefault(div, div));
             } else {
                 logger.warn("Using master key without derivation, is this right?");
             }
@@ -394,6 +394,9 @@ public class PlaintextKeys extends GPCardKeys {
 
     @Override
     public PlaintextKeys diversify(GPSecureChannelVersion.SCP scp, byte[] kdd) {
+        if (kdd != null && kdd.length > 10) {
+            throw new IllegalArgumentException("KDD too long: " + kdd.length);
+        }
         // Set SCP and KDD and diversification state
         super.diversify(scp, kdd);
 

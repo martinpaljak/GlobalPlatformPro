@@ -1,12 +1,68 @@
+/*
+ * Copyright (c) 2025 Martin Paljak
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 package pro.javacard.gp.data;
+
+import apdu4j.core.HexUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 
+// It would be nice if IDE helped with autocomplete and compiler helped with better compile time checks.
+// We can't subclass enum, so instead make enum-s implement a simple interface, that give a "bitfield definition".
+// Could also use BitSet and define a dictionary for "bit names" but this approach feels a bit better than either
+// alternative or something combining records and BitSet-s etc.
 public interface BitField<T extends Enum<T> & BitField<T>> {
-    static boolean has(Def f, byte[] bytes, boolean lax) {
+
+    Logger log = LoggerFactory.getLogger(BitField.class);
+
+    // Parse bytes, throw if RFU bits are set
+    static <T extends Enum<T> & BitField<T>> Set<T> parse(Class<T> clazz, byte[] bytes, int... validLengths) {
+        if (validLengths.length > 0) {
+            boolean valid = Arrays.stream(validLengths).anyMatch(l -> l == bytes.length);
+            if (!valid) {
+                throw new IllegalArgumentException(clazz.getSimpleName() + " must be " +
+                        Arrays.toString(validLengths) + " bytes: " + HexUtils.bin2hex(bytes));
+            }
+        }
+        var r = parse(clazz, bytes);
+        // Check for RFU
+        for (var e : r) {
+            if (e.def() instanceof Def.RFU) {
+                throw new IllegalArgumentException("RFU bits set in " + clazz.getSimpleName() + ": " + HexUtils.bin2hex(bytes));
+            }
+        }
+        return r;
+    }
+
+    // Encode to bytes with fixed length
+    static <T extends Enum<T> & BitField<T>> byte[] encode(Set<T> fields, int length) {
+        return toBytes(EnumSet.copyOf(fields), length);
+    }
+
+    static boolean has(byte[] bytes, Def f, boolean lax) {
         if (f instanceof Def.Bits bits) {
             var yes = 0;
             for (var bit : bits.bits()) {
@@ -18,6 +74,7 @@ public interface BitField<T extends Enum<T> & BitField<T>> {
         } else if (f instanceof Def.ByteMask byteMask) {
             if (byteMask.n() >= bytes.length) {
                 if (lax) {
+                    log.error("Mask is for a byte that is more than bytes available, defaulting to false");
                     return false;
                 } else {
                     throw new IllegalArgumentException("Need byte at index " + byteMask.n() + " but only " + bytes.length + " bytes provided");
@@ -25,7 +82,7 @@ public interface BitField<T extends Enum<T> & BitField<T>> {
             }
             return (bytes[byteMask.n()] & byteMask.mask()) == byteMask.mask();
         } else if (f instanceof Def.RFU rfu) {
-            return has(rfu.def(), bytes, true);
+            return has(bytes, rfu.def(), true);
         }
         return false;
     }
@@ -33,17 +90,17 @@ public interface BitField<T extends Enum<T> & BitField<T>> {
     static <T extends Enum<T> & BitField<T>> Set<T> parse(Class<T> base, byte[] bytes) {
         var result = EnumSet.noneOf(base);
         for (var e : base.getEnumConstants()) {
-            if (has(e.def(), bytes, true)) {
+            if (has(bytes, e.def(), true)) {
                 result.add(e);
-                if (e.name().equals("RFU")) {
-                    //log.warn("{} RFU bits set in {}", base.getName(), Hex.toHexString(bytes));
+                if (e.def() instanceof Def.RFU) {
+                    log.warn("{} RFU bits set in {}", base.getName(), HexUtils.bin2hex(bytes));
                 }
             }
         }
         return result;
     }
 
-    static <T extends Enum<T> & BitField<T>> byte[] toBytes(EnumSet<T> fields, int length) {
+    static <T extends Enum<T> & BitField<T>> byte[] toBytes(Set<T> fields, int length) {
         byte[] result = new byte[length];
 
         for (var field : fields) {
@@ -68,7 +125,7 @@ public interface BitField<T extends Enum<T> & BitField<T>> {
         return result;
     }
 
-    static <T extends Enum<T> & BitField<T>> byte[] toBytes(EnumSet<T> fields) {
+    static <T extends Enum<T> & BitField<T>> byte[] toBytes(Set<T> fields) {
         byte[] result = toBytes(fields, 16);
 
         // Trim trailing zeros
@@ -120,7 +177,7 @@ public interface BitField<T extends Enum<T> & BitField<T>> {
         return bits((byte) (nthByte * 8 + bit));
     }
 
-    // 1 based byte, bits are 8th..1st
+    // 1 based byte, bits are 8th...1st
     static Def.Bits byte_bit_rl(byte nthByte, int bit) {
         return bits((byte) ((nthByte - 1) * 8 + (8 - bit)));
     }
@@ -129,10 +186,42 @@ public interface BitField<T extends Enum<T> & BitField<T>> {
         return new Def.ByteMask((byte) n, (byte) (mask & 0xFF));
     }
 
+    // Calculate the length in bytes required to store the whole bitfield
+    static <T extends Enum<T> & BitField<T>> int length(Class<T> clazz) {
+        int max = 0;
+        for (var e : clazz.getEnumConstants()) {
+            int len = e.def().length();
+            if (len > max) {
+                max = len;
+            }
+        }
+        return max;
+    }
+
     // BitField definition for the enum
     Def def();
 
     sealed interface Def permits Def.Bits, BitField.Def.ByteMask, BitField.Def.RFU {
+        // Calculate the length in bytes required to store this definition
+        default int length() {
+            if (this instanceof Def.Bits bits) {
+                // find the highest bit
+                int max = 0;
+                for (byte b : bits.bits()) {
+                    int v = b & 0xFF;
+                    if (v > max) {
+                        max = v;
+                    }
+                }
+                return (max / 8) + 1;
+            } else if (this instanceof Def.ByteMask byteMask) {
+                return (byteMask.n() & 0xFF) + 1;
+            } else if (this instanceof Def.RFU rfu) {
+                return rfu.def().length();
+            }
+            throw new IllegalArgumentException("Unknown definition type: " + this);
+        }
+
         // Present, if all bits are present
         record Bits(List<Byte> bits) implements Def {
             public Bits {

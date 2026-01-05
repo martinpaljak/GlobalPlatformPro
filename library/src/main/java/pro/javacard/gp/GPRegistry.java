@@ -27,10 +27,10 @@ import org.slf4j.LoggerFactory;
 import pro.javacard.capfile.AID;
 import pro.javacard.gp.GPRegistryEntry.Kind;
 import pro.javacard.gp.GPRegistryEntry.Privilege;
-import pro.javacard.tlv.Tag;
+import pro.javacard.gp.data.BitField;
 import pro.javacard.tlv.TLV;
+import pro.javacard.tlv.Tag;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -137,7 +137,7 @@ public final class GPRegistry implements Iterable<GPRegistryEntry> {
                 if (type == Kind.ISD || type == Kind.APP) {
                     e.setType(type);
                     e.setAID(aid);
-                    e.setPrivileges(Privilege.fromByte(privileges));
+                    e.setPrivileges(BitField.parse(Privilege.class, new byte[]{privileges}, 1, 3));
                     e.setLifeCycle(lifecycle);
                 } else if (type == Kind.PKG) {
                     if (privileges != 0x00) {
@@ -184,7 +184,7 @@ public final class GPRegistry implements Iterable<GPRegistryEntry> {
 
                 var privstag = t.find(Tag.ber(0xC5));
                 if (privstag != null) {
-                    e.setPrivileges(Privilege.fromBytes(privstag.value()));
+                    e.setPrivileges(BitField.parse(Privilege.class, privstag.value(), 1, 3));
                 }
 
                 // 11.1.7 of GPC 2.3

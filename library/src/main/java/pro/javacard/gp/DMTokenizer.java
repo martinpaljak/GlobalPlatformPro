@@ -27,10 +27,7 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
-import java.security.Signature;
 import java.security.interfaces.RSAPrivateKey;
-import java.security.spec.MGF1ParameterSpec;
-import java.security.spec.PSSParameterSpec;
 
 // NOTE: Thanks goes to Gregor Johannson for initial implementation
 public abstract class DMTokenizer {

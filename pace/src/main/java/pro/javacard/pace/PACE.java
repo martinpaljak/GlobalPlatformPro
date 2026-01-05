@@ -5,10 +5,6 @@ import apdu4j.core.CommandAPDU;
 import apdu4j.core.HexUtils;
 import apdu4j.core.ResponseAPDU;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
-import pro.javacard.tlv.Tag;
-import pro.javacard.tlv.TLV;
-
-import java.nio.ByteBuffer;
 import org.bouncycastle.crypto.engines.AESEngine;
 import org.bouncycastle.crypto.generators.ECKeyPairGenerator;
 import org.bouncycastle.crypto.macs.CMac;
@@ -19,6 +15,8 @@ import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.util.encoders.Hex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pro.javacard.tlv.TLV;
+import pro.javacard.tlv.Tag;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

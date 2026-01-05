@@ -107,7 +107,16 @@
                     <compilerArgs>
                         <arg>-Werror</arg>
                         <arg>-Xlint:all</arg>
+                        <arg>-Xlint:-processing</arg>
                     </compilerArgs>
+                    <!-- TODO: get rid of this. -->
+                    <annotationProcessorPaths combine.children="append">
+                        <path>
+                            <groupId>com.google.auto.service</groupId>
+                            <artifactId>auto-service</artifactId>
+                            <version>1.1.1</version>
+                        </path>
+                    </annotationProcessorPaths>
                 </configuration>
             </plugin>
             <plugin>
@@ -117,7 +126,7 @@
                 <executions>
                     <execution>
                         <id>parent-spotbugs</id>
-                        <phase>test</phase>
+                        <phase>verify</phase>
                         <goals>
                             <goal>check</goal>
                         </goals>

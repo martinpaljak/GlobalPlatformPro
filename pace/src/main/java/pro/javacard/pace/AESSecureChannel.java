@@ -2,11 +2,9 @@ package pro.javacard.pace;
 
 import apdu4j.core.*;
 import org.slf4j.Logger;
-import pro.javacard.tlv.Tag;
-import pro.javacard.tlv.TLV;
-
-import java.nio.ByteBuffer;
 import org.slf4j.LoggerFactory;
+import pro.javacard.tlv.TLV;
+import pro.javacard.tlv.Tag;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;

@@ -309,27 +309,10 @@ public class GPRegistryEntry {
             this.def = def;
         }
 
-        public static Optional<Privilege> lookup(String v) {
-            return Arrays.stream(values()).filter(e -> e.name().equalsIgnoreCase(v)).findFirst();
-        }
-
-        public static Set<Privilege> fromBytes(byte[] v) {
-            if (v.length != 1 && v.length != 3) {
-                throw new IllegalArgumentException("Privileges must be encoded on 1 or 3 bytes: " + HexUtils.bin2hex(v));
-            }
-            var r = BitField.parse(Privilege.class, v);
-            if (r.contains(Privilege.RFU)) {
-                throw new GPDataException("RFU bits set in privileges", v);
-            }
-            return r;
-        }
-
-        public static Set<Privilege> fromByte(byte v) {
-            return fromBytes(new byte[]{v});
-        }
-
-        public static byte[] toBytes(Set<Privilege> privs) {
-            return BitField.toBytes(EnumSet.copyOf(privs), 3);
+        public static Optional<Privilege> lookup(String name) {
+            return Arrays.stream(values())
+                    .filter(e -> e.name().equalsIgnoreCase(name))
+                    .findFirst();
         }
 
         @Override

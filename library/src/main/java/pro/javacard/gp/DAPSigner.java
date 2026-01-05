@@ -9,9 +9,6 @@ import java.security.PrivateKey;
 import java.security.Signature;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.RSAPrivateKey;
-import java.security.spec.MGF1ParameterSpec;
-import java.security.spec.PSSParameterSpec;
-import java.util.Arrays;
 
 public class DAPSigner {
 

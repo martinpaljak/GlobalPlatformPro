@@ -28,9 +28,6 @@ import apdu4j.core.CommandAPDU;
 import apdu4j.core.HexUtils;
 import apdu4j.core.ResponseAPDU;
 import org.bouncycastle.asn1.x9.ECNamedCurveTable;
-import pro.javacard.tlv.Tag;
-import pro.javacard.tlv.TLV;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pro.javacard.capfile.AID;
@@ -38,6 +35,9 @@ import pro.javacard.capfile.CAPFile;
 import pro.javacard.gp.GPKeyInfo.GPKey;
 import pro.javacard.gp.GPRegistryEntry.Kind;
 import pro.javacard.gp.GPRegistryEntry.Privilege;
+import pro.javacard.gp.data.BitField;
+import pro.javacard.tlv.TLV;
+import pro.javacard.tlv.Tag;
 
 import javax.crypto.SecretKey;
 import java.io.ByteArrayOutputStream;
@@ -762,7 +762,7 @@ public class GPSession {
         logger.trace("Installation parameters: {}", HexUtils.bin2hex(installParams));
 
         // Try to use the minimal
-        byte[] privs = Privilege.toBytes(privileges);
+        byte[] privs = BitField.encode(privileges, 3);
         ByteArrayOutputStream bo = new ByteArrayOutputStream();
         try {
             bo.write(packageAID.getLength());
@@ -885,7 +885,7 @@ public class GPSession {
     public void makeDefaultSelected(AID aid) throws IOException, GPException {
         ByteArrayOutputStream bo = new ByteArrayOutputStream();
         // Only supported privilege.
-        byte[] privileges = Privilege.toBytes(EnumSet.of(Privilege.CardReset));
+        byte[] privileges = BitField.encode(EnumSet.of(Privilege.CardReset), 3);
 
         try {
             bo.write(0);

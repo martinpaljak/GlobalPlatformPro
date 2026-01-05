@@ -1,12 +1,10 @@
 // https://stackoverflow.com/a/67895919/44289
 @SuppressWarnings({"requires-automatic"})
 module gptool {
-    uses pro.javacard.gp.CardKeysProvider;
     requires transitive pro.javacard.globalplatform;
     requires pro.javacard.pace;
     requires java.smartcardio;
     requires jopt.simple;
-    requires com.google.auto.service;
     requires apdu4j.pcsc;
     requires pro.javacard.tlv;
     requires com.fasterxml.jackson.core;

@@ -25,12 +25,8 @@ import apdu4j.pcsc.CardBIBO;
 import apdu4j.pcsc.PCSCReader;
 import apdu4j.pcsc.TerminalManager;
 import apdu4j.pcsc.terminals.LoggingCardTerminal;
-import com.google.auto.service.AutoService;
-import joptsimple.OptionSet;
-import pro.javacard.tlv.Tag;
-import pro.javacard.tlv.TLV;
 
-import java.nio.ByteBuffer;
+import joptsimple.OptionSet;
 import joptsimple.OptionSpec;
 import pro.javacard.capfile.AID;
 import pro.javacard.capfile.CAPFile;
@@ -42,6 +38,8 @@ import pro.javacard.gp.keys.PlaintextKeys;
 import pro.javacard.pace.AESSecureChannel;
 import pro.javacard.pace.PACE;
 import pro.javacard.pace.PACEException;
+import pro.javacard.tlv.TLV;
+import pro.javacard.tlv.Tag;
 
 import javax.crypto.Cipher;
 import javax.smartcardio.Card;
@@ -64,9 +62,8 @@ import java.util.stream.Collectors;
 import static pro.javacard.gp.GPSecureChannelVersion.SCP.*;
 
 // Does the CLI parameter parsing and associated execution
-@AutoService(SmartCardApp.class)
-public final class GPTool extends GPCommandLineInterface implements SimpleSmartCardApp {
-    // NOTE: can't have a logger here, as it is set up based on args and env. This class should only use stdout/stderr.
+public final class GPTool extends GPCommandLineInterface {
+    // NOTE: can't have a static logger here, as it is set up based on args and env. This class should only use stdout/stderr.
 
     private static boolean isVerbose = false;
     private static boolean isTrace = false;
@@ -117,15 +114,6 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                 System.out.printf("# GlobalPlatformPro %s%n", GPSession.getVersion());
                 System.out.printf("# Running on %s %s %s", System.getProperty("os.name"), System.getProperty("os.version"), System.getProperty("os.arch"));
                 System.out.printf(", Java %s by %s%n", System.getProperty("java.version"), System.getProperty("java.vendor"));
-            }
-            try {
-                // Test for unlimited crypto
-                if (Cipher.getMaxAllowedKeyLength("AES") == 128) {
-                    System.err.println("# Error: unlimited crypto policy is NOT installed!");
-                    System.err.println("# Please install and use JDK 11 LTS or later");
-                }
-            } catch (NoSuchAlgorithmException e) {
-                System.err.println("# Error: no AES support in JRE?");
             }
         }
         preamble = false;
@@ -215,8 +203,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
         return needle == 1 && hay == 0;
     }
 
-    // For running in apdu4j mode
-    @Override
+    // Main entry point when called with a card connection
     public int run(BIBO bibo, String[] argv) {
         try {
             OptionSet args = parseArguments(argv);
@@ -322,7 +309,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
             // Normally assume a single master key
             final GPCardKeys keys;
 
-            Optional<GPCardKeys> key = keyFromPlugin(args.valueOf(OPT_KEY));
+            Optional<GPCardKeys> key = parseKeySpec(args.valueOf(OPT_KEY));
             if (key.isPresent()) {
                 // keys come from custom or plaintext provider
                 keys = key.get();
@@ -819,7 +806,7 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
                     final Optional<GPCardKeys> lockKey;
                     // Get new key values
                     if (args.has(OPT_LOCK)) {
-                        lockKey = keyFromPlugin(args.valueOf(OPT_LOCK));
+                        lockKey = parseKeySpec(args.valueOf(OPT_LOCK));
                     } else if (args.has(OPT_LOCK_ENC) && args.has(OPT_LOCK_MAC) && args.has(OPT_LOCK_DEK)) {
                         lockKey = Optional.of(PlaintextKeys.fromKeys(args.valueOf(OPT_LOCK_ENC).value(), args.valueOf(OPT_LOCK_MAC).value(), args.valueOf(OPT_LOCK_DEK).value()));
                     } else {
@@ -935,16 +922,33 @@ public final class GPTool extends GPCommandLineInterface implements SimpleSmartC
     }
 
 
-    private static Optional<GPCardKeys> keyFromPlugin(String spec) {
+    // Parse a key specification string into card keys
+    // Supports: <kdf>:<hex>, <kdf>:default, <hex>, or "default"
+    private static Optional<GPCardKeys> parseKeySpec(String spec) {
+        if (spec == null || spec.isBlank())
+            return Optional.empty();
+        spec = spec.trim();
         try {
-            ServiceLoader<CardKeysProvider> sl = ServiceLoader.load(CardKeysProvider.class, GPTool.class.getClassLoader());
-            List<CardKeysProvider> list = new ArrayList<>();
-            sl.iterator().forEachRemaining(list::add);
-            return list.stream().map(e -> e.getCardKeys(spec)).filter(Optional::isPresent).map(Optional::get).findFirst();
-        } catch (ServiceConfigurationError e) {
-            System.err.println("Could not load key provider: " + e.getMessage());
+            // <kdf>:<hex> or <kdf>:default
+            for (Map.Entry<String, String> d : PlaintextKeys.kdf_templates.entrySet()) {
+                if (spec.toLowerCase().startsWith(d.getKey() + ":")) {
+                    byte[] k = hexOrDefault(spec.substring(d.getKey().length() + 1));
+                    return Optional.of(PlaintextKeys.fromMasterKey(k, d.getValue()));
+                }
+            }
+            // <hex> or "default"
+            byte[] k = hexOrDefault(spec);
+            return Optional.of(PlaintextKeys.fromMasterKey(k));
+        } catch (IllegalArgumentException e) {
+            // Invalid hex or key format
+            return Optional.empty();
         }
-        return Optional.empty();
+    }
+
+    private static byte[] hexOrDefault(String v) {
+        if ("default".startsWith(v.toLowerCase()))
+            return PlaintextKeys.DEFAULT_KEY();
+        return HexUtils.stringToBin(v);
     }
 
 

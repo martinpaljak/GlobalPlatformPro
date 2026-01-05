@@ -3,36 +3,38 @@ package pro.javacard.gptool;
 import apdu4j.core.HexUtils;
 import org.testng.Assert;
 import org.testng.annotations.Test;
-import pro.javacard.gp.CardKeysProvider;
 import pro.javacard.gp.GPCardKeys;
 import pro.javacard.gp.GPCrypto;
 import pro.javacard.gp.GPSecureChannelVersion;
 import pro.javacard.gp.keys.PlaintextKeys;
 
-import java.util.Optional;
-
 import static pro.javacard.gp.GPCardKeys.KeyPurpose.*;
 
+// Tests key parsing and derivation functionality
 public class TestPlaintextKeysProvider {
 
     @Test
     public void testGarbage() {
-        CardKeysProvider p = new PlaintextKeysProvider();
-        Assert.assertFalse(p.getCardKeys("404142434445464748494a4b4c4d4e4fXX").isPresent());
+        // Invalid hex should fail to parse
+        try {
+            HexUtils.stringToBin("404142434445464748494a4b4c4d4e4fXX");
+            Assert.fail("Should have thrown exception for invalid hex");
+        } catch (IllegalArgumentException e) {
+            // Expected
+        }
     }
 
     @Test
     public void testMasterKey() {
-        CardKeysProvider p = new PlaintextKeysProvider();
-        Assert.assertTrue(p.getCardKeys("404142434445464748494a4b4c4d4e4f").isPresent());
+        byte[] key = HexUtils.stringToBin("404142434445464748494a4b4c4d4e4f");
+        GPCardKeys keys = PlaintextKeys.fromMasterKey(key);
+        Assert.assertNotNull(keys);
     }
 
     @Test
     public void testDiversificationEMV() {
-        CardKeysProvider p = new PlaintextKeysProvider();
-        Optional<GPCardKeys> pk = p.getCardKeys("emv:404142434445464748494a4b4c4d4e4f");
-        Assert.assertTrue(pk.isPresent());
-        GPCardKeys keys = pk.get();
+        byte[] master = HexUtils.stringToBin("404142434445464748494a4b4c4d4e4f");
+        GPCardKeys keys = PlaintextKeys.fromMasterKey(master, PlaintextKeys.kdf_templates.get("emv"));
         byte[] kdd = new byte[]{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09};
         keys = keys.diversify(GPSecureChannelVersion.SCP.SCP02, kdd);
 
@@ -43,13 +45,10 @@ public class TestPlaintextKeysProvider {
 
     @Test
     public void testDiversificationVISA() {
-        CardKeysProvider p = new PlaintextKeysProvider();
-        Optional<GPCardKeys> pk = p.getCardKeys("visa2:404142434445464748494a4b4c4d4e4f");
-        Assert.assertTrue(pk.isPresent());
-        GPCardKeys keys = pk.get();
+        byte[] master = HexUtils.stringToBin("404142434445464748494a4b4c4d4e4f");
+        GPCardKeys keys = PlaintextKeys.fromMasterKey(master, PlaintextKeys.kdf_templates.get("visa2"));
         byte[] kdd = new byte[]{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09};
         keys = keys.diversify(GPSecureChannelVersion.SCP.SCP02, kdd);
-
 
         Assert.assertEquals(HexUtils.hex2bin("2BE598"), keys.kcv(ENC));
         Assert.assertEquals(HexUtils.hex2bin("58DA38"), keys.kcv(MAC));
@@ -58,24 +57,20 @@ public class TestPlaintextKeysProvider {
 
     @Test
     public void testUnknownDiversification() {
-        CardKeysProvider p = new PlaintextKeysProvider();
-        Optional<GPCardKeys> pk = p.getCardKeys("foobar:404142434445464748494a4b4c4d4e4f");
-        Assert.assertFalse(pk.isPresent());
+        // Unknown KDF template should return null
+        String unknownKdf = PlaintextKeys.kdf_templates.get("foobar");
+        Assert.assertNull(unknownKdf);
     }
 
     @Test
     public void testDefaultKeys() {
-        CardKeysProvider p = new PlaintextKeysProvider();
-        Optional<GPCardKeys> pk = p.getCardKeys("default");
-        Assert.assertTrue(pk.isPresent());
+        GPCardKeys keys = PlaintextKeys.defaultKey();
+        Assert.assertNotNull(keys);
     }
 
     @Test
-    public void testDefaultKeysWithDiversifier() throws Exception {
-        CardKeysProvider p = new PlaintextKeysProvider();
-        Optional<GPCardKeys> pk = p.getCardKeys("kdf3:default");
-        Assert.assertTrue(pk.isPresent());
-        GPCardKeys keys = pk.get();
+    public void testDefaultKeysWithDiversifier() {
+        GPCardKeys keys = PlaintextKeys.fromMasterKey(PlaintextKeys.DEFAULT_KEY(), PlaintextKeys.kdf_templates.get("kdf3"));
         byte[] kdd = new byte[]{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09};
         keys = keys.diversify(GPSecureChannelVersion.SCP.SCP03, kdd);
 

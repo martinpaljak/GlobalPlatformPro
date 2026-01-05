@@ -24,15 +24,14 @@ import apdu4j.core.CommandAPDU;
 import apdu4j.core.HexUtils;
 import apdu4j.core.ResponseAPDU;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
-import pro.javacard.tlv.Tag;
-import pro.javacard.tlv.TLV;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pro.javacard.gp.data.BitField;
+import pro.javacard.tlv.TLV;
+import pro.javacard.tlv.Tag;
 
 import java.io.IOException;
 import java.math.BigInteger;
-import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -210,10 +209,6 @@ public final class GPData {
         public Def def() {
             return def;
         }
-
-        public static Set<SIGNATURE> byValue(byte[] v) {
-            return BitField.parse(SIGNATURE.class, v);
-        }
     }
 
     static List<Integer> toUnsignedList(byte[] b) {
@@ -268,14 +263,14 @@ public final class GPData {
                 }
                 t = v.find(Tag.ber(0x81));
                 if (t != null) {
-                    Set<GPRegistryEntry.Privilege> privs = GPRegistryEntry.Privilege.fromBytes(t.value());
+                    Set<GPRegistryEntry.Privilege> privs = BitField.parse(GPRegistryEntry.Privilege.class, t.value());
                     System.out.println("Supported DOM privileges: "
                             + privs.stream().map(Enum::toString).collect(Collectors.joining(", ")));
                     continue;
                 }
                 t = v.find(Tag.ber(0x82));
                 if (t != null) {
-                    Set<GPRegistryEntry.Privilege> privs = GPRegistryEntry.Privilege.fromBytes(t.value());
+                    Set<GPRegistryEntry.Privilege> privs = BitField.parse(GPRegistryEntry.Privilege.class, t.value());
                     System.out.println("Supported APP privileges: "
                             + privs.stream().map(Enum::toString).collect(Collectors.joining(", ")));
                     continue;
@@ -289,21 +284,21 @@ public final class GPData {
                 }
                 t = v.find(Tag.ber(0x85));
                 if (t != null) {
-                    String ciphers = SIGNATURE.byValue(t.value()).stream().map(Enum::toString)
+                    String ciphers = BitField.parse(SIGNATURE.class, t.value()).stream().map(Enum::toString)
                             .collect(Collectors.joining(", "));
                     System.out.println("Supported Token Verification ciphers: " + ciphers);
                     continue;
                 }
                 t = v.find(Tag.ber(0x86));
                 if (t != null) {
-                    String ciphers = SIGNATURE.byValue(t.value()).stream().map(Enum::toString)
+                    String ciphers = BitField.parse(SIGNATURE.class, t.value()).stream().map(Enum::toString)
                             .collect(Collectors.joining(", "));
                     System.out.println("Supported Receipt Generation ciphers: " + ciphers);
                     continue;
                 }
                 t = v.find(Tag.ber(0x87));
                 if (t != null) {
-                    String ciphers = SIGNATURE.byValue(t.value()).stream().map(Enum::toString)
+                    String ciphers = BitField.parse(SIGNATURE.class, t.value()).stream().map(Enum::toString)
                             .collect(Collectors.joining(", "));
                     System.out.println("Supported DAP Verification ciphers: " + ciphers);
                     continue;

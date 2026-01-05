@@ -9,6 +9,7 @@ import org.testng.annotations.Test;
 import pro.javacard.capfile.AID;
 import pro.javacard.gp.*;
 import pro.javacard.gp.GPRegistryEntry.Privilege;
+import pro.javacard.gp.data.BitField;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -96,7 +97,7 @@ public class TestParseTags {
     @Test
     public void testCardCapabilities() {
         byte[] v = HexUtils.hex2bin("3B");
-        Set<GPData.SIGNATURE> ciphers = GPData.SIGNATURE.byValue(v);
+        Set<GPData.SIGNATURE> ciphers = BitField.parse(GPData.SIGNATURE.class, v);
         Assert.assertEquals(ciphers.size(), 5);
         System.out.println(ciphers);
     }
@@ -112,17 +113,17 @@ public class TestParseTags {
     @Test
     public void testPrivileges() {
         byte[] v = HexUtils.hex2bin("80C000");
-        Set<Privilege> privileges = Privilege.fromBytes(v);
+        Set<Privilege> privileges = BitField.parse(Privilege.class, v, 1, 3);
         Assert.assertEquals(privileges.size(), 3);
         Assert.assertTrue(privileges.contains(Privilege.AuthorizedManagement));
         Assert.assertTrue(privileges.contains(Privilege.SecurityDomain));
         Assert.assertTrue(privileges.contains(Privilege.TrustedPath));
-        Assert.assertEquals(Privilege.toBytes(privileges), v);
+        Assert.assertEquals(BitField.encode(privileges, 3), v);
 
         v = HexUtils.hex2bin("9EFE80");
-        privileges = Privilege.fromBytes(v);
+        privileges = BitField.parse(Privilege.class, v, 1, 3);
         Assert.assertEquals(privileges.size(), 13);
-        Assert.assertEquals(Privilege.toBytes(privileges), v);
+        Assert.assertEquals(BitField.encode(privileges, 3), v);
     }
 
     @Test

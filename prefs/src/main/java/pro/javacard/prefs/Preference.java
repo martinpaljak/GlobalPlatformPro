@@ -32,24 +32,35 @@ public sealed interface Preference<V> permits Preference.Default, Preference.Par
 
     boolean readonly();
 
-    default Predicate<V> validator() {
-        return x -> true;
-    }
+    Predicate<V> validator();
 
     static <T> Default<T> of(String name, Class<T> type, T defaultValue, boolean readonly) {
-        return new Default<>(name, type, defaultValue, readonly);
+        return new Default<>(name, type, defaultValue, readonly, x -> true);
+    }
+
+    static <T> Default<T> of(String name, Class<T> type, T defaultValue, boolean readonly, Predicate<T> validator) {
+        return new Default<>(name, type, defaultValue, readonly, validator);
     }
 
     static <T> Parameter<T> parameter(String name, Class<T> type, boolean readonly) {
-        return new Parameter<>(name, type, readonly);
+        return new Parameter<>(name, type, readonly, x -> true);
     }
 
-    record Default<V>(String name, Type type, V defaultValue, boolean readonly) implements Preference<V> {
+    static <T> Parameter<T> parameter(String name, Class<T> type, boolean readonly, Predicate<T> validator) {
+        return new Parameter<>(name, type, readonly, validator);
+    }
+
+    record Default<V>(String name, Type type, V defaultValue, boolean readonly,
+                      Predicate<V> validator) implements Preference<V> {
         public Default {
             Objects.requireNonNull(defaultValue, "Must have a sane default value!");
+            Objects.requireNonNull(validator, "Must have a validator!");
         }
     }
 
-    record Parameter<V>(String name, Type type, boolean readonly) implements Preference<V> {
+    record Parameter<V>(String name, Type type, boolean readonly, Predicate<V> validator) implements Preference<V> {
+        public Parameter {
+            Objects.requireNonNull(validator, "Must have a validator!");
+        }
     }
 }

@@ -21,11 +21,9 @@ package pro.javacard.gp;
 
 import apdu4j.core.HexUtils;
 import org.slf4j.Logger;
-import pro.javacard.tlv.Tag;
-import pro.javacard.tlv.TLV;
-
-import java.nio.ByteBuffer;
 import org.slf4j.LoggerFactory;
+import pro.javacard.tlv.TLV;
+import pro.javacard.tlv.Tag;
 
 import java.util.*;
 import java.util.stream.Collectors;

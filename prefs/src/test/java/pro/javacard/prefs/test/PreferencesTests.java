@@ -6,6 +6,8 @@ import pro.javacard.prefs.Preference;
 import pro.javacard.prefs.Preferences;
 
 import java.util.Optional;
+import java.util.Set;
+
 
 public class PreferencesTests {
 
@@ -159,4 +161,70 @@ public class PreferencesTests {
         Assert.assertEquals(prefs.size(), 2);
     }
 
+    @Test
+    public void testValidationSuccess() {
+        var validated = Preference.of("validated", String.class, "d", false, s -> s.length() > 5);
+        Preferences prefs = new Preferences();
+        Preferences newPrefs = prefs.with(validated, "long_enough_string");
+        Assert.assertEquals(newPrefs.get(validated), "long_enough_string");
+    }
+
+    @Test
+    public void testValidationFailure() {
+        var validated = Preference.of("validated", String.class, "d", false, s -> s.length() > 5);
+        Preferences prefs = new Preferences();
+        Assert.assertThrows(IllegalArgumentException.class, () -> prefs.with(validated, "short"));
+    }
+
+    @Test
+    public void testParameterValidationFailure() {
+        var validated = Preference.parameter("validated_param", String.class, false, s -> s.length() > 5);
+        Preferences prefs = new Preferences();
+        Assert.assertThrows(IllegalArgumentException.class, () -> prefs.with(validated, "short"));
+    }
+
+    @Test
+    public void testRegister() {
+        var p1 = Preferences.register("reg1", String.class);
+        var p2 = Preferences.register("reg2", String.class, true);
+        var p3 = Preferences.register("reg3", String.class, "def", false);
+        var p4 = Preferences.register("reg4", String.class, "def");
+
+        Assert.assertNotNull(p1);
+        Assert.assertNotNull(p2);
+        Assert.assertNotNull(p3);
+        Assert.assertNotNull(p4);
+        Assert.assertTrue(p2.readonly());
+        Assert.assertEquals(p3.defaultValue(), "def");
+    }
+
+    @Test
+    public void testKeys() {
+        Preferences prefs = new Preferences();
+        var p1 = Preference.of("p1", String.class, "d", false);
+        prefs = prefs.with(p1, "v");
+        Set<Preference<?>> keys = prefs.keys();
+        Assert.assertEquals(keys.size(), 1);
+        Assert.assertTrue(keys.contains(p1));
+    }
+
+    @Test
+    public void testToString() {
+        Preferences prefs = new Preferences();
+        var p1 = Preference.of("p1", String.class, "d", false);
+        prefs = prefs.with(p1, "val");
+        String s = prefs.toString();
+        Assert.assertTrue(s.contains("p1"));
+        Assert.assertTrue(s.contains("val"));
+    }
+
+    @Test
+    public void testToStringWithByteArray() {
+        Preferences prefs = new Preferences();
+        var p1 = Preference.of("bytes", byte[].class, new byte[0], false);
+        byte[] val = new byte[] { (byte)0xCA, (byte)0xFE };
+        prefs = prefs.with(p1, val);
+        String s = prefs.toString();
+        Assert.assertTrue(s.contains("cafe"));
+    }
 }

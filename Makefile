@@ -1,5 +1,5 @@
 export TZ = UTC # same as Github
-export JAVA_HOME ?= /Library/Java/JavaVirtualMachines/zulu-11.jdk/Contents/Home
+export JAVA_HOME ?= /Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home
 
 MVN_OPTS = -Dmaven.javadoc.skip=true -Dmaven.test.skip=true -Dspotbugs.skip=true
 

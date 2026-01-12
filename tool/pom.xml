@@ -7,7 +7,7 @@
     <parent>
         <groupId>com.github.martinpaljak</groupId>
         <artifactId>gppro</artifactId>
-        <version>25.12.02-SNAPSHOT</version>
+        <version>26.01.12-SNAPSHOT</version>
     </parent>
 
     <artifactId>gptool</artifactId>
@@ -104,16 +104,8 @@
                                         <minVersion>11</minVersion>
                                     </jre>
                                     <versionInfo>
-                                        <fileVersion>
-                                            ${windowsVersion.majorVersion}.${windowsVersion.minorVersion}.${windowsVersion.incrementalVersion}.${windowsVersion.buildNumber}
-                                        </fileVersion>
-                                        <txtFileVersion>${project.version}</txtFileVersion>
                                         <fileDescription>GlobalPlatformPro</fileDescription>
-                                        <copyright>(C) 2015 - 2025 Martin Paljak and contributors (LGPL+MIT)</copyright>
-                                        <productVersion>
-                                            ${windowsVersion.majorVersion}.${windowsVersion.minorVersion}.${windowsVersion.incrementalVersion}.${windowsVersion.buildNumber}
-                                        </productVersion>
-                                        <txtProductVersion>${project.version}</txtProductVersion>
+                                        <copyright>(C) 2015 - 2026 Martin Paljak and contributors (LGPL+MIT)</copyright>
                                         <productName>GlobalPlatformPro</productName>
                                         <internalName>gppro</internalName>
                                         <originalFilename>gp.exe</originalFilename>

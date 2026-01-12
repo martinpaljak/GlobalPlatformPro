@@ -7,7 +7,7 @@
     <parent>
         <groupId>com.github.martinpaljak</groupId>
         <artifactId>gppro</artifactId>
-        <version>25.12.02-SNAPSHOT</version>
+        <version>26.01.12-SNAPSHOT</version>
     </parent>
 
     <artifactId>globalplatformpro</artifactId>

@@ -112,7 +112,10 @@ public final class GPTool extends GPCommandLineInterface {
             if (args.has(OPT_VERBOSE) || args.has(OPT_DEBUG) || args.has(OPT_INFO) || args.has(OPT_VERSION)) {
                 var ver = Optional.ofNullable(GPTool.class.getPackage().getImplementationVersion()).orElse("development");
                 var hash = selfhash();
-                System.out.printf("# GlobalPlatformPro %s%s%n", ver, hash == null ? "" : String.format(" SHA256=%s", HexFormat.of().formatHex(hash)));
+                if (hash != null) {
+                    System.out.printf("SHA256 = %s%n", HexFormat.of().formatHex(hash));
+                }
+                System.out.printf("# GlobalPlatformPro %s%n", ver);
                 System.out.printf("# Running on %s %s %s", System.getProperty("os.name"), System.getProperty("os.version"), System.getProperty("os.arch"));
                 System.out.printf(", Java %s by %s%n", System.getProperty("java.version"), System.getProperty("java.vendor"));
             }

@@ -82,7 +82,26 @@ public final class TLV {
     }
 
     public byte[] value() {
-        return value == null ? null : value.clone();
+        if (value != null) {
+            return value.clone();
+        }
+        if (children.isEmpty()) {
+            return new byte[0];
+        }
+        var encoded = new ArrayList<byte[]>();
+        int total = 0;
+        for (var child : children) {
+            var bytes = child.encode();
+            encoded.add(bytes);
+            total += bytes.length;
+        }
+        var result = new byte[total];
+        int offset = 0;
+        for (var bytes : encoded) {
+            System.arraycopy(bytes, 0, result, offset, bytes.length);
+            offset += bytes.length;
+        }
+        return result;
     }
 
     public List<TLV> children() {
@@ -228,7 +247,7 @@ public final class TLV {
                 visualize(t, indent + tagLen * 2 + 2, list);
             }
         } else {
-            list.add(" ".repeat(indent) + tlv.tag + " " + HexFormat.of().withUpperCase().formatHex(tlv.value));
+            list.add(" ".repeat(indent) + tlv.tag + " " + HexFormat.of().withUpperCase().formatHex(tlv.value()));
         }
     }
 

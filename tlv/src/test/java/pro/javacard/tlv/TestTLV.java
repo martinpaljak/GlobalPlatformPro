@@ -167,7 +167,7 @@ class TestTLV {
         // Children
         Assert.assertTrue(t.hasChildren());
         Assert.assertEquals(t.children().size(), 1);
-        Assert.assertNull(t.value()); // Constructed has no value
+        Assert.assertEquals(t.value(), t.children().get(0).encode());
 
         // Find
         Assert.assertNotNull(t.find(Tag.ber("81")));

@@ -25,7 +25,6 @@ import apdu4j.pcsc.CardBIBO;
 import apdu4j.pcsc.PCSCReader;
 import apdu4j.pcsc.TerminalManager;
 import apdu4j.pcsc.terminals.LoggingCardTerminal;
-
 import joptsimple.OptionSet;
 import joptsimple.OptionSpec;
 import pro.javacard.capfile.AID;
@@ -41,7 +40,6 @@ import pro.javacard.pace.PACEException;
 import pro.javacard.tlv.TLV;
 import pro.javacard.tlv.Tag;
 
-import javax.crypto.Cipher;
 import javax.smartcardio.Card;
 import javax.smartcardio.CardException;
 import javax.smartcardio.CardTerminal;
@@ -51,8 +49,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
-import java.security.NoSuchAlgorithmException;
+import java.security.MessageDigest;
 import java.security.PrivateKey;
+import java.security.ProtectionDomain;
 import java.security.interfaces.RSAPrivateKey;
 import java.util.*;
 import java.util.function.Function;
@@ -111,7 +110,9 @@ public final class GPTool extends GPCommandLineInterface {
                 System.out.println("# gp " + String.join(" ", argv));
             }
             if (args.has(OPT_VERBOSE) || args.has(OPT_DEBUG) || args.has(OPT_INFO) || args.has(OPT_VERSION)) {
-                System.out.printf("# GlobalPlatformPro %s%n", GPSession.getVersion());
+                var ver = Optional.ofNullable(GPTool.class.getPackage().getImplementationVersion()).orElse("development");
+                var hash = selfhash();
+                System.out.printf("# GlobalPlatformPro %s%s%n", ver, hash == null ? "" : String.format(" SHA256=%s", HexFormat.of().formatHex(hash)));
                 System.out.printf("# Running on %s %s %s", System.getProperty("os.name"), System.getProperty("os.version"), System.getProperty("os.arch"));
                 System.out.printf(", Java %s by %s%n", System.getProperty("java.version"), System.getProperty("java.vendor"));
             }
@@ -119,6 +120,24 @@ public final class GPTool extends GPCommandLineInterface {
         preamble = false;
     }
 
+    static byte[] selfhash() {
+        ProtectionDomain pd = GPTool.class.getProtectionDomain();
+        String hash = null;
+        if (pd != null && pd.getCodeSource() != null && pd.getCodeSource().getLocation() != null) {
+            try {
+                var location = pd.getCodeSource().getLocation();
+                Path p = Paths.get(location.toURI());
+                if (Files.isDirectory(p)) {
+                    // probably development
+                    return null;
+                }
+                return MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(p));
+            } catch (Exception e) {
+                System.err.println("Could not verify integrity: " + e.getMessage());
+            }
+        }
+        return null;
+    }
     // To keep basic gp.jar together with apdu4j app, this is just a minimalist wrapper
     public static void main(String[] argv) {
         Card c = null;

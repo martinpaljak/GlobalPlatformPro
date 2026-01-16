@@ -42,7 +42,6 @@ import pro.javacard.tlv.Tag;
 import javax.crypto.SecretKey;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.security.Key;
@@ -199,23 +198,6 @@ public class GPSession {
         GPSession gp = new GPSession(channel, sdAID);
         gp.select(sdAID);
         return gp;
-    }
-
-    /*
-     * Get the version and build information of the library.
-     */
-    public static String getVersion() {
-        Properties prop = new Properties();
-        try (InputStream versionfile = GPSession.class.getResourceAsStream("git.properties")) {
-            // if built from targzip and/or with -Dmaven.gitcommitid.skip=true
-            if (versionfile == null) {
-                return "unsupported";
-            }
-            prop.load(versionfile);
-            return prop.getProperty("git.commit.id.describe", "unknown-development");
-        } catch (IOException e) {
-            return "unknown-error";
-        }
     }
 
     public void setBlockSize(int size) {

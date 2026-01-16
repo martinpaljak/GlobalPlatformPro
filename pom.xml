@@ -3,7 +3,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.github.martinpaljak</groupId>
-    <version>26.01.13-SNAPSHOT</version>
+    <version>26.01.16</version>
     <artifactId>gppro</artifactId>
     <packaging>pom</packaging>
     <name>GlobalPlatformPro</name>
@@ -13,7 +13,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <project.build.outputTimestamp>2026-01-12T11:31:57Z</project.build.outputTimestamp>
+        <project.build.outputTimestamp>2026-01-16T15:29:41Z</project.build.outputTimestamp>
         <apdu4j.version>26.01.12</apdu4j.version>
     </properties>
     <organization>

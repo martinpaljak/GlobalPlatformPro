@@ -1,9 +1,10 @@
 # GlobalPlatformPro - _the_ Swiss Army Knife for JavaCard-s
 [![LGPL-3.0 licensed](https://img.shields.io/badge/license-LGPL-blue.svg)](https://github.com/martinpaljak/GlobalPlatformPro/blob/master/LICENSE)
 &nbsp;[![Latest release](https://img.shields.io/github/release/martinpaljak/GlobalPlatformPro.svg)](https://github.com/martinpaljak/GlobalPlatformPro/releases/latest)
+&nbsp;[![Support](https://img.shields.io/badge/support-JavaCard.pro-blue)](https://javacard.pro/globalplatform)
 &nbsp;[![Maven version](https://img.shields.io/maven-metadata/v?label=maven&metadataUrl=https%3A%2F%2Fmvn.javacard.pro%2Fmaven%2FSNAPSHOTS%2Fcom%2Fgithub%2Fmartinpaljak%2Fglobalplatformpro%2Fmaven-metadata.xml)](https://gist.github.com/martinpaljak/c77d11d671260e24eef6c39123345cae)
 &nbsp;[![Build status](https://github.com/martinpaljak/globalplatformpro/actions/workflows/robot.yml/badge.svg?branch=master)](https://github.com/martinpaljak/globalplatformpro/actions)
-&nbsp;[![Made in Estonia](https://img.shields.io/badge/Made_in-Estonia-blue)](https://estonia.ee)
+&nbsp;[![Made in Estonia](https://img.shields.io/badge/Made_in-Estonia-0072CE?style=flat&label=Made%20in&labelColor=black)](https://estonia.ee)
 
 Load and manage applets and keys on JavaCards from command line or from your Java project with a [Do What I Mean](http://en.wikipedia.org/wiki/DWIM) approach ([testimonials](https://github.com/martinpaljak/GlobalPlatformPro/wiki/Testimonials)).
 
@@ -63,7 +64,8 @@ It's that simple!
    - S16 mode for SCP03
    - many bugs fixed, UX improved.
 
-# Start from [Getting Started guide](https://github.com/martinpaljak/GlobalPlatformPro/wiki/Getting-Started) in the wiki
+# Users's Guide
+Begin from [Getting Started guide](https://github.com/martinpaljak/GlobalPlatformPro/wiki/Getting-Started) in the wiki
 
 > [!IMPORTANT]
 > 1. Use it?

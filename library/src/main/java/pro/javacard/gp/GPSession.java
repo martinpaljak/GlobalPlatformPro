@@ -336,8 +336,8 @@ public class GPSession {
     public List<GPKeyInfo> getKeyInfoTemplate() throws IOException, GPException {
         final byte[] tmpl;
         if (wrapper != null) {
-            // FIXME: check for 0x9000
-            tmpl = transmit(new CommandAPDU(CLA_GP, INS_GET_DATA, 0x00, 0xE0, 256)).getData();
+            tmpl = GPException.check(transmit(new CommandAPDU(CLA_GP, INS_GET_DATA, 0x00, 0xE0, 256)),
+                    "GET DATA [Key Information Template] failed").getData();
         } else {
             tmpl = GPData.fetchKeyInfoTemplate(channel);
         }
@@ -1064,19 +1064,37 @@ public class GPSession {
         return bo.toByteArray();
     }
 
-    // FIXME: other curves
     byte[] encodeECKey(ECPublicKey pubkey) {
         ByteArrayOutputStream bo = new ByteArrayOutputStream();
 
         try {
-            byte[] key = ECNamedCurveTable.getByName("secp256r1").getCurve().createPoint(pubkey.getW().getAffineX(), pubkey.getW().getAffineY()).getEncoded(false);
+            int fieldSize = pubkey.getParams().getCurve().getField().getFieldSize();
+            final String curveName;
+            final byte curveRef;
+            switch (fieldSize) {
+                case 256:
+                    curveName = "secp256r1";
+                    curveRef = 0x00;
+                    break;
+                case 384:
+                    curveName = "secp384r1";
+                    curveRef = 0x01;
+                    break;
+                case 521:
+                    curveName = "secp521r1";
+                    curveRef = 0x02;
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unsupported EC field size: " + fieldSize);
+            }
+            byte[] key = ECNamedCurveTable.getByName(curveName).getCurve().createPoint(pubkey.getW().getAffineX(), pubkey.getW().getAffineY()).getEncoded(false);
 
             bo.write(0xB0); // EC Public key
-            bo.write(key.length);
+            bo.write(GPUtils.encodeLength(key.length));
             bo.write(key);
             bo.write(0xF0); // ECC key parameters reference
             bo.write(0x01);
-            bo.write(0x00); // P-256
+            bo.write(curveRef);
             bo.write(0x00); // No KCV
         } catch (IOException e) {
             throw new RuntimeException(e);

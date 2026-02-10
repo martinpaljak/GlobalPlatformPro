@@ -71,7 +71,7 @@ public abstract class DMTokenizer {
             ByteArrayOutputStream bo = new ByteArrayOutputStream();
             bo.write(apdu.getP1());
             bo.write(apdu.getP2());
-            bo.write(apdu.getData().length); // FIXME: length handling for > 255 bytes
+            bo.write(GPUtils.encodeLcLength(apdu.getData().length, apdu.getNe()));
             bo.write(apdu.getData());
             return bo.toByteArray();
         } catch (IOException e) {

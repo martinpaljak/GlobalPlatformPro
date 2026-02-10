@@ -25,11 +25,14 @@ public class DAPSigner {
             return GPCrypto.rsa_sign(rkey, dtbs);
         } else if (key instanceof ECPrivateKey) {
             // B.4.3 ECDSA of GPC 2.3.1
-            Signature signer = Signature.getInstance("SHA256withECDSA");
+            ECPrivateKey ecKey = (ECPrivateKey) key;
+            int componentLength = (ecKey.getParams().getOrder().bitLength() + 7) / 8;
+            String sigAlgo = componentLength > 32 ? "SHA384withECDSA" : "SHA256withECDSA";
+            log.info("Signing DAP with EC key, component length {} using {}", componentLength, sigAlgo);
+            Signature signer = Signature.getInstance(sigAlgo);
             signer.initSign(key);
             signer.update(cap.getLoadFileDataHash(hash.algo));
-            byte[] dap = GPCrypto.der2rs(signer.sign(), 32); // FIXME: detect curve
-            return dap;
+            return GPCrypto.der2rs(signer.sign(), componentLength);
         }
         throw new IllegalArgumentException("Unsupported DAP key: " + key.getAlgorithm());
     }

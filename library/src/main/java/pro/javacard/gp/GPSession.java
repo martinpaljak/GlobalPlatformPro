@@ -815,53 +815,40 @@ public class GPSession {
         GPException.check(transmitLV(install), "INSTALL [for personalization] failed");
     }
 
-    public byte[] personalizeSingle(AID aid, byte[] data, int P1) throws IOException, GPException {
-        return personalize(aid, Collections.singletonList(data), P1).get(0);
-    }
-
-    /*
-     * Sends STORE DATA commands to the application identified via SD
-     */
-    public void personalize(AID aid, byte[] data, int P1) throws IOException, GPException {
-        installForPersonalization(aid);
-        // Now pump the data
-        storeData(data, P1);
-    }
-
-
-    public List<byte[]> personalize(AID aid, List<byte[]> data, int P1) throws IOException, GPException {
-        installForPersonalization(aid);
-        return storeData(data, P1);
-    }
-
-
-    public byte[] storeDataSingle(byte[] data, int P1) throws IOException, GPException {
-        if (data.length > wrapper.getBlockSize()) {
-            throw new IllegalArgumentException("block size is bigger than possibility to send: " + data.length + ">" + wrapper.getBlockSize());
+    // Core: caller provides CommandAPDUs with P1 fully set (including b8 last-block).
+    // Method only replaces P2 with sequential counter, then wraps through secure channel.
+    public List<byte[]> storeData(List<CommandAPDU> commands) throws IOException, GPException {
+        if (commands.size() > 256)
+            throw new IllegalArgumentException("Too many STORE DATA blocks: " + commands.size() + " (max 256)");
+        List<byte[]> results = new ArrayList<>();
+        for (int i = 0; i < commands.size(); i++) {
+            CommandAPDU cmd = commands.get(i);
+            if (cmd.getINS() != (INS_STORE_DATA & 0xFF))
+                throw new IllegalArgumentException("Not a STORE DATA command: INS=" + String.format("%02X", cmd.getINS()));
+            CommandAPDU numbered = new CommandAPDU(cmd.getCLA(), cmd.getINS(), cmd.getP1(), i, cmd.getData(), 256);
+            results.add(GPException.check(transmit(numbered), "STORE DATA failed").getData());
         }
-        return storeData(Collections.singletonList(data), P1).get(0);
+        return results;
     }
 
-    // Send a GP-formatted STORE DATA block, splitting it into pieces if/as necessary
-    public void storeData(byte[] data, int P1) throws IOException, GPException {
-        List<byte[]> blocks = GPUtils.splitArray(data, wrapper.getBlockSize());
-        storeData(blocks, P1);
+    // All blocks share one P1; auto-sets b8 on last block
+    public List<byte[]> storeData(List<byte[]> blocks, int p1) throws IOException, GPException {
+        return storeData(buildStoreDataCommands(blocks, p1));
     }
 
-    // Send a GP-formatted STORE DATA blocks
-    public List<byte[]> storeData(List<byte[]> blocks, int P1) throws IOException, GPException {
-        List<byte[]> result = new ArrayList<>();
+    // Build STORE DATA CommandAPDUs with correct P1 last-block bit management
+    public static List<CommandAPDU> buildStoreDataCommands(List<byte[]> blocks, int p1) {
+        List<CommandAPDU> commands = new ArrayList<>();
         for (int i = 0; i < blocks.size(); i++) {
-            int p1 = (i == (blocks.size() - 1)) ? P1 | 0x80 : P1 & 0x7F;
-            CommandAPDU store = new CommandAPDU(CLA_GP, INS_STORE_DATA, p1, i, blocks.get(i), 256);
-            result.add(GPException.check(transmit(store), "STORE DATA failed").getData());
+            int v = (i == blocks.size() - 1) ? p1 | P1_LAST_BLOCK : p1 & ~P1_LAST_BLOCK;
+            commands.add(new CommandAPDU(CLA_GP, INS_STORE_DATA, v, 0, blocks.get(i)));
         }
-        return result;
+        return commands;
     }
 
-    public byte[] storeDataSingle(byte[] data, int P1, int P2) throws IOException, GPException {
-        CommandAPDU store = new CommandAPDU(CLA_GP, INS_STORE_DATA, P1, P2, data, 256);
-        return GPException.check(transmit(store), "STORE DATA failed").getData();
+    // Auto-splits large blob by wrapper block size, uniform P1
+    public List<byte[]> storeData(byte[] data, int p1) throws IOException, GPException {
+        return storeData(GPUtils.splitArray(data, wrapper.getBlockSize()), p1);
     }
 
     public void makeDefaultSelected(AID aid) throws IOException, GPException {

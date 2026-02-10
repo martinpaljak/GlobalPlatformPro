@@ -728,12 +728,13 @@ public final class GPTool extends GPCommandLineInterface {
                 // This will split the data, if necessary
                 if (args.has(OPT_STORE_DATA)) {
                     List<byte[]> blobs = args.valuesOf(OPT_STORE_DATA).stream().map(HexBytes::value).collect(Collectors.toList());
+                    if (args.has(OPT_PERSONALIZE)) {
+                        gp.installForPersonalization(args.valueOf(OPT_PERSONALIZE));
+                    } else if (args.has(OPT_APPLET)) {
+                        gp.installForPersonalization(args.valueOf(OPT_APPLET));
+                    }
                     for (byte[] blob : blobs) {
-                        if (args.has(OPT_APPLET)) {
-                            gp.personalize(args.valueOf(OPT_APPLET), blob, 0x01);
-                        } else {
-                            gp.storeData(blob, 0x1);
-                        }
+                        gp.storeData(blob, 0x1);
                     }
                 }
 
@@ -741,31 +742,50 @@ public final class GPTool extends GPCommandLineInterface {
                 // This will collect the chunks and send them one by one
                 if (args.has(OPT_STORE_DATA_CHUNK)) {
                     List<byte[]> blobs = args.valuesOf(OPT_STORE_DATA_CHUNK).stream().map(HexBytes::value).collect(Collectors.toList());
-                    if (args.has(OPT_APPLET)) {
-                        gp.personalize(args.valueOf(OPT_APPLET), blobs, 0x01);
-                    } else {
-                        gp.storeData(blobs, 0x1);
+                    if (args.has(OPT_PERSONALIZE)) {
+                        gp.installForPersonalization(args.valueOf(OPT_PERSONALIZE));
+                    } else if (args.has(OPT_APPLET)) {
+                        gp.installForPersonalization(args.valueOf(OPT_APPLET));
                     }
+                    gp.storeData(blobs, 0x1);
                 }
 
                 // --store-dgi-file <file>
                 // Will collect DGI-s and send them one by one, applying necessary encryption on the fly.
                 if (args.has(OPT_STORE_DGI_FILE)) {
+                    if (args.has(OPT_PERSONALIZE)) {
+                        gp.installForPersonalization(args.valueOf(OPT_PERSONALIZE));
+                    }
                     var oracle = paddingOracle(args);
                     var blocks = DGIData.parse(args.valueOf(OPT_STORE_DGI_FILE).toPath(), oracle);
+                    List<CommandAPDU> commands = new ArrayList<>();
                     for (int i = 0; i < blocks.size(); i++) {
                         var dgi = blocks.get(i);
-                        // Mark as DGI and encrypted if needed TODO: profile...
-                        int p1 = dgi.type() == DGIData.Type.PLAINTEXT ? 0x00 : 0x60; // NOTE: there NO no format indicator
-                        // Construct the payload WTF is this scp code, need refactor
-                        var payload = dgi.type() == DGIData.Type.PADDING ? GPCrypto.pad80(dgi.value(), gp.getSecureChannel().scp == SCP03 ? 16 : 8) : dgi.value(); // FIXME: padding fixed for des.
+                        int p1 = dgi.type() == DGIData.Type.PLAINTEXT ? 0x00 : 0x60;
+                        var payload = dgi.type() == DGIData.Type.PADDING ? GPCrypto.pad80(dgi.value(), gp.getSecureChannel().scp == SCP03 ? 16 : 8) : dgi.value();
                         if (dgi.type() != DGIData.Type.PLAINTEXT) payload = gp.encryptDEK(payload);
                         payload = GPUtils.concatenate(dgi.tag(), DGIData.length(payload.length), payload);
-                        // Handle last block
-                        p1 = (i == (blocks.size() - 1)) ? p1 | 0x80 : p1 & 0x7F;
-                        CommandAPDU store = new CommandAPDU(GPSession.CLA_GP, GPSession.INS_STORE_DATA, p1, i, payload, 256);
-                        GPException.check(gp.transmit(store), "STORE DATA failed");
+                        p1 = (i == (blocks.size() - 1)) ? p1 | GPSession.P1_LAST_BLOCK : p1 & ~GPSession.P1_LAST_BLOCK;
+                        commands.add(new CommandAPDU(GPSession.CLA_GP, GPSession.INS_STORE_DATA, p1, 0, payload));
                     }
+                    gp.storeData(commands);
+                }
+
+                // --store-data-raw
+                if (args.has(OPT_STORE_DATA_RAW)) {
+                    if (args.has(OPT_PERSONALIZE)) {
+                        gp.installForPersonalization(args.valueOf(OPT_PERSONALIZE));
+                    }
+                    List<CommandAPDU> commands = args.valuesOf(OPT_STORE_DATA_RAW).stream()
+                            .map(APDUParsers::stringToAPDU)
+                            .map(v -> {
+                                CommandAPDU cmd = new CommandAPDU(v);
+                                if (cmd.getINS() != (GPSession.INS_STORE_DATA & 0xFF))
+                                    throw new IllegalArgumentException("Not a STORE DATA APDU: " + HexUtils.bin2hex(v));
+                                return cmd;
+                            })
+                            .collect(Collectors.toList());
+                    gp.storeData(commands);
                 }
 
                 // --lock-card
@@ -1212,7 +1232,7 @@ public final class GPTool extends GPCommandLineInterface {
                 OPT_LOCK, OPT_LOCK_ENC, OPT_LOCK_MAC, OPT_LOCK_DEK, OPT_MAKE_DEFAULT,
                 OPT_UNINSTALL, OPT_SECURE_APDU, OPT_DOMAIN, OPT_LOCK_CARD, OPT_UNLOCK_CARD, OPT_LOCK_APPLET, OPT_UNLOCK_APPLET,
                 OPT_STORE_DATA, OPT_STORE_DATA_CHUNK, OPT_INITIALIZE_CARD, OPT_SECURE_CARD, OPT_RENAME_ISD, OPT_SET_PERSO, OPT_SET_PRE_PERSO, OPT_MOVE,
-                OPT_PUT_KEY, OPT_REPLACE_KEY, OPT_STORE_DGI_FILE};
+                OPT_PUT_KEY, OPT_REPLACE_KEY, OPT_STORE_DGI_FILE, OPT_PERSONALIZE, OPT_STORE_DATA_RAW};
 
         return Arrays.stream(yes).anyMatch(args::has);
     }

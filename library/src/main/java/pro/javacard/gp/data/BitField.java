@@ -74,7 +74,8 @@ public interface BitField<T extends Enum<T> & BitField<T>> {
         } else if (f instanceof Def.ByteMask byteMask) {
             if (byteMask.n() >= bytes.length) {
                 if (lax) {
-                    log.error("Mask is for a byte that is more than bytes available, defaulting to false");
+                    // Expected in lax mode: e.g. 1-byte privilege field checked against 3-byte definitions
+                    log.trace("Mask is for a byte that is more than bytes available, defaulting to false");
                     return false;
                 } else {
                     throw new IllegalArgumentException("Need byte at index " + byteMask.n() + " but only " + bytes.length + " bytes provided");

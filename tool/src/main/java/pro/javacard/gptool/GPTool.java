@@ -515,8 +515,21 @@ public final class GPTool extends GPCommandLineInterface {
                 }
 
                 if (args.has(OPT_INSTALL_ONLY)) {
+                    if (!args.has(OPT_FORCE) && !args.has(OPT_SAD))
+                        warnIfNoDelegatedManagement(gp);
+
                     GPRegistry registry = gp.getRegistry();
                     InstallDefinition dwim = InstallDefinition.fromOptions(registry, args);
+
+                    Set<Privilege> privs = getPrivileges(args);
+                    byte[] params = args.has(OPT_PARAMS) ? args.valueOf(OPT_PARAMS).value() : new byte[0];
+
+                    // warn
+                    if (registry.allAppletAIDs().contains(dwim.instance)) {
+                        System.err.println("WARNING: Applet " + dwim.instance + " already present on card");
+                    }
+
+                    gp.installAndMakeSelectable(dwim.pkg, dwim.applet, dwim.instance, privs, params);
                 }
 
                 // --install <applet.cap> (--applet <aid> --create <aid> --privs <privs> --params <params>)

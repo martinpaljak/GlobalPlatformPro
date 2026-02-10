@@ -86,6 +86,7 @@ public class TestBitField {
         Set<Privilege> privs = BitField.parse(Privilege.class, v, 1, 3);
         Assert.assertTrue(privs.contains(Privilege.SecurityDomain));
     }
+
     @Test
     public void testByteLength() {
         Assert.assertEquals(BitField.length(Privilege.class), 3);

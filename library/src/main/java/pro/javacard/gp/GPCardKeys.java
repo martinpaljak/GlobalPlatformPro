@@ -33,7 +33,9 @@ import java.util.Optional;
 // Providers are free to derive session keys based on hardware backed master keys
 // PlaintextKeys provides card keys, that are ... plaintext (not backed by hardware)
 public abstract class GPCardKeys {
-    public GPCardKeys() {}
+    public GPCardKeys() {
+    }
+
     private static final Logger logger = LoggerFactory.getLogger(GPCardKeys.class);
 
     // Key diversification support.

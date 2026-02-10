@@ -101,7 +101,7 @@ public class TestPlaintextKeys {
         keys.diversify(GPSecureChannelVersion.SCP.SCP01, KDD);
 
         byte[] sessionContext = new byte[16]; // host_challenge || card_challenge (zeros)
-        
+
         // Session keys derived via 3DES-ECB of permuted context
         byte[] sEnc = keys.getSessionKey(ENC, sessionContext);
         byte[] sMac = keys.getSessionKey(MAC, sessionContext);
@@ -112,7 +112,7 @@ public class TestPlaintextKeys {
         Assert.assertEquals(HexUtils.bin2hex(GPCrypto.kcv_3des(sMac)), "FDDAF8");
         // DEK is static in SCP01
         Assert.assertEquals(HexUtils.bin2hex(GPCrypto.kcv_3des(sDek)), "8BAF47");
-        
+
         // RMAC not supported in SCP01
         Assert.assertNull(keys.getSessionKey(RMAC, sessionContext));
     }
@@ -124,7 +124,7 @@ public class TestPlaintextKeys {
         keys.diversify(GPSecureChannelVersion.SCP.SCP02, KDD);
 
         byte[] sequence = new byte[2]; // Sequence counter = 0000
-        
+
         // Session keys derived via 3DES-CBC with constant || counter || zeros
         byte[] sEnc = keys.getSessionKey(ENC, sequence);
         byte[] sMac = keys.getSessionKey(MAC, sequence);
@@ -206,7 +206,7 @@ public class TestPlaintextKeys {
         // Input: key 404142..., block_a = zeros(16), block_b = zeros(16), length = 16
         GPCardKeys keys = PlaintextKeys.fromKeys(KEY_16, KEY_16, KEY_16);
         byte[] result = keys.scp3_kdf(ENC, new byte[16], new byte[16], 16);
-        
+
         // Verify derived key by its KCV
         Assert.assertEquals(result.length, 16);
         Assert.assertEquals(HexUtils.bin2hex(GPCrypto.kcv_aes(result)), "BD8165");

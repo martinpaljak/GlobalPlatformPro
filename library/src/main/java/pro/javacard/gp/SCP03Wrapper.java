@@ -41,6 +41,7 @@ class SCP03Wrapper extends SecureChannelWrapper {
     private boolean counterIsBuggy = System.getProperty(COUNTER_WORKAROUND, buggyCounterEnv).equalsIgnoreCase("true");
 
     private boolean s16 = false; // S16 mode
+
     SCP03Wrapper(byte[] enc, byte[] mac, byte[] rmac, int bs, boolean s16) {
         super(enc, mac, rmac, bs);
         this.s16 = s16;
@@ -80,7 +81,7 @@ class SCP03Wrapper extends SecureChannelWrapper {
             // Calculate C-MAC
             if (mac) {
                 cla |= 0x4;
-                lc = lc +  maclen;
+                lc = lc + maclen;
 
                 ByteArrayOutputStream bo = new ByteArrayOutputStream();
                 bo.write(chaining_value);

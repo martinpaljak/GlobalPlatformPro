@@ -32,7 +32,9 @@ import java.util.Arrays;
 
 public abstract class ReceiptVerifier {
 
-    protected ReceiptVerifier() {}
+    protected ReceiptVerifier() {
+    }
+
     private static final Logger log = LoggerFactory.getLogger(ReceiptVerifier.class);
 
     static byte[] get_receipt(byte[] response) {
@@ -44,6 +46,7 @@ public abstract class ReceiptVerifier {
     }
 
     abstract boolean check(ResponseAPDU response, byte[] context);
+
     boolean log_only = false;
 
     static public class AESReceiptVerifier extends ReceiptVerifier {
@@ -157,6 +160,7 @@ public abstract class ReceiptVerifier {
 
     public static class ReceiptVerificationException extends RuntimeException {
         private static final long serialVersionUID = -453299698747234135L;
+
         public ReceiptVerificationException(String message) {
             super(message);
         }

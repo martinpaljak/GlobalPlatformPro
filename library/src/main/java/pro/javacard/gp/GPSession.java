@@ -1036,7 +1036,7 @@ public class GPSession {
         GPException.check(response, "PUT KEY failed");
         // TODO: compare and complain
         if (response.getData().length > 1) {
-            byte [] resp = response.getData();
+            byte[] resp = response.getData();
             int kv = resp[0] & 0xFF;
             byte[] kcvs = Arrays.copyOfRange(resp, 1, resp.length);
             List<String> kcvstrings = GPUtils.splitArray(kcvs, 3).stream().map(HexUtils::bin2hex).collect(Collectors.toList());
@@ -1129,7 +1129,7 @@ public class GPSession {
         ResponseAPDU response = transmit(command);
         GPException.check(response, "PUT KEY failed");
         if (response.getData().length > 1) {
-            byte [] resp = response.getData();
+            byte[] resp = response.getData();
             int kv = resp[0] & 0xFF;
             byte[] kcvs = Arrays.copyOfRange(resp, 1, resp.length);
             List<String> kcvstrings = GPUtils.splitArray(kcvs, 3).stream().map(HexUtils::bin2hex).collect(Collectors.toList());

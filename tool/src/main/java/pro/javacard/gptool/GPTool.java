@@ -141,6 +141,7 @@ public final class GPTool extends GPCommandLineInterface {
         }
         return null;
     }
+
     // To keep basic gp.jar together with apdu4j app, this is just a minimalist wrapper
     public static void main(String[] argv) {
         Card c = null;

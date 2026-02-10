@@ -28,7 +28,8 @@ import java.util.Optional;
 // TODO: retire with preferences
 public abstract class GPCardProfile {
 
-    private GPCardProfile() {}
+    private GPCardProfile() {
+    }
 
     public static final Map<String, GPCardProfile> profiles;
 

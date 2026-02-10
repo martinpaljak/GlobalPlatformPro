@@ -35,7 +35,9 @@ import java.util.Arrays;
 import java.util.List;
 
 public final class GPUtils {
-    private GPUtils() {}
+    private GPUtils() {
+    }
+
     // Knows both hex and dec
     public static int intValue(String s) {
         if (s.trim().toLowerCase().startsWith("0x")) {

@@ -673,12 +673,14 @@ public class GPSession {
             // Add DAP block, if signature present
             if (dap != null && dapDomain != null) {
                 loadBlock.write(0xE2);
-                loadBlock.write(GPUtils.encodeLength(dapDomain.getLength() + dap.length + GPUtils.encodeLength(dap.length).length + 3)); // two tags, two lengths FIXME: proper size
+                var dapLenBytes = GPUtils.encodeLength(dap.length);
+                // E2 content: [4F][1-byte AID len][AID] [C3][encoded DAP len][DAP]
+                loadBlock.write(GPUtils.encodeLength(1 + 1 + dapDomain.getLength() + 1 + dapLenBytes.length + dap.length));
                 loadBlock.write(0x4F);
                 loadBlock.write(dapDomain.getLength());
                 loadBlock.write(dapDomain.getBytes());
                 loadBlock.write(0xC3);
-                loadBlock.write(GPUtils.encodeLength(dap.length));
+                loadBlock.write(dapLenBytes);
                 loadBlock.write(dap);
             }
             // See GP 2.1.1 Table 9-40, GP 2.2.1 11.6.2.3 / Table 11-58
@@ -921,7 +923,7 @@ public class GPSession {
         if (keyid != null) {
             bo.write(0xd0); // Key Identifier
             bo.write(1);
-            bo.write(0x01);
+            bo.write(keyid);
         }
 
         if (keyver != null) {

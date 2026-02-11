@@ -146,7 +146,7 @@ public class GPRegistryEntry {
         }
 
         public byte getValue() {
-            return (byte) ordinal();
+            return value;
         }
     }
 

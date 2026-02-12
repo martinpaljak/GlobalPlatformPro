@@ -30,6 +30,9 @@ test:
 fast:
 	./mvnw -T1C install -Dmaven.test.skip=true -Dspotbugs.skip=true
 
+check:
+	./mvnw -Perrorprone -Dmaven.javadoc.skip=true -Dmaven.test.skip=true compile spotbugs:check
+
 today:
 	# for a dirty tree, set the date to today
 	test -z "$(shell git status --porcelain)" || ./mvnw versions:set -DnewVersion=$(shell date +%y.%m.%d)-SNAPSHOT -DgenerateBackupPoms=false

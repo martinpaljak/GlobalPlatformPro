@@ -21,6 +21,9 @@ endif
 dep: $(SOURCES)
 	./mvnw $(MVN_OPTS) install
 
+source:
+	./mvnw rewrite:run spotless:apply
+
 clean:
 	./mvnw clean
 

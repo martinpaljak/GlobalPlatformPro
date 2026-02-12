@@ -42,12 +42,11 @@ import java.util.stream.Collectors;
 public final class GPRegistry implements Iterable<GPRegistryEntry> {
     private static final Logger logger = LoggerFactory.getLogger(GPRegistry.class);
 
-    public GPRegistry() {
-    }
+    public GPRegistry() {}
 
     final ArrayList<GPRegistryEntry> entries = new ArrayList<>();
 
-    public void add(GPRegistryEntry entry) {
+    public void add(final GPRegistryEntry entry) {
         // "fix" the kind at a single location.
         if (entry.hasPrivilege(Privilege.SecurityDomain) && entry.getType() == Kind.APP) {
             entry.setType(Kind.SSD);
@@ -56,18 +55,19 @@ public final class GPRegistry implements Iterable<GPRegistryEntry> {
             entries.add(entry);
         } else {
             // We populate the package with applets if card returns them, so not an error
-            if (entry.getType() != Kind.PKG)
+            if (entry.getType() != Kind.PKG) {
                 logger.warn("Registry already contains {}", entry);
+            }
         }
     }
 
     // All children of this domain
-    public List<GPRegistryEntry> byDomain(AID domain) {
+    public List<GPRegistryEntry> byDomain(final AID domain) {
         return entries.stream().filter(e -> e.getDomain().equals(Optional.of(domain))).toList();
     }
 
     // Entry with existing applet
-    public Optional<GPRegistryEntry> byModule(AID applet) {
+    public Optional<GPRegistryEntry> byModule(final AID applet) {
         return entries.stream().filter(e -> e.getModules().contains(applet)).findFirst();
     }
 
@@ -110,7 +110,7 @@ public final class GPRegistry implements Iterable<GPRegistryEntry> {
     }
 
     public Optional<AID> getDefaultSelectedPackageAID() {
-        Optional<AID> defaultAID = getDefaultSelectedAID();
+        final Optional<AID> defaultAID = getDefaultSelectedAID();
         if (defaultAID.isPresent()) {
             return allPackages().stream().filter(e -> e.getModules().contains(defaultAID.get()))
                     .map(GPRegistryEntry::getAID).reduce(onlyOne());
@@ -124,34 +124,34 @@ public final class GPRegistry implements Iterable<GPRegistryEntry> {
         return allDomains().stream().filter(e -> e.getType() == Kind.ISD).reduce(onlyOne());
     }
 
-    private void populate_legacy(int p1, byte[] data, Kind type, GPCardProfile spec) throws GPDataException {
-        int offset = 0;
+    private void populate_legacy(final int p1, final byte[] data, final Kind type, final GPCardProfile spec) throws GPDataException {
+        var offset = 0;
         try {
             while (offset < data.length) {
-                int len = data[offset++];
-                AID aid = new AID(data, offset, len);
+                var len = data[offset++] & 0xFF;
+                var aid = new AID(data, offset, len);
                 offset += len;
-                byte lifecycle = data[offset++];
-                byte privileges = data[offset++];
-                GPRegistryEntry e = new GPRegistryEntry();
+                final byte lifecycle = data[offset++];
+                final byte privileges = data[offset++];
+                final var e = new GPRegistryEntry();
 
                 if (type == Kind.ISD || type == Kind.APP) {
                     e.setType(type);
                     e.setAID(aid);
-                    e.setPrivileges(BitField.parse(Privilege.class, new byte[]{privileges}, 1, 3));
+                    e.setPrivileges(BitField.parse(Privilege.class, new byte[] { privileges }, 1, 3));
                     e.setLifeCycle(lifecycle);
                 } else if (type == Kind.PKG) {
                     if (privileges != 0x00) {
                         throw new GPDataException(
-                                String.format("Privileges of Load File is not 0x00 but %02X", privileges & 0xFF));
+                                "Privileges of Load File is not 0x00 but %02X".formatted(privileges & 0xFF));
                     }
                     e.setAID(aid);
                     e.setLifeCycle(lifecycle);
                     e.setType(type);
                     // Modules. 0x20 is load files, 0x10 load files with modules
                     if (spec.doesReportModules() && p1 != 0x20) {
-                        int num = data[offset++];
-                        for (int i = 0; i < num; i++) {
+                        final var num = data[offset++];
+                        for (var i = 0; i < num; i++) {
                             len = data[offset++] & 0xFF;
                             aid = new AID(data, offset, len);
                             offset += len;
@@ -166,35 +166,36 @@ public final class GPRegistry implements Iterable<GPRegistryEntry> {
         }
     }
 
-    private void populate_tags(byte[] data, Kind type) throws GPDataException {
-        var tlvs = TLV.parse(data);
+    private void populate_tags(final byte[] data, final Kind type) throws GPDataException {
+        final var tlvs = TLV.parse(data);
         GPUtils.trace_tlv(data, logger);
 
         for (TLV t : TLV.findAll(tlvs, Tag.ber(0xE3))) {
-            GPRegistryEntry e = new GPRegistryEntry();
+            final var e = new GPRegistryEntry();
             if (t.hasChildren()) {
-                var aid = t.find(Tag.ber(0x4f));
+                final var aid = t.find(Tag.ber(0x4f));
                 if (aid != null) {
-                    AID aidv = new AID(aid.value());
+                    final var aidv = new AID(aid.value());
                     e.setAID(aidv);
                 }
-                var lifecycletag = t.find(Tag.ber(0x9F, 0x70));
+                final var lifecycletag = t.find(Tag.ber(0x9F, 0x70));
                 if (lifecycletag != null) {
                     e.setLifeCycle(lifecycletag.value()[0]);
                 }
 
-                var privstag = t.find(Tag.ber(0xC5));
+                final var privstag = t.find(Tag.ber(0xC5));
                 if (privstag != null) {
                     e.setPrivileges(BitField.parse(Privilege.class, privstag.value(), 1, 3));
                 }
 
                 // 11.1.7 of GPC 2.3
                 for (TLV cf : t.findAll(Tag.ber(0xCF))) {
-                    byte[] cfb = cf.value();
-                    if (cfb.length != 1)
+                    final var cfb = cf.value();
+                    if (cfb.length != 1) {
                         throw new GPDataException("Tag CF not single byte", cfb);
-                    int v = cfb[0] & 0xFF;
-                    int c = v & 0x1F;
+                    }
+                    final var v = cfb[0] & 0xFF;
+                    final var c = v & 0x1F;
                     if ((v & 0x80) == 0x80) {
                         e.implicitContactless.add(c);
                     } else if ((v & 0x40) == 0x40) {
@@ -202,11 +203,11 @@ public final class GPRegistry implements Iterable<GPRegistryEntry> {
                     }
                 }
 
-                var loadfiletag = t.find(Tag.ber(0xC4));
+                final var loadfiletag = t.find(Tag.ber(0xC4));
                 if (loadfiletag != null) {
                     e.setLoadFile(new AID(loadfiletag.value()));
                 }
-                var versiontag = t.find(Tag.ber(0xCE));
+                final var versiontag = t.find(Tag.ber(0xCE));
                 if (versiontag != null) {
                     e.setVersion(versiontag.value());
                 }
@@ -215,7 +216,7 @@ public final class GPRegistry implements Iterable<GPRegistryEntry> {
                     e.addModule(new AID(lf.value()));
                 }
 
-                var domaintag = t.find(Tag.ber(0xCC));
+                final var domaintag = t.find(Tag.ber(0xCC));
                 if (domaintag != null) {
                     e.setDomain(new AID(domaintag.value()));
                 }
@@ -226,7 +227,7 @@ public final class GPRegistry implements Iterable<GPRegistryEntry> {
     }
 
     // TODO: remove with new parser
-    public void parse_and_populate(int p1, byte[] data, Kind type, GPCardProfile profile) throws GPDataException {
+    public void parse_and_populate(final int p1, final byte[] data, final Kind type, final GPCardProfile profile) throws GPDataException {
         if (profile.getStatusUsesTags()) {
             populate_tags(data, type);
         } else {
@@ -238,7 +239,7 @@ public final class GPRegistry implements Iterable<GPRegistryEntry> {
         return onlyOne(() -> new GPException("Expected only one"));
     }
 
-    public static <T, E extends RuntimeException> BinaryOperator<T> onlyOne(Supplier<E> exception) {
+    public static <T, E extends RuntimeException> BinaryOperator<T> onlyOne(final Supplier<E> exception) {
         return (e, o) -> {
             throw exception.get();
         };

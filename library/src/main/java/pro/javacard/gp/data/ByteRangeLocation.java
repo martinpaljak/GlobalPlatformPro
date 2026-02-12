@@ -4,11 +4,9 @@ import java.util.Arrays;
 
 // Describes the position of data slice inside a byte array
 public sealed interface ByteRangeLocation permits ByteRangeLocation.From, ByteRangeLocation.OffsetLength {
-    record OffsetLength(int offset, int length) implements ByteRangeLocation {
-    }
+    record OffsetLength(int offset, int length) implements ByteRangeLocation {}
 
-    record From(int offset) implements ByteRangeLocation {
-    }
+    record From(int offset) implements ByteRangeLocation {}
 
     static From from(int offset) {
         return new From(offset);

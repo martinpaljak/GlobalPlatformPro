@@ -31,44 +31,44 @@ import java.security.NoSuchAlgorithmException;
 // SCP01 05 - no ICV encryption 15 - ICV encryption (
 class SCP01Wrapper extends SecureChannelWrapper {
     private boolean icvEnc = false;
-    private boolean preAPDU = true;
-    private boolean postAPDU = false;
+    private final boolean preAPDU = true;
+    private final boolean postAPDU = false;
 
     byte[] icv = null;
 
-    SCP01Wrapper(byte[] enc, byte[] mac, int bs) {
+    SCP01Wrapper(final byte[] enc, final byte[] mac, final int bs) {
         super(enc, mac, null, bs);
         setVariant(0x15);
     }
 
-    private static byte setBits(byte b, byte mask) {
+    private static byte setBits(final byte b, final byte mask) {
         return (byte) ((b | mask) & 0xFF);
     }
 
-    public void setVariant(int i) {
+    public void setVariant(final int i) {
         if (i == 0x05) {
             icvEnc = false;
         }
     }
 
     @Override
-    public CommandAPDU wrap(CommandAPDU command) throws GPException {
+    public CommandAPDU wrap(final CommandAPDU command) throws GPException {
         try {
             if (!mac && !enc) {
                 return command;
             }
 
-            int origCLA = command.getCLA();
-            int newCLA = origCLA;
-            int origINS = command.getINS();
-            int origP1 = command.getP1();
-            int origP2 = command.getP2();
-            byte[] origData = command.getData();
-            int origLc = command.getNc();
-            int newLc = origLc;
+            final var origCLA = command.getCLA();
+            var newCLA = origCLA;
+            final var origINS = command.getINS();
+            final var origP1 = command.getP1();
+            final var origP2 = command.getP2();
+            final var origData = command.getData();
+            final var origLc = command.getNc();
+            var newLc = origLc;
             byte[] newData = null;
-            int le = command.getNe();
-            ByteArrayOutputStream t = new ByteArrayOutputStream();
+            final var le = command.getNe();
+            final var t = new ByteArrayOutputStream();
 
             if (origLc > getBlockSize()) {
                 throw new IllegalArgumentException("APDU too long for wrapping.");
@@ -108,7 +108,7 @@ class SCP01Wrapper extends SecureChannelWrapper {
                 t.write(origLc);
                 t.write(origData);
                 if ((t.size() % 8) != 0) {
-                    byte[] x = GPCrypto.pad80(t.toByteArray(), 8);
+                    final byte[] x = GPCrypto.pad80(t.toByteArray(), 8);
                     t.reset();
                     t.write(x);
                 }
@@ -134,7 +134,7 @@ class SCP01Wrapper extends SecureChannelWrapper {
             if (le > 0) {
                 t.write(le);
             }
-            CommandAPDU wrapped = new CommandAPDU(t.toByteArray());
+            final var wrapped = new CommandAPDU(t.toByteArray());
             return wrapped;
         } catch (IOException e) {
             throw new RuntimeException("APDU wrapping failed", e);
@@ -146,7 +146,7 @@ class SCP01Wrapper extends SecureChannelWrapper {
     }
 
     @Override
-    public ResponseAPDU unwrap(ResponseAPDU response) throws GPException {
+    public ResponseAPDU unwrap(final ResponseAPDU response) throws GPException {
         return response;
     }
 }

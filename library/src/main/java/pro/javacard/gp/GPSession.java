@@ -126,21 +126,22 @@ public class GPSession {
     }
 
     // Try to find GlobalPlatform from a card
-    public static GPSession discover(APDUBIBO channel) throws GPException, IOException {
-        if (channel == null)
+    public static GPSession discover(final APDUBIBO channel) throws GPException, IOException {
+        if (channel == null) {
             throw new IllegalArgumentException("channel is null");
+        }
 
         // Try the default
-        final CommandAPDU command = new CommandAPDU(CLA_ISO7816, INS_SELECT, 0x04, 0x00, 256);
-        ResponseAPDU response = channel.transmit(command);
+        final var command = new CommandAPDU(CLA_ISO7816, INS_SELECT, 0x04, 0x00, 256);
+        final var response = channel.transmit(command);
 
         // Unfused JCOP replies with 0x6A82 to everything
         if (response.getSW() == 0x6A82) {
             // If it has the identification AID, it probably is an unfused JCOP
-            byte[] identify_aid = HexUtils.hex2bin("A000000167413000FF");
-            CommandAPDU identify = new CommandAPDU(CLA_ISO7816, INS_SELECT, 0x04, 0x00, identify_aid, 256);
-            ResponseAPDU identify_resp = channel.transmit(identify);
-            byte[] identify_data = identify_resp.getData();
+            final var identify_aid = HexUtils.hex2bin("A000000167413000FF");
+            final var identify = new CommandAPDU(CLA_ISO7816, INS_SELECT, 0x04, 0x00, identify_aid, 256);
+            final var identify_resp = channel.transmit(identify);
+            final var identify_data = identify_resp.getData();
             // Check the fuse state
             if (identify_data.length > 15) {
                 if (identify_data[14] == 0x00) {
@@ -158,8 +159,9 @@ public class GPSession {
 
         // 6283 - locked. Pass through locked.
         GPException.check(response, "Could not SELECT default selected", 0x6283);
-        if (response.getSW() == 0x6283)
+        if (response.getSW() == 0x6283) {
             logger.warn("Card Manager is LOCKED");
+        }
 
         final List<TLV> tlvs;
         try {
@@ -172,12 +174,12 @@ public class GPSession {
             throw new GPDataException("Could not auto-detect ISD AID", response.getData());
         }
 
-        var fcitag = TLV.find(tlvs, Tag.ber(0x6F));
+        final var fcitag = TLV.find(tlvs, Tag.ber(0x6F));
         if (fcitag.isPresent()) {
-            var isdaid = fcitag.get().find(Tag.ber(0x84));
+            final var isdaid = fcitag.get().find(Tag.ber(0x84));
             // WORKAROUND: exists a card that returns a zero length AID in template
             if (isdaid != null && isdaid.value().length > 0) {
-                AID detectedAID = new AID(isdaid.value());
+                final var detectedAID = new AID(isdaid.value());
                 logger.debug("Auto-detected ISD: " + detectedAID);
                 return new GPSession(channel, detectedAID);
             }
@@ -195,20 +197,20 @@ public class GPSession {
         }
 
         logger.debug("(I)SD AID: " + sdAID);
-        GPSession gp = new GPSession(channel, sdAID);
+        final var gp = new GPSession(channel, sdAID);
         gp.select(sdAID);
         return gp;
     }
 
-    public void setBlockSize(int size) {
+    public void setBlockSize(final int size) {
         this.blockSize = size;
     }
 
-    public void setTokenizer(DMTokenizer tokenizer) {
+    public void setTokenizer(final DMTokenizer tokenizer) {
         this.tokenizer = tokenizer;
     }
 
-    public void setVerifier(ReceiptVerifier verifier) {
+    public void setVerifier(final ReceiptVerifier verifier) {
         this.verifier = verifier;
     }
 
@@ -239,8 +241,8 @@ public class GPSession {
 
     void select(AID sdAID) throws GPException {
         // Try to select ISD (default selected)
-        final CommandAPDU command = new CommandAPDU(CLA_ISO7816, INS_SELECT, 0x04, 0x00, sdAID.getBytes(), 256);
-        ResponseAPDU resp = channel.transmit(command);
+        final var command = new CommandAPDU(CLA_ISO7816, INS_SELECT, 0x04, 0x00, sdAID.getBytes(), 256);
+        final var resp = channel.transmit(command);
 
         // If the ISD is locked, log it, but do not stop
         if (resp.getSW() == 0x6283) {
@@ -251,7 +253,7 @@ public class GPSession {
         parse_select_response(resp.getData());
     }
 
-    private void parse_select_response(byte[] fci) throws GPException {
+    private void parse_select_response(final byte[] fci) throws GPException {
         final List<TLV> tlvs;
         try {
             tlvs = TLV.parse(fci);
@@ -260,41 +262,41 @@ public class GPSession {
             logger.warn("Could not parse SELECT response: " + e.getMessage());
             return;
         }
-        var fcitagOpt = TLV.find(tlvs, Tag.ber(0x6F));
+        final var fcitagOpt = TLV.find(tlvs, Tag.ber(0x6F));
         if (fcitagOpt.isPresent()) {
-            var fcitag = fcitagOpt.get();
-            var isdaid = fcitag.find(Tag.ber(0x84));
+            final var fcitag = fcitagOpt.get();
+            final var isdaid = fcitag.find(Tag.ber(0x84));
             if (isdaid != null) {
-                AID detectedAID = new AID(isdaid.value());
+                final var detectedAID = new AID(isdaid.value());
                 if (!detectedAID.equals(sdAID)) {
-                    logger.warn(String.format("SD AID in FCI (%s) does not match the requested AID (%s). Using reported AID!", detectedAID, sdAID));
+                    logger.warn("SD AID in FCI (%s) does not match the requested AID (%s). Using reported AID!".formatted(detectedAID, sdAID));
                     // So one can select only the prefix
                     sdAID = detectedAID;
                 }
             }
 
             //
-            var prop = fcitag.find(Tag.ber(0xA5));
+            final var prop = fcitag.find(Tag.ber(0xA5));
             if (prop != null) {
 
-                var isdd = prop.find(Tag.ber(0x73));
+                final var isdd = prop.find(Tag.ber(0x73));
                 if (isdd != null) {
                     // Tag 73 is a constructed tag.
-                    var oidtag = isdd.find(Tag.ber(0x06));
+                    final var oidtag = isdd.find(Tag.ber(0x06));
                     if (oidtag != null) {
                         // 1.2.840.114283.1
                         if (Arrays.equals(oidtag.value(), HexUtils.hex2bin("2A864886FC6B01"))) {
                             // Detect versions
-                            var vertag = isdd.find(Tag.ber(0x60));
+                            final var vertag = isdd.find(Tag.ber(0x60));
                             if (vertag != null) {
-                                var veroid = vertag.find(Tag.ber(0x06));
+                                final var veroid = vertag.find(Tag.ber(0x06));
                                 if (veroid != null) {
                                     // TODO: react to it maybe? Not that relevant in 2.2 era
                                     logger.debug("Auto-detected GP version: " + GPData.oid2version(veroid.value()));
                                 }
                             }
                         } else if (GPData.oid2string(oidtag.value()).startsWith("1.2.840.114283.4.") && oidtag.value().length == 9) {
-                            byte[] data = oidtag.value();
+                            final var data = oidtag.value();
                             // SCP version
                             logger.debug("Auto-detected SCP version: {}", GPSecureChannelVersion.valueOf(data[7] & 0xFF, data[8] & 0xFF));
                         } else {
@@ -306,12 +308,12 @@ public class GPSession {
                 }
 
                 // Lifecycle
-                var lc = prop.find(Tag.ber(0x9F, 0x6E));
+                final var lc = prop.find(Tag.ber(0x9F, 0x6E));
                 if (lc != null) {
                     logger.debug("Lifecycle data (ignored): " + HexUtils.bin2hex(lc.value()));
                 }
                 // Max block size
-                var maxbs = prop.find(Tag.ber(0x9F, 0x65));
+                final var maxbs = prop.find(Tag.ber(0x9F, 0x65));
                 if (maxbs != null) {
                     setBlockSize(maxbs.value());
                 }
@@ -323,8 +325,8 @@ public class GPSession {
         }
     }
 
-    private void setBlockSize(byte[] blockSize) {
-        int bs = new BigInteger(1, blockSize).intValue();
+    private void setBlockSize(final byte[] blockSize) {
+        final var bs = new BigInteger(1, blockSize).intValue();
         if (bs > this.blockSize) {
             logger.warn("Ignoring auto-detected block size that exceeds set maximum: " + bs);
         } else {
@@ -344,7 +346,7 @@ public class GPSession {
         return new ArrayList<>(GPKeyInfo.parseTemplate(tmpl));
     }
 
-    private void normalizeSecurityLevel(EnumSet<APDUMode> securityLevel) {
+    private void normalizeSecurityLevel(final EnumSet<APDUMode> securityLevel) {
         // GPC AmdD (SCP03) v1.1.1 7.1.2.1
         if (securityLevel.contains(APDUMode.RENC)) {
             securityLevel.add(APDUMode.ENC);
@@ -365,10 +367,11 @@ public class GPSession {
 
         normalizeSecurityLevel(securityLevel);
 
-        logger.info("Using card master key(s) with version {} for setting up session with {} ", keys.getKeyInfo().getVersion(), securityLevel.stream().map(Enum::name).collect(Collectors.joining(", ")));
+        logger.info("Using card master key(s) with version {} for setting up session with {} ", keys.getKeyInfo().getVersion(),
+                securityLevel.stream().map(Enum::name).collect(Collectors.joining(", ")));
 
         // XXX: more explicit SCP indication from tool
-        boolean s16 = (scp != null && scp.scp == SCP03 && (scp.i & 0x01) == 0x01) || (host_challenge != null && host_challenge.length == 16);
+        var s16 = (scp != null && scp.scp == SCP03 && (scp.i & 0x01) == 0x01) || (host_challenge != null && host_challenge.length == 16);
 
         if (s16) {
             logger.debug("Using S16 mode");
@@ -382,11 +385,11 @@ public class GPSession {
 
         // P1 key version (all)
         // P2 either key ID (SCP01) or 0 (SCP02)
-        int init_p2 = (scp != null && scp.scp == GPSecureChannelVersion.SCP.SCP01) ? keys.getKeyInfo().getID() : 0;
-        CommandAPDU initUpdate = new CommandAPDU(CLA_GP, INS_INITIALIZE_UPDATE, keys.getKeyInfo().getVersion(), init_p2, host_challenge, 256);
+        final int init_p2 = scp != null && scp.scp == GPSecureChannelVersion.SCP.SCP01 ? keys.getKeyInfo().getID() : 0;
+        final var initUpdate = new CommandAPDU(CLA_GP, INS_INITIALIZE_UPDATE, keys.getKeyInfo().getVersion(), init_p2, host_challenge, 256);
 
-        ResponseAPDU response = channel.transmit(initUpdate);
-        int sw = response.getSW();
+        var response = channel.transmit(initUpdate);
+        final var sw = response.getSW();
 
         // XXX: Handle 6700 and try again with S16 mode
         if (sw == 0x6700 && !s16) {
@@ -403,7 +406,7 @@ public class GPSession {
 
         // Detect all other errors
         GPException.check(response, "INITIALIZE UPDATE failed");
-        byte[] update_response = response.getData();
+        final var update_response = response.getData();
 
         // SCP01:  kdd (10) | key info (2) | card challenge (8) | card cryptogram (8) = 28
         // SCP02:  kdd (10) | key info (2) | seq (2) | card challenge (6) | card cryptogram (8) = 28
@@ -416,7 +419,7 @@ public class GPSession {
             throw new GPDataException("INITIALIZE UPDATE response with too small length", update_response);
         }
 
-        int update_len = 0;
+        var update_len = 0;
 
         switch (update_response[11]) {
             case 0x01:
@@ -425,7 +428,7 @@ public class GPSession {
                 break;
             case 0x03:
                 update_len = 29;
-                int i = update_response[12];
+                final var i = update_response[12];
                 if ((i & 0x10) == 0x10) {
                     update_len += 3;
                 }
@@ -446,8 +449,8 @@ public class GPSession {
         }
 
         // Parse the response
-        int offset = 0;
-        byte[] diversification_data = Arrays.copyOfRange(update_response, 0, 10);
+        var offset = 0;
+        final byte[] diversification_data = Arrays.copyOfRange(update_response, 0, 10);
         offset += diversification_data.length;
 
         // Get used key version from response
@@ -455,7 +458,7 @@ public class GPSession {
         offset++;
 
         // Get major SCP version from Key Information field in response
-        int scpv = update_response[offset] & 0xFF;
+        final var scpv = update_response[offset] & 0xFF;
         offset++;
 
         // get the protocol "i" parameter, if SCP03
@@ -467,11 +470,11 @@ public class GPSession {
         }
 
         // get card challenge
-        byte[] card_challenge = Arrays.copyOfRange(update_response, offset, offset + (s16 ? 16 : 8));
+        final byte[] card_challenge = Arrays.copyOfRange(update_response, offset, offset + (s16 ? 16 : 8));
         offset += card_challenge.length;
 
         // get card cryptogram
-        byte[] card_cryptogram = Arrays.copyOfRange(update_response, offset, offset + (s16 ? 16 : 8));
+        final byte[] card_cryptogram = Arrays.copyOfRange(update_response, offset, offset + (s16 ? 16 : 8));
         offset += card_cryptogram.length;
 
         // Extract ssc
@@ -486,15 +489,16 @@ public class GPSession {
         }
 
         logger.debug("KDD: {}", HexUtils.bin2hex(diversification_data));
-        if (seq != null)
+        if (seq != null) {
             logger.debug("SSC: {}", HexUtils.bin2hex(seq));
+        }
         logger.debug("Host challenge: " + HexUtils.bin2hex(host_challenge));
         logger.debug("Card challenge: " + HexUtils.bin2hex(card_challenge));
         logger.debug("Card reports {} with key version {}", this.scpVersion, GPUtils.intString(scpKeyVersion));
 
         // Verify response
         // If using explicit key version, it must match.
-        GPKeyInfo keyInfo = keys.getKeyInfo();
+        final var keyInfo = keys.getKeyInfo();
         if ((keyInfo.getVersion() > 0) && (scpKeyVersion != keyInfo.getVersion())) {
             throw new GPException("Key version mismatch: " + keyInfo.getVersion() + " != " + scpKeyVersion);
         }
@@ -511,12 +515,13 @@ public class GPSession {
 
         // Check pseudorandom card challenge. NOTE: this MUST happen _after_ key diversification.
         if (scpVersion.scp == SCP03 && (scpVersion.i & 0x10) == 0x10) {
-            byte[] ctx = GPUtils.concatenate(seq, this.sdAID.getBytes());
+            final byte[] ctx = GPUtils.concatenate(seq, this.sdAID.getBytes());
             logger.trace("Challenge calculation context: {}", HexUtils.bin2hex(ctx));
             // XXX: remove double length in kdf invocation and harmonize bits vs bytes
-            byte[] my_card_challenge = keys.scp3_kdf(KeyPurpose.ENC, GPCrypto.scp03_kdf_blocka((byte) 0x02, s16 ? 128 : 64), ctx, s16 ? 16 : 8);
+            final var my_card_challenge = keys.scp3_kdf(KeyPurpose.ENC, GPCrypto.scp03_kdf_blocka((byte) 0x02, s16 ? 128 : 64), ctx, s16 ? 16 : 8);
             if (!Arrays.equals(my_card_challenge, card_challenge)) {
-                logger.warn("Pseudorandom card challenge does not match expected: {} vs {}", HexUtils.bin2hex(my_card_challenge), HexUtils.bin2hex(card_challenge));
+                logger.warn("Pseudorandom card challenge does not match expected: {} vs {}", HexUtils.bin2hex(my_card_challenge),
+                        HexUtils.bin2hex(card_challenge));
             } else {
                 logger.debug("Pseudorandom card challenge matches expected value: {}", HexUtils.bin2hex(my_card_challenge));
             }
@@ -529,14 +534,15 @@ public class GPSession {
             sessionContext = GPUtils.concatenate(host_challenge, card_challenge);
         }
 
-        byte[] encKey = cardKeys.getSessionKey(KeyPurpose.ENC, sessionContext);
-        byte[] macKey = cardKeys.getSessionKey(KeyPurpose.MAC, sessionContext);
-        byte[] rmacKey = cardKeys.getSessionKey(KeyPurpose.RMAC, sessionContext);
-        logger.info("Session keys: ENC={} MAC={} RMAC={}", HexUtils.bin2hex(encKey), HexUtils.bin2hex(macKey), rmacKey == null ? "N/A" : HexUtils.bin2hex(rmacKey));
+        final var encKey = cardKeys.getSessionKey(KeyPurpose.ENC, sessionContext);
+        final var macKey = cardKeys.getSessionKey(KeyPurpose.MAC, sessionContext);
+        final var rmacKey = cardKeys.getSessionKey(KeyPurpose.RMAC, sessionContext);
+        logger.info("Session keys: ENC={} MAC={} RMAC={}", HexUtils.bin2hex(encKey), HexUtils.bin2hex(macKey),
+                rmacKey == null ? "N/A" : HexUtils.bin2hex(rmacKey));
 
         // Verify card cryptogram
         byte[] my_card_cryptogram;
-        byte[] cntx = GPUtils.concatenate(host_challenge, card_challenge);
+        final byte[] cntx = GPUtils.concatenate(host_challenge, card_challenge);
         if (this.scpVersion.scp == SCP01 || this.scpVersion.scp == SCP02) {
             my_card_cryptogram = GPCrypto.mac_3des(cntx, encKey, new byte[8]);
         } else {
@@ -573,8 +579,8 @@ public class GPSession {
         }
 
         logger.debug("Calculated host cryptogram: " + HexUtils.bin2hex(host_cryptogram));
-        int P1 = APDUMode.getSetValue(securityLevel);
-        CommandAPDU externalAuthenticate = new CommandAPDU(CLA_MAC, INS_EXTERNAL_AUTHENTICATE_82, P1, 0, host_cryptogram);
+        final var P1 = APDUMode.getSetValue(securityLevel);
+        final var externalAuthenticate = new CommandAPDU(CLA_MAC, INS_EXTERNAL_AUTHENTICATE_82, P1, 0, host_cryptogram);
         response = transmit(externalAuthenticate);
         GPException.check(response, "EXTERNAL AUTHENTICATE failed");
 
@@ -585,17 +591,18 @@ public class GPSession {
     // Pipe through secure channel
     public ResponseAPDU transmit(CommandAPDU command) throws IOException {
         try {
-            CommandAPDU wrapped = wrapper.wrap(command);
+            final var wrapped = wrapper.wrap(command);
             ResponseAPDU resp = null;
 
             // GPC 2.3.1 11.1.5.1
-            List<byte[]> chunks = GPUtils.splitArray(wrapped.getData(), blockSize);
-            if (chunks.size() > 1)
+            final var chunks = GPUtils.splitArray(wrapped.getData(), blockSize);
+            if (chunks.size() > 1) {
                 logger.debug("Chaining in {} chunks", chunks.size());
+            }
 
-            for (int i = 0; i < chunks.size(); i++) {
-                boolean last = i == chunks.size() - 1;
-                int p1 = last ? command.getP1() : command.getP1() | 0x80; // XXX: should check if instruction is eligible for this treatment
+            for (var i = 0; i < chunks.size(); i++) {
+                final var last = i == chunks.size() - 1;
+                final int p1 = last ? command.getP1() : command.getP1() | 0x80; // XXX: should check if instruction is eligible for this treatment
                 resp = channel.transmit(new CommandAPDU(wrapped.getCLA(), wrapped.getINS(), p1, wrapped.getP2(), chunks.get(i), 256));
                 if (!last) {
                     GPException.check(resp);
@@ -631,19 +638,20 @@ public class GPSession {
 
     // Simple LOAD without DAP, but possible LFDBH
     public void loadCapFile(CAPFile cap, AID targetDomain, GPData.LFDBH hashFunction) throws IOException, GPException {
-        if (targetDomain == null)
+        if (targetDomain == null) {
             targetDomain = sdAID;
+        }
         loadCapFile(cap, targetDomain, null, null, hashFunction);
     }
 
     public void loadCapFile(CAPFile cap, AID targetDomain, AID dapDomain, byte[] dap, GPData.LFDBH hashFunction)
             throws GPException, IOException {
-        byte[] hash = hashFunction == null ? new byte[0] : cap.getLoadFileDataHash(hashFunction.algo);
-        byte[] code = cap.getCode();
-        byte[] loadParams = new byte[0]; // FIXME
-        AID pkg = cap.getPackageAID();
+        final byte[] hash = hashFunction == null ? new byte[0] : cap.getLoadFileDataHash(hashFunction.algo);
+        final var code = cap.getCode();
+        final byte[] loadParams = new byte[0]; // FIXME
+        final var pkg = cap.getPackageAID();
 
-        ByteArrayOutputStream bo = new ByteArrayOutputStream();
+        final var bo = new ByteArrayOutputStream();
 
         try {
             bo.write(pkg.getLength());
@@ -662,19 +670,19 @@ public class GPSession {
             throw new RuntimeException(ioe);
         }
 
-        CommandAPDU command = new CommandAPDU(CLA_GP, INS_INSTALL, P1_INSTALL_FOR_LOAD, 0x00, bo.toByteArray(), 256);
+        var command = new CommandAPDU(CLA_GP, INS_INSTALL, P1_INSTALL_FOR_LOAD, 0x00, bo.toByteArray(), 256);
         command = tokenizer.tokenize(command);
-        ResponseAPDU response = transmitLV(command);
+        var response = transmitLV(command);
         GPException.check(response, "INSTALL [for load] failed");
         verifier.check(response, ReceiptVerifier.load(pkg, targetDomain));
 
         // Construct load block
-        ByteArrayOutputStream loadBlock = new ByteArrayOutputStream();
+        final var loadBlock = new ByteArrayOutputStream();
         try {
             // Add DAP block, if signature present
             if (dap != null && dapDomain != null) {
                 loadBlock.write(0xE2);
-                var dapLenBytes = GPUtils.encodeLength(dap.length);
+                final var dapLenBytes = GPUtils.encodeLength(dap.length);
                 // E2 content: [4F][1-byte AID len][AID] [C3][encoded DAP len][DAP]
                 loadBlock.write(GPUtils.encodeLength(1 + 1 + dapDomain.getLength() + 1 + dapLenBytes.length + dap.length));
                 loadBlock.write(0x4F);
@@ -693,11 +701,11 @@ public class GPSession {
         }
 
         // Split according to available block size
-        List<byte[]> blocks = GPUtils.splitArray(loadBlock.toByteArray(), wrapper.getBlockSize());
+        final var blocks = GPUtils.splitArray(loadBlock.toByteArray(), wrapper.getBlockSize());
 
-        for (int i = 0; i < blocks.size(); i++) {
-            byte p1 = (i == (blocks.size() - 1)) ? P1_LAST_BLOCK : P1_MORE_BLOCKS;
-            CommandAPDU load = new CommandAPDU(CLA_GP, INS_LOAD, p1, (byte) i, blocks.get(i), 256);
+        for (var i = 0; i < blocks.size(); i++) {
+            final byte p1 = i == (blocks.size() - 1) ? P1_LAST_BLOCK : P1_MORE_BLOCKS;
+            final var load = new CommandAPDU(CLA_GP, INS_LOAD, p1, (byte) i, blocks.get(i), 256);
             response = transmit(load);
             GPException.check(response, "LOAD failed");
         }
@@ -705,14 +713,15 @@ public class GPSession {
         dirty = true;
     }
 
-    public void installAndMakeSelectable(AID packageAID, AID appletAID, AID instanceAID, Set<Privilege> privileges, byte[] installParams) throws GPException, IOException {
+    public void installAndMakeSelectable(AID packageAID, AID appletAID, AID instanceAID, Set<Privilege> privileges, byte[] installParams)
+            throws GPException, IOException {
         if (instanceAID == null) {
             instanceAID = appletAID;
         }
-        byte[] data = buildInstallData(packageAID, appletAID, instanceAID, privileges, installParams);
-        CommandAPDU command = new CommandAPDU(CLA_GP, INS_INSTALL, P1_INSTALL_AND_MAKE_SELECTABLE, 0x00, data);
+        final var data = buildInstallData(packageAID, appletAID, instanceAID, privileges, installParams);
+        var command = new CommandAPDU(CLA_GP, INS_INSTALL, P1_INSTALL_AND_MAKE_SELECTABLE, 0x00, data);
         command = tokenizer.tokenize(command);
-        ResponseAPDU response = transmitLV(command);
+        final var response = transmitLV(command);
         GPException.check(response, "INSTALL [for install and make selectable] failed");
 
         verifier.check(response, ReceiptVerifier.install_make_selectable(packageAID, instanceAID));
@@ -725,9 +734,9 @@ public class GPSession {
         }
         // Empty mandatory app parameters
         if (installParams == null || installParams.length == 0) {
-            installParams = new byte[]{(byte) 0xC9, 0x00};
+            installParams = new byte[] { (byte) 0xC9, 0x00 };
         } else {
-            boolean valid = false;
+            var valid = false;
             // Handle #360 - only modify/fixup installation parameters when needed.
             try {
                 final var tlvs = TLV.parse(installParams);
@@ -747,8 +756,8 @@ public class GPSession {
         logger.trace("Installation parameters: {}", HexUtils.bin2hex(installParams));
 
         // Try to use the minimal
-        byte[] privs = BitField.encode(privileges, 3);
-        ByteArrayOutputStream bo = new ByteArrayOutputStream();
+        final byte[] privs = BitField.encode(privileges, 3);
+        final var bo = new ByteArrayOutputStream();
         try {
             bo.write(packageAID.getLength());
             bo.write(packageAID.getBytes());
@@ -771,9 +780,9 @@ public class GPSession {
         return bo.toByteArray();
     }
 
-    public void extradite(AID what, AID to) throws GPException, IOException {
+    public void extradite(final AID what, final AID to) throws GPException, IOException {
         // GP 2.2.1 Table 11-45
-        ByteArrayOutputStream bo = new ByteArrayOutputStream();
+        final var bo = new ByteArrayOutputStream();
         try {
             bo.write(to.getLength());
             bo.write(to.getBytes());
@@ -789,19 +798,18 @@ public class GPSession {
             throw new RuntimeException(ioe);
         }
 
-        CommandAPDU command = new CommandAPDU(CLA_GP, INS_INSTALL, 0x10, 0x00, bo.toByteArray());
+        var command = new CommandAPDU(CLA_GP, INS_INSTALL, 0x10, 0x00, bo.toByteArray());
         command = tokenizer.tokenize(command);
-        ResponseAPDU response = transmitLV(command);
+        final var response = transmitLV(command);
         GPException.check(response, "INSTALL [for extradition] failed");
 
         verifier.check(response, ReceiptVerifier.extradite(sdAID, what, to));
         dirty = true;
     }
 
-
-    public void installForPersonalization(AID aid) throws IOException, GPException {
+    public void installForPersonalization(final AID aid) throws IOException, GPException {
         // send the INSTALL for personalization command
-        ByteArrayOutputStream bo = new ByteArrayOutputStream();
+        final var bo = new ByteArrayOutputStream();
         try {
             // GP 2.1.1 9.5.2.3.5, 2.2.1 - 11.5.2.3.6
             bo.write(0);
@@ -814,36 +822,38 @@ public class GPSession {
         } catch (IOException ioe) {
             throw new RuntimeException(ioe);
         }
-        CommandAPDU install = new CommandAPDU(CLA_GP, INS_INSTALL, 0x20, 0x00, bo.toByteArray(), 256);
+        final var install = new CommandAPDU(CLA_GP, INS_INSTALL, 0x20, 0x00, bo.toByteArray(), 256);
         GPException.check(transmitLV(install), "INSTALL [for personalization] failed");
     }
 
     // Core: caller provides CommandAPDUs with P1 fully set (including b8 last-block).
     // Method only replaces P2 with sequential counter, then wraps through secure channel.
-    public List<byte[]> storeData(List<CommandAPDU> commands) throws IOException, GPException {
-        if (commands.size() > 256)
+    public List<byte[]> storeData(final List<CommandAPDU> commands) throws IOException, GPException {
+        if (commands.size() > 256) {
             throw new IllegalArgumentException("Too many STORE DATA blocks: " + commands.size() + " (max 256)");
-        List<byte[]> results = new ArrayList<>();
-        for (int i = 0; i < commands.size(); i++) {
-            CommandAPDU cmd = commands.get(i);
-            if (cmd.getINS() != (INS_STORE_DATA & 0xFF))
-                throw new IllegalArgumentException("Not a STORE DATA command: INS=" + String.format("%02X", cmd.getINS()));
-            CommandAPDU numbered = new CommandAPDU(cmd.getCLA(), cmd.getINS(), cmd.getP1(), i, cmd.getData(), 256);
+        }
+        final var results = new ArrayList<byte[]>();
+        for (var i = 0; i < commands.size(); i++) {
+            final var cmd = commands.get(i);
+            if (cmd.getINS() != (INS_STORE_DATA & 0xFF)) {
+                throw new IllegalArgumentException("Not a STORE DATA command: INS=" + "%02X".formatted(cmd.getINS()));
+            }
+            final var numbered = new CommandAPDU(cmd.getCLA(), cmd.getINS(), cmd.getP1(), i, cmd.getData(), 256);
             results.add(GPException.check(transmit(numbered), "STORE DATA failed").getData());
         }
         return results;
     }
 
     // All blocks share one P1; auto-sets b8 on last block
-    public List<byte[]> storeData(List<byte[]> blocks, int p1) throws IOException, GPException {
+    public List<byte[]> storeData(final List<byte[]> blocks, final int p1) throws IOException, GPException {
         return storeData(buildStoreDataCommands(blocks, p1));
     }
 
     // Build STORE DATA CommandAPDUs with correct P1 last-block bit management
-    public static List<CommandAPDU> buildStoreDataCommands(List<byte[]> blocks, int p1) {
-        List<CommandAPDU> commands = new ArrayList<>();
-        for (int i = 0; i < blocks.size(); i++) {
-            int v = (i == blocks.size() - 1) ? p1 | P1_LAST_BLOCK : p1 & ~P1_LAST_BLOCK;
+    public static List<CommandAPDU> buildStoreDataCommands(final List<byte[]> blocks, final int p1) {
+        final var commands = new ArrayList<CommandAPDU>();
+        for (var i = 0; i < blocks.size(); i++) {
+            final int v = i == blocks.size() - 1 ? p1 | P1_LAST_BLOCK : p1 & ~P1_LAST_BLOCK;
             commands.add(new CommandAPDU(CLA_GP, INS_STORE_DATA, v, 0, blocks.get(i)));
         }
         return commands;
@@ -854,10 +864,10 @@ public class GPSession {
         return storeData(GPUtils.splitArray(data, wrapper.getBlockSize()), p1);
     }
 
-    public void makeDefaultSelected(AID aid) throws IOException, GPException {
-        ByteArrayOutputStream bo = new ByteArrayOutputStream();
+    public void makeDefaultSelected(final AID aid) throws IOException, GPException {
+        final var bo = new ByteArrayOutputStream();
         // Only supported privilege.
-        byte[] privileges = BitField.encode(EnumSet.of(Privilege.CardReset), 3);
+        final byte[] privileges = BitField.encode(EnumSet.of(Privilege.CardReset), 3);
 
         try {
             bo.write(0);
@@ -871,31 +881,31 @@ public class GPSession {
             throw new RuntimeException(ioe);
         }
 
-        CommandAPDU command = new CommandAPDU(CLA_GP, INS_INSTALL, P1_INSTALL_FOR_MAKE_SELECTABLE, 0x00, bo.toByteArray());
+        var command = new CommandAPDU(CLA_GP, INS_INSTALL, P1_INSTALL_FOR_MAKE_SELECTABLE, 0x00, bo.toByteArray());
         command = tokenizer.tokenize(command);
-        ResponseAPDU response = transmitLV(command);
+        final var response = transmitLV(command);
         GPException.check(response, "INSTALL [for make selectable] failed");
         dirty = true;
     }
 
-    public void lockUnlockApplet(AID app, boolean lock) throws IOException, GPException {
-        CommandAPDU cmd = new CommandAPDU(CLA_GP, INS_SET_STATUS, 0x40, lock ? 0x80 : 0x00, app.getBytes());
-        ResponseAPDU response = transmit(cmd);
+    public void lockUnlockApplet(final AID app, final boolean lock) throws IOException, GPException {
+        final var cmd = new CommandAPDU(CLA_GP, INS_SET_STATUS, 0x40, lock ? 0x80 : 0x00, app.getBytes());
+        final var response = transmit(cmd);
         GPException.check(response, "SET STATUS failed");
         dirty = true;
     }
 
-    public void setCardStatus(GPRegistryEntry.ISDLifeCycle status) throws IOException, GPException {
+    public void setCardStatus(final GPRegistryEntry.ISDLifeCycle status) throws IOException, GPException {
         logger.debug("Setting status to {}", status);
-        CommandAPDU cmd = new CommandAPDU(CLA_GP, INS_SET_STATUS, 0x80, status.getValue());
-        ResponseAPDU response = transmit(cmd);
+        final var cmd = new CommandAPDU(CLA_GP, INS_SET_STATUS, 0x80, status.getValue());
+        final var response = transmit(cmd);
         GPException.check(response, "SET STATUS failed");
         dirty = true;
     }
 
     // Delete file aid on the card. Delete dependencies as well if deleteDeps is true.
-    public void deleteAID(AID aid, boolean deleteDeps) throws GPException, IOException {
-        ByteArrayOutputStream bo = new ByteArrayOutputStream();
+    public void deleteAID(final AID aid, final boolean deleteDeps) throws GPException, IOException {
+        final var bo = new ByteArrayOutputStream();
         try {
             bo.write(0x4f);
             bo.write(aid.getLength());
@@ -903,21 +913,22 @@ public class GPSession {
         } catch (IOException ioe) {
             throw new RuntimeException(ioe);
         }
-        CommandAPDU command = new CommandAPDU(CLA_GP, INS_DELETE, 0x00, deleteDeps ? 0x80 : 0x00, bo.toByteArray());
+        var command = new CommandAPDU(CLA_GP, INS_DELETE, 0x00, deleteDeps ? 0x80 : 0x00, bo.toByteArray());
         command = tokenizer.tokenize(command);
-        ResponseAPDU response = transmitTLV(command);
+        final var response = transmitTLV(command);
         GPException.check(response, "DELETE failed");
         verifier.check(response, ReceiptVerifier.delete(aid));
         dirty = true;
     }
 
-    public void deleteKey(Integer keyver, Integer keyid) throws GPException, IOException {
+    public void deleteKey(final Integer keyver, final Integer keyid) throws GPException, IOException {
         // TODO: get id from existing template list
 
-        if (keyid == null && keyver == null)
+        if (keyid == null && keyver == null) {
             throw new IllegalArgumentException("Must specify either key version or key ID");
+        }
 
-        ByteArrayOutputStream bo = new ByteArrayOutputStream();
+        final var bo = new ByteArrayOutputStream();
         if (keyid != null) {
             bo.write(0xd0); // Key Identifier
             bo.write(1);
@@ -930,34 +941,35 @@ public class GPSession {
             bo.write(keyver);
         }
 
-        CommandAPDU delete = new CommandAPDU(CLA_GP, INS_DELETE, 0x00, 0x00, bo.toByteArray());
-        ResponseAPDU response = transmit(delete);
+        final var delete = new CommandAPDU(CLA_GP, INS_DELETE, 0x00, 0x00, bo.toByteArray());
+        final var response = transmit(delete);
         // XXX: better message
-        String msg = String.format("DELETE failed for key %s", keyver != null ? GPUtils.intString(keyver) : GPUtils.intString(keyid));
+        final var msg = "DELETE failed for key %s".formatted(keyver != null ? GPUtils.intString(keyver) : GPUtils.intString(keyid));
         GPException.check(response, msg);
     }
 
-    public void renameISD(AID newaid) throws GPException, IOException {
-        CommandAPDU rename = new CommandAPDU(CLA_GP, INS_STORE_DATA, 0x90, 0x00, GPUtils.concatenate(new byte[]{0x4f, (byte) newaid.getLength()}, newaid.getBytes()));
-        ResponseAPDU response = transmit(rename);
+    public void renameISD(final AID newaid) throws GPException, IOException {
+        final var rename = new CommandAPDU(CLA_GP, INS_STORE_DATA, 0x90, 0x00,
+                GPUtils.concatenate(new byte[] { 0x4f, (byte) newaid.getLength() }, newaid.getBytes()));
+        final var response = transmit(rename);
         GPException.check(response, "Rename failed");
     }
 
-    public byte[] encryptDEK(byte[] plaintext) throws GeneralSecurityException {
+    public byte[] encryptDEK(final byte[] plaintext) throws GeneralSecurityException {
         return cardKeys.encrypt(plaintext, sessionContext);
     }
 
-    private byte[] encodeKey(GPCardKeys dek, byte[] other, GPKeyInfo.GPKey type) {
+    private byte[] encodeKey(final GPCardKeys dek, final byte[] other, final GPKeyInfo.GPKey type) {
         try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            final var baos = new ByteArrayOutputStream();
             if (type == GPKey.AES) {
                 // Pad with random
-                int n = other.length % 16 + 1;
-                byte[] plaintext = GPCrypto.random(n * other.length);
+                final var n = other.length % 16 + 1;
+                final byte[] plaintext = GPCrypto.random(n * other.length);
                 System.arraycopy(other, 0, plaintext, 0, other.length);
 
-                byte[] cgram = dek.encrypt(plaintext, sessionContext);
-                byte[] kcv = GPCrypto.kcv_aes(other);
+                final var cgram = dek.encrypt(plaintext, sessionContext);
+                final byte[] kcv = GPCrypto.kcv_aes(other);
                 baos.write(GPKey.AES.getType());
                 baos.write(cgram.length + 1); // +1 for actual length
                 baos.write(other.length);
@@ -965,8 +977,8 @@ public class GPSession {
                 baos.write(kcv.length);
                 baos.write(kcv);
             } else if (type == GPKey.DES3) {
-                byte[] cgram = dek.encrypt(other, sessionContext);
-                byte[] kcv = GPCrypto.kcv_3des(other);
+                final var cgram = dek.encrypt(other, sessionContext);
+                final byte[] kcv = GPCrypto.kcv_3des(other);
                 baos.write(GPKey.DES3.getType());
                 baos.write(cgram.length); // Length
                 baos.write(cgram);
@@ -979,12 +991,12 @@ public class GPSession {
         }
     }
 
-    private byte[] encodeKey(GPCardKeys dek, GPCardKeys other, KeyPurpose p) {
+    private byte[] encodeKey(final GPCardKeys dek, final GPCardKeys other, final KeyPurpose p) {
         try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            final var baos = new ByteArrayOutputStream();
             if (other.getKeyInfo().getType() == GPKey.AES) {
-                byte[] cgram = dek.encryptKey(other, p, sessionContext);
-                byte[] kcv = other.kcv(p);
+                final var cgram = dek.encryptKey(other, p, sessionContext);
+                final var kcv = other.kcv(p);
 
                 baos.write(GPKey.AES.getType());
                 baos.write(cgram.length + 1); // +1 for actual length
@@ -993,8 +1005,8 @@ public class GPSession {
                 baos.write(kcv.length);
                 baos.write(kcv);
             } else if (other.getKeyInfo().getType() == GPKey.DES3) {
-                byte[] cgram = dek.encryptKey(other, p, sessionContext);
-                byte[] kcv = other.kcv(p);
+                final var cgram = dek.encryptKey(other, p, sessionContext);
+                final var kcv = other.kcv(p);
 
                 baos.write(GPKey.DES3.getType());
                 baos.write(cgram.length); // Length
@@ -1008,21 +1020,21 @@ public class GPSession {
         }
     }
 
-    public void putKeys(GPCardKeys keys, boolean replace) throws GPException, IOException {
+    public void putKeys(final GPCardKeys keys, final boolean replace) throws GPException, IOException {
 
         // Log and trace
         logger.debug("PUT KEY version {} replace={} {}", keys.getKeyInfo().getVersion(), replace, keys);
 
         // Construct APDU
-        int P1 = 0x00; // New key in single command unless replace
+        var P1 = 0x00; // New key in single command unless replace
         if (replace) {
             P1 = keys.getKeyInfo().getVersion();
         }
         // int P2 = keys.get(0).getID();
-        int P2 = 0x01;
+        var P2 = 0x01;
         P2 |= 0x80; // More than one key
 
-        ByteArrayOutputStream bo = new ByteArrayOutputStream();
+        final var bo = new ByteArrayOutputStream();
 
         // New key version
         bo.write(keys.getKeyInfo().getVersion());
@@ -1031,25 +1043,24 @@ public class GPSession {
             bo.write(encodeKey(cardKeys, keys, p));
         }
 
-        CommandAPDU command = new CommandAPDU(CLA_GP, INS_PUT_KEY, P1, P2, bo.toByteArray());
-        ResponseAPDU response = transmit(command);
+        final var command = new CommandAPDU(CLA_GP, INS_PUT_KEY, P1, P2, bo.toByteArray());
+        final var response = transmit(command);
         GPException.check(response, "PUT KEY failed");
         // TODO: compare and complain
         if (response.getData().length > 1) {
-            byte[] resp = response.getData();
-            int kv = resp[0] & 0xFF;
-            byte[] kcvs = Arrays.copyOfRange(resp, 1, resp.length);
-            List<String> kcvstrings = GPUtils.splitArray(kcvs, 3).stream().map(HexUtils::bin2hex).collect(Collectors.toList());
+            final var resp = response.getData();
+            final var kv = resp[0] & 0xFF;
+            final byte[] kcvs = Arrays.copyOfRange(resp, 1, resp.length);
+            final var kcvstrings = GPUtils.splitArray(kcvs, 3).stream().map(HexUtils::bin2hex).collect(Collectors.toList());
             logger.info("Card stored keys with KVN {} and with KCV-s: {}", GPUtils.intString(kv), String.join(", ", kcvstrings));
         }
     }
 
-
-    byte[] encodeRSAKey(RSAPublicKey key) {
-        ByteArrayOutputStream bo = new ByteArrayOutputStream();
+    byte[] encodeRSAKey(final RSAPublicKey key) {
+        final var bo = new ByteArrayOutputStream();
         try {
-            byte[] modulus = GPUtils.positive(key.getModulus());
-            byte[] exponent = GPUtils.positive(key.getPublicExponent());
+            final byte[] modulus = GPUtils.positive(key.getModulus());
+            final byte[] exponent = GPUtils.positive(key.getPublicExponent());
 
             bo.write(0xA1); // Modulus
             bo.write(GPUtils.encodeLength(modulus.length));
@@ -1065,11 +1076,11 @@ public class GPSession {
     }
 
     @SuppressWarnings("StatementSwitchToExpressionSwitch")
-    byte[] encodeECKey(ECPublicKey pubkey) {
-        ByteArrayOutputStream bo = new ByteArrayOutputStream();
+    byte[] encodeECKey(final ECPublicKey pubkey) {
+        final var bo = new ByteArrayOutputStream();
 
         try {
-            int fieldSize = pubkey.getParams().getCurve().getField().getFieldSize();
+            final var fieldSize = pubkey.getParams().getCurve().getField().getFieldSize();
             final String curveName;
             final byte curveRef;
             switch (fieldSize) {
@@ -1088,7 +1099,8 @@ public class GPSession {
                 default:
                     throw new IllegalArgumentException("Unsupported EC field size: " + fieldSize);
             }
-            byte[] key = ECNamedCurveTable.getByName(curveName).getCurve().createPoint(pubkey.getW().getAffineX(), pubkey.getW().getAffineY()).getEncoded(false);
+            final var key = ECNamedCurveTable.getByName(curveName).getCurve().createPoint(pubkey.getW().getAffineX(), pubkey.getW().getAffineY())
+                    .getEncoded(false);
 
             bo.write(0xB0); // EC Public key
             bo.write(GPUtils.encodeLength(key.length));
@@ -1104,8 +1116,8 @@ public class GPSession {
     }
 
     // Puts a public or otherwise plaintext key (for DAP/DM purposes (format 1))
-    public void putKey(Key key, int version, boolean replace) throws IOException, GPException {
-        ByteArrayOutputStream bo = new ByteArrayOutputStream();
+    public void putKey(final Key key, final int version, final boolean replace) throws IOException, GPException {
+        final var bo = new ByteArrayOutputStream();
 
         bo.write(version); // Key Version number
 
@@ -1114,31 +1126,31 @@ public class GPSession {
         } else if (key instanceof ECPublicKey ecKey) {
             bo.write(encodeECKey(ecKey));
         } else if (key instanceof SecretKey sk) {
-            if (sk.getAlgorithm().equals("DESede")) {
+            if ("DESede".equals(sk.getAlgorithm())) {
                 logger.info("PUT KEY KCV: {}", HexUtils.bin2hex(GPCrypto.kcv_3des(sk.getEncoded())));
                 bo.write(encodeKey(cardKeys, Arrays.copyOf(sk.getEncoded(), 16), GPKey.DES3));
             }
-            if (sk.getAlgorithm().equals("AES")) {
+            if ("AES".equals(sk.getAlgorithm())) {
                 logger.info("PUT KEY KCV: {}", HexUtils.bin2hex(GPCrypto.kcv_aes(sk.getEncoded())));
                 bo.write(encodeKey(cardKeys, sk.getEncoded(), GPKey.AES));
-            } else
+            } else {
                 throw new IllegalArgumentException("Only 3DES and AES symmetric keys are supported: " + sk.getAlgorithm());
+            }
         }
 
-        CommandAPDU command = new CommandAPDU(CLA_GP, INS_PUT_KEY, replace ? version : 0x00, 0x01, bo.toByteArray(), 256);
-        ResponseAPDU response = transmit(command);
+        final var command = new CommandAPDU(CLA_GP, INS_PUT_KEY, replace ? version : 0x00, 0x01, bo.toByteArray(), 256);
+        final var response = transmit(command);
         GPException.check(response, "PUT KEY failed");
         if (response.getData().length > 1) {
-            byte[] resp = response.getData();
-            int kv = resp[0] & 0xFF;
-            byte[] kcvs = Arrays.copyOfRange(resp, 1, resp.length);
-            List<String> kcvstrings = GPUtils.splitArray(kcvs, 3).stream().map(HexUtils::bin2hex).collect(Collectors.toList());
+            final var resp = response.getData();
+            final var kv = resp[0] & 0xFF;
+            final byte[] kcvs = Arrays.copyOfRange(resp, 1, resp.length);
+            final var kcvstrings = GPUtils.splitArray(kcvs, 3).stream().map(HexUtils::bin2hex).collect(Collectors.toList());
             logger.info("Card stored key(s) {} with KCV(s) {}", GPUtils.intString(kv), String.join(", ", kcvstrings));
         }
     }
 
-
-    public void setProfile(GPCardProfile profile) {
+    public void setProfile(final GPCardProfile profile) {
         this.profile = profile;
     }
 
@@ -1164,10 +1176,10 @@ public class GPSession {
 
     private byte[] getConcatenatedStatus(int p1, byte[] data, boolean useTags) throws IOException, GPException {
         // By default use tags
-        int p2 = useTags ? 0x02 : 0x00;
+        final int p2 = useTags ? 0x02 : 0x00;
 
-        CommandAPDU cmd = new CommandAPDU(CLA_GP, INS_GET_STATUS, p1, p2, data, 256);
-        ResponseAPDU response = transmit(cmd);
+        var cmd = new CommandAPDU(CLA_GP, INS_GET_STATUS, p1, p2, data, 256);
+        var response = transmit(cmd);
 
         // Workaround for legacy cards, like SCE 6.0 FIXME: this does not work properly
         // Find a different way to adjust the response parser without touching the overall spec mode
@@ -1181,7 +1193,7 @@ public class GPSession {
             }
         }
 
-        int sw = response.getSW();
+        final var sw = response.getSW();
         if ((sw != SW_NO_ERROR) && (sw != 0x6310)) {
             // Possible values:
             if (sw == 0x6A88) {
@@ -1199,7 +1211,7 @@ public class GPSession {
             return response.getData();
         }
 
-        ByteArrayOutputStream bo = new ByteArrayOutputStream();
+        final var bo = new ByteArrayOutputStream();
         try {
             bo.write(response.getData());
             while (response.getSW() == 0x6310 && response.getData().length > 0) {
@@ -1215,31 +1227,30 @@ public class GPSession {
     }
 
     private GPRegistry getStatus() throws IOException, GPException {
-        GPRegistry registry = new GPRegistry();
+        final var registry = new GPRegistry();
 
         // Issuer security domain
-        byte[] data = getConcatenatedStatus(0x80, new byte[]{0x4F, 0x00}, profile.getStatusUsesTags());
+        var data = getConcatenatedStatus(0x80, new byte[] { 0x4F, 0x00 }, profile.getStatusUsesTags());
         registry.parse_and_populate(0x80, data, Kind.ISD, profile);
 
         // Apps and security domains
-        data = getConcatenatedStatus(0x40, new byte[]{0x4F, 0x00}, profile.getStatusUsesTags());
+        data = getConcatenatedStatus(0x40, new byte[] { 0x4F, 0x00 }, profile.getStatusUsesTags());
         registry.parse_and_populate(0x40, data, Kind.APP, profile);
 
         // Load files with modules is better than just load files. Registry does not allow to update
         // existing entries
         if (profile.doesReportModules()) {
             // Load files with modules
-            data = getConcatenatedStatus(0x10, new byte[]{0x4F, 0x00}, profile.getStatusUsesTags());
+            data = getConcatenatedStatus(0x10, new byte[] { 0x4F, 0x00 }, profile.getStatusUsesTags());
             registry.parse_and_populate(0x10, data, Kind.PKG, profile);
         }
 
         // Load files
-        data = getConcatenatedStatus(0x20, new byte[]{0x4F, 0x00}, profile.getStatusUsesTags());
+        data = getConcatenatedStatus(0x20, new byte[] { 0x4F, 0x00 }, profile.getStatusUsesTags());
         registry.parse_and_populate(0x20, data, Kind.PKG, profile);
 
         return registry;
     }
-
 
     public enum APDUMode {
         // bit values as expected by EXTERNAL AUTHENTICATE
@@ -1247,19 +1258,19 @@ public class GPSession {
 
         private final int value;
 
-        APDUMode(int value) {
+        APDUMode(final int value) {
             this.value = value;
         }
 
-        public static int getSetValue(EnumSet<APDUMode> s) {
-            int v = 0;
+        public static int getSetValue(final EnumSet<APDUMode> s) {
+            var v = 0;
             for (APDUMode m : s) {
                 v |= m.value;
             }
             return v;
         }
 
-        public static APDUMode fromString(String s) {
+        public static APDUMode fromString(final String s) {
             return valueOf(s.trim().toUpperCase(Locale.ROOT));
         }
     }

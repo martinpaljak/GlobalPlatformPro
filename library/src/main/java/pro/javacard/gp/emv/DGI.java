@@ -19,12 +19,12 @@ public record DGI(int tag, String description, List<DGIElement> elements) implem
         return new DGI(tag, description, List.of(elements));
     }
 
-    public static DGIElement with(Data.DataUnit element, ByteRangeLocation location) {
+    public static DGIElement with(final Data.DataUnit element, final ByteRangeLocation location) {
         return new DGIElement(element, location);
     }
 
-    public static LinkedHashMap<Data.DataUnit, byte[]> parse(DGI dgi, byte[] blob) {
-        LinkedHashMap<Data.DataUnit, byte[]> result = new LinkedHashMap<>();
+    public static LinkedHashMap<Data.DataUnit, byte[]> parse(final DGI dgi, final byte[] blob) {
+        final var result = new LinkedHashMap<Data.DataUnit, byte[]>();
         for (var e : dgi.elements()) {
             result.put(e.element(), ByteRangeLocation.extract(blob, e.location()));
         }

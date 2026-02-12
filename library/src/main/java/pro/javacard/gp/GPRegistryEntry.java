@@ -30,8 +30,7 @@ import static pro.javacard.gp.data.BitField.byte_mask;
 
 public class GPRegistryEntry {
 
-    GPRegistryEntry() {
-    }
+    GPRegistryEntry() {}
 
     AID aid;
     byte lifecycle;
@@ -53,7 +52,7 @@ public class GPRegistryEntry {
         return Collections.unmodifiableSet(privileges);
     }
 
-    void setPrivileges(Set<Privilege> privs) {
+    void setPrivileges(final Set<Privilege> privs) {
         privileges.addAll(privs);
     }
 
@@ -61,22 +60,23 @@ public class GPRegistryEntry {
         return Optional.ofNullable(from);
     }
 
-    void setLoadFile(AID aid) {
+    void setLoadFile(final AID aid) {
         this.from = aid;
     }
 
-    public boolean hasPrivilege(Privilege p) {
+    public boolean hasPrivilege(final Privilege p) {
         return privileges.contains(p);
     }
 
     public byte[] getVersion() {
-        if (version == null)
+        if (version == null) {
             return null;
+        }
         return version.clone();
     }
 
     @Override
-    public boolean equals(Object other) {
+    public boolean equals(final Object other) {
         if (other instanceof GPRegistryEntry o) {
             return o.kind.equals(this.kind) && o.aid.equals(this.aid);
         }
@@ -88,7 +88,7 @@ public class GPRegistryEntry {
         return Objects.hash(aid, kind);
     }
 
-    void setVersion(byte[] v) {
+    void setVersion(final byte[] v) {
         version = v.clone();
     }
 
@@ -102,7 +102,7 @@ public class GPRegistryEntry {
         return "<unknown format " + HexUtils.bin2hex(version) + ">";
     }
 
-    public void addModule(AID aid) {
+    public void addModule(final AID aid) {
         modules.add(aid);
     }
 
@@ -125,7 +125,6 @@ public class GPRegistryEntry {
         }
     }
 
-
     public enum ISDLifeCycle implements ByteEnum {
         OP_READY(0x01),
         INITIALIZED(0x07),
@@ -135,7 +134,7 @@ public class GPRegistryEntry {
 
         private final byte value;
 
-        ISDLifeCycle(int value) {
+        ISDLifeCycle(final int value) {
             this.value = (byte) (value & 0xFF);
         }
 
@@ -159,7 +158,7 @@ public class GPRegistryEntry {
 
         private final Predicate<Byte> matcher;
 
-        SSDLifeCycle(Predicate<Byte> matcher) {
+        SSDLifeCycle(final Predicate<Byte> matcher) {
             this.matcher = matcher;
         }
 
@@ -177,7 +176,7 @@ public class GPRegistryEntry {
 
         private final Predicate<Byte> matcher;
 
-        APPLifeCycle(Predicate<Byte> matcher) {
+        APPLifeCycle(final Predicate<Byte> matcher) {
             this.matcher = matcher;
         }
 
@@ -195,7 +194,7 @@ public class GPRegistryEntry {
 
         private final Predicate<Byte> matcher;
 
-        PKGLifeCycle(Predicate<Byte> matcher) {
+        PKGLifeCycle(final Predicate<Byte> matcher) {
             this.matcher = matcher;
         }
 
@@ -209,7 +208,7 @@ public class GPRegistryEntry {
         return aid;
     }
 
-    void setAID(AID aid) {
+    void setAID(final AID aid) {
         this.aid = aid;
     }
 
@@ -221,7 +220,7 @@ public class GPRegistryEntry {
         return lifecycle;
     }
 
-    void setLifeCycle(byte lifecycle) {
+    void setLifeCycle(final byte lifecycle) {
         this.lifecycle = lifecycle;
     }
 
@@ -229,7 +228,7 @@ public class GPRegistryEntry {
         return kind;
     }
 
-    void setType(Kind type) {
+    void setType(final Kind type) {
         this.kind = type;
     }
 
@@ -245,13 +244,13 @@ public class GPRegistryEntry {
         return kind == Kind.SSD || kind == Kind.ISD;
     }
 
-    void setDomain(AID dom) {
+    void setDomain(final AID dom) {
         this.domain = dom;
     }
 
     @Override
     public String toString() {
-        return String.format("%s: %s, %s", kind, HexUtils.bin2hex(aid.getBytes()), getLifeCycleString());
+        return "%s: %s, %s".formatted(kind, HexUtils.bin2hex(aid.getBytes()), getLifeCycleString());
     }
 
     public String getLifeCycleString() {
@@ -274,7 +273,9 @@ public class GPRegistryEntry {
         return Collections.unmodifiableSet(implicitContactless);
     }
 
-    public enum Kind {ISD, APP, SSD, PKG}
+    public enum Kind {
+        ISD, APP, SSD, PKG
+    }
 
     // See GP 2.2.1 11.1.2 Tables 11-7, 11-8, 11-9
     // See GP 2.1.1 Table 9-7 (matches 2.2 Table 11-7)
@@ -309,11 +310,11 @@ public class GPRegistryEntry {
 
         private final Def def;
 
-        Privilege(Def def) {
+        Privilege(final Def def) {
             this.def = def;
         }
 
-        public static Optional<Privilege> lookup(String name) {
+        public static Optional<Privilege> lookup(final String name) {
             return Arrays.stream(values())
                     .filter(e -> e.name().equalsIgnoreCase(name))
                     .findFirst();

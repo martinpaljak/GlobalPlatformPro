@@ -35,36 +35,37 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 // Middle layer between GPTool (CLI) and GlobalPlatform (session)
-public class GPCommands {
+public final class GPCommands {
 
-    private GPCommands() {
-    }
+    private GPCommands() {}
 
-    private static void storeDGI(GPSession gp, byte[] payload) throws GPException, IOException {
+    private static void storeDGI(final GPSession gp, final byte[] payload) throws GPException, IOException {
         // Single DGI. 0x90 should work as well but 0x80 is actually respected by cards.
-        CommandAPDU cmd = new CommandAPDU(GPSession.CLA_GP, GPSession.INS_STORE_DATA, 0x80, 0x00, payload);
-        ResponseAPDU response = gp.transmit(cmd);
+        final var cmd = new CommandAPDU(GPSession.CLA_GP, GPSession.INS_STORE_DATA, 0x80, 0x00, payload);
+        final var response = gp.transmit(cmd);
         GPException.check(response, "STORE DATA failed");
     }
 
-    public static void setPrePerso(GPSession gp, byte[] data) throws GPException, IOException {
-        if (data == null || data.length != 8)
+    public static void setPrePerso(final GPSession gp, final byte[] data) throws GPException, IOException {
+        if (data == null || data.length != 8) {
             throw new IllegalArgumentException("PrePerso data must be 8 bytes");
-        byte[] payload = GPUtils.concatenate(new byte[]{(byte) 0x9f, 0x67, (byte) data.length}, data);
+        }
+        final byte[] payload = GPUtils.concatenate(new byte[] { (byte) 0x9f, 0x67, (byte) data.length }, data);
         storeDGI(gp, payload);
     }
 
-    public static void setPerso(GPSession gp, byte[] data) throws GPException, IOException {
-        if (data == null || data.length != 8)
+    public static void setPerso(final GPSession gp, final byte[] data) throws GPException, IOException {
+        if (data == null || data.length != 8) {
             throw new IllegalArgumentException("Perso data must be 8 bytes");
-        byte[] payload = GPUtils.concatenate(new byte[]{(byte) 0x9f, 0x66, (byte) data.length}, data);
+        }
+        final byte[] payload = GPUtils.concatenate(new byte[] { (byte) 0x9f, 0x66, (byte) data.length }, data);
         storeDGI(gp, payload);
     }
 
-    public static void listRegistry(GPRegistry reg, PrintStream out, boolean verbose) {
-        String tab = "     ";
+    public static void listRegistry(final GPRegistry reg, final PrintStream out, final boolean verbose) {
+        final var tab = "     ";
         for (GPRegistryEntry e : reg) {
-            AID aid = e.getAID();
+            final var aid = e.getAID();
             out.print(e.getType() + ": " + HexUtils.bin2hex(aid.getBytes()) + " (" + e.getLifeCycleString() + ")");
             if (e.getType() != GPRegistryEntry.Kind.ISD && verbose) {
                 out.println(" (" + WellKnownAID.getName(aid).orElse(GPUtils.bin2readable(aid.getBytes())) + ")");
@@ -91,7 +92,7 @@ public class GPCommands {
                 if (e.getSource().isPresent()) {
                     out.println(tab + "From:     " + e.getSource().get());
                 }
-                Optional<String> implicit = getImplicitString(e);
+                final var implicit = getImplicitString(e);
                 implicit.ifPresent(s -> out.println(tab + "Selected: " + s));
                 if (!e.getPrivileges().isEmpty()) {
                     out.println(tab + "Privs:    " + e.getPrivileges().stream().map(Enum::toString).collect(Collectors.joining(", ")));
@@ -101,28 +102,31 @@ public class GPCommands {
         }
     }
 
-    static Optional<String> getImplicitString(GPRegistryEntry entry) {
-        Optional<String> contactless = entry.getImplicitlySelectedContactless().isEmpty() ? Optional.empty() : Optional.of(String.format("Contactless(%s)", entry.getImplicitlySelectedContactless().stream().map(Object::toString).collect(Collectors.joining(","))));
-        Optional<String> contact = entry.getImplicitlySelectedContact().isEmpty() ? Optional.empty() : Optional.of(String.format("Contact(%s)", entry.getImplicitlySelectedContact().stream().map(Object::toString).collect(Collectors.joining(","))));
+    static Optional<String> getImplicitString(final GPRegistryEntry entry) {
+        final Optional<String> contactless = entry.getImplicitlySelectedContactless().isEmpty() ? Optional.empty() : Optional
+                .of("Contactless(%s)".formatted(entry.getImplicitlySelectedContactless().stream().map(Object::toString).collect(Collectors.joining(","))));
+        final Optional<String> contact = entry.getImplicitlySelectedContact().isEmpty() ? Optional.empty()
+                : Optional.of("Contact(%s)".formatted(entry.getImplicitlySelectedContact().stream().map(Object::toString).collect(Collectors.joining(","))));
         return Stream.of(contactless, contact).filter(Optional::isPresent).map(Optional::get).reduce((a, b) -> a + ", " + b);
     }
 
     // Figure out load parameters
     @SuppressWarnings("StatementSwitchToExpressionSwitch")
-    public static void load(GPSession gp, CAPFile cap, AID to, AID dapAID, LFDBH hash) throws GPException, IOException {
-        GPRegistry reg = gp.getRegistry();
+    public static void load(final GPSession gp, final CAPFile cap, final AID to, final AID dapAID, final LFDBH hash) throws GPException, IOException {
+        final var reg = gp.getRegistry();
 
         // Override target domain
-        AID targetAID = Optional.ofNullable(to).orElse(gp.getAID());
+        final var targetAID = Optional.ofNullable(to).orElse(gp.getAID());
 
-        GPRegistryEntry targetDomain = reg.getDomain(targetAID).orElseThrow(() -> new IllegalArgumentException("Target domain does not exist: " + targetAID));
+        final var targetDomain = reg.getDomain(targetAID).orElseThrow(() -> new IllegalArgumentException("Target domain does not exist: " + targetAID));
 
         // Check for DAP with the target domain or Mandatory DAP
-        boolean dapRequired = targetDomain.hasPrivilege(Privilege.DAPVerification) || reg.allDomains().stream().anyMatch(e -> e.hasPrivilege(Privilege.MandatedDAPVerification));
+        final var dapRequired = targetDomain.hasPrivilege(Privilege.DAPVerification)
+                || reg.allDomains().stream().anyMatch(e -> e.hasPrivilege(Privilege.MandatedDAPVerification));
 
         // Check if DAP domain is overridden
         if (dapAID != null) {
-            GPRegistryEntry dapTarget = reg.getDomain(targetAID).orElseThrow(() -> new IllegalArgumentException("DAP domain does not exist: " + dapAID));
+            final var dapTarget = reg.getDomain(targetAID).orElseThrow(() -> new IllegalArgumentException("DAP domain does not exist: " + dapAID));
             if (!(dapTarget.hasPrivilege(Privilege.DAPVerification) || dapTarget.hasPrivilege(Privilege.MandatedDAPVerification))) {
                 throw new IllegalArgumentException("Specified DAP domain does not have (Mandated)DAPVerification privilege: " + dapAID);
             }

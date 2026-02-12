@@ -8,7 +8,6 @@ import pro.javacard.prefs.Preferences;
 import java.util.Optional;
 import java.util.Set;
 
-
 public class PreferencesTests {
 
     // Test preferences
@@ -17,20 +16,20 @@ public class PreferencesTests {
 
     @Test
     void testMergeWithReadonlyPreference() {
-        Preferences prefs1 = new Preferences().with(READONLY_PREF, "existing");
-        Preferences prefs2 = new Preferences().with(READONLY_PREF, "new_value");
+        final var prefs1 = new Preferences().with(READONLY_PREF, "existing");
+        final var prefs2 = new Preferences().with(READONLY_PREF, "new_value");
 
-        Preferences result = prefs1.merge(prefs2);
+        final var result = prefs1.merge(prefs2);
 
         Assert.assertEquals(result.get(READONLY_PREF), "existing");
     }
 
     @Test
     void testMergeReadonlyIntoEmpty() {
-        Preferences empty = new Preferences();
-        Preferences withReadonly = new Preferences().with(READONLY_PREF, "outcome");
+        final var empty = new Preferences();
+        final var withReadonly = new Preferences().with(READONLY_PREF, "outcome");
 
-        Preferences result = empty.merge(withReadonly);
+        final var result = empty.merge(withReadonly);
 
         Assert.assertEquals(result.get(READONLY_PREF), "outcome");
     }
@@ -43,18 +42,17 @@ public class PreferencesTests {
 
     @Test
     void testReadonlyPreferenceRemoval() {
-        Preferences withReadonly = new Preferences().with(READONLY_PREF, "outcome");
+        final var withReadonly = new Preferences().with(READONLY_PREF, "outcome");
         Assert.assertThrows(IllegalArgumentException.class, () -> {
             withReadonly.without(READONLY_PREF);
         });
     }
 
-
     @Test
     void testGetReturnsDefaultValues() {
-        var pref1 = Preference.of("pref1", Boolean.class, false, false);
-        var pref2 = Preference.of("pref2", Boolean.class, true, false);
-        var prefs = new Preferences();
+        final var pref1 = Preference.of("pref1", Boolean.class, false, false);
+        final var pref2 = Preference.of("pref2", Boolean.class, true, false);
+        final var prefs = new Preferences();
 
         Assert.assertTrue(prefs.get(pref2));
         Assert.assertFalse(prefs.get(pref1));
@@ -62,9 +60,9 @@ public class PreferencesTests {
 
     @Test
     void testValueOfReturnsEmptyForDefaults() {
-        var pref1 = Preference.of("pref1", Boolean.class, false, false);
-        var pref2 = Preference.of("pref2", Boolean.class, true, false);
-        var prefs = new Preferences();
+        final var pref1 = Preference.of("pref1", Boolean.class, false, false);
+        final var pref2 = Preference.of("pref2", Boolean.class, true, false);
+        final var prefs = new Preferences();
 
         Assert.assertEquals(Optional.empty(), prefs.valueOf(pref2));
         Assert.assertEquals(Optional.empty(), prefs.valueOf(pref1));
@@ -72,8 +70,8 @@ public class PreferencesTests {
 
     @Test
     void testWithOverridesValue() {
-        var pref1 = Preference.of("pref1", Boolean.class, false, false);
-        var prefs = new Preferences().with(pref1, true);
+        final var pref1 = Preference.of("pref1", Boolean.class, false, false);
+        final var prefs = new Preferences().with(pref1, true);
 
         Assert.assertTrue(prefs.get(pref1));
         Assert.assertEquals(Optional.of(Boolean.TRUE), prefs.valueOf(pref1));
@@ -81,8 +79,8 @@ public class PreferencesTests {
 
     @Test
     void testWithoutRemovesOverride() {
-        var pref1 = Preference.of("pref1", Boolean.class, false, false);
-        var pref2 = Preference.of("pref2", Boolean.class, true, false);
+        final var pref1 = Preference.of("pref1", Boolean.class, false, false);
+        final var pref2 = Preference.of("pref2", Boolean.class, true, false);
         var prefs = new Preferences().with(pref1, true);
 
         Assert.assertEquals(prefs, prefs.without(pref2)); // removing non-existent key returns same instance
@@ -96,23 +94,23 @@ public class PreferencesTests {
 
     @Test
     void testWithNullValueThrowsException() {
-        var pref1 = Preference.of("pref1", Boolean.class, false, false);
+        final var pref1 = Preference.of("pref1", Boolean.class, false, false);
 
         Assert.assertThrows(IllegalArgumentException.class, () -> new Preferences().with(pref1, null));
     }
 
     @Test
     void testParameterWithoutValue() {
-        var param = Preference.parameter("optional-setting", String.class, false);
-        var prefs = new Preferences();
+        final var param = Preference.parameter("optional-setting", String.class, false);
+        final var prefs = new Preferences();
 
         Assert.assertTrue(prefs.valueOf(param).isEmpty());
     }
 
     @Test
     void testParameterWithValue() {
-        var param = Preference.parameter("optional-setting", String.class, false);
-        var prefs = new Preferences().with(param, "configured-outcome");
+        final var param = Preference.parameter("optional-setting", String.class, false);
+        final var prefs = new Preferences().with(param, "configured-outcome");
 
         Assert.assertEquals(prefs.valueOf(param).get(), "configured-outcome");
         Assert.assertTrue(prefs.valueOf(param).isPresent());
@@ -120,8 +118,8 @@ public class PreferencesTests {
 
     @Test
     void testParameterCannotUseGet() {
-        var param = Preference.parameter("optional-setting", String.class, false);
-        var prefs = new Preferences().with(param, "outcome");
+        final var param = Preference.parameter("optional-setting", String.class, false);
+        final var prefs = new Preferences().with(param, "outcome");
 
         // This should not compile - param is Parameter<String>, not Default<String>
         // prefs.get(param); // Compilation error - good!
@@ -129,11 +127,11 @@ public class PreferencesTests {
 
     @Test
     void testReadonlyParameter() {
-        var param = Preference.parameter("readonly-param", String.class, true);
-        var prefs1 = new Preferences().with(param, "initial");
-        var prefs2 = new Preferences().with(param, "override");
+        final var param = Preference.parameter("readonly-param", String.class, true);
+        final var prefs1 = new Preferences().with(param, "initial");
+        final var prefs2 = new Preferences().with(param, "override");
 
-        var merged = prefs1.merge(prefs2);
+        final var merged = prefs1.merge(prefs2);
 
         Assert.assertEquals(merged.valueOf(param).get(), "initial");
         Assert.assertTrue(param.readonly());
@@ -141,18 +139,17 @@ public class PreferencesTests {
 
     @Test
     void testParameterWithNullValueThrows() {
-        var param = Preference.parameter("param", String.class, false);
+        final var param = Preference.parameter("param", String.class, false);
 
-        Assert.assertThrows(IllegalArgumentException.class, () ->
-                new Preferences().with(param, null));
+        Assert.assertThrows(IllegalArgumentException.class, () -> new Preferences().with(param, null));
     }
 
     @Test
     void testMixedDefaultsAndParameters() {
-        var defaultPref = Preference.of("default", String.class, "default-outcome", false);
-        var param = Preference.parameter("param", String.class, false);
+        final var defaultPref = Preference.of("default", String.class, "default-outcome", false);
+        final var param = Preference.parameter("param", String.class, false);
 
-        var prefs = new Preferences()
+        final var prefs = new Preferences()
                 .with(defaultPref, "overridden")
                 .with(param, "param-outcome");
 
@@ -163,32 +160,32 @@ public class PreferencesTests {
 
     @Test
     public void testValidationSuccess() {
-        var validated = Preference.of("validated", String.class, "d", false, s -> s.length() > 5);
-        Preferences prefs = new Preferences();
-        Preferences newPrefs = prefs.with(validated, "long_enough_string");
+        final var validated = Preference.of("validated", String.class, "d", false, s -> s.length() > 5);
+        final var prefs = new Preferences();
+        final var newPrefs = prefs.with(validated, "long_enough_string");
         Assert.assertEquals(newPrefs.get(validated), "long_enough_string");
     }
 
     @Test
     public void testValidationFailure() {
-        var validated = Preference.of("validated", String.class, "d", false, s -> s.length() > 5);
-        Preferences prefs = new Preferences();
+        final var validated = Preference.of("validated", String.class, "d", false, s -> s.length() > 5);
+        final var prefs = new Preferences();
         Assert.assertThrows(IllegalArgumentException.class, () -> prefs.with(validated, "short"));
     }
 
     @Test
     public void testParameterValidationFailure() {
-        var validated = Preference.parameter("validated_param", String.class, false, s -> s.length() > 5);
-        Preferences prefs = new Preferences();
+        final var validated = Preference.parameter("validated_param", String.class, false, s -> s.length() > 5);
+        final var prefs = new Preferences();
         Assert.assertThrows(IllegalArgumentException.class, () -> prefs.with(validated, "short"));
     }
 
     @Test
     public void testRegister() {
-        var p1 = Preferences.register("reg1", String.class);
-        var p2 = Preferences.register("reg2", String.class, true);
-        var p3 = Preferences.register("reg3", String.class, "def", false);
-        var p4 = Preferences.register("reg4", String.class, "def");
+        final var p1 = Preferences.register("reg1", String.class);
+        final var p2 = Preferences.register("reg2", String.class, true);
+        final var p3 = Preferences.register("reg3", String.class, "def", false);
+        final var p4 = Preferences.register("reg4", String.class, "def");
 
         Assert.assertNotNull(p1);
         Assert.assertNotNull(p2);
@@ -200,31 +197,31 @@ public class PreferencesTests {
 
     @Test
     public void testKeys() {
-        Preferences prefs = new Preferences();
-        var p1 = Preference.of("p1", String.class, "d", false);
+        var prefs = new Preferences();
+        final var p1 = Preference.of("p1", String.class, "d", false);
         prefs = prefs.with(p1, "v");
-        Set<Preference<?>> keys = prefs.keys();
+        final Set<Preference<?>> keys = prefs.keys();
         Assert.assertEquals(keys.size(), 1);
         Assert.assertTrue(keys.contains(p1));
     }
 
     @Test
     public void testToString() {
-        Preferences prefs = new Preferences();
-        var p1 = Preference.of("p1", String.class, "d", false);
+        var prefs = new Preferences();
+        final var p1 = Preference.of("p1", String.class, "d", false);
         prefs = prefs.with(p1, "val");
-        String s = prefs.toString();
+        final var s = prefs.toString();
         Assert.assertTrue(s.contains("p1"));
         Assert.assertTrue(s.contains("val"));
     }
 
     @Test
     public void testToStringWithByteArray() {
-        Preferences prefs = new Preferences();
-        var p1 = Preference.of("bytes", byte[].class, new byte[0], false);
-        byte[] val = new byte[] { (byte)0xCA, (byte)0xFE };
+        var prefs = new Preferences();
+        final var p1 = Preference.of("bytes", byte[].class, new byte[0], false);
+        final byte[] val = new byte[] { (byte) 0xCA, (byte) 0xFE };
         prefs = prefs.with(p1, val);
-        String s = prefs.toString();
+        final var s = prefs.toString();
         Assert.assertTrue(s.contains("cafe"));
     }
 }

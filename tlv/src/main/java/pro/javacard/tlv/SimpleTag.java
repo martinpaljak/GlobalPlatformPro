@@ -27,7 +27,7 @@ import java.nio.ByteBuffer;
 public record SimpleTag(byte b) implements Tag {
 
     public SimpleTag {
-        int v = b & 0xFF;
+        final var v = b & 0xFF;
         if (v == 0x00 || v == 0xFF) {
             throw new IllegalArgumentException("SimpleTLV tag must be 0x01..0xFE");
         }
@@ -38,7 +38,7 @@ public record SimpleTag(byte b) implements Tag {
         return new byte[] { b };
     }
 
-    static SimpleTag parse(ByteBuffer buffer) {
+    static SimpleTag parse(final ByteBuffer buffer) {
         return new SimpleTag(buffer.get());
     }
 

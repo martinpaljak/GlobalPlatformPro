@@ -32,16 +32,15 @@ import java.util.Arrays;
 
 public abstract class ReceiptVerifier {
 
-    protected ReceiptVerifier() {
-    }
+    protected ReceiptVerifier() {}
 
     private static final Logger log = LoggerFactory.getLogger(ReceiptVerifier.class);
 
-    static byte[] get_receipt(byte[] response) {
+    static byte[] get_receipt(final byte[] response) {
         return Arrays.copyOfRange(response, 2, 2 + response[1]);
     }
 
-    static byte[] get_confirmation_data(byte[] response) {
+    static byte[] get_confirmation_data(final byte[] response) {
         return Arrays.copyOfRange(response, 2 + response[1], response[0] + 1);
     }
 
@@ -49,23 +48,23 @@ public abstract class ReceiptVerifier {
 
     boolean log_only = false;
 
-    static public class AESReceiptVerifier extends ReceiptVerifier {
+    public static class AESReceiptVerifier extends ReceiptVerifier {
         private final byte[] aes_key;
 
-        public AESReceiptVerifier(byte[] aesKey) {
+        public AESReceiptVerifier(final byte[] aesKey) {
             aes_key = aesKey.clone();
         }
 
-        public AESReceiptVerifier(byte[] aesKey, boolean log_only) {
+        public AESReceiptVerifier(final byte[] aesKey, final boolean log_only) {
             aes_key = aesKey.clone();
             this.log_only = log_only;
         }
 
         // XXX: the use of "log only" arguments, boolean function and exceptions is not nice. Refactor
         @Override
-        boolean check(ResponseAPDU response, byte[] context) throws ReceiptVerificationException {
+        boolean check(final ResponseAPDU response, final byte[] context) throws ReceiptVerificationException {
             // Context is the concatenation of command parameters sent to the card before receiving the receipt.
-            byte[] data = response.getData();
+            final var data = response.getData();
             if (data[0] == 0x00) {
                 log.debug("No receipt");
                 return true;
@@ -75,11 +74,11 @@ public abstract class ReceiptVerifier {
             } catch (Exception e) {
                 log.error("Invalid LV in response: {}", HexUtils.bin2hex(data));
             }
-            byte[] card = get_receipt(data);
-            byte[] confdata = get_confirmation_data(data);
+            final byte[] card = get_receipt(data);
+            final byte[] confdata = get_confirmation_data(data);
 
-            byte[] my = GPCrypto.aes_cmac(aes_key, GPUtils.concatenate(confdata, context), 128);
-            boolean verified = Arrays.equals(my, card);
+            final byte[] my = GPCrypto.aes_cmac(aes_key, GPUtils.concatenate(confdata, context), 128);
+            final var verified = Arrays.equals(my, card);
             if (!verified) {
                 log.error("Receipt verification failed");
                 if (!log_only) {
@@ -93,21 +92,20 @@ public abstract class ReceiptVerifier {
     }
 
     // Verifier that never complains.
-    static public class NullVerifier extends ReceiptVerifier {
+    public static class NullVerifier extends ReceiptVerifier {
 
-        public NullVerifier() {
-        }
+        public NullVerifier() {}
 
         @Override
-        boolean check(ResponseAPDU response, byte[] context) {
+        boolean check(final ResponseAPDU response, final byte[] context) {
             return true;
         }
     }
 
     // Context data generators for different operatings and receipt types.
-    public static byte[] load(AID pkg, AID sd) {
+    public static byte[] load(final AID pkg, final AID sd) {
         try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            final var baos = new ByteArrayOutputStream();
             baos.write(pkg.getLength());
             baos.write(pkg.getBytes());
             baos.write(sd.getLength());
@@ -118,9 +116,9 @@ public abstract class ReceiptVerifier {
         }
     }
 
-    public static byte[] install_make_selectable(AID pkg, AID instance) {
+    public static byte[] install_make_selectable(final AID pkg, final AID instance) {
         try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            final var baos = new ByteArrayOutputStream();
             baos.write(pkg.getLength());
             baos.write(pkg.getBytes());
             baos.write(instance.getLength());
@@ -131,10 +129,9 @@ public abstract class ReceiptVerifier {
         }
     }
 
-
-    public static byte[] extradite(AID from, AID what, AID to) {
+    public static byte[] extradite(final AID from, final AID what, final AID to) {
         try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            final var baos = new ByteArrayOutputStream();
             baos.write(from.getLength());
             baos.write(from.getBytes());
             baos.write(what.getLength());
@@ -147,9 +144,9 @@ public abstract class ReceiptVerifier {
         }
     }
 
-    public static byte[] delete(AID what) {
+    public static byte[] delete(final AID what) {
         try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            final var baos = new ByteArrayOutputStream();
             baos.write(what.getLength());
             baos.write(what.getBytes());
             return baos.toByteArray();
@@ -161,7 +158,7 @@ public abstract class ReceiptVerifier {
     public static class ReceiptVerificationException extends RuntimeException {
         private static final long serialVersionUID = -453299698747234135L;
 
-        public ReceiptVerificationException(String message) {
+        public ReceiptVerificationException(final String message) {
             super(message);
         }
     }

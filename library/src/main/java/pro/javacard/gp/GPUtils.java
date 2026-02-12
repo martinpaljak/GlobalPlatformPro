@@ -36,11 +36,10 @@ import java.util.List;
 import java.util.Locale;
 
 public final class GPUtils {
-    private GPUtils() {
-    }
+    private GPUtils() {}
 
     // Knows both hex and dec
-    public static int intValue(String s) {
+    public static int intValue(final String s) {
         if (s.trim().toLowerCase(Locale.ROOT).startsWith("0x")) {
             return Integer.parseInt(s.substring(2), 16);
         }
@@ -49,27 +48,28 @@ public final class GPUtils {
 
     // Prints both hex and dec
     public static String intString(int i) {
-        return String.format("%d (0x%02X)", i, i);
+        return "%d (0x%02X)".formatted(i, i);
     }
 
-    public static String bin2readable(byte[] bytes) {
+    public static String bin2readable(final byte[] bytes) {
         if (bytes == null) {
             return "(null)";
         }
-        StringBuilder s = new StringBuilder();
+        final var s = new StringBuilder();
         for (byte b : bytes) {
-            char c = (char) b;
-            s.append((c >= 0x20 && c < 0x7f) ? c : '.');
+            final var c = (char) b;
+            s.append(c >= 0x20 && c < 0x7f ? c : '.');
         }
         return "|" + s + "|";
     }
 
-    public static byte[] concatenate(byte[]... args) {
-        int length = 0, pos = 0;
+    public static byte[] concatenate(final byte[]... args) {
+        var length = 0;
+        var pos = 0;
         for (byte[] arg : args) {
             length += arg.length;
         }
-        byte[] result = new byte[length];
+        final byte[] result = new byte[length];
         for (byte[] arg : args) {
             System.arraycopy(arg, 0, result, pos, arg.length);
             pos += arg.length;
@@ -77,15 +77,15 @@ public final class GPUtils {
         return result;
     }
 
-    public static List<byte[]> splitArray(byte[] array, int blockSize) {
-        List<byte[]> result = new ArrayList<>();
+    public static List<byte[]> splitArray(final byte[] array, final int blockSize) {
+        final var result = new ArrayList<byte[]>();
 
-        int len = array.length;
-        int offset = 0;
-        int left = len - offset;
+        final var len = array.length;
+        var offset = 0;
+        var left = len - offset;
         while (left > 0) {
-            int currentLen = Math.min(left, blockSize);
-            byte[] block = new byte[currentLen];
+            final var currentLen = Math.min(left, blockSize);
+            final byte[] block = new byte[currentLen];
             System.arraycopy(array, offset, block, 0, currentLen);
             result.add(block);
             left -= currentLen;
@@ -94,8 +94,8 @@ public final class GPUtils {
         return result;
     }
 
-    public static byte[] encodeLength(int len) {
-        ByteArrayOutputStream bo = new ByteArrayOutputStream();
+    public static byte[] encodeLength(final int len) {
+        final var bo = new ByteArrayOutputStream();
         // XXX: can probably re-use some existing method somewhere
         if (len < 0x80) {
             bo.write((byte) len);
@@ -117,35 +117,39 @@ public final class GPUtils {
 
     public static int getLength(byte[] buffer, int offset) {
         // XXX: Old specs allow 0x80 for encoding 128 bytes...., so maybe check that 81 80 is in fact > 80
-        int first = buffer[offset] & 0xFF;
+        final var first = buffer[offset] & 0xFF;
         if (first <= 0x80) {
             return buffer[offset] & 0xFF;
         } else if (first == 0x81) {
             return buffer[offset + 1] & 0xFF;
         } else if (first == 0x82) {
             return (buffer[offset + 1] & 0xFF) << 8 | (buffer[offset + 2] & 0xFF);
-        } else
+        } else {
             throw new GPDataException("Invalid length encoding", Arrays.copyOfRange(buffer, offset, offset + 3));
+        }
     }
 
     public static int getLenLen(byte[] buffer, int offset) {
-        if ((buffer[offset] & 0xFF) <= 0x80)
+        if ((buffer[offset] & 0xFF) <= 0x80) {
             return 1;
-        else return (buffer[offset] & 0xFF) - 0x7F;
+        } else {
+            return (buffer[offset] & 0xFF) - 0x7F;
+        }
     }
 
     // Encodes APDU LC value, which has either length of 1 byte or 3 bytes (for extended length APDUs)
     // If LC or LE is bigger than fits in one byte (255), LC must be encoded in three bytes
-    public static byte[] encodeLcLength(int lc, int le) {
+    public static byte[] encodeLcLength(final int lc, final int le) {
         if (lc > 255 || le > 256) {
-            byte[] lc_ba = ByteBuffer.allocate(4).putInt(lc).array();
+            final var lc_ba = ByteBuffer.allocate(4).putInt(lc).array();
             return Arrays.copyOfRange(lc_ba, 1, 4);
-        } else
-            return new byte[]{(byte) lc};
+        } else {
+            return new byte[] { (byte) lc };
+        }
     }
 
     // Assumes the bignum length must be even
-    static byte[] positive(byte[] bytes) {
+    static byte[] positive(final byte[] bytes) {
         if (bytes[0] == 0 && bytes.length % 2 == 1) {
             return Arrays.copyOfRange(bytes, 1, bytes.length);
         }
@@ -154,26 +158,28 @@ public final class GPUtils {
 
     // JavaCard requires values without sign byte (assumed positive)
     static byte[] positive(BigInteger i) {
-        byte[] bytes = i.toByteArray();
+        final var bytes = i.toByteArray();
         return positive(bytes);
     }
 
-    public static void trace_lv(byte[] data, Logger logger) {
+    public static void trace_lv(final byte[] data, final Logger logger) {
         try {
-            for (String s : visualize_lv(data))
+            for (String s : visualize_lv(data)) {
                 logger.trace(s);
+            }
         } catch (IllegalArgumentException e) {
             logger.error("Invalid LV data: {}", Hex.toHexString(data), e);
         }
     }
 
-    static List<String> visualize_lv(byte[] data) {
-        List<String> result = new ArrayList<>();
+    static List<String> visualize_lv(final byte[] data) {
+        final var result = new ArrayList<String>();
         try {
-            for (int i = 0; i < data.length; ) {
-                int l = getLength(data, i);
-                int lenLen = getLenLen(data, i);
-                result.add(String.format("[%s] %s", HexUtils.bin2hex(Arrays.copyOfRange(data, i, i + lenLen)), HexUtils.bin2hex(Arrays.copyOfRange(data, i + lenLen, i + lenLen + l))));
+            for (var i = 0; i < data.length;) {
+                final var l = getLength(data, i);
+                final var lenLen = getLenLen(data, i);
+                result.add("[%s] %s".formatted(HexUtils.bin2hex(Arrays.copyOfRange(data, i, i + lenLen)),
+                        HexUtils.bin2hex(Arrays.copyOfRange(data, i + lenLen, i + lenLen + l))));
                 i += lenLen + l;
             }
         } catch (ArrayIndexOutOfBoundsException e) {
@@ -182,29 +188,28 @@ public final class GPUtils {
         return result;
     }
 
-
-    static void dump(TLV tlv, int depth, List<String> result) {
+    static void dump(final TLV tlv, final int depth, final List<String> result) {
         if (tlv.hasChildren()) {
-            result.add(String.format("%s[%s]", " ".repeat(depth * 5), Hex.toHexString(tlv.tag().bytes())));
+            result.add("%s[%s]".formatted(" ".repeat(depth * 5), Hex.toHexString(tlv.tag().bytes())));
 
             for (TLV child : tlv.children()) {
                 dump(child, depth + 1, result);
             }
         } else {
-            result.add(String.format("%s[%s] %s", " ".repeat(depth * 5), Hex.toHexString(tlv.tag().bytes()), Hex.toHexString(tlv.value())));
+            result.add("%s[%s] %s".formatted(" ".repeat(depth * 5), Hex.toHexString(tlv.tag().bytes()), Hex.toHexString(tlv.value())));
         }
     }
 
-    static void dump(List<TLV> list, int depth, List<String> result) {
+    static void dump(final List<TLV> list, final int depth, final List<String> result) {
         for (TLV t : list) {
             dump(t, depth, result);
         }
     }
 
-    public static List<String> visualize_tlv(byte[] payload) {
-        ArrayList<String> result = new ArrayList<>();
+    public static List<String> visualize_tlv(final byte[] payload) {
+        final var result = new ArrayList<String>();
         try {
-            var tlvs = TLV.parse(payload);
+            final var tlvs = TLV.parse(payload);
             dump(tlvs, 0, result);
         } catch (ArrayIndexOutOfBoundsException | IllegalStateException e) {
             throw new IllegalArgumentException("Not valid TLVs: " + e.getMessage(), e);
@@ -212,10 +217,11 @@ public final class GPUtils {
         return result;
     }
 
-    static void trace_tlv(byte[] data, Logger l) {
+    static void trace_tlv(final byte[] data, final Logger l) {
         try {
-            for (String s : visualize_tlv(data))
+            for (String s : visualize_tlv(data)) {
                 l.trace(s);
+            }
         } catch (IllegalArgumentException e) {
             l.error("Invalid TLV data: {}", Hex.toHexString(data), e);
         }

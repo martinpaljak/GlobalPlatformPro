@@ -5,12 +5,10 @@ import java.util.Optional;
 // Container of interfaces for defining EMV (and other) data structures
 public final class Data {
 
-    private Data() {
-    }
+    private Data() {}
 
     // The basic identifier for a data unit
-    public interface DataUnit {
-    }
+    public interface DataUnit {}
 
     // native to Enum, defined for record. Ex: DGI8002
     public interface Named {

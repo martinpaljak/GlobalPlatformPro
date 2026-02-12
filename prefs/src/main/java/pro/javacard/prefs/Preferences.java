@@ -32,57 +32,57 @@ public final class Preferences {
         this.values = Map.of();
     }
 
-    private Preferences(Map<Preference<?>, Object> values) {
+    private Preferences(final Map<Preference<?>, Object> values) {
         // .copyOf() assures that there are no null values
         this.values = Map.copyOf(values);
     }
 
     // Only allows non-null overrides for preferences that have default values
-    public <V> Preferences with(Preference<V> key, V value) {
+    public <V> Preferences with(final Preference<V> key, final V value) {
         if (value == null) {
             throw new IllegalArgumentException("Cannot set null outcome for preference '" + key.name() + "'");
         }
         if (!key.validator().test(value)) {
             throw new IllegalArgumentException("Value for preference '" + key.name() + "' fails validation: " + value);
         }
-        Map<Preference<?>, Object> newValues = new HashMap<>();
+        final var newValues = new HashMap<Preference<?>, Object>();
         newValues.put(key, value);
         // Calling merge will take care of readonly preferences
         return merge(new Preferences(newValues));
     }
 
-    public <V> Preferences without(Preference<V> key) {
+    public <V> Preferences without(final Preference<V> key) {
         if (key.readonly()) {
             throw new IllegalArgumentException("Can't remove readonly preference!");
         }
         if (!values.containsKey(key)) {
             return this;
         }
-        Map<Preference<?>, Object> newValues = new HashMap<>(values);
+        final var newValues = new HashMap<Preference<?>, Object>(values);
         newValues.remove(key);
         return new Preferences(newValues);
     }
 
     // Always returns non-null: either the explicit override or the default outcome
     @SuppressWarnings("unchecked")
-    public <V> V get(Preference.Default<V> key) {
-        V value = (V) values.get(key);
+    public <V> V get(final Preference.Default<V> key) {
+        final var value = (V) values.get(key);
         return value != null ? value : key.defaultValue();
     }
 
     // Returns empty Optional when using default, present Optional when explicitly overridden
     @SuppressWarnings("unchecked")
-    public <V> Optional<V> valueOf(Preference<V> key) {
+    public <V> Optional<V> valueOf(final Preference<V> key) {
         // We don't allow null values, so the optional is empty only
         // if the preference is not explicitly established
         return Optional.ofNullable((V) values.get(key));
     }
 
     // Add all keys from other to this
-    public Preferences merge(Preferences other) {
-        Map<Preference<?>, Object> newValues = new HashMap<>(this.values);
+    public Preferences merge(final Preferences other) {
+        final var newValues = new HashMap<Preference<?>, Object>(this.values);
         for (Map.Entry<Preference<?>, Object> entry : other.values.entrySet()) {
-            Preference<?> key = entry.getKey();
+            final Preference<?> key = entry.getKey();
             if (key.readonly() && this.values.containsKey(key)) {
                 // Skip readonly preferences that already exist in this instance
                 //log.warn("Trying to overwrite read-only preference " + key);
@@ -107,7 +107,7 @@ public final class Preferences {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
+        final var sb = new StringBuilder();
         sb.append("Preferences{");
         for (var k : values.entrySet()) {
             sb.append(k.getKey().name());
@@ -126,28 +126,27 @@ public final class Preferences {
         return sb.toString();
     }
 
-
     // For parameters (no default outcome)
-    public static <T> Preference.Parameter<T> register(String name, Class<T> type, boolean readonly) {
-        Preference.Parameter<T> preference = Preference.parameter(name, type, readonly);
+    public static <T> Preference.Parameter<T> register(final String name, final Class<T> type, final boolean readonly) {
+        final var preference = Preference.<T>parameter(name, type, readonly);
         REGISTRY.put(preference.name(), preference);
         return preference;
     }
 
     // For parameters (readonly by default)
-    public static <T> Preference.Parameter<T> register(String name, Class<T> type) {
+    public static <T> Preference.Parameter<T> register(final String name, final Class<T> type) {
         return register(name, type, true);
     }
 
     // For preferences with default values
-    public static <T> Preference.Default<T> register(String name, Class<T> type, T defaultValue, boolean readonly) {
-        Preference.Default<T> preference = Preference.of(name, type, defaultValue, readonly);
+    public static <T> Preference.Default<T> register(final String name, final Class<T> type, final T defaultValue, final boolean readonly) {
+        final var preference = Preference.<T>of(name, type, defaultValue, readonly);
         REGISTRY.put(preference.name(), preference);
         return preference;
     }
 
     // For preferences with default values (not readonly by default)
-    public static <T> Preference.Default<T> register(String name, Class<T> type, T defaultValue) {
+    public static <T> Preference.Default<T> register(final String name, final Class<T> type, final T defaultValue) {
         return register(name, type, defaultValue, false);
     }
 }

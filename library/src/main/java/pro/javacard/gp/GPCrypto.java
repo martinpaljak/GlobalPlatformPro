@@ -26,7 +26,6 @@ import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
-import org.bouncycastle.crypto.BlockCipher;
 import org.bouncycastle.crypto.engines.AESEngine;
 import org.bouncycastle.crypto.generators.KDFCounterBytesGenerator;
 import org.bouncycastle.crypto.macs.CMac;
@@ -55,10 +54,9 @@ import java.util.Arrays;
 // Various cryptographic primitives used for secure channel or plaintext keys
 @SuppressWarnings("lgtm[java/weak-cryptographic-algorithm]")
 public final class GPCrypto {
-    private GPCrypto() {
-    }
+    private GPCrypto() {}
 
-    private static final byte[] one_bytes_16 = new byte[]{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01};
+    private static final byte[] one_bytes_16 = new byte[] { 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01 };
 
     // List of used ciphers.
     public static final String DES3_CBC_CIPHER = "DESede/CBC/NoPadding";
@@ -79,23 +77,24 @@ public final class GPCrypto {
         }
     }
 
-    public static byte[] random(int num) {
-        byte[] bytes = new byte[num];
+    public static byte[] random(final int num) {
+        final byte[] bytes = new byte[num];
         rnd.nextBytes(bytes);
         return bytes;
     }
 
-    public static byte[] pad80(byte[] text, int blocksize) {
-        int total = (text.length / blocksize + 1) * blocksize;
-        byte[] result = Arrays.copyOfRange(text, 0, total);
+    public static byte[] pad80(final byte[] text, final int blocksize) {
+        final var total = (text.length / blocksize + 1) * blocksize;
+        final byte[] result = Arrays.copyOfRange(text, 0, total);
         result[text.length] = (byte) 0x80;
         return result;
     }
 
-    public static byte[] unpad80(byte[] text) throws BadPaddingException {
-        if (text.length < 1)
+    public static byte[] unpad80(final byte[] text) throws BadPaddingException {
+        if (text.length < 1) {
             throw new BadPaddingException("Invalid ISO 7816-4 padding");
-        int offset = text.length - 1;
+        }
+        var offset = text.length - 1;
         while (offset > 0 && text[offset] == 0) {
             offset--;
         }
@@ -106,54 +105,55 @@ public final class GPCrypto {
     }
 
     private static void buffer_increment(byte[] buffer, int offset, int len) {
-        if (len < 1)
+        if (len < 1) {
             return;
-        for (int i = offset + len - 1; i >= offset; i--) {
+        }
+        for (var i = offset + len - 1; i >= offset; i--) {
             if (buffer[i] != (byte) 0xFF) {
                 buffer[i]++;
                 break;
-            } else
+            } else {
                 buffer[i] = (byte) 0x00;
+            }
         }
     }
 
-    public static void buffer_increment(byte[] buffer) {
+    public static void buffer_increment(final byte[] buffer) {
         buffer_increment(buffer, 0, buffer.length);
     }
 
     public static byte[] aes_cbc(byte[] data, byte[] key, byte[] iv) throws GeneralSecurityException {
-        Cipher c = Cipher.getInstance(AES_CBC_CIPHER);
+        final Cipher c = Cipher.getInstance(AES_CBC_CIPHER);
         c.init(Cipher.ENCRYPT_MODE, aeskey(key), new IvParameterSpec(iv));
         return c.doFinal(data);
     }
 
     public static byte[] aes_cbc_decrypt(byte[] data, byte[] key, byte[] iv) throws GeneralSecurityException {
-        Cipher c = Cipher.getInstance(AES_CBC_CIPHER);
+        final Cipher c = Cipher.getInstance(AES_CBC_CIPHER);
         c.init(Cipher.DECRYPT_MODE, aeskey(key), new IvParameterSpec(iv));
         return c.doFinal(data);
     }
 
-
     public static byte[] des3_cbc(byte[] data, byte[] key, byte[] iv) throws GeneralSecurityException {
-        Cipher cipher = Cipher.getInstance(DES3_CBC_CIPHER);
+        final Cipher cipher = Cipher.getInstance(DES3_CBC_CIPHER);
         cipher.init(Cipher.ENCRYPT_MODE, des3key(key), new IvParameterSpec(iv));
         return cipher.doFinal(data);
     }
 
     public static byte[] des_cbc(byte[] data, byte[] key, byte[] iv) throws GeneralSecurityException {
-        Cipher cipher = Cipher.getInstance(DES_CBC_CIPHER);
+        final Cipher cipher = Cipher.getInstance(DES_CBC_CIPHER);
         cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(resize_des(key, 8), "DES"), new IvParameterSpec(iv));
         return cipher.doFinal(data);
     }
 
-    public static byte[] des_ecb(byte[] data, byte[] key) throws GeneralSecurityException {
-        Cipher cipher = Cipher.getInstance(DES_ECB_CIPHER);
+    public static byte[] des_ecb(final byte[] data, final byte[] key) throws GeneralSecurityException {
+        final Cipher cipher = Cipher.getInstance(DES_ECB_CIPHER);
         cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(resize_des(key, 8), "DES"));
         return cipher.doFinal(data);
     }
 
-    public static byte[] des3_ecb(byte[] data, byte[] key) throws GeneralSecurityException {
-        Cipher cipher = Cipher.getInstance(DES3_ECB_CIPHER);
+    public static byte[] des3_ecb(final byte[] data, final byte[] key) throws GeneralSecurityException {
+        final Cipher cipher = Cipher.getInstance(DES3_ECB_CIPHER);
         cipher.init(Cipher.ENCRYPT_MODE, des3key(key));
         return cipher.doFinal(data);
     }
@@ -161,8 +161,8 @@ public final class GPCrypto {
     // 3des mac over unpadded data
     public static byte[] mac_3des(byte[] text, byte[] key, byte[] iv) {
         try {
-            byte[] d = pad80(text, 8);
-            byte[] cgram = des3_cbc(d, key, iv);
+            final byte[] d = pad80(text, 8);
+            final byte[] cgram = des3_cbc(d, key, iv);
             // rightmost 8 bytes
             return Arrays.copyOfRange(cgram, cgram.length - 8, cgram.length);
         } catch (GeneralSecurityException e) {
@@ -174,17 +174,17 @@ public final class GPCrypto {
     public static byte[] mac_des_3des(byte[] key, byte[] data, byte[] iv) {
         try {
             // Pad input data
-            byte[] d = pad80(data, 8);
+            final byte[] d = pad80(data, 8);
 
             // If payload is more than 8 bytes, do one pass of des_cbc of everything but the last 8 (padded) bytes
             // and use the rightmost 8 bytes of that as the IV for the full cbc.
             if (d.length > 8) {
-                byte[] des = GPCrypto.des_cbc(Arrays.copyOf(d, d.length - 8), key, iv);
+                final byte[] des = GPCrypto.des_cbc(Arrays.copyOf(d, d.length - 8), key, iv);
                 iv = Arrays.copyOfRange(des, des.length - 8, des.length);
             }
 
             // Do des3_cbc of either last or only 8 bytes with the IV depending on payload length
-            byte[] cgram = GPCrypto.des3_cbc(Arrays.copyOfRange(d, d.length - 8, d.length), key, iv);
+            final byte[] cgram = GPCrypto.des3_cbc(Arrays.copyOfRange(d, d.length - 8, d.length), key, iv);
 
             // Rightmost 8 bytes is the MAC
             return Arrays.copyOfRange(cgram, cgram.length - 8, cgram.length);
@@ -194,22 +194,22 @@ public final class GPCrypto {
     }
 
     // SCP03 related
-    public static byte[] aes_cmac(byte[] key, byte[] data, int lengthBits) {
+    public static byte[] aes_cmac(final byte[] key, final byte[] data, final int lengthBits) {
         // Use BouncyCastle light interface.
-        BlockCipher cipher = AESEngine.newInstance();
-        CMac cmac = new CMac(cipher);
+        final var cipher = AESEngine.newInstance();
+        final var cmac = new CMac(cipher);
         cmac.init(new KeyParameter(key));
         cmac.update(data, 0, data.length);
-        byte[] out = new byte[cmac.getMacSize()];
+        final byte[] out = new byte[cmac.getMacSize()];
         cmac.doFinal(out, 0);
         return Arrays.copyOf(out, lengthBits / 8);
     }
 
-    public static byte[] scp03_kdf_blocka(byte constant, int blocklen_bits) {
+    public static byte[] scp03_kdf_blocka(final byte constant, final int blocklen_bits) {
         // 11 bytes
-        byte[] label = new byte[]{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+        final byte[] label = new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
-        ByteArrayOutputStream bo = new ByteArrayOutputStream();
+        final var bo = new ByteArrayOutputStream();
         try {
             bo.write(label); // 11 bytes of label
             bo.write(constant); // constant for the last byte
@@ -223,25 +223,25 @@ public final class GPCrypto {
     }
 
     // GP 2.2.1 Amendment D v 1.1.1
-    public static byte[] scp03_kdf(byte[] key, byte constant, byte[] context, int blocklen_bits) {
-        byte[] blocka = scp03_kdf_blocka(constant, blocklen_bits);
-        byte[] blockb = context;
+    public static byte[] scp03_kdf(final byte[] key, final byte constant, final byte[] context, final int blocklen_bits) {
+        final byte[] blocka = scp03_kdf_blocka(constant, blocklen_bits);
+        final var blockb = context;
         return scp03_kdf(key, blocka, blockb, blocklen_bits / 8);
     }
 
     // Generic KDF in counter mode with one byte counter.
-    public static byte[] scp03_kdf(byte[] key, byte[] a, byte[] b, int bytes) {
-        BlockCipher cipher = AESEngine.newInstance();
-        CMac cmac = new CMac(cipher);
-        KDFCounterBytesGenerator kdf = new KDFCounterBytesGenerator(cmac);
+    public static byte[] scp03_kdf(final byte[] key, final byte[] a, final byte[] b, final int bytes) {
+        final var cipher = AESEngine.newInstance();
+        final var cmac = new CMac(cipher);
+        final var kdf = new KDFCounterBytesGenerator(cmac);
         kdf.init(new KDFCounterParameters(key, a, b, 8)); // counter size is in bits
-        byte[] cgram = new byte[bytes];
+        final byte[] cgram = new byte[bytes];
         kdf.generateBytes(cgram, 0, cgram.length);
         return cgram;
     }
 
     // GPC 2.2.1 Amendment D 7.2.2
-    public static byte[] kcv_aes(byte[] key) {
+    public static byte[] kcv_aes(final byte[] key) {
         try {
             return Arrays.copyOfRange(aes_cbc(one_bytes_16, key, new byte[16]), 0, 3);
         } catch (GeneralSecurityException e) {
@@ -250,7 +250,7 @@ public final class GPCrypto {
     }
 
     // Some cards/vendors do KCV-s over 0x00 bytes, not 0x01 bytes
-    public static byte[] kcv_aes0(byte[] key) {
+    public static byte[] kcv_aes0(final byte[] key) {
         try {
             return Arrays.copyOfRange(aes_cbc(new byte[16], key, new byte[16]), 0, 3);
         } catch (GeneralSecurityException e) {
@@ -258,7 +258,7 @@ public final class GPCrypto {
         }
     }
 
-    public static byte[] kcv_3des(byte[] key) {
+    public static byte[] kcv_3des(final byte[] key) {
         try {
             return Arrays.copyOf(des3_ecb(new byte[8], key), 3);
         } catch (GeneralSecurityException e) {
@@ -266,16 +266,16 @@ public final class GPCrypto {
         }
     }
 
-    public static Key des3key(byte[] v) {
+    public static Key des3key(final byte[] v) {
         return new SecretKeySpec(resize_des(v, 24), "DESede");
     }
 
-    public static Key aeskey(byte[] v) {
+    public static Key aeskey(final byte[] v) {
         return new SecretKeySpec(v, "AES");
     }
 
-    public static byte[] rsa_sign(RSAPrivateKey key, byte[] dtbs) throws GeneralSecurityException {
-        int keylen = (key.getModulus().bitLength() + 7) / 8;
+    public static byte[] rsa_sign(final RSAPrivateKey key, final byte[] dtbs) throws GeneralSecurityException {
+        final var keylen = (key.getModulus().bitLength() + 7) / 8;
         if (keylen == 128) {
             return rsa_scheme1(key, dtbs);
         } else {
@@ -283,18 +283,18 @@ public final class GPCrypto {
         }
     }
 
-    public static byte[] rsa_scheme2(RSAPrivateKey key, byte[] dtbs) throws GeneralSecurityException {
+    public static byte[] rsa_scheme2(final RSAPrivateKey key, final byte[] dtbs) throws GeneralSecurityException {
         // B.3.2 Scheme2 of RSA keys above 1k
-        MGF1ParameterSpec mgf = MGF1ParameterSpec.SHA256;
-        PSSParameterSpec spec = new PSSParameterSpec(mgf.getDigestAlgorithm(), "MGF1", mgf, 32, PSSParameterSpec.TRAILER_FIELD_BC);
-        Signature signer = Signature.getInstance("RSASSA-PSS");
+        final var mgf = MGF1ParameterSpec.SHA256;
+        final var spec = new PSSParameterSpec(mgf.getDigestAlgorithm(), "MGF1", mgf, 32, PSSParameterSpec.TRAILER_FIELD_BC);
+        final Signature signer = Signature.getInstance("RSASSA-PSS");
         signer.setParameter(spec);
         signer.initSign(key);
         signer.update(dtbs);
         return signer.sign();
     }
 
-    public static byte[] rsa_scheme1(RSAPrivateKey key, byte[] dtbs) throws GeneralSecurityException {
+    public static byte[] rsa_scheme1(final RSAPrivateKey key, final byte[] dtbs) throws GeneralSecurityException {
         // B.3.1 Scheme1 of RSA keys up to 1k
         final Signature signer = Signature.getInstance("SHA1withRSA");
         signer.initSign(key);
@@ -303,9 +303,9 @@ public final class GPCrypto {
     }
 
     // Get a public key from a PEM file, either public key or keypair
-    public static PublicKey pem2PublicKey(InputStream in) throws IOException {
-        try (PEMParser pem = new PEMParser(new InputStreamReader(in, StandardCharsets.US_ASCII))) {
-            Object ohh = pem.readObject();
+    public static PublicKey pem2PublicKey(final InputStream in) throws IOException {
+        try (var pem = new PEMParser(new InputStreamReader(in, StandardCharsets.US_ASCII))) {
+            final var ohh = pem.readObject();
             if (ohh instanceof PEMKeyPair kp) {
                 return new JcaPEMKeyConverter().getKeyPair(kp).getPublic();
             } else if (ohh instanceof SubjectPublicKeyInfo spki) {
@@ -316,25 +316,29 @@ public final class GPCrypto {
                 } catch (CertificateException ce) {
                     throw new IllegalArgumentException("Can not read PEM: " + ce.getMessage());
                 }
-            } else throw new IllegalArgumentException("Can not read PEM");
+            } else {
+                throw new IllegalArgumentException("Can not read PEM");
+            }
         }
     }
 
     // Get a private key from a PEM file, either private key or keypair
-    public static PrivateKey pem2PrivateKey(InputStream in) throws IOException {
-        try (PEMParser pem = new PEMParser(new InputStreamReader(in, StandardCharsets.US_ASCII))) {
-            Object ohh = pem.readObject();
+    public static PrivateKey pem2PrivateKey(final InputStream in) throws IOException {
+        try (var pem = new PEMParser(new InputStreamReader(in, StandardCharsets.US_ASCII))) {
+            final var ohh = pem.readObject();
             if (ohh instanceof PEMKeyPair kp) {
                 return new JcaPEMKeyConverter().getKeyPair(kp).getPrivate();
             } else if (ohh instanceof PrivateKeyInfo pki) {
                 return new JcaPEMKeyConverter().getPrivateKey(pki);
-            } else throw new IllegalArgumentException("Can not read PEM");
+            } else {
+                throw new IllegalArgumentException("Can not read PEM");
+            }
         }
     }
 
     // Do shuffling as necessary
     @SuppressWarnings("StatementSwitchToExpressionSwitch")
-    static byte[] resize_des(byte[] key, int length) {
+    static byte[] resize_des(final byte[] key, final int length) {
         switch (length) {
             case 24:
                 return GPUtils.concatenate(Arrays.copyOf(key, 16), Arrays.copyOf(key, 8));
@@ -346,11 +350,11 @@ public final class GPCrypto {
     }
 
     // Convert DER to R||S
-    public static byte[] der2rs(byte[] der, int len) throws SignatureException {
-        try (ASN1InputStream input = new ASN1InputStream(der)) {
-            DLSequence seq = (DLSequence) input.readObject();
-            ASN1Integer r = (ASN1Integer) seq.getObjectAt(0);
-            ASN1Integer s = (ASN1Integer) seq.getObjectAt(1);
+    public static byte[] der2rs(final byte[] der, final int len) throws SignatureException {
+        try (var input = new ASN1InputStream(der)) {
+            final var seq = (DLSequence) input.readObject();
+            final var r = (ASN1Integer) seq.getObjectAt(0);
+            final var s = (ASN1Integer) seq.getObjectAt(1);
             return GPUtils.concatenate(leftpad(r.getPositiveValue().toByteArray(), len), leftpad(s.getPositiveValue().toByteArray(), len));
         } catch (IOException e) {
             throw new SignatureException("Could not convert DER to R||S: " + e.getMessage());
@@ -358,13 +362,13 @@ public final class GPCrypto {
     }
 
     // Right-align byte array to the specified size, padding with 0 from left
-    public static byte[] leftpad(byte[] bytes, int len) {
+    public static byte[] leftpad(final byte[] bytes, final int len) {
         if (bytes.length < len) {
-            byte[] nv = new byte[len];
+            final byte[] nv = new byte[len];
             System.arraycopy(bytes, 0, nv, len - bytes.length, bytes.length);
             return nv;
         } else if (bytes.length > len) {
-            byte[] nv = new byte[len];
+            final byte[] nv = new byte[len];
             System.arraycopy(bytes, bytes.length - len, nv, 0, len);
             return nv;
         }

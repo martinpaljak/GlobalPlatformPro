@@ -45,27 +45,26 @@ class SCP02Wrapper extends SecureChannelWrapper {
     private boolean macModifiedAPDU = false;
     private boolean postAPDU = false;
 
-
-    SCP02Wrapper(byte[] enc, byte[] mac, byte[] rmac, int bs) {
+    SCP02Wrapper(final byte[] enc, final byte[] mac, final byte[] rmac, final int bs) {
         super(enc, mac, rmac, bs);
         setVariant(0x55);
     }
 
-    private static byte clearBits(byte b, byte mask) {
+    private static byte clearBits(final byte b, final byte mask) {
         return (byte) ((b & ~mask) & 0xFF);
     }
 
-    private static byte setBits(byte b, byte mask) {
+    private static byte setBits(final byte b, final byte mask) {
         return (byte) ((b | mask) & 0xFF);
     }
 
-    public void setVariant(int i) {
+    public void setVariant(final int i) {
         icvEnc = true;
         macModifiedAPDU = true;
     }
 
     @Override
-    public CommandAPDU wrap(CommandAPDU command) throws GPException {
+    public CommandAPDU wrap(final CommandAPDU command) throws GPException {
 
         try {
             if (rmac) {
@@ -84,18 +83,17 @@ class SCP02Wrapper extends SecureChannelWrapper {
                 return command;
             }
 
-
-            int origCLA = command.getCLA();
-            int newCLA = origCLA;
-            int origINS = command.getINS();
-            int origP1 = command.getP1();
-            int origP2 = command.getP2();
-            byte[] origData = command.getData();
-            int origLc = command.getNc();
-            int newLc = origLc;
+            final var origCLA = command.getCLA();
+            var newCLA = origCLA;
+            final var origINS = command.getINS();
+            final var origP1 = command.getP1();
+            final var origP2 = command.getP2();
+            final var origData = command.getData();
+            final var origLc = command.getNc();
+            var newLc = origLc;
             byte[] newData = null;
-            int le = command.getNe();
-            ByteArrayOutputStream t = new ByteArrayOutputStream();
+            final var le = command.getNe();
+            final var t = new ByteArrayOutputStream();
 
             if (origLc > getBlockSize()) {
                 throw new IllegalArgumentException("APDU too long for wrapping.");
@@ -119,7 +117,6 @@ class SCP02Wrapper extends SecureChannelWrapper {
                 t.write(origP2);
                 t.write(newLc);
                 t.write(origData);
-
 
                 logger.trace("MAC input: {}", HexUtils.bin2hex(t.toByteArray()));
                 icv = GPCrypto.mac_des_3des(macKey, t.toByteArray(), icv);
@@ -155,7 +152,7 @@ class SCP02Wrapper extends SecureChannelWrapper {
             if (le > 0) {
                 t.write(le);
             }
-            CommandAPDU wrapped = new CommandAPDU(t.toByteArray());
+            final var wrapped = new CommandAPDU(t.toByteArray());
             return wrapped;
         } catch (IOException e) {
             throw new RuntimeException("APDU wrapping failed", e);
@@ -172,7 +169,7 @@ class SCP02Wrapper extends SecureChannelWrapper {
             if (response.getData().length < 8) {
                 throw new GPException("Wrong response length (too short).");
             }
-            int respLen = response.getData().length - 8;
+            final var respLen = response.getData().length - 8;
             rMac.write(respLen);
             rMac.write(response.getData(), 0, respLen);
             rMac.write(response.getSW1());
@@ -180,12 +177,12 @@ class SCP02Wrapper extends SecureChannelWrapper {
 
             ricv = GPCrypto.mac_des_3des(rmacKey, GPCrypto.pad80(rMac.toByteArray(), 8), ricv);
 
-            byte[] actualMac = new byte[8];
+            final byte[] actualMac = new byte[8];
             System.arraycopy(response.getData(), respLen, actualMac, 0, 8);
             if (!Arrays.equals(ricv, actualMac)) {
                 throw new GPException("RMAC invalid.");
             }
-            ByteArrayOutputStream o = new ByteArrayOutputStream();
+            final var o = new ByteArrayOutputStream();
             o.write(response.getBytes(), 0, respLen);
             o.write(response.getSW1());
             o.write(response.getSW2());

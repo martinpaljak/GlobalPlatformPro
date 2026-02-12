@@ -83,9 +83,9 @@ public class TestPlaintextKeys {
     @Test
     public void testDiversification_KDF3_ExternalVector() {
         // External test vector for SCP03 KDF
-        byte[] kdd = HexUtils.hex2bin("D9B1DE5D0362DEDCE4FB");
-        byte[] master = HexUtils.hex2bin("8C72C72CF908411653018807950D82FBAD947562F0828A0B10B8B9606ABF3BCD");
-        byte[] expectedDerivedKey = HexUtils.hex2bin("9AAC5D0B3601F89438A0D9D0B6B256CFB47E6462DFA5228D3420C4AC7C224781");
+        final var kdd = HexUtils.hex2bin("D9B1DE5D0362DEDCE4FB");
+        final var master = HexUtils.hex2bin("8C72C72CF908411653018807950D82FBAD947562F0828A0B10B8B9606ABF3BCD");
+        final var expectedDerivedKey = HexUtils.hex2bin("9AAC5D0B3601F89438A0D9D0B6B256CFB47E6462DFA5228D3420C4AC7C224781");
 
         GPCardKeys keys = PlaintextKeys.fromMasterKey(master, PlaintextKeys.kdf_templates.get("kdf3"));
         keys = keys.diversify(GPSecureChannelVersion.SCP.SCP03, kdd);
@@ -97,15 +97,15 @@ public class TestPlaintextKeys {
     @Test
     public void testSessionKeys_SCP01() {
         // Input: static key 404142..., session context of zeros
-        GPCardKeys keys = PlaintextKeys.fromKeys(KEY_16, KEY_16, KEY_16);
+        final GPCardKeys keys = PlaintextKeys.fromKeys(KEY_16, KEY_16, KEY_16);
         keys.diversify(GPSecureChannelVersion.SCP.SCP01, KDD);
 
-        byte[] sessionContext = new byte[16]; // host_challenge || card_challenge (zeros)
+        final byte[] sessionContext = new byte[16]; // host_challenge || card_challenge (zeros)
 
         // Session keys derived via 3DES-ECB of permuted context
-        byte[] sEnc = keys.getSessionKey(ENC, sessionContext);
-        byte[] sMac = keys.getSessionKey(MAC, sessionContext);
-        byte[] sDek = keys.getSessionKey(DEK, sessionContext);
+        final var sEnc = keys.getSessionKey(ENC, sessionContext);
+        final var sMac = keys.getSessionKey(MAC, sessionContext);
+        final var sDek = keys.getSessionKey(DEK, sessionContext);
 
         // Verify session keys by their 3DES KCVs
         Assert.assertEquals(HexUtils.bin2hex(GPCrypto.kcv_3des(sEnc)), "FDDAF8");
@@ -120,16 +120,16 @@ public class TestPlaintextKeys {
     @Test
     public void testSessionKeys_SCP02() {
         // Input: static key 404142..., sequence counter 0000
-        GPCardKeys keys = PlaintextKeys.fromKeys(KEY_16, KEY_16, KEY_16);
+        final GPCardKeys keys = PlaintextKeys.fromKeys(KEY_16, KEY_16, KEY_16);
         keys.diversify(GPSecureChannelVersion.SCP.SCP02, KDD);
 
-        byte[] sequence = new byte[2]; // Sequence counter = 0000
+        final byte[] sequence = new byte[2]; // Sequence counter = 0000
 
         // Session keys derived via 3DES-CBC with constant || counter || zeros
-        byte[] sEnc = keys.getSessionKey(ENC, sequence);
-        byte[] sMac = keys.getSessionKey(MAC, sequence);
-        byte[] sDek = keys.getSessionKey(DEK, sequence);
-        byte[] sRmac = keys.getSessionKey(RMAC, sequence);
+        final var sEnc = keys.getSessionKey(ENC, sequence);
+        final var sMac = keys.getSessionKey(MAC, sequence);
+        final var sDek = keys.getSessionKey(DEK, sequence);
+        final var sRmac = keys.getSessionKey(RMAC, sequence);
 
         // Verify session keys by their 3DES KCVs
         Assert.assertEquals(HexUtils.bin2hex(GPCrypto.kcv_3des(sEnc)), "F2DCDD");
@@ -141,14 +141,14 @@ public class TestPlaintextKeys {
     @Test
     public void testSessionKeys_SCP03() {
         // Input: static key 404142..., context = KDD
-        GPCardKeys keys = PlaintextKeys.fromKeys(KEY_16, KEY_16, KEY_16);
+        final GPCardKeys keys = PlaintextKeys.fromKeys(KEY_16, KEY_16, KEY_16);
         keys.diversify(GPSecureChannelVersion.SCP.SCP03, KDD);
 
         // Session keys derived via AES CMAC KDF
-        byte[] sEnc = keys.getSessionKey(ENC, KDD);
-        byte[] sMac = keys.getSessionKey(MAC, KDD);
-        byte[] sDek = keys.getSessionKey(DEK, KDD); // Static in SCP03
-        byte[] sRmac = keys.getSessionKey(RMAC, KDD);
+        final var sEnc = keys.getSessionKey(ENC, KDD);
+        final var sMac = keys.getSessionKey(MAC, KDD);
+        final var sDek = keys.getSessionKey(DEK, KDD); // Static in SCP03
+        final var sRmac = keys.getSessionKey(RMAC, KDD);
 
         // Verify session keys by their AES KCVs
         Assert.assertEquals(HexUtils.bin2hex(GPCrypto.kcv_aes(sEnc)), "C25559");
@@ -160,42 +160,42 @@ public class TestPlaintextKeys {
     @Test
     public void testKeyEncryption_SCP01() throws GeneralSecurityException {
         // Input: encrypt key 404142... with static DEK 404142...
-        GPCardKeys keys = PlaintextKeys.fromKeys(KEY_16, KEY_16, KEY_16);
+        final GPCardKeys keys = PlaintextKeys.fromKeys(KEY_16, KEY_16, KEY_16);
         keys.diversify(GPSecureChannelVersion.SCP.SCP01, KDD);
 
-        GPCardKeys keyToEncrypt = PlaintextKeys.fromKeys(KEY_16, KEY_16, KEY_16);
+        final GPCardKeys keyToEncrypt = PlaintextKeys.fromKeys(KEY_16, KEY_16, KEY_16);
         keyToEncrypt.diversify(GPSecureChannelVersion.SCP.SCP01, KDD);
 
         // SCP01 uses static DEK with 3DES-ECB
-        byte[] encrypted = keys.encryptKey(keyToEncrypt, ENC, new byte[2]);
+        final var encrypted = keys.encryptKey(keyToEncrypt, ENC, new byte[2]);
         Assert.assertEquals(HexUtils.bin2hex(encrypted), "B4BAA89A8CD0292B45210E1BC84B1C31");
     }
 
     @Test
     public void testKeyEncryption_SCP02() throws GeneralSecurityException {
         // Input: encrypt key 404142... with session DEK derived from sequence 0000
-        GPCardKeys keys = PlaintextKeys.fromKeys(KEY_16, KEY_16, KEY_16);
+        final GPCardKeys keys = PlaintextKeys.fromKeys(KEY_16, KEY_16, KEY_16);
         keys.diversify(GPSecureChannelVersion.SCP.SCP02, KDD);
 
-        GPCardKeys keyToEncrypt = PlaintextKeys.fromKeys(KEY_16, KEY_16, KEY_16);
+        final GPCardKeys keyToEncrypt = PlaintextKeys.fromKeys(KEY_16, KEY_16, KEY_16);
         keyToEncrypt.diversify(GPSecureChannelVersion.SCP.SCP02, KDD);
 
         // SCP02 uses session DEK derived from sequence counter
-        byte[] encrypted = keys.encryptKey(keyToEncrypt, ENC, new byte[2]);
+        final var encrypted = keys.encryptKey(keyToEncrypt, ENC, new byte[2]);
         Assert.assertEquals(HexUtils.bin2hex(encrypted), "EFBEE6C6D99D7B70BDE9D7E927F020AF");
     }
 
     @Test
     public void testKeyEncryption_SCP03() throws GeneralSecurityException {
         // Input: encrypt key 404142... with static DEK 404142...
-        GPCardKeys keys = PlaintextKeys.fromKeys(KEY_16, KEY_16, KEY_16);
+        final GPCardKeys keys = PlaintextKeys.fromKeys(KEY_16, KEY_16, KEY_16);
         keys.diversify(GPSecureChannelVersion.SCP.SCP03, KDD);
 
-        GPCardKeys keyToEncrypt = PlaintextKeys.fromKeys(KEY_16, KEY_16, KEY_16);
+        final GPCardKeys keyToEncrypt = PlaintextKeys.fromKeys(KEY_16, KEY_16, KEY_16);
         keyToEncrypt.diversify(GPSecureChannelVersion.SCP.SCP03, KDD);
 
         // SCP03 uses static DEK with AES-CBC + random padding
-        byte[] encrypted = keys.encryptKey(keyToEncrypt, ENC, new byte[2]);
+        final var encrypted = keys.encryptKey(keyToEncrypt, ENC, new byte[2]);
         // Length is 16 bytes for AES-128 key
         Assert.assertEquals(encrypted.length, 16);
         // First 16 bytes is encrypted key (deterministic part is hard to test due to random padding)
@@ -204,8 +204,8 @@ public class TestPlaintextKeys {
     @Test
     public void testScp3Kdf() {
         // Input: key 404142..., block_a = zeros(16), block_b = zeros(16), length = 16
-        GPCardKeys keys = PlaintextKeys.fromKeys(KEY_16, KEY_16, KEY_16);
-        byte[] result = keys.scp3_kdf(ENC, new byte[16], new byte[16], 16);
+        final GPCardKeys keys = PlaintextKeys.fromKeys(KEY_16, KEY_16, KEY_16);
+        final var result = keys.scp3_kdf(ENC, new byte[16], new byte[16], 16);
 
         // Verify derived key by its KCV
         Assert.assertEquals(result.length, 16);

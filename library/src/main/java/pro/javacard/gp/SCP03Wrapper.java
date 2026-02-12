@@ -33,30 +33,30 @@ import java.util.Locale;
 
 class SCP03Wrapper extends SecureChannelWrapper {
     // Both are block size length
-    private byte[] chaining_value = new byte[16];
-    private byte[] encryption_counter = new byte[16];
+    private final byte[] chaining_value = new byte[16];
+    private final byte[] encryption_counter = new byte[16];
 
     // FIXME: incorporate GPCardProfile here
     static final String COUNTER_WORKAROUND = "globalplatformpro.scp03.buggycounterworkaround";
-    private String buggyCounterEnv = System.getenv().getOrDefault(COUNTER_WORKAROUND.replace(".", "_").toUpperCase(Locale.ROOT), "false");
-    private boolean counterIsBuggy = System.getProperty(COUNTER_WORKAROUND, buggyCounterEnv).equalsIgnoreCase("true");
+    private final String buggyCounterEnv = System.getenv().getOrDefault(COUNTER_WORKAROUND.replace(".", "_").toUpperCase(Locale.ROOT), "false");
+    private final boolean counterIsBuggy = "true".equalsIgnoreCase(System.getProperty(COUNTER_WORKAROUND, buggyCounterEnv));
 
     private boolean s16 = false; // S16 mode
 
-    SCP03Wrapper(byte[] enc, byte[] mac, byte[] rmac, int bs, boolean s16) {
+    SCP03Wrapper(final byte[] enc, final byte[] mac, final byte[] rmac, final int bs, final boolean s16) {
         super(enc, mac, rmac, bs);
         this.s16 = s16;
     }
 
     @Override
-    protected CommandAPDU wrap(CommandAPDU command) throws GPException {
+    protected CommandAPDU wrap(final CommandAPDU command) throws GPException {
         byte[] cmd_mac = null;
-        int maclen = s16 ? 16 : 8;
+        final int maclen = s16 ? 16 : 8;
 
         try {
-            int cla = command.getCLA();
-            int lc = command.getNc();
-            byte[] data = command.getData();
+            var cla = command.getCLA();
+            var lc = command.getNc();
+            var data = command.getData();
 
             // Encrypt if needed
             if (enc) {
@@ -71,9 +71,9 @@ class SCP03Wrapper extends SecureChannelWrapper {
                     GPCrypto.buffer_increment(encryption_counter);
                 }
                 if (command.getData().length > 0) {
-                    byte[] d = GPCrypto.pad80(command.getData(), 16);
+                    final byte[] d = GPCrypto.pad80(command.getData(), 16);
                     // Encrypt with S-ENC, after increasing the counter
-                    byte[] iv = GPCrypto.aes_cbc(encryption_counter, encKey, new byte[16]);
+                    final byte[] iv = GPCrypto.aes_cbc(encryption_counter, encKey, new byte[16]);
                     // Now encrypt the data with S-ENC.
                     data = GPCrypto.aes_cbc(d, encKey, iv);
                     lc = data.length;
@@ -84,7 +84,7 @@ class SCP03Wrapper extends SecureChannelWrapper {
                 cla |= 0x4;
                 lc = lc + maclen;
 
-                ByteArrayOutputStream bo = new ByteArrayOutputStream();
+                final var bo = new ByteArrayOutputStream();
                 bo.write(chaining_value);
                 bo.write(cla);
                 bo.write(command.getINS());
@@ -92,8 +92,8 @@ class SCP03Wrapper extends SecureChannelWrapper {
                 bo.write(command.getP2());
                 bo.write(GPUtils.encodeLcLength(lc, command.getNe()));
                 bo.write(data);
-                byte[] cmac_input = bo.toByteArray();
-                byte[] cmac = GPCrypto.aes_cmac(macKey, cmac_input, 128);
+                final var cmac_input = bo.toByteArray();
+                final byte[] cmac = GPCrypto.aes_cmac(macKey, cmac_input, 128);
                 // Set new chaining value
                 System.arraycopy(cmac, 0, chaining_value, 0, chaining_value.length);
                 // 8 or 16 bytes for actual mac
@@ -102,7 +102,7 @@ class SCP03Wrapper extends SecureChannelWrapper {
             // Constructing a new command APDU ensures that the coding of LC and NE is correct; especially for Extend Length APDUs
             CommandAPDU newAPDU = null;
 
-            ByteArrayOutputStream newData = new ByteArrayOutputStream();
+            final var newData = new ByteArrayOutputStream();
             newData.write(data);
             if (mac) {
                 newData.write(cmd_mac);
@@ -125,7 +125,7 @@ class SCP03Wrapper extends SecureChannelWrapper {
 
     @Override
     protected ResponseAPDU unwrap(ResponseAPDU response) throws GPException {
-        int maclen = s16 ? 16 : 8;
+        final int maclen = s16 ? 16 : 8;
 
         try {
             if (rmac) {
@@ -141,29 +141,29 @@ class SCP03Wrapper extends SecureChannelWrapper {
                     // We therefore return unaltered.
                     return response;
                 }
-                int respLen = response.getData().length - maclen;
+                final var respLen = response.getData().length - maclen;
 
-                byte[] actualMac = new byte[maclen];
+                final byte[] actualMac = new byte[maclen];
                 System.arraycopy(response.getData(), respLen, actualMac, 0, maclen);
 
-                ByteArrayOutputStream bo = new ByteArrayOutputStream();
+                final var bo = new ByteArrayOutputStream();
                 bo.write(chaining_value);
                 bo.write(response.getData(), 0, respLen);
                 bo.write(response.getSW1());
                 bo.write(response.getSW2());
 
-                byte[] cmac_input = bo.toByteArray();
+                final var cmac_input = bo.toByteArray();
 
-                byte[] cmac = GPCrypto.aes_cmac(rmacKey, cmac_input, 128);
+                final byte[] cmac = GPCrypto.aes_cmac(rmacKey, cmac_input, 128);
 
                 // 8 bytes for actual mac
-                byte[] resp_mac = Arrays.copyOf(cmac, maclen);
+                final byte[] resp_mac = Arrays.copyOf(cmac, maclen);
 
                 if (!Arrays.equals(resp_mac, actualMac)) {
                     throw new GPException("RMAC invalid: " + HexUtils.bin2hex(actualMac) + " vs " + HexUtils.bin2hex(resp_mac));
                 }
 
-                ByteArrayOutputStream o = new ByteArrayOutputStream();
+                final var o = new ByteArrayOutputStream();
                 o.write(response.getData(), 0, respLen);
                 o.write(response.getSW1());
                 o.write(response.getSW2());
@@ -171,12 +171,12 @@ class SCP03Wrapper extends SecureChannelWrapper {
             }
             if (renc && response.getData().length > 0) {
                 // Encrypt with S-ENC, after changing the first byte of the counter
-                byte[] response_encryption_counter = encryption_counter.clone();
+                final var response_encryption_counter = encryption_counter.clone();
                 response_encryption_counter[0] = (byte) 0x80;
-                byte[] iv = GPCrypto.aes_cbc(response_encryption_counter, encKey, new byte[16]);
+                final byte[] iv = GPCrypto.aes_cbc(response_encryption_counter, encKey, new byte[16]);
                 // Now decrypt the data with S-ENC, with the new IV
-                byte[] data = GPCrypto.aes_cbc_decrypt(response.getData(), encKey, iv);
-                ByteArrayOutputStream o = new ByteArrayOutputStream();
+                final byte[] data = GPCrypto.aes_cbc_decrypt(response.getData(), encKey, iv);
+                final var o = new ByteArrayOutputStream();
                 o.write(GPCrypto.unpad80(data));
                 o.write(response.getSW1());
                 o.write(response.getSW2());

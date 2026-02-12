@@ -29,58 +29,58 @@ import java.util.List;
 import java.util.Optional;
 
 class TestTLV {
-    static byte[] hex(String s) {
+    static byte[] hex(final String s) {
         return HexFormat.of().parseHex(s.replaceAll("\\s", ""));
     }
 
     @Test
     public void testConstruction() {
-        var tlv = TLV.of("9f45", hex("01020304"));
+        final var tlv = TLV.of("9f45", hex("01020304"));
         Assert.assertEquals(tlv.encode(), hex("9F450401020304"));
-        var tlv1 = TLV.build("7f42")
+        final var tlv1 = TLV.build("7f42")
                 .add("9f45", hex("222222"))
                 .add("9f46", hex("333333"))
                 .add("9f45", hex("444444"));
 
-        var bin = tlv1.encode();
+        final var bin = tlv1.encode();
         Assert.assertEquals(bin, hex("7F42129F45032222229F46033333339F4503444444"));
 
-        var result = TLV.parse(bin);
-        var strings = result.get(0).visualize();
+        final var result = TLV.parse(bin);
+        final var strings = result.get(0).visualize();
         Assert.assertEquals(strings,
                 List.of("[7F42]", "      [9F45] 222222", "      [9F46] 333333", "      [9F45] 444444"));
 
-        var lookup = TLV.find(result, Tag.ber("9f45"));
+        final var lookup = TLV.find(result, Tag.ber("9f45"));
         Assert.assertEquals(lookup, Optional.of(TLV.of("9f45", hex("222222"))));
-        var lookup2 = TLV.findAll(result, Tag.ber("9f45"));
+        final var lookup2 = TLV.findAll(result, Tag.ber("9f45"));
         Assert.assertEquals(lookup2.size(), 2);
     }
 
     @Test
     public void testTagFactories() {
         // Single byte tags
-        var tag1 = Tag.ber(0x66);
+        final var tag1 = Tag.ber(0x66);
         Assert.assertEquals(tag1.bytes(), new byte[] { 0x66 });
 
         // Two byte tags
-        var tag2 = Tag.ber(0x9F, 0x70);
+        final var tag2 = Tag.ber(0x9F, 0x70);
         Assert.assertEquals(tag2.bytes(), new byte[] { (byte) 0x9F, 0x70 });
     }
 
     @Test
     public void testAddByte() {
-        var tlv = TLV.build(Tag.ber(0x70))
+        final var tlv = TLV.build(Tag.ber(0x70))
                 .addByte(Tag.ber(0x80), (byte) 0x01)
                 .addByte("81", (byte) 0xFF);
 
-        var encoded = tlv.encode();
+        final var encoded = tlv.encode();
         Assert.assertEquals(encoded, hex("70 06 80 01 01 81 01 FF"));
     }
 
     @Test
     public void testParseList() {
-        var data = hex("80010181010282010383010484010585010686010787010888010989010A8A010B");
-        var list = TLV.parse(data);
+        final var data = hex("80010181010282010383010484010585010686010787010888010989010A8A010B");
+        final var list = TLV.parse(data);
         Assert.assertEquals(list.size(), 11);
         Assert.assertEquals(list.get(0).tag(), Tag.ber(0x80));
         Assert.assertEquals(list.get(10).tag(), Tag.ber(0x8A));
@@ -88,7 +88,7 @@ class TestTLV {
 
     @Test
     public void testSimpleTag() {
-        var tag = Tag.simple((byte) 0x01);
+        final var tag = Tag.simple((byte) 0x01);
         Assert.assertEquals(tag.bytes(), new byte[] { 0x01 });
         Assert.assertEquals(tag.toString(), "[01]");
 
@@ -97,13 +97,13 @@ class TestTLV {
         Assert.assertThrows(IllegalArgumentException.class, () -> Tag.simple((byte) 0xFF));
 
         // Test construction via factories
-        var tlv = TLV.of(Tag.simple((byte) 0x10), new byte[] { 0x01 });
+        final var tlv = TLV.of(Tag.simple((byte) 0x10), new byte[] { 0x01 });
         Assert.assertEquals(tlv.encode(), hex("10 01 01")); // Simple TLV uses 1 byte length if < 0xFF
     }
 
     @Test
     public void testDGITag() {
-        var tag = Tag.dgi(0x1234);
+        final var tag = Tag.dgi(0x1234);
         Assert.assertEquals(tag.bytes(), new byte[] { 0x12, 0x34 });
         Assert.assertEquals(tag.toString(), "[1234]");
 
@@ -162,7 +162,7 @@ class TestTLV {
 
     @Test
     public void testTLVMethods() {
-        var t = TLV.build("9F45").add("81", hex("01"));
+        final var t = TLV.build("9F45").add("81", hex("01"));
 
         // Children
         Assert.assertTrue(t.hasChildren());
@@ -174,7 +174,7 @@ class TestTLV {
         Assert.assertNull(t.find(Tag.ber("82")));
 
         // Find deeply
-        var deep = TLV.build("7F01").add(t);
+        final var deep = TLV.build("7F01").add(t);
         Assert.assertNotNull(deep.find(Tag.ber("81"), 2)); // Depth sufficient
         Assert.assertNull(deep.find(Tag.ber("81"), 0)); // Depth 0 only checks root? Code: if (maxDepth >= 0 && depth >=
                                                         // maxDepth) return null
@@ -185,19 +185,19 @@ class TestTLV {
         Assert.assertEquals(t.end(), deep);
 
         // New root TLV for exception check
-        var root = TLV.build("9F45");
+        final var root = TLV.build("9F45");
         Assert.assertThrows(IllegalStateException.class, () -> root.end()); // No parent
 
         // Add to primitive
-        var p = TLV.of("81", hex("01"));
+        final var p = TLV.of("81", hex("01"));
         Assert.assertThrows(IllegalStateException.class, () -> p.add("82", hex("02")));
     }
 
     @Test
     public void testEqualsAndHashCode() {
-        var t1 = TLV.of("9F45", hex("01"));
-        var t2 = TLV.of("9F45", hex("01"));
-        var t3 = TLV.of("9F46", hex("01"));
+        final var t1 = TLV.of("9F45", hex("01"));
+        final var t2 = TLV.of("9F45", hex("01"));
+        final var t3 = TLV.of("9F46", hex("01"));
 
         Assert.assertEquals(t1, t1);
         Assert.assertEquals(t1, t2);
@@ -222,8 +222,8 @@ class TestTLV {
     @Test
     public void testParseSimple() {
         // Simple TLV: Tag 01, Length 01, Value 01
-        var data = hex("01 01 01");
-        var list = TLVParser.parse(data, Tag.Type.SIMPLE);
+        final var data = hex("01 01 01");
+        final var list = TLVParser.parse(data, Tag.Type.SIMPLE);
         Assert.assertEquals(list.size(), 1);
         Assert.assertTrue(list.get(0).tag() instanceof SimpleTag);
         Assert.assertEquals(list.get(0).tag(), Tag.simple((byte) 0x01));
@@ -233,8 +233,8 @@ class TestTLV {
     public void testParseDGI() {
         // DGI TLV: Tag 1234, Length 01, Value 01. Length in DGI is Extended (same as
         // Simple)
-        var data = hex("12 34 01 01");
-        var list = TLVParser.parse(data, Tag.Type.DGI);
+        final var data = hex("12 34 01 01");
+        final var list = TLVParser.parse(data, Tag.Type.DGI);
         Assert.assertEquals(list.size(), 1);
         Assert.assertTrue(list.get(0).tag() instanceof DGITag);
         Assert.assertEquals(list.get(0).tag(), Tag.dgi(0x1234));
@@ -243,9 +243,9 @@ class TestTLV {
     @Test
     public void testUtilityConstructors() throws Exception {
         // Cover private constructors for 100% coverage
-        var classes = new Class<?>[] { Len.class, TLVParser.class, TLVEncoder.class };
+        final var classes = new Class<?>[] { Len.class, TLVParser.class, TLVEncoder.class };
         for (Class<?> cls : classes) {
-            var constructor = cls.getDeclaredConstructor();
+            final var constructor = cls.getDeclaredConstructor();
             constructor.setAccessible(true);
             constructor.newInstance();
         }
@@ -280,8 +280,8 @@ class TestTLV {
 
     @Test
     public void testVisualizerRecursive() {
-        var t = TLV.build("E0").add("81", hex("01")).add(TLV.build("E1").add("82", hex("02")));
-        var vis = t.visualize();
+        final var t = TLV.build("E0").add("81", hex("01")).add(TLV.build("E1").add("82", hex("02")));
+        final var vis = t.visualize();
         Assert.assertTrue(vis.size() > 0);
         Assert.assertTrue(vis.stream().anyMatch(s -> s.contains("[E0]")));
         Assert.assertTrue(vis.stream().anyMatch(s -> s.contains("[81]")));
@@ -293,18 +293,18 @@ class TestTLV {
     public void testCoverageCompletion() {
         // TLVParser.parse(byte[], int, int, Type)
         // 00 01 01 -> we want to parse starting at index 1, length 2 (byte 01, byte 01)
-        var data = hex("00 01 01 01");
-        var list = TLVParser.parse(data, 1, 3, Tag.Type.SIMPLE); // Offset 1, Length 3 (01 01 01)
+        final var data = hex("00 01 01 01");
+        final var list = TLVParser.parse(data, 1, 3, Tag.Type.SIMPLE); // Offset 1, Length 3 (01 01 01)
         Assert.assertEquals(list.size(), 1);
         Assert.assertEquals(list.get(0).tag(), Tag.simple((byte) 0x01));
 
         // TLV.of(Tag, Collection)
-        var children = List.of(TLV.of("81", hex("01")));
-        var t = TLV.of(Tag.ber("E0"), children);
+        final var children = List.of(TLV.of("81", hex("01")));
+        final var t = TLV.of(Tag.ber("E0"), children);
         Assert.assertEquals(t.children().size(), 1);
 
         // TLV.find(List, Tag)
-        var list2 = List.of(t);
+        final var list2 = List.of(t);
         Assert.assertTrue(TLV.find(list2, Tag.ber("81")).isPresent());
         Assert.assertTrue(TLV.find(list2, Tag.ber("82")).isEmpty());
 
@@ -313,7 +313,7 @@ class TestTLV {
         Assert.assertEquals(TLV.findAll(list2, Tag.ber("82")).size(), 0);
 
         // TLV.add(byte[], byte[])
-        var t2 = TLV.build("E0").add(hex("81"), hex("01"));
+        final var t2 = TLV.build("E0").add(hex("81"), hex("01"));
         Assert.assertTrue(t2.hasChildren());
 
         // Tag default methods or missing bits?
@@ -326,19 +326,19 @@ class TestTLV {
     @Test
     public void testTLVWrappers() {
         // TLV.parse(ByteBuffer)
-        var data = hex("9F 45 01 01");
-        var list = TLV.parse(java.nio.ByteBuffer.wrap(data));
+        final var data = hex("9F 45 01 01");
+        final var list = TLV.parse(java.nio.ByteBuffer.wrap(data));
         Assert.assertEquals(list.size(), 1);
         Assert.assertEquals(list.get(0).tag(), Tag.ber("9F45"));
 
         // TLV.parseSingle(ByteBuffer)
-        var t = TLV.parseSingle(java.nio.ByteBuffer.wrap(data));
+        final var t = TLV.parseSingle(java.nio.ByteBuffer.wrap(data));
         Assert.assertEquals(t.tag(), Tag.ber("9F45"));
 
         // TLV.of(Tag, TLV...) varargs
-        var child1 = TLV.of("81", hex("01"));
-        var child2 = TLV.of("82", hex("02"));
-        var parent = TLV.of(Tag.ber("E0"), child1, child2);
+        final var child1 = TLV.of("81", hex("01"));
+        final var child2 = TLV.of("82", hex("02"));
+        final var parent = TLV.of(Tag.ber("E0"), child1, child2);
         Assert.assertEquals(parent.children().size(), 2);
     }
 
@@ -346,32 +346,32 @@ class TestTLV {
     public void testPackagePrivateConstructor() {
         // Cover the package-private constructor TLV(Tag, byte[], List<TLV>)
         // which delegates to the 4-arg private one.
-        var t = new TLV(Tag.ber("9F01"), hex("01"), null);
+        final var t = new TLV(Tag.ber("9F01"), hex("01"), null);
         Assert.assertEquals(t.value().length, 1);
     }
 
     @Test
     public void testFindAllRoot() {
-        var t = TLV.of("9F45", hex("01"));
-        var results = t.findAll(Tag.ber("9F45"));
+        final var t = TLV.of("9F45", hex("01"));
+        final var results = t.findAll(Tag.ber("9F45"));
         Assert.assertEquals(results.size(), 1);
         Assert.assertEquals(results.get(0), t);
     }
 
     @Test
     public void testEqualsDeep() {
-        var t1 = TLV.of("9F45", hex("01"));
-        var t2 = TLV.of("9F45", hex("02")); // Diff value
+        final var t1 = TLV.of("9F45", hex("01"));
+        final var t2 = TLV.of("9F45", hex("02")); // Diff value
         Assert.assertNotEquals(t1, t2);
 
-        var c1 = TLV.of(Tag.ber("E0"), t1);
-        var c2 = TLV.of(Tag.ber("E0"), t2); // Diff child
+        final var c1 = TLV.of(Tag.ber("E0"), t1);
+        final var c2 = TLV.of(Tag.ber("E0"), t2); // Diff child
         Assert.assertNotEquals(c1, c2);
     }
 
     @Test
     public void testOfWithNullChild() {
-        java.util.List<TLV> list = new java.util.ArrayList<>();
+        final var list = new java.util.ArrayList<TLV>();
         list.add(null);
         Assert.assertThrows(NullPointerException.class, () -> TLV.of(Tag.ber("E0"), list));
     }
@@ -383,7 +383,7 @@ class TestTLV {
         // This exercises the `for` loop in validate() which runs for middle bytes.
         // For a 2-byte tag like 9F 01, loop i=1; i<1 is false. Loop doesn't run.
         // For 3-byte tag, i=1; i<2. Loop runs once.
-        var tag = new BERTag(hex("9F 81 01"));
+        final var tag = new BERTag(hex("9F 81 01"));
         Assert.assertNotNull(tag);
         Assert.assertEquals(tag.bytes().length, 3);
     }
@@ -395,8 +395,8 @@ class TestTLV {
         // but TLV.of(Tag, byte[]) makes value != null.
         // TLV.build(Tag) makes value == null.
 
-        var t1 = TLV.of("9F01", hex("01")); // value != null
-        var t2 = TLV.build("9F01"); // value == null
+        final var t1 = TLV.of("9F01", hex("01")); // value != null
+        final var t2 = TLV.build("9F01"); // value == null
 
         // This hits Arrays.equals(value, other.value) -> Arrays.equals(byte[], null) ->
         // false
@@ -410,34 +410,34 @@ class TestTLV {
     public void testInvalidBerTagMiddleByte() {
         // 9F 01 01 -> 2nd byte 01 missing 0x80 bit.
         // Should throw "Tag continuation byte missing 0x80 bit"
-        var data = hex("9F 01 01");
+        final var data = hex("9F 01 01");
         Assert.assertThrows(IllegalArgumentException.class, () -> new BERTag(data));
     }
 
     @Test
     public void testEqualsSystematic() {
         // A && B && C && D
-        var t1 = TLV.of("9F01", hex("01"));
+        final var t1 = TLV.of("9F01", hex("01"));
 
         // A false: instanceof
         Assert.assertNotEquals(t1, "string");
 
         // A true, B false: tag mismatch
-        var t2 = TLV.of("9F02", hex("01"));
+        final var t2 = TLV.of("9F02", hex("01"));
         Assert.assertNotEquals(t1, t2);
 
         // A true, B true, C false: value mismatch
-        var t3 = TLV.of("9F01", hex("02"));
+        final var t3 = TLV.of("9F01", hex("02"));
         Assert.assertNotEquals(t1, t3);
 
         // A true, B true, C true, D false: children mismatch
         // Need constructed TLVs for this.
-        var p1 = TLV.build("E0").add(t1);
-        var p2 = TLV.build("E0").add(t3); // t3 has diff value, so child is diff
+        final var p1 = TLV.build("E0").add(t1);
+        final var p2 = TLV.build("E0").add(t3); // t3 has diff value, so child is diff
         Assert.assertNotEquals(p1, p2);
 
         // All true
-        var p3 = TLV.build("E0").add(t1);
+        final var p3 = TLV.build("E0").add(t1);
         Assert.assertEquals(p1, p3);
     }
 
@@ -451,7 +451,7 @@ class TestTLV {
         // i=4 Loop ends.
         // new BERTag called. Last byte 81 has high bit set. Throws.
         // This covers the "loop finishes without break" path in parse()
-        var data = hex("9F 81 81 81");
+        final var data = hex("9F 81 81 81");
         Assert.assertThrows(IllegalArgumentException.class, () -> BERTag.parse(java.nio.ByteBuffer.wrap(data)));
     }
 
@@ -467,7 +467,7 @@ class TestTLV {
 
     @Test
     public void testEqualsObject() {
-        var t = TLV.build("9F01");
+        final var t = TLV.build("9F01");
         Assert.assertNotEquals(t, new Object());
     }
 }

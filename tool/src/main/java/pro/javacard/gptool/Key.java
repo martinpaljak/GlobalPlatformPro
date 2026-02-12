@@ -46,14 +46,14 @@ import java.util.Optional;
 
 // Helper to convert command line parameters to meaningful key objects.
 // XXX: unfortunate name and unfortunate implementation.
-public class Key {
+public final class Key {
     java.security.Key symmetricKey;
     PublicKey publicKey;
     PrivateKey privateKey;
 
     String s;
 
-    private Key(String s, java.security.Key sym, PublicKey publicKey, PrivateKey privateKey) {
+    private Key(final String s, final java.security.Key sym, final PublicKey publicKey, final PrivateKey privateKey) {
         this.symmetricKey = sym;
         this.publicKey = publicKey;
         this.privateKey = privateKey;
@@ -72,14 +72,14 @@ public class Key {
         return Optional.ofNullable(privateKey);
     }
 
-    public static Key valueOf(String v) {
-        Path p = Paths.get(v);
+    public static Key valueOf(final String v) {
+        final Path p = Paths.get(v);
         if (Files.isReadable(p)) {
             try (InputStream inputStream = Files.newInputStream(p)) {
-                try (PEMParser pem = new PEMParser(new InputStreamReader(inputStream, StandardCharsets.US_ASCII))) {
-                    Object ohh = pem.readObject();
+                try (var pem = new PEMParser(new InputStreamReader(inputStream, StandardCharsets.US_ASCII))) {
+                    final var ohh = pem.readObject();
                     if (ohh instanceof PEMKeyPair kp) {
-                        KeyPair keyPair = new JcaPEMKeyConverter().getKeyPair(kp);
+                        final var keyPair = new JcaPEMKeyConverter().getKeyPair(kp);
                         return new Key(v, null, keyPair.getPublic(), keyPair.getPrivate());
                     } else if (ohh instanceof SubjectPublicKeyInfo spki) {
                         return new Key(v, null, new JcaPEMKeyConverter().getPublicKey(spki), null);
@@ -90,46 +90,54 @@ public class Key {
                             throw new IllegalArgumentException("Can not read certificate from PEM: " + ce.getMessage());
                         }
                     } else if (ohh instanceof PrivateKeyInfo pki) {
-                        PrivateKey pk = new JcaPEMKeyConverter().getPrivateKey(pki);
+                        final var pk = new JcaPEMKeyConverter().getPrivateKey(pki);
                         // TODO: do this for other key types as well
                         if (pk instanceof RSAPrivateKey rsaKey) {
-                            BigInteger modulus = rsaKey.getModulus();
-                            BigInteger exponent = rsaKey.getPublicExponent();
-                            PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(new RSAPublicKeySpec(modulus, exponent));
+                            final var modulus = rsaKey.getModulus();
+                            final var exponent = rsaKey.getPublicExponent();
+                            final var publicKey = KeyFactory.getInstance("RSA").generatePublic(new RSAPublicKeySpec(modulus, exponent));
                             return new Key(v, null, publicKey, pk);
                         } else if (pk instanceof RSAPrivateCrtKey rsaCrtKey) {
-                            BigInteger modulus = rsaCrtKey.getModulus();
-                            BigInteger exponent = rsaCrtKey.getPublicExponent();
-                            PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(new RSAPublicKeySpec(modulus, exponent));
+                            final var modulus = rsaCrtKey.getModulus();
+                            final var exponent = rsaCrtKey.getPublicExponent();
+                            final var publicKey = KeyFactory.getInstance("RSA").generatePublic(new RSAPublicKeySpec(modulus, exponent));
                             return new Key(v, null, publicKey, pk);
                         } else {
                             return new Key(v, null, null, pk);
                         }
-                    } else throw new IllegalArgumentException("Can not read PEM");
+                    } else {
+                        throw new IllegalArgumentException("Can not read PEM");
+                    }
                 }
             } catch (IOException | GeneralSecurityException e) {
                 throw new IllegalArgumentException("Could not read PEM: " + e.getMessage(), e);
             }
         } else {
             if (v.startsWith("aes:")) {
-                byte[] bv = HexUtils.hex2bin(v.substring(4));
+                final byte[] bv = HexUtils.hex2bin(v.substring(4));
                 if (bv.length == 16 || bv.length == 24 || bv.length == 32) {
                     return new Key(v, GPCrypto.aeskey(bv), null, null);
-                } else throw new IllegalArgumentException("Invalid key length: " + bv.length);
+                } else {
+                    throw new IllegalArgumentException("Invalid key length: " + bv.length);
+                }
 
             } else if (v.startsWith("3des:")) {
-                byte[] bv = HexUtils.hex2bin(v.substring(5));
+                final byte[] bv = HexUtils.hex2bin(v.substring(5));
                 if (bv.length == 16) {
                     return new Key(v, GPCrypto.des3key(bv), null, null);
-                } else throw new IllegalArgumentException("Invalid key length: " + bv.length);
+                } else {
+                    throw new IllegalArgumentException("Invalid key length: " + bv.length);
+                }
             } else {
-                byte[] k = HexUtils.hex2bin(v);
+                final byte[] k = HexUtils.hex2bin(v);
                 if (k.length == 24 || k.length == 32) {
                     return new Key(v, GPCrypto.aeskey(k), null, null);
                 } else if (k.length == 16) {
                     return new Key(v, GPCrypto.des3key(k), null, null);
 
-                } else throw new IllegalArgumentException("Invalid key length: " + k.length);
+                } else {
+                    throw new IllegalArgumentException("Invalid key length: " + k.length);
+                }
             }
             // TODO: public keys as curve points.
         }

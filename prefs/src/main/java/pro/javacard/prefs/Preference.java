@@ -51,7 +51,7 @@ public sealed interface Preference<V> permits Preference.Default, Preference.Par
     }
 
     record Default<V>(String name, Type type, V defaultValue, boolean readonly,
-                      Predicate<V> validator) implements Preference<V> {
+            Predicate<V> validator) implements Preference<V> {
         public Default {
             Objects.requireNonNull(defaultValue, "Must have a sane default value!");
             Objects.requireNonNull(validator, "Must have a validator!");
@@ -59,8 +59,6 @@ public sealed interface Preference<V> permits Preference.Default, Preference.Par
     }
 
     record Parameter<V>(String name, Type type, boolean readonly, Predicate<V> validator) implements Preference<V> {
-        public Parameter {
-            Objects.requireNonNull(validator, "Must have a validator!");
-        }
+        public Parameter { Objects.requireNonNull(validator, "Must have a validator!"); }
     }
 }

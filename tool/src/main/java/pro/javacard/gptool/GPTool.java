@@ -75,7 +75,7 @@ public final class GPTool extends GPCommandLineInterface {
     static final String ENV_GP_PCSC_EXCLUSIVE = "GP_PCSC_EXCLUSIVE";
     static final String ENV_GP_PCSC_TRANSACT = "GP_PCSC_TRANSACT";
 
-    static void setupLogging(OptionSet args) {
+    static void setupLogging(final OptionSet args) {
         // Set up slf4j simple in a way that pleases us
         System.setProperty("org.slf4j.simpleLogger.showThreadName", "false");
         System.setProperty("org.slf4j.simpleLogger.levelInBrackets", "true");
@@ -86,8 +86,9 @@ public final class GPTool extends GPCommandLineInterface {
             isVerbose = true;
             System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "info");
         }
-        if (args.has(OPT_DEBUG) && args.has(OPT_VERBOSE))
+        if (args.has(OPT_DEBUG) && args.has(OPT_VERBOSE)) {
             System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "debug");
+        }
         if (args.has(OPT_DEBUG) && System.getenv().containsKey(ENV_GP_TRACE)) {
             System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "trace");
             isTrace = true;
@@ -95,23 +96,24 @@ public final class GPTool extends GPCommandLineInterface {
     }
 
     // Explicitly public, to not forget the need for apdu4j
-    public GPTool() {
-    }
+    public GPTool() {}
 
     private static boolean preamble = true;
 
-    private static void showPreamble(String[] argv, OptionSet args) {
+    private static void showPreamble(final String[] argv, final OptionSet args) {
         if (preamble) {
             // dump relevant environment and command line variables in verbose+ mode
             if (args.has(OPT_VERBOSE) || args.has(OPT_DEBUG) || args.has(OPT_INFO)) {
-                List<String> gpenv = System.getenv().entrySet().stream().filter(e -> e.getKey().startsWith("GP_")).map(e -> String.format("%s=%s", e.getKey(), e.getValue())).collect(Collectors.toList());
-                if (gpenv.size() > 0)
+                final var gpenv = System.getenv().entrySet().stream().filter(e -> e.getKey().startsWith("GP_"))
+                        .map(e -> "%s=%s".formatted(e.getKey(), e.getValue())).collect(Collectors.toList());
+                if (gpenv.size() > 0) {
                     System.out.println("# " + String.join(" ", gpenv));
+                }
                 System.out.println("# gp " + String.join(" ", argv));
             }
             if (args.has(OPT_VERBOSE) || args.has(OPT_DEBUG) || args.has(OPT_INFO) || args.has(OPT_VERSION)) {
-                var ver = Optional.ofNullable(GPTool.class.getPackage().getImplementationVersion()).orElse("development");
-                var hash = selfhash();
+                final var ver = Optional.ofNullable(GPTool.class.getPackage().getImplementationVersion()).orElse("development");
+                final var hash = selfhash();
                 if (hash != null) {
                     System.out.printf("SHA256 = %s%n", HexFormat.of().formatHex(hash));
                 }
@@ -124,11 +126,11 @@ public final class GPTool extends GPCommandLineInterface {
     }
 
     static byte[] selfhash() {
-        ProtectionDomain pd = GPTool.class.getProtectionDomain();
+        final var pd = GPTool.class.getProtectionDomain();
         if (pd != null && pd.getCodeSource() != null && pd.getCodeSource().getLocation() != null) {
             try {
-                var location = pd.getCodeSource().getLocation();
-                Path p = Paths.get(location.toURI());
+                final var location = pd.getCodeSource().getLocation();
+                final Path p = Paths.get(location.toURI());
                 if (Files.isDirectory(p)) {
                     // probably development
                     return null;
@@ -142,55 +144,58 @@ public final class GPTool extends GPCommandLineInterface {
     }
 
     // To keep basic gp.jar together with apdu4j app, this is just a minimalist wrapper
-    public static void main(String[] argv) {
+    public static void main(final String[] argv) {
         Card c = null;
-        int ret = 1;
+        var ret = 1;
 
-        boolean resetOnDisconnect = Boolean.parseBoolean(System.getenv().getOrDefault(ENV_GP_PCSC_RESET, "false"));
-        boolean exclusive = Boolean.parseBoolean(System.getenv().getOrDefault(ENV_GP_PCSC_EXCLUSIVE, "false"));
-        boolean transact = Boolean.parseBoolean(System.getenv().getOrDefault(ENV_GP_PCSC_TRANSACT, "true"));
+        final var resetOnDisconnect = Boolean.parseBoolean(System.getenv().getOrDefault(ENV_GP_PCSC_RESET, "false"));
+        var exclusive = Boolean.parseBoolean(System.getenv().getOrDefault(ENV_GP_PCSC_EXCLUSIVE, "false"));
+        final var transact = Boolean.parseBoolean(System.getenv().getOrDefault(ENV_GP_PCSC_TRANSACT, "true"));
 
         try {
-            OptionSet args = parseArguments(argv);
+            final OptionSet args = parseArguments(argv);
             setupLogging(args);
             showPreamble(argv, args);
 
-            if (onlyHasArg(args, OPT_VERSION))
+            if (onlyHasArg(args, OPT_VERSION)) {
                 return;
+            }
 
             // FIXME: have "cardlessCommands()"
             if (onlyHasArg(args, OPT_CAP)) {
-                CAPFile cap = CAPFile.fromFile(args.valueOf(OPT_CAP).toPath());
+                final CAPFile cap = CAPFile.fromFile(args.valueOf(OPT_CAP).toPath());
                 cap.dump(System.out);
                 return;
             }
 
-            TerminalManager terminalManager = TerminalManager.getDefault();
-            List<PCSCReader> readers = TerminalManager.listPCSC(terminalManager.terminals().list(), null, false);
+            final TerminalManager terminalManager = TerminalManager.getDefault();
+            final var readers = TerminalManager.listPCSC(terminalManager.terminals().list(), null, false);
 
             if (args.has(OPT_READER) && !args.hasArgument(OPT_READER)) {
                 System.out.println("Available readers:");
-                readers.forEach((r) -> System.out.printf("- %s%n", r.getName()));
+                readers.forEach(r -> System.out.printf("- %s%n", r.getName()));
             }
-            String useReader = args.hasArgument(OPT_READER) ? args.valueOf(OPT_READER) : System.getenv(ENV_GP_READER);
-            String ignoreReader = System.getenv(ENV_GP_READER_IGNORE);
+            final String useReader = args.hasArgument(OPT_READER) ? args.valueOf(OPT_READER) : System.getenv(ENV_GP_READER);
+            final String ignoreReader = System.getenv(ENV_GP_READER_IGNORE);
 
             // FIXME: simplify
-            Optional<CardTerminal> reader = TerminalManager.getLucky(TerminalManager.dwimify(readers, useReader, ignoreReader), terminalManager.terminals());
+            var reader = TerminalManager.getLucky(TerminalManager.dwimify(readers, useReader, ignoreReader), terminalManager.terminals());
 
             if (reader.isEmpty()) {
                 System.err.println("Specify reader with -r/$GP_READER; available readers:");
-                readers.forEach((r) -> System.err.printf("- %s%n", r.getName()));
+                readers.forEach(r -> System.err.printf("- %s%n", r.getName()));
                 System.exit(1);
             }
-            if (args.has(OPT_PCSC_EXCLUSIVE))
+            if (args.has(OPT_PCSC_EXCLUSIVE)) {
                 exclusive = true;
+            }
 
             reader = reader.map(e -> args.has(OPT_DEBUG) ? LoggingCardTerminal.getInstance(e) : e);
-            String protocol = exclusive ? "EXCLUSIVE;*" : "*";
+            final String protocol = exclusive ? "EXCLUSIVE;*" : "*";
             c = reader.get().connect(protocol);
-            if (transact)
+            if (transact) {
                 c.beginExclusive();
+            }
             ret = new GPTool().run(CardBIBO.wrap(c), argv);
         } catch (IllegalArgumentException e) {
             System.err.println("Invalid argument: " + e.getMessage());
@@ -220,35 +225,36 @@ public final class GPTool extends GPCommandLineInterface {
     }
 
     static boolean onlyHasArg(OptionSet args, OptionSpec<?> s) {
-        long needle = args.specs().stream().filter(args::has).count();
-        long hay = args.specs().stream().filter(e -> args.has(e) && e != s).count();
+        final var needle = args.specs().stream().filter(args::has).count();
+        final var hay = args.specs().stream().filter(e -> args.has(e) && e != s).count();
         return needle == 1 && hay == 0;
     }
 
     // Main entry point when called with a card connection
-    public int run(BIBO bibo, String[] argv) {
+    public int run(final BIBO bibo, final String[] argv) {
         try {
-            OptionSet args = parseArguments(argv);
+            final OptionSet args = parseArguments(argv);
             setupLogging(args);
 
             showPreamble(argv, args);
-            if (onlyHasArg(args, OPT_VERSION))
+            if (onlyHasArg(args, OPT_VERSION)) {
                 return 0;
+            }
 
             // Load a CAP file, if specified
             CAPFile cap = null;
             if (args.has(OPT_CAP)) {
-                File capfile = args.valueOf(OPT_CAP);
+                final var capfile = args.valueOf(OPT_CAP);
                 cap = CAPFile.fromFile(capfile.toPath());
             }
 
             // Now actually talk to possible terminals
-            APDUBIBO channel = new APDUBIBO(bibo);
+            var channel = new APDUBIBO(bibo);
             // Run PACE to enable contactless interface
             if (args.has(OPT_PACE) || args.has(OPT_PACE_SM)) {
-                byte[] aid = args.has(OPT_PACE) ? args.valueOf(OPT_PACE).getBytes() : args.valueOf(OPT_PACE_SM).getBytes();
+                final byte[] aid = args.has(OPT_PACE) ? args.valueOf(OPT_PACE).getBytes() : args.valueOf(OPT_PACE_SM).getBytes();
                 try {
-                    PACE pace = PACE.executePACE(channel, aid, args.valueOf(OPT_CAN), args.valueOf(OPT_PACE_CURVE));
+                    final PACE pace = PACE.executePACE(channel, aid, args.valueOf(OPT_CAN), args.valueOf(OPT_PACE_CURVE));
                     if (args.has(OPT_PACE_SM)) {
                         channel = new APDUBIBO(new AESSecureChannel(pace.getENC(), pace.getMAC(), bibo));
                     }
@@ -272,14 +278,15 @@ public final class GPTool extends GPCommandLineInterface {
                     channel.transmit(new CommandAPDU(0x00, GPSession.INS_SELECT, 0x04, 0x00, target.getBytes()));
                 }
                 for (byte[] s : args.valuesOf(OPT_APDU).stream().map(APDUParsers::stringToAPDU).collect(Collectors.toList())) {
-                    CommandAPDU c = new CommandAPDU(s);
-                    ResponseAPDU r = channel.transmit(c);
-                    if (r.getSW() == 0x9000 && r.getData().length > 0)
+                    final var c = new CommandAPDU(s);
+                    final var r = channel.transmit(c);
+                    if (r.getSW() == 0x9000 && r.getData().length > 0) {
                         System.out.println(APDUParsers.visualize_structure(r.getData()));
+                    }
                 }
             }
 
-            Map<String, String> env = System.getenv();
+            final Map<String, String> env = System.getenv();
 
             // GlobalPlatform specific
             final EnumSet<APDUMode> mode = GPSession.defaultMode.clone();
@@ -292,8 +299,8 @@ public final class GPTool extends GPCommandLineInterface {
             if (args.has(OPT_CONNECT)) {
                 gp = GPSession.connect(channel, args.valueOf(OPT_CONNECT));
             } else if (env.containsKey(ENV_GP_AID)) {
-                AID aid = AID.fromString(env.get(ENV_GP_AID));
-                verbose(String.format("Connecting to $%s (%s)", ENV_GP_AID, aid));
+                final AID aid = AID.fromString(env.get(ENV_GP_AID));
+                verbose("Connecting to $%s (%s)".formatted(ENV_GP_AID, aid));
                 gp = GPSession.connect(channel, aid);
             } else {
                 gp = GPSession.discover(channel);
@@ -306,20 +313,20 @@ public final class GPTool extends GPCommandLineInterface {
 
             // Delegated management
             if (args.has(OPT_DM_KEY)) {
-                Optional<PrivateKey> dmkey = args.valueOf(OPT_DM_KEY).getPrivate();
+                final Optional<PrivateKey> dmkey = args.valueOf(OPT_DM_KEY).getPrivate();
 
                 if (dmkey.isEmpty() || !(dmkey.get() instanceof RSAPrivateKey rsaKey)) {
                     throw new IllegalArgumentException("Only RSA private keys are supported for DM");
                 }
                 gp.setTokenizer(DMTokenizer.forPrivateKey(rsaKey));
             } else if (args.has(OPT_DM_TOKEN)) {
-                byte[] token = args.valueOf(OPT_DM_TOKEN).value();
+                final var token = args.valueOf(OPT_DM_TOKEN).value();
                 gp.setTokenizer(DMTokenizer.forToken(token));
             }
 
             if (args.has(OPT_RECEIPT_KEY)) {
                 // XXX: refactor receipts.
-                ReceiptVerifier verifier = new ReceiptVerifier.AESReceiptVerifier(args.valueOf(OPT_RECEIPT_KEY).v(), args.has(OPT_FORCE));
+                final var verifier = new ReceiptVerifier.AESReceiptVerifier(args.valueOf(OPT_RECEIPT_KEY).v(), args.has(OPT_FORCE));
                 gp.setVerifier(verifier);
             }
 
@@ -331,25 +338,28 @@ public final class GPTool extends GPCommandLineInterface {
             // Normally assume a single master key
             final GPCardKeys keys;
 
-            Optional<GPCardKeys> key = parseKeySpec(args.valueOf(OPT_KEY));
+            final var key = parseKeySpec(args.valueOf(OPT_KEY));
             if (key.isPresent()) {
                 // keys come from custom or plaintext provider
                 keys = key.get();
             } else {
-                Optional<PlaintextKeys> envKeys = PlaintextKeys.fromEnvironment();
+                final Optional<PlaintextKeys> envKeys = PlaintextKeys.fromEnvironment();
 
                 final Optional<PlaintextKeys> cliKeys;
                 if (args.has(OPT_KEY_ENC) && args.has(OPT_KEY_MAC) && args.has(OPT_KEY_DEK)) {
                     cliKeys = Optional.of(PlaintextKeys.fromKeys(args.valueOf(OPT_KEY_ENC).v(), args.valueOf(OPT_KEY_MAC).v(), args.valueOf(OPT_KEY_DEK).v()));
-                } else cliKeys = Optional.empty();
+                } else {
+                    cliKeys = Optional.empty();
+                }
                 if (envKeys.isPresent() && cliKeys.isPresent()) {
                     System.err.println("# Warning: keys set on command line shadow environment!");
                 } else if (envKeys.isEmpty() && cliKeys.isEmpty()) {
                     if (args.has(OPT_SAD)) {
                         System.err.println("Error: no keys given");
                         return 1;
-                    } else
+                    } else {
                         System.err.println("# Warning: no keys given, defaulting to " + HexUtils.bin2hex(PlaintextKeys.DEFAULT_KEY()));
+                    }
                 }
                 keys = cliKeys.or(() -> envKeys).orElse(PlaintextKeys.defaultKey());
             }
@@ -366,9 +376,10 @@ public final class GPTool extends GPCommandLineInterface {
             }
 
             if (args.has(OPT_PROFILE)) {
-                Optional<GPCardProfile> p = GPCardProfile.fromName(args.valueOf(OPT_PROFILE));
+                final var p = GPCardProfile.fromName(args.valueOf(OPT_PROFILE));
                 if (p.isEmpty()) {
-                    System.err.printf("Unknown profile '%s', known profiles: %s%n", args.valueOf(OPT_PROFILE), String.join(", ", GPCardProfile.profiles.keySet()));
+                    System.err.printf("Unknown profile '%s', known profiles: %s%n", args.valueOf(OPT_PROFILE),
+                            String.join(", ", GPCardProfile.profiles.keySet()));
                     return 1;
                 }
                 gp.setProfile(p.get());
@@ -382,15 +393,16 @@ public final class GPTool extends GPCommandLineInterface {
                     // S16 will be gracefully tried if default (S8) returns wrong length, but can be forced by challenge length
                     gp.openSecureChannel(keys, null, args.has(OPT_S16) ? GPCrypto.random(16) : null, mode);
                 } catch (GPException e) {
-                    System.err.println("Failed to open secure channel: " + e.getMessage() + "\nRead more from https://github.com/martinpaljak/GlobalPlatformPro/wiki/Keys");
+                    System.err.println("Failed to open secure channel: " + e.getMessage()
+                            + "\nRead more from https://github.com/martinpaljak/GlobalPlatformPro/wiki/Keys");
                     return 1;
                 }
 
                 // --secure-apdu or -s
                 if (args.has(OPT_SECURE_APDU)) {
                     for (byte[] s : args.valuesOf(OPT_SECURE_APDU).stream().map(APDUParsers::stringToAPDU).collect(Collectors.toList())) {
-                        CommandAPDU c = new CommandAPDU(s);
-                        ResponseAPDU r = gp.transmit(c);
+                        final var c = new CommandAPDU(s);
+                        final var r = gp.transmit(c);
                         if (r.getData().length > 0 && r.getSW() == 0x9000) {
                             System.out.println(APDUParsers.visualize_structure(r.getData()));
                         }
@@ -399,26 +411,27 @@ public final class GPTool extends GPCommandLineInterface {
 
                 // --delete <aid>
                 if (args.has(OPT_DELETE)) {
-                    if (!args.has(OPT_FORCE) && !args.has(OPT_SAD))
+                    if (!args.has(OPT_FORCE) && !args.has(OPT_SAD)) {
                         warnIfNoDelegatedManagement(gp);
+                    }
 
-                    GPRegistry reg = gp.getRegistry();
+                    final var reg = gp.getRegistry();
 
                     // DWIM: assume that default selected is the one to be deleted
                     if (args.has(OPT_DEFAULT)) {
-                        Optional<AID> def = reg.getDefaultSelectedAID();
+                        final Optional<AID> def = reg.getDefaultSelectedAID();
                         if (def.isPresent()) {
                             gp.deleteAID(def.get(), false);
                         } else {
                             System.err.println("Could not identify default selected application!");
                         }
                     }
-                    boolean failure = false;
-                    List<AID> aidList = new ArrayList<>(args.valuesOf(OPT_DELETE));
+                    var failure = false;
+                    final var aidList = new ArrayList<AID>(args.valuesOf(OPT_DELETE));
                     for (AID aid : aidList) {
                         try {
                             // If the AID represents a package and force is enabled, delete deps as well
-                            boolean deleteDeps = reg.allPackageAIDs().contains(aid) && args.has(OPT_FORCE);
+                            final var deleteDeps = reg.allPackageAIDs().contains(aid) && args.has(OPT_FORCE);
                             gp.deleteAID(aid, deleteDeps);
                         } catch (GPException e) {
                             failure = true;
@@ -435,18 +448,20 @@ public final class GPTool extends GPCommandLineInterface {
                         }
                     }
                     // #142: Behave like rm -f: fail if there was an error, unless -f
-                    if (failure && !args.has(OPT_FORCE))
+                    if (failure && !args.has(OPT_FORCE)) {
                         return 1;
+                    }
                 }
 
                 // --uninstall <cap>
                 if (args.has(OPT_UNINSTALL)) {
-                    if (!args.has(OPT_FORCE) && !args.has(OPT_SAD))
+                    if (!args.has(OPT_FORCE) && !args.has(OPT_SAD)) {
                         warnIfNoDelegatedManagement(gp);
-                    List<CAPFile> caps = getCapFileList(args, OPT_UNINSTALL);
-                    boolean failure = false;
+                    }
+                    final var caps = getCapFileList(args, OPT_UNINSTALL);
+                    var failure = false;
                     for (CAPFile instcap : caps) {
-                        AID aid = instcap.getPackageAID();
+                        final var aid = instcap.getPackageAID();
                         // Simple warning
                         if (!gp.getRegistry().allAIDs().contains(aid)) {
                             System.err.println(aid + " is not present on card!");
@@ -459,17 +474,19 @@ public final class GPTool extends GPCommandLineInterface {
                         }
                     }
                     // #142: Behave like rm -f: fail if there was an error, unless -f
-                    if (failure && !args.has(OPT_FORCE))
+                    if (failure && !args.has(OPT_FORCE)) {
                         return 1;
+                    }
                 }
 
                 // --load <applet.cap>
                 if (args.has(OPT_LOAD)) {
-                    if (!args.has(OPT_FORCE) && !args.has(OPT_SAD))
+                    if (!args.has(OPT_FORCE) && !args.has(OPT_SAD)) {
                         warnIfNoDelegatedManagement(gp);
-                    List<CAPFile> caps = getCapFileList(args, OPT_LOAD);
+                    }
+                    final var caps = getCapFileList(args, OPT_LOAD);
 
-                    GPRegistry reg = gp.getRegistry();
+                    final var reg = gp.getRegistry();
                     // Remove existing load file if needed
                     if (args.has(OPT_FORCE)) {
                         for (CAPFile loadcap : caps) {
@@ -491,10 +508,11 @@ public final class GPTool extends GPCommandLineInterface {
                 // Load a public key or a plaintext symmetric key (for DAP or DM purposes)
                 if (args.has(OPT_PUT_KEY) || args.has(OPT_REPLACE_KEY)) {
                     final Key kv = args.has(OPT_PUT_KEY) ? args.valueOf(OPT_PUT_KEY) : args.valueOf(OPT_REPLACE_KEY);
-                    final int keyVersion = args.valueOf(OPT_NEW_KEY_VERSION);
+                    final var keyVersion = args.valueOf(OPT_NEW_KEY_VERSION);
                     if (keyVersion < 0x01 || keyVersion > 0x7F) {
                         System.err.println("Invalid key version: " + GPUtils.intString(keyVersion) + ", some possible values:");
-                        System.err.println(GPKeyInfo.keyVersionPurposes.entrySet().stream().map(e -> String.format("%s - %s", GPUtils.intString(e.getKey()), e.getValue())).collect(Collectors.joining("\n")));
+                        System.err.println(GPKeyInfo.keyVersionPurposes.entrySet().stream()
+                                .map(e -> "%s - %s".formatted(GPUtils.intString(e.getKey()), e.getValue())).collect(Collectors.joining("\n")));
                         throw new IllegalArgumentException("Invalid key version: " + GPUtils.intString(keyVersion));
                     }
 
@@ -502,11 +520,11 @@ public final class GPTool extends GPCommandLineInterface {
                     // WORKAROUND: some cards reject the command if actually trying to replace existing key.
                     // List<GPKeyInfo> current = gp.getKeyInfoTemplate();
                     // boolean replace = current.stream().filter(p -> p.getVersion() == keyVersion).count() == 1 || args.has(OPT_REPLACE_KEY);
-                    boolean replace = args.has(OPT_REPLACE_KEY);
+                    final var replace = args.has(OPT_REPLACE_KEY);
                     if (kv.getPublic().isPresent()) {
                         gp.putKey(kv.getPublic().get(), keyVersion, replace);
                     } else if (kv.getSymmetric().isPresent()) {
-                        java.security.Key k = kv.getSymmetric().get();
+                        final var k = kv.getSymmetric().get();
                         gp.putKey(k, keyVersion, replace);
                     } else {
                         throw new IllegalArgumentException("Only public and symmetric keys are supported for put-key");
@@ -514,14 +532,15 @@ public final class GPTool extends GPCommandLineInterface {
                 }
 
                 if (args.has(OPT_INSTALL_ONLY)) {
-                    if (!args.has(OPT_FORCE) && !args.has(OPT_SAD))
+                    if (!args.has(OPT_FORCE) && !args.has(OPT_SAD)) {
                         warnIfNoDelegatedManagement(gp);
+                    }
 
-                    GPRegistry registry = gp.getRegistry();
-                    InstallDefinition dwim = InstallDefinition.fromOptions(registry, args);
+                    final var registry = gp.getRegistry();
+                    final InstallDefinition dwim = InstallDefinition.fromOptions(registry, args);
 
-                    Set<Privilege> privs = getPrivileges(args);
-                    byte[] params = args.has(OPT_PARAMS) ? args.valueOf(OPT_PARAMS).value() : new byte[0];
+                    final var privs = getPrivileges(args);
+                    final byte[] params = args.has(OPT_PARAMS) ? args.valueOf(OPT_PARAMS).value() : new byte[0];
 
                     // warn
                     if (registry.allAppletAIDs().contains(dwim.instance)) {
@@ -533,17 +552,17 @@ public final class GPTool extends GPCommandLineInterface {
 
                 // --install <applet.cap> (--applet <aid> --create <aid> --privs <privs> --params <params>)
                 if (args.has(OPT_INSTALL)) {
-                    if (!args.has(OPT_FORCE) && !args.has(OPT_SAD))
+                    if (!args.has(OPT_FORCE) && !args.has(OPT_SAD)) {
                         warnIfNoDelegatedManagement(gp);
+                    }
 
-
-                    CAPFile capfile = CAPFile.fromFile(Path.of(args.valueOf(OPT_INSTALL)));
+                    final CAPFile capfile = CAPFile.fromFile(Path.of(args.valueOf(OPT_INSTALL)));
 
                     if (args.has(OPT_VERBOSE)) {
                         capfile.dump(System.out);
                     }
 
-                    GPRegistry reg = gp.getRegistry();
+                    final var reg = gp.getRegistry();
 
                     // Remove existing load file if needed
                     if (args.has(OPT_FORCE) && reg.allPackageAIDs().contains(capfile.getPackageAID())) {
@@ -568,7 +587,7 @@ public final class GPTool extends GPCommandLineInterface {
                     // override instance AID
                     instanceaid = optional(args, OPT_CREATE).orElse(appaid);
 
-                    Set<Privilege> privs = getPrivileges(args);
+                    final var privs = getPrivileges(args);
 
                     // Load CAP
                     loadCAP(args, gp, capfile);
@@ -588,17 +607,17 @@ public final class GPTool extends GPCommandLineInterface {
                     }
 
                     // Parameters
-                    byte[] params = args.has(OPT_PARAMS) ? args.valueOf(OPT_PARAMS).value() : new byte[0];
+                    final byte[] params = args.has(OPT_PARAMS) ? args.valueOf(OPT_PARAMS).value() : new byte[0];
 
                     // shoot
                     gp.installAndMakeSelectable(capfile.getPackageAID(), appaid, instanceaid, privs, params);
                 }
 
-
                 // --create <aid> (--applet <aid> --package <aid> or --cap <cap>)
                 if (args.has(OPT_CREATE) && !args.has(OPT_INSTALL)) {
-                    if (!args.has(OPT_FORCE) && !args.has(OPT_SAD))
+                    if (!args.has(OPT_FORCE) && !args.has(OPT_SAD)) {
                         warnIfNoDelegatedManagement(gp);
+                    }
                     AID packageAID = null;
                     AID appletAID = null;
 
@@ -607,7 +626,8 @@ public final class GPTool extends GPCommandLineInterface {
                         packageAID = cap.getPackageAID();
 
                         if (cap.getAppletAIDs().size() > 1 && !args.has(OPT_APPLET)) {
-                            throw new IllegalArgumentException("There should be only one applet in CAP. Use --" + OPT_APPLET + " to specify one of " + cap.getAppletAIDs());
+                            throw new IllegalArgumentException(
+                                    "There should be only one applet in CAP. Use --" + OPT_APPLET + " to specify one of " + cap.getAppletAIDs());
                         }
                         appletAID = cap.getAppletAIDs().get(0);
                     }
@@ -621,10 +641,11 @@ public final class GPTool extends GPCommandLineInterface {
                     }
 
                     // check
-                    if (packageAID == null || appletAID == null)
+                    if (packageAID == null || appletAID == null) {
                         throw new IllegalArgumentException("Need --" + OPT_PACKAGE + " and --" + OPT_APPLET + " or --" + OPT_CAP);
+                    }
 
-                    AID instanceAID = args.valueOf(OPT_CREATE);
+                    final var instanceAID = args.valueOf(OPT_CREATE);
 
                     // warn
                     if (gp.getRegistry().allAIDs().contains(appletAID)) {
@@ -632,10 +653,10 @@ public final class GPTool extends GPCommandLineInterface {
                     }
 
                     // Privileges
-                    Set<Privilege> privs = getPrivileges(args);
+                    final var privs = getPrivileges(args);
 
                     // Parameters
-                    byte[] params = optional(args, OPT_PARAMS).map(HexBytes::value).orElse(new byte[0]);
+                    final var params = optional(args, OPT_PARAMS).map(HexBytes::value).orElse(new byte[0]);
 
                     // shoot
                     gp.installAndMakeSelectable(packageAID, appletAID, instanceAID, privs, params);
@@ -655,8 +676,10 @@ public final class GPTool extends GPCommandLineInterface {
                             parameters = TLV.parse(params); // this throws
                         } catch (Exception e) {
                             // and fail if what is given is not TLV that we can modify.
-                            if (args.has(OPT_ALLOW_FROM) || args.has(OPT_ALLOW_TO))
-                                throw new IllegalArgumentException(OPT_ALLOW_FROM + " and " + OPT_ALLOW_TO + " not available, could not parse parameters: " + HexUtils.bin2hex(params));
+                            if (args.has(OPT_ALLOW_FROM) || args.has(OPT_ALLOW_TO)) {
+                                throw new IllegalArgumentException(
+                                        OPT_ALLOW_FROM + " and " + OPT_ALLOW_TO + " not available, could not parse parameters: " + HexUtils.bin2hex(params));
+                            }
                             // If we don't need to modify parameters, just give a handy warning
                             System.err.println("Warning: could not parse parameters as TLV: " + HexUtils.bin2hex(params));
                         }
@@ -676,20 +699,23 @@ public final class GPTool extends GPCommandLineInterface {
                         appletAID = args.valueOf(OPT_APPLET);
                     } else {
                         // But query registry for defaults. Default to "new"
-                        packageAID = gp.getRegistry().allPackageAIDs().contains(new AID("A0000000035350")) ? new AID("A0000000035350") : new AID("A0000001515350");
-                        appletAID = gp.getRegistry().allPackageAIDs().contains(new AID("A0000000035350")) ? new AID("A000000003535041") : new AID("A000000151535041");
+                        packageAID = gp.getRegistry().allPackageAIDs().contains(new AID("A0000000035350")) ? new AID("A0000000035350")
+                                : new AID("A0000001515350");
+                        appletAID = gp.getRegistry().allPackageAIDs().contains(new AID("A0000000035350")) ? new AID("A000000003535041")
+                                : new AID("A000000151535041");
                         verbose("Note: using detected default AID-s for SSD instantiation: " + appletAID + " from " + packageAID);
                     }
-                    AID instanceAID = args.valueOf(OPT_DOMAIN);
+                    final var instanceAID = args.valueOf(OPT_DOMAIN);
 
                     // Extra privileges
-                    Set<Privilege> privs = getPrivileges(args);
+                    final var privs = getPrivileges(args);
                     privs.add(Privilege.SecurityDomain);
 
                     // By default same SCP as current
                     if (!args.has(OPT_SAD) && !gp.getProfile().oldStyleSSDParameters()) {
                         if (parameters != null && TLV.find(parameters, Tag.ber(0x81)).isEmpty()) {
-                            params = GPUtils.concatenate(params, new byte[]{(byte) 0x81, 0x02, gp.getSecureChannel().scp.getValue(), (byte) gp.getSecureChannel().i});
+                            params = GPUtils.concatenate(params,
+                                    new byte[] { (byte) 0x81, 0x02, gp.getSecureChannel().scp.getValue(), (byte) gp.getSecureChannel().i });
                         } else {
                             System.err.println("Notice: 0x81 (secure channel) already in parameters or no parameters");
                         }
@@ -697,18 +723,19 @@ public final class GPTool extends GPCommandLineInterface {
 
                     // Extradition rules
                     if (args.has(OPT_ALLOW_TO)) {
-                        if (parameters != null)
+                        if (parameters != null) {
                             if (TLV.find(parameters, Tag.ber(0x82)).isEmpty()) {
-                                params = GPUtils.concatenate(params, new byte[]{(byte) 0x82, 0x02, 0x20, 0x20});
+                                params = GPUtils.concatenate(params, new byte[] { (byte) 0x82, 0x02, 0x20, 0x20 });
                             } else {
                                 System.err.println("Warning: 0x82 already in parameters, " + OPT_ALLOW_TO + " not applied");
                             }
+                        }
                     }
 
                     if (args.has(OPT_ALLOW_FROM)) {
                         if (parameters != null) {
                             if (TLV.find(parameters, Tag.ber(0x87)).isEmpty()) {
-                                params = GPUtils.concatenate(params, new byte[]{(byte) 0x87, 0x02, 0x20, 0x20});
+                                params = GPUtils.concatenate(params, new byte[] { (byte) 0x87, 0x02, 0x20, 0x20 });
                             } else {
                                 System.err.println("Warning: 0x87 already in parameters, " + OPT_ALLOW_FROM + " not applied");
                             }
@@ -721,7 +748,7 @@ public final class GPTool extends GPCommandLineInterface {
                     }
 
                     if (parameters != null || args.has(OPT_ALLOW_TO) || args.has(OPT_ALLOW_FROM)) {
-                        verbose(String.format("Final parameters: %s", HexUtils.bin2hex(params)));
+                        verbose("Final parameters: %s".formatted(HexUtils.bin2hex(params)));
                     }
                     // shoot
                     gp.installAndMakeSelectable(packageAID, appletAID, instanceAID, privs, params);
@@ -729,17 +756,18 @@ public final class GPTool extends GPCommandLineInterface {
 
                 // --move <AID>
                 if (args.has(OPT_MOVE)) {
-                    if (!args.has(OPT_FORCE) && !args.has(OPT_SAD))
+                    if (!args.has(OPT_FORCE) && !args.has(OPT_SAD)) {
                         warnIfNoDelegatedManagement(gp);
-                    AID what = args.valueOf(OPT_MOVE);
-                    AID to = args.valueOf(OPT_TO);
+                    }
+                    final var what = args.valueOf(OPT_MOVE);
+                    final var to = args.valueOf(OPT_TO);
                     gp.extradite(what, to);
                 }
 
                 // --store-data <XX>
                 // This will split the data, if necessary
                 if (args.has(OPT_STORE_DATA)) {
-                    List<byte[]> blobs = args.valuesOf(OPT_STORE_DATA).stream().map(HexBytes::value).collect(Collectors.toList());
+                    final var blobs = args.valuesOf(OPT_STORE_DATA).stream().map(HexBytes::value).collect(Collectors.toList());
                     if (args.has(OPT_PERSONALIZE)) {
                         gp.installForPersonalization(args.valueOf(OPT_PERSONALIZE));
                     } else if (args.has(OPT_APPLET)) {
@@ -753,7 +781,7 @@ public final class GPTool extends GPCommandLineInterface {
                 // --store-data-chunk
                 // This will collect the chunks and send them one by one
                 if (args.has(OPT_STORE_DATA_CHUNK)) {
-                    List<byte[]> blobs = args.valuesOf(OPT_STORE_DATA_CHUNK).stream().map(HexBytes::value).collect(Collectors.toList());
+                    final var blobs = args.valuesOf(OPT_STORE_DATA_CHUNK).stream().map(HexBytes::value).collect(Collectors.toList());
                     if (args.has(OPT_PERSONALIZE)) {
                         gp.installForPersonalization(args.valueOf(OPT_PERSONALIZE));
                     } else if (args.has(OPT_APPLET)) {
@@ -768,16 +796,19 @@ public final class GPTool extends GPCommandLineInterface {
                     if (args.has(OPT_PERSONALIZE)) {
                         gp.installForPersonalization(args.valueOf(OPT_PERSONALIZE));
                     }
-                    var oracle = paddingOracle(args);
-                    var blocks = DGIData.parse(args.valueOf(OPT_STORE_DGI_FILE).toPath(), oracle);
-                    List<CommandAPDU> commands = new ArrayList<>();
-                    for (int i = 0; i < blocks.size(); i++) {
-                        var dgi = blocks.get(i);
+                    final var oracle = paddingOracle(args);
+                    final var blocks = DGIData.parse(args.valueOf(OPT_STORE_DGI_FILE).toPath(), oracle);
+                    final var commands = new ArrayList<CommandAPDU>();
+                    for (var i = 0; i < blocks.size(); i++) {
+                        final var dgi = blocks.get(i);
                         int p1 = dgi.type() == DGIData.Type.PLAINTEXT ? 0x00 : 0x60;
-                        var payload = dgi.type() == DGIData.Type.PADDING ? GPCrypto.pad80(dgi.value(), gp.getSecureChannel().scp == SCP03 ? 16 : 8) : dgi.value();
-                        if (dgi.type() != DGIData.Type.PLAINTEXT) payload = gp.encryptDEK(payload);
+                        var payload = dgi.type() == DGIData.Type.PADDING ? GPCrypto.pad80(dgi.value(), gp.getSecureChannel().scp == SCP03 ? 16 : 8)
+                                : dgi.value();
+                        if (dgi.type() != DGIData.Type.PLAINTEXT) {
+                            payload = gp.encryptDEK(payload);
+                        }
                         payload = GPUtils.concatenate(dgi.tag(), DGIData.length(payload.length), payload);
-                        p1 = (i == (blocks.size() - 1)) ? p1 | GPSession.P1_LAST_BLOCK : p1 & ~GPSession.P1_LAST_BLOCK;
+                        p1 = i == (blocks.size() - 1) ? p1 | GPSession.P1_LAST_BLOCK : p1 & ~GPSession.P1_LAST_BLOCK;
                         commands.add(new CommandAPDU(GPSession.CLA_GP, GPSession.INS_STORE_DATA, p1, 0, payload));
                     }
                     gp.storeData(commands);
@@ -788,12 +819,13 @@ public final class GPTool extends GPCommandLineInterface {
                     if (args.has(OPT_PERSONALIZE)) {
                         gp.installForPersonalization(args.valueOf(OPT_PERSONALIZE));
                     }
-                    List<CommandAPDU> commands = args.valuesOf(OPT_STORE_DATA_RAW).stream()
+                    final var commands = args.valuesOf(OPT_STORE_DATA_RAW).stream()
                             .map(APDUParsers::stringToAPDU)
                             .map(v -> {
-                                CommandAPDU cmd = new CommandAPDU(v);
-                                if (cmd.getINS() != (GPSession.INS_STORE_DATA & 0xFF))
+                                final var cmd = new CommandAPDU(v);
+                                if (cmd.getINS() != (GPSession.INS_STORE_DATA & 0xFF)) {
                                     throw new IllegalArgumentException("Not a STORE DATA APDU: " + HexUtils.bin2hex(v));
+                                }
                                 return cmd;
                             })
                             .collect(Collectors.toList());
@@ -815,8 +847,8 @@ public final class GPTool extends GPCommandLineInterface {
                 // --secure-card
                 if (args.has(OPT_SECURE_CARD)) {
                     // Skip INITIALIZED
-                    GPRegistryEntry isd = gp.getRegistry().getISD().orElseThrow(() -> new GPException("ISD not present, are you in a subtree?"));
-                    GPRegistryEntry.ISDLifeCycle lc = GPRegistryEntry.ByteEnum.fromByte(GPRegistryEntry.ISDLifeCycle.class, isd.getLifeCycle());
+                    final var isd = gp.getRegistry().getISD().orElseThrow(() -> new GPException("ISD not present, are you in a subtree?"));
+                    final GPRegistryEntry.ISDLifeCycle lc = GPRegistryEntry.ByteEnum.fromByte(GPRegistryEntry.ISDLifeCycle.class, isd.getLifeCycle());
                     if (lc == GPRegistryEntry.ISDLifeCycle.OP_READY && args.has(OPT_FORCE)) {
                         System.out.println("Note: forcing status to INITIALIZED");
                         gp.setCardStatus(GPRegistryEntry.ISDLifeCycle.INITIALIZED);
@@ -841,20 +873,18 @@ public final class GPTool extends GPCommandLineInterface {
 
                 // --delete-key
                 if (args.has(OPT_DELETE_KEY)) {
-                    int keyver = args.valueOf(OPT_DELETE_KEY);
+                    final var keyver = args.valueOf(OPT_DELETE_KEY);
                     System.out.println("Deleting key " + GPUtils.intString(keyver));
                     gp.deleteKey(keyver, null);
                 }
-
 
                 // --lock
                 if (args.has(OPT_LOCK) || args.has(OPT_LOCK_ENC) || args.has(OPT_LOCK_MAC) || args.has(OPT_LOCK_DEK)) {
                     final GPCardKeys newKeys;
                     // By default we try to change an existing key
-                    boolean replace = true;
+                    var replace = true;
 
-                    String kdf = PlaintextKeys.kdf_templates.getOrDefault(args.valueOf(OPT_LOCK_KDF), args.valueOf(OPT_LOCK_KDF));
-
+                    final var kdf = PlaintextKeys.kdf_templates.getOrDefault(args.valueOf(OPT_LOCK_KDF), args.valueOf(OPT_LOCK_KDF));
 
                     // XXX: remove the combined "keys or master" interfaces from PlaintextKeys
                     final Optional<GPCardKeys> lockKey;
@@ -862,7 +892,8 @@ public final class GPTool extends GPCommandLineInterface {
                     if (args.has(OPT_LOCK)) {
                         lockKey = parseKeySpec(args.valueOf(OPT_LOCK));
                     } else if (args.has(OPT_LOCK_ENC) && args.has(OPT_LOCK_MAC) && args.has(OPT_LOCK_DEK)) {
-                        lockKey = Optional.of(PlaintextKeys.fromKeys(args.valueOf(OPT_LOCK_ENC).value(), args.valueOf(OPT_LOCK_MAC).value(), args.valueOf(OPT_LOCK_DEK).value()));
+                        lockKey = Optional.of(PlaintextKeys.fromKeys(args.valueOf(OPT_LOCK_ENC).value(), args.valueOf(OPT_LOCK_MAC).value(),
+                                args.valueOf(OPT_LOCK_DEK).value()));
                     } else {
                         throw new IllegalArgumentException("Use either --lock or --lock-enc/mac/dek");
                     }
@@ -871,7 +902,7 @@ public final class GPTool extends GPCommandLineInterface {
                     newKeys = lockKey.orElseThrow(() -> new IllegalArgumentException("Can not lock without keys :)"));
                     if (newKeys instanceof PlaintextKeys pk) {
                         // Adjust the mode and version with plaintext keys
-                        List<GPKeyInfo> current = gp.getKeyInfoTemplate();
+                        final List<GPKeyInfo> current = gp.getKeyInfoTemplate();
                         if (kdf != null) {
                             pk.setDiversifier(kdf);
                         }
@@ -895,29 +926,32 @@ public final class GPTool extends GPCommandLineInterface {
                     }
 
                     // Diversify new keys
-                    int keyver = newKeys.getKeyInfo().getVersion();
+                    var keyver = newKeys.getKeyInfo().getVersion();
                     verbose("Keyset version: " + keyver);
 
                     // Only SCP02 via SCP03 should be possible, but cards vary
-                    byte[] kdd = newKeys.getKDD().orElseGet(() -> keys.getKDD().get());
+                    final var kdd = newKeys.getKDD().orElseGet(() -> keys.getKDD().get());
 
                     verbose("Looking at key version for diversification method");
-                    if (keyver >= 0x10 && keyver <= 0x1F)
+                    if (keyver >= 0x10 && keyver <= 0x1F) {
                         newKeys.diversify(SCP01, kdd);
-                    else if (keyver >= 0x20 && keyver <= 0x2F)
+                    } else if (keyver >= 0x20 && keyver <= 0x2F) {
                         newKeys.diversify(SCP02, kdd);
-                    else if (keyver >= 0x30 && keyver <= 0x3F)
+                    } else if (keyver >= 0x30 && keyver <= 0x3F) {
                         newKeys.diversify(SCP03, kdd);
-                    else
+                    } else {
                         newKeys.diversify(gp.getSecureChannel().scp, kdd);
+                    }
 
                     gp.putKeys(newKeys, replace);
 
                     if (args.has(OPT_LOCK) && newKeys instanceof PlaintextKeys pk) {
-                        if (pk.getMasterKey().isPresent())
+                        if (pk.getMasterKey().isPresent()) {
                             System.out.println(gp.getAID() + " locked with: " + HexUtils.bin2hex(pk.getMasterKey().get()));
-                        if (pk.getTemplate() != null)
+                        }
+                        if (pk.getTemplate() != null) {
                             System.out.println("Keys were diversified with " + pk.getTemplate() + " and " + HexUtils.bin2hex(kdd));
+                        }
                         System.out.println("Write this down, DO NOT FORGET/LOSE IT!");
                     } else {
                         System.out.println("Card locked with new keys.");
@@ -937,7 +971,7 @@ public final class GPTool extends GPCommandLineInterface {
 
                 // --set-pre-perso
                 if (args.has(OPT_SET_PRE_PERSO)) {
-                    byte[] payload = args.valueOf(OPT_SET_PRE_PERSO).value();
+                    final var payload = args.valueOf(OPT_SET_PRE_PERSO).value();
                     if (args.has(OPT_TODAY)) {
                         System.arraycopy(CPLC.today(), 0, payload, 2, 2);
                     }
@@ -946,7 +980,7 @@ public final class GPTool extends GPCommandLineInterface {
 
                 // --set-perso
                 if (args.has(OPT_SET_PERSO)) {
-                    byte[] payload = args.valueOf(OPT_SET_PERSO).value();
+                    final var payload = args.valueOf(OPT_SET_PERSO).value();
                     if (args.has(OPT_TODAY)) {
                         System.arraycopy(CPLC.today(), 0, payload, 2, 2);
                     }
@@ -967,29 +1001,29 @@ public final class GPTool extends GPCommandLineInterface {
         return 1;
     }
 
-    private void warnIfNoDelegatedManagement(GPSession session) throws IOException {
+    private void warnIfNoDelegatedManagement(final GPSession session) throws IOException {
         if (session.getCurrentDomain().hasPrivilege(Privilege.DelegatedManagement) && !session.delegatedManagementEnabled()) {
             System.err.println("# Warning: specify delegated management key or token with --dm-key/--dm-token");
         }
     }
 
-
     // Parse a key specification string into card keys
     // Supports: <kdf>:<hex>, <kdf>:default, <hex>, or "default"
     private static Optional<GPCardKeys> parseKeySpec(String spec) {
-        if (spec == null || spec.isBlank())
+        if (spec == null || spec.isBlank()) {
             return Optional.empty();
+        }
         spec = spec.trim();
         try {
             // <kdf>:<hex> or <kdf>:default
             for (Map.Entry<String, String> d : PlaintextKeys.kdf_templates.entrySet()) {
                 if (spec.toLowerCase(Locale.ROOT).startsWith(d.getKey() + ":")) {
-                    byte[] k = hexOrDefault(spec.substring(d.getKey().length() + 1));
+                    final byte[] k = hexOrDefault(spec.substring(d.getKey().length() + 1));
                     return Optional.of(PlaintextKeys.fromMasterKey(k, d.getValue()));
                 }
             }
             // <hex> or "default"
-            byte[] k = hexOrDefault(spec);
+            final byte[] k = hexOrDefault(spec);
             return Optional.of(PlaintextKeys.fromMasterKey(k));
         } catch (IllegalArgumentException e) {
             // Invalid hex or key format
@@ -997,12 +1031,12 @@ public final class GPTool extends GPCommandLineInterface {
         }
     }
 
-    private static byte[] hexOrDefault(String v) {
-        if ("default".startsWith(v.toLowerCase(Locale.ROOT)))
+    private static byte[] hexOrDefault(final String v) {
+        if ("default".startsWith(v.toLowerCase(Locale.ROOT))) {
             return PlaintextKeys.DEFAULT_KEY();
+        }
         return HexUtils.stringToBin(v);
     }
-
 
     static Predicate<Privilege> dapPrivileges = e -> e == Privilege.MandatedDAPVerification || e == Privilege.DAPVerification;
     static Predicate<GPRegistryEntry> dapDomainFilter = e -> e.hasPrivilege(Privilege.MandatedDAPVerification) || e.hasPrivilege(Privilege.DAPVerification);
@@ -1011,16 +1045,16 @@ public final class GPTool extends GPCommandLineInterface {
     @SuppressWarnings("StatementSwitchToExpressionSwitch")
     private static void loadCAP(OptionSet args, GPSession gp, CAPFile capFile) throws GPException, IOException {
         try {
-            AID to = optional(args, OPT_TO).orElse(gp.getAID());
-            GPRegistryEntry targetDomain = gp.getRegistry().getDomain(to).orElseThrow(() -> new IllegalArgumentException("Target domain does not exist: " + to));
+            final var to = optional(args, OPT_TO).orElse(gp.getAID());
+            final var targetDomain = gp.getRegistry().getDomain(to).orElseThrow(() -> new IllegalArgumentException("Target domain does not exist: " + to));
             GPData.LFDBH lfdbh = args.has(OPT_SHA256) ? GPData.LFDBH.SHA256 : (args.has(OPT_HASH) ? args.valueOf(OPT_HASH) : null);
 
             // Automatic DAP domain discovery
             AID dapAid = null;
-            Optional<GPRegistryEntry> dapDomain = gp.getRegistry().allDomains().stream().filter(dapDomainFilter).findFirst();
+            final Optional<GPRegistryEntry> dapDomain = gp.getRegistry().allDomains().stream().filter(dapDomainFilter).findFirst();
             if (dapDomain.isPresent()) {
-                GPRegistryEntry entry = dapDomain.get();
-                String privs = entry.getPrivileges().stream().filter(dapPrivileges).map(Privilege::toString).collect(Collectors.joining(", "));
+                final var entry = dapDomain.get();
+                final var privs = entry.getPrivileges().stream().filter(dapPrivileges).map(Privilege::toString).collect(Collectors.joining(", "));
                 System.out.println("# Found DAP domain: " + entry.getAID() + " (" + privs + "); override with --" + OPT_DAP_DOMAIN);
                 dapAid = entry.getAID();
             }
@@ -1028,10 +1062,11 @@ public final class GPTool extends GPCommandLineInterface {
             // Validate DAP override
             if (args.has(OPT_DAP_DOMAIN)) {
                 dapAid = args.valueOf(OPT_DAP_DOMAIN);
-                AID finalDapAid = dapAid;
-                GPRegistryEntry dapTarget = gp.getRegistry().getDomain(dapAid).orElseThrow(() -> new IllegalArgumentException("DAP domain does not exist: " + finalDapAid));
+                final var finalDapAid = dapAid;
+                final var dapTarget = gp.getRegistry().getDomain(dapAid)
+                        .orElseThrow(() -> new IllegalArgumentException("DAP domain does not exist: " + finalDapAid));
                 if (!(dapTarget.hasPrivilege(Privilege.DAPVerification) || dapTarget.hasPrivilege(Privilege.MandatedDAPVerification))) {
-                    String message = "Specified DAP domain does not have (Mandated)DAPVerification privilege: " + dapAid;
+                    final var message = "Specified DAP domain does not have (Mandated)DAPVerification privilege: " + dapAid;
                     if (args.has(OPT_FORCE)) {
                         System.err.println("Warning: " + message);
                     } else {
@@ -1041,7 +1076,7 @@ public final class GPTool extends GPCommandLineInterface {
             }
 
             // Target has DAP, Mandated DAP is present, or manual DAP AID given
-            boolean dapRequired = targetDomain.hasPrivilege(Privilege.DAPVerification)
+            final var dapRequired = targetDomain.hasPrivilege(Privilege.DAPVerification)
                     || gp.getRegistry().allDomains().stream().anyMatch(e -> e.hasPrivilege(Privilege.MandatedDAPVerification))
                     || args.has(OPT_DAP_DOMAIN);
 
@@ -1050,7 +1085,7 @@ public final class GPTool extends GPCommandLineInterface {
                 if (args.has(OPT_DAP_SIGNATURE)) {
                     signature = args.valueOf(OPT_DAP_SIGNATURE).value();
                 } else if (args.has(OPT_DAP_KEY)) {
-                    Key dapKey = args.valueOf(OPT_DAP_KEY);
+                    final var dapKey = args.valueOf(OPT_DAP_KEY);
                     if (dapKey.getPrivate().isEmpty()) {
                         throw new IllegalArgumentException("Invalid DAP key: " + dapKey);
                     }
@@ -1092,7 +1127,7 @@ public final class GPTool extends GPCommandLineInterface {
     }
 
     // Contains "what" to install
-    static class InstallDefinition {
+    static final class InstallDefinition {
         final CAPFile cap;
         final AID pkg;
         final AID applet;
@@ -1105,21 +1140,22 @@ public final class GPTool extends GPCommandLineInterface {
             this.instance = instance;
         }
 
-        static InstallDefinition fromOptions(GPRegistry registry, OptionSet args) throws IOException {
+        static InstallDefinition fromOptions(final GPRegistry registry, final OptionSet args) throws IOException {
             final AID applet;
             final CAPFile cap;
             final AID pkg;
             final AID instance;
 
             // One must be present, jopt-simple makes them mutually exclusive
-            String pathOrAid = optional(args, OPT_INSTALL_ONLY).orElse(args.valueOf(OPT_INSTALL));
+            final var pathOrAid = optional(args, OPT_INSTALL_ONLY).orElse(args.valueOf(OPT_INSTALL));
             Path p = Paths.get(pathOrAid);
 
             // --install refers to a file or --cap given
             if (Files.exists(p) || args.has(OPT_CAP)) {
                 // Not possible to have both
-                if (Files.exists(p) && args.has(OPT_CAP))
+                if (Files.exists(p) && args.has(OPT_CAP)) {
                     throw new IllegalArgumentException("Can't have --cap and --install(-only) refer to a capfile");
+                }
 
                 if (args.has(OPT_CAP)) {
                     p = args.valueOf(OPT_CAP).toPath();
@@ -1135,14 +1171,15 @@ public final class GPTool extends GPCommandLineInterface {
                 } else if (cap.getAppletAIDs().size() == 1) {
                     // If argument given, it must match capfile
                     if (args.has(OPT_APPLET) && !args.valueOf(OPT_APPLET).equals(cap.getAppletAIDs().get(0))) {
-                        throw new IllegalArgumentException(String.format("Capfile %s does not contain applet %s (has %s)", p, args.valueOf(OPT_APPLET), cap.getAppletAIDs()));
+                        throw new IllegalArgumentException(
+                                "Capfile %s does not contain applet %s (has %s)".formatted(p, args.valueOf(OPT_APPLET), cap.getAppletAIDs()));
                     }
                     applet = cap.getAppletAIDs().get(0);
                 } else {
                     // --applet MUST be given (or default name is searched for)
-                    AID candidate = optional(args, OPT_APPLET).orElseThrow(() -> new IllegalArgumentException("Specify applet tp install with --applet"));
+                    final var candidate = optional(args, OPT_APPLET).orElseThrow(() -> new IllegalArgumentException("Specify applet tp install with --applet"));
                     if (!cap.getAppletAIDs().contains(candidate)) {
-                        throw new IllegalArgumentException(String.format("Specify applet to install with --applet (has %s)", cap.getAppletAIDs()));
+                        throw new IllegalArgumentException("Specify applet to install with --applet (has %s)".formatted(cap.getAppletAIDs()));
                     }
                     applet = candidate;
                 }
@@ -1152,14 +1189,15 @@ public final class GPTool extends GPCommandLineInterface {
                 // Instance AID is explicit. Possibly load  package AID
                 instance = AID.fromString(pathOrAid);
                 cap = null;
-                AID searchFor = optional(args, OPT_APPLET).orElse(instance);
+                final var searchFor = optional(args, OPT_APPLET).orElse(instance);
 
                 // Do some magic
                 if (args.has(OPT_PACKAGE)) {
                     pkg = args.valueOf(OPT_PACKAGE);
                 } else {
                     // Search for existing registry either for explicit applet or applet-with-same-name-as-instance
-                    pkg = registry.byModule(searchFor).map(GPRegistryEntry::getAID).orElseThrow(() -> new IllegalArgumentException("Specify applet to load with --applet"));
+                    pkg = registry.byModule(searchFor).map(GPRegistryEntry::getAID)
+                            .orElseThrow(() -> new IllegalArgumentException("Specify applet to load with --applet"));
                 }
                 // Applet AID is either --applet or instance if not given
                 applet = searchFor;
@@ -1170,15 +1208,15 @@ public final class GPTool extends GPCommandLineInterface {
     }
 
     // NOTE: Integer is used because byte[] is not good for a set.
-    @SuppressWarnings({"StringSplitter", "MixedMutabilityReturnType"})
+    @SuppressWarnings({ "StringSplitter", "MixedMutabilityReturnType" })
     static List<Integer> split(String s) {
         // remove whitespace and "0x" instances
         s = s.replaceAll("\\s+", "").replaceAll("0[xX]", "");
 
         // If longer than 4 and contains comma - try to parse as list
         if (s.contains(",") && s.length() > 4) {
-            String[] parts = s.split(",");
-            List<Integer> result = new ArrayList<>();
+            final var parts = s.split(",");
+            final var result = new ArrayList<Integer>();
 
             for (String part : parts) {
                 result.add(hex2int(part));
@@ -1192,7 +1230,7 @@ public final class GPTool extends GPCommandLineInterface {
 
     static int hex2int(String s) {
         try {
-            int value = Integer.parseInt(s, 16);
+            final var value = Integer.parseInt(s, 16);
             if (value < 0x0000 || value > 0xFFFF) {
                 throw new IllegalArgumentException("Value out of range (0x0000-0xFFFF): 0x" + Integer.toHexString(value));
             }
@@ -1203,12 +1241,12 @@ public final class GPTool extends GPCommandLineInterface {
     }
 
     // Create a small oracle that knows how to handle padding for different DGI-s
-    private static Function<byte[], DGIData.Type> paddingOracle(OptionSet args) {
-        var padded = args.valuesOf(OPT_DGI_PADDED).stream().flatMap(s -> GPTool.split(s).stream()).collect(Collectors.toSet());
-        var unpadded = args.valuesOf(OPT_DGI_UNPADDED).stream().flatMap(s -> GPTool.split(s).stream()).collect(Collectors.toSet());
+    private static Function<byte[], DGIData.Type> paddingOracle(final OptionSet args) {
+        final var padded = args.valuesOf(OPT_DGI_PADDED).stream().flatMap(s -> GPTool.split(s).stream()).collect(Collectors.toSet());
+        final var unpadded = args.valuesOf(OPT_DGI_UNPADDED).stream().flatMap(s -> GPTool.split(s).stream()).collect(Collectors.toSet());
 
         return s -> {
-            var k = ((s[0] & 0xFF) << 8) | (s[1] & 0xFF);
+            final var k = ((s[0] & 0xFF) << 8) | (s[1] & 0xFF);
             if (padded.contains(k)) {
                 return DGIData.Type.PADDING;
             } else if (unpadded.contains(k)) {
@@ -1220,17 +1258,20 @@ public final class GPTool extends GPCommandLineInterface {
     }
 
     @SuppressWarnings("StringSplitter")
-    private static EnumSet<Privilege> getPrivileges(OptionSet args) {
-        EnumSet<Privilege> privs = EnumSet.noneOf(Privilege.class);
+    private static EnumSet<Privilege> getPrivileges(final OptionSet args) {
+        final var privs = EnumSet.noneOf(Privilege.class);
         if (args.has(OPT_PRIVS)) {
-            for (String p : args.valuesOf(OPT_PRIVS))
-                for (String s : p.split(","))
-                    privs.add(Privilege.lookup(s.trim()).orElseThrow(() -> new IllegalArgumentException("Unknown privilege: " + s.trim() + "\nValid values are: " + Arrays.stream(Privilege.values()).map(Enum::toString).collect(Collectors.joining(", ")))));
+            for (String p : args.valuesOf(OPT_PRIVS)) {
+                for (String s : p.split(",")) {
+                    privs.add(Privilege.lookup(s.trim()).orElseThrow(() -> new IllegalArgumentException("Unknown privilege: " + s.trim()
+                            + "\nValid values are: " + Arrays.stream(Privilege.values()).map(Enum::toString).collect(Collectors.joining(", ")))));
+                }
+            }
         }
         return privs;
     }
 
-    private static List<CAPFile> getCapFileList(OptionSet args, OptionSpec<File> arg) {
+    private static List<CAPFile> getCapFileList(final OptionSet args, final OptionSpec<File> arg) {
         return args.valuesOf(arg).stream().map(File::toPath).map(e -> {
             try {
                 return CAPFile.fromFile(e);
@@ -1240,12 +1281,13 @@ public final class GPTool extends GPCommandLineInterface {
         }).collect(Collectors.toList());
     }
 
-    private static boolean needsAuthentication(OptionSet args) {
-        OptionSpec<?>[] yes = new OptionSpec<?>[]{OPT_CONNECT, OPT_LIST, OPT_LOAD, OPT_INSTALL, OPT_INSTALL_ONLY, OPT_DELETE, OPT_DELETE_KEY, OPT_CREATE,
+    private static boolean needsAuthentication(final OptionSet args) {
+        final OptionSpec<?>[] yes = new OptionSpec<?>[] { OPT_CONNECT, OPT_LIST, OPT_LOAD, OPT_INSTALL, OPT_INSTALL_ONLY, OPT_DELETE, OPT_DELETE_KEY,
+                OPT_CREATE,
                 OPT_LOCK, OPT_LOCK_ENC, OPT_LOCK_MAC, OPT_LOCK_DEK, OPT_MAKE_DEFAULT,
                 OPT_UNINSTALL, OPT_SECURE_APDU, OPT_DOMAIN, OPT_LOCK_CARD, OPT_UNLOCK_CARD, OPT_LOCK_APPLET, OPT_UNLOCK_APPLET,
                 OPT_STORE_DATA, OPT_STORE_DATA_CHUNK, OPT_INITIALIZE_CARD, OPT_SECURE_CARD, OPT_RENAME_ISD, OPT_SET_PERSO, OPT_SET_PRE_PERSO, OPT_MOVE,
-                OPT_PUT_KEY, OPT_REPLACE_KEY, OPT_STORE_DGI_FILE, OPT_PERSONALIZE, OPT_STORE_DATA_RAW};
+                OPT_PUT_KEY, OPT_REPLACE_KEY, OPT_STORE_DGI_FILE, OPT_PERSONALIZE, OPT_STORE_DATA_RAW };
 
         return Arrays.stream(yes).anyMatch(args::has);
     }
@@ -1256,7 +1298,7 @@ public final class GPTool extends GPCommandLineInterface {
         }
     }
 
-    private static void trace(Exception e) {
+    private static void trace(final Exception e) {
         if (isTrace) {
             e.printStackTrace();
         }

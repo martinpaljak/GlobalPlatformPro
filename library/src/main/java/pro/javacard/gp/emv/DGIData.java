@@ -45,7 +45,7 @@ public final class DGIData {
     private final byte[] value;
     private final Type type;
 
-    public DGIData(byte[] tag, byte[] value, Type type) {
+    public DGIData(final byte[] tag, final byte[] value, final Type type) {
         this.tag = Arrays.copyOf(tag, tag.length);
         this.value = Arrays.copyOf(value, value.length);
         this.type = type;
@@ -63,19 +63,23 @@ public final class DGIData {
         return type;
     }
 
-    public static byte[] length(int len) {
+    public static byte[] length(final int len) {
         if (len <= 254) {
-            return new byte[]{(byte) len};
+            return new byte[] { (byte) len };
         } else {
-            return new byte[]{(byte) 0xFF, (byte) (len >> 8), (byte) len};
+            return new byte[] { (byte) 0xFF, (byte) (len >> 8), (byte) len };
         }
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        DGIData dgi = (DGIData) o;
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        final var dgi = (DGIData) o;
         return Arrays.equals(tag, dgi.tag) && Arrays.equals(value, dgi.value) && type == dgi.type;
     }
 
@@ -92,21 +96,22 @@ public final class DGIData {
     // Simple parser for "DGIXXXX=YY..YY" file. The information about the DGI type comes from an oracle.
     private static final Pattern LINE_PATTERN = Pattern.compile("^DGI([0-9a-fA-F]{4})=([0-9a-fA-F]*)$");
 
-    public static List<DGIData> parse(Path filePath, Function<byte[], Type> typeOracle) throws IOException {
-        var entries = new ArrayList<DGIData>();
-        var lines = Files.readAllLines(filePath);
+    public static List<DGIData> parse(final Path filePath, final Function<byte[], Type> typeOracle) throws IOException {
+        final var entries = new ArrayList<DGIData>();
+        final var lines = Files.readAllLines(filePath);
         for (var line : lines) {
-            var s = line.trim();
-            if (s.startsWith("//") || s.startsWith("#"))
+            final var s = line.trim();
+            if (s.startsWith("//") || s.startsWith("#")) {
                 continue;
-            Matcher matcher = LINE_PATTERN.matcher(s);
+            }
+            final var matcher = LINE_PATTERN.matcher(s);
             if (!matcher.matches()) {
                 throw new IOException("Invalid DGI file line: " + line);
             }
 
-            byte[] tag = HexUtils.hex2bin(matcher.group(1));
-            byte[] value = HexUtils.hex2bin(matcher.group(2));
-            DGIData.Type type = typeOracle.apply(tag);
+            final var tag = HexUtils.hex2bin(matcher.group(1));
+            final var value = HexUtils.hex2bin(matcher.group(2));
+            final var type = typeOracle.apply(tag);
             entries.add(new DGIData(tag, value, type));
         }
         return entries;

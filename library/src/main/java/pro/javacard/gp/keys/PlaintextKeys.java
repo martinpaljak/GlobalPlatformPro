@@ -33,7 +33,7 @@ import static pro.javacard.gp.GPSecureChannelVersion.SCP.*;
 
 // Handles plaintext card keys.
 // Supports diversification of card keys with a few known algorithms.
-public class PlaintextKeys extends GPCardKeys {
+public final class PlaintextKeys extends GPCardKeys {
     private static final Logger logger = LoggerFactory.getLogger(PlaintextKeys.class);
 
     // After diversify() we know for which protocol we have keys for, unless known before
@@ -48,14 +48,14 @@ public class PlaintextKeys extends GPCardKeys {
     public static final Map<KeyPurpose, Byte> SCP03_CONSTANTS;
 
     static {
-        HashMap<KeyPurpose, byte[]> scp2 = new HashMap<>();
-        scp2.put(KeyPurpose.MAC, new byte[]{(byte) 0x01, (byte) 0x01});
-        scp2.put(KeyPurpose.RMAC, new byte[]{(byte) 0x01, (byte) 0x02});
-        scp2.put(KeyPurpose.DEK, new byte[]{(byte) 0x01, (byte) 0x81});
-        scp2.put(KeyPurpose.ENC, new byte[]{(byte) 0x01, (byte) 0x82});
+        final var scp2 = new HashMap<KeyPurpose, byte[]>();
+        scp2.put(KeyPurpose.MAC, new byte[] { (byte) 0x01, (byte) 0x01 });
+        scp2.put(KeyPurpose.RMAC, new byte[] { (byte) 0x01, (byte) 0x02 });
+        scp2.put(KeyPurpose.DEK, new byte[] { (byte) 0x01, (byte) 0x81 });
+        scp2.put(KeyPurpose.ENC, new byte[] { (byte) 0x01, (byte) 0x82 });
         SCP02_CONSTANTS = Collections.unmodifiableMap(scp2);
 
-        HashMap<KeyPurpose, Byte> scp3 = new HashMap<>();
+        final var scp3 = new HashMap<KeyPurpose, Byte>();
         scp3.put(KeyPurpose.ENC, (byte) 0x04);
         scp3.put(KeyPurpose.MAC, (byte) 0x06);
         scp3.put(KeyPurpose.RMAC, (byte) 0x07);
@@ -65,7 +65,7 @@ public class PlaintextKeys extends GPCardKeys {
     public static final Map<String, String> kdf_templates;
 
     static {
-        HashMap<String, String> kdfs = new HashMap<>();
+        final var kdfs = new HashMap<String, String>();
         kdfs.put("emv", "$4 $5 $6 $7 $8 $9 0xF0 $k $4 $5 $6 $7 $8 $9 0x0F $k");
         kdfs.put("visa2", "$0 $1 $4 $5 $6 $7 0xF0 $k $0 $1 $4 $5 $6 $7 0x0F $k");
         kdfs.put("visa", "$0 $1 $2 $3 $8 $9 0xF0 $k $0 $1 $2 $3 $8 $9 0x0F $k");
@@ -89,12 +89,12 @@ public class PlaintextKeys extends GPCardKeys {
     // Holds card-specific keys. They shall be diversified in-place, as needed
     private HashMap<KeyPurpose, byte[]> cardKeys = new HashMap<>();
 
-    private PlaintextKeys(byte[] master, String d) {
+    private PlaintextKeys(final byte[] master, final String d) {
         this(master, master, master, d);
         masterKey = master.clone();
     }
 
-    private PlaintextKeys(byte[] enc, byte[] mac, byte[] dek, String d) {
+    private PlaintextKeys(final byte[] enc, final byte[] mac, final byte[] dek, final String d) {
         cardKeys.put(KeyPurpose.ENC, enc.clone());
         cardKeys.put(KeyPurpose.MAC, mac.clone());
         cardKeys.put(KeyPurpose.DEK, dek.clone());
@@ -105,25 +105,26 @@ public class PlaintextKeys extends GPCardKeys {
         return fromEnvironment(System.getenv(), "GP_KEY");
     }
 
-    static byte[] validateKey(byte[] k) {
+    static byte[] validateKey(final byte[] k) {
         if (k.length != 16 && k.length != 24 && k.length != 32) {
-            throw new IllegalArgumentException(String.format("Invalid key length %d: %s", k.length, HexUtils.bin2hex(k)));
+            throw new IllegalArgumentException("Invalid key length %d: %s".formatted(k.length, HexUtils.bin2hex(k)));
         }
         return k;
     }
 
-    public static Optional<PlaintextKeys> fromBytes(byte[] enc, byte[] mac, byte[] dek, byte[] mk, String kdf, byte[] kdd, int ver) {
+    public static Optional<PlaintextKeys> fromBytes(final byte[] enc, final byte[] mac, final byte[] dek, final byte[] mk, final String kdf, final byte[] kdd,
+            final int ver) {
         if ((enc != null || mac != null || dek != null) && (enc == null || mac == null || dek == null || mk != null)) {
             throw new IllegalArgumentException("Either all or nothing of enc/mac/dek keys must be set, and no mk at the same time!");
         }
 
         if (enc != null && mac != null && dek != null) {
             logger.trace("Using three individual keys");
-            byte[] encbytes = validateKey(enc);
-            byte[] macbytes = validateKey(mac);
-            byte[] dekbytes = validateKey(dek);
+            final byte[] encbytes = validateKey(enc);
+            final byte[] macbytes = validateKey(mac);
+            final byte[] dekbytes = validateKey(dek);
 
-            PlaintextKeys keys = PlaintextKeys.fromKeys(encbytes, macbytes, dekbytes);
+            final PlaintextKeys keys = PlaintextKeys.fromKeys(encbytes, macbytes, dekbytes);
             if (ver != 0) {
                 keys.setVersion(ver);
             }
@@ -134,8 +135,8 @@ public class PlaintextKeys extends GPCardKeys {
             return Optional.of(keys);
         } else if (mk != null) {
             logger.trace("Using a master key");
-            byte[] master = validateKey(mk);
-            PlaintextKeys keys = PlaintextKeys.fromMasterKey(master);
+            final byte[] master = validateKey(mk);
+            final PlaintextKeys keys = PlaintextKeys.fromMasterKey(master);
             if (kdf != null) {
                 keys.setDiversifier(kdf);
             } else {
@@ -150,8 +151,9 @@ public class PlaintextKeys extends GPCardKeys {
                 keys.setVersion(ver);
             }
             return Optional.of(keys);
-        } else
+        } else {
             return Optional.empty();
+        }
     }
 
     public static Optional<PlaintextKeys> fromStrings(String enc, String mac, String dek, String mk, String div, String kdd, String ver) {
@@ -160,24 +162,24 @@ public class PlaintextKeys extends GPCardKeys {
         }
         if (enc != null && mac != null && dek != null) {
             logger.trace("Using three individual keys");
-            byte[] encbytes = validateKey(HexUtils.stringToBin(enc));
-            byte[] macbytes = validateKey(HexUtils.stringToBin(mac));
-            byte[] dekbytes = validateKey(HexUtils.stringToBin(dek));
+            final byte[] encbytes = validateKey(HexUtils.stringToBin(enc));
+            final byte[] macbytes = validateKey(HexUtils.stringToBin(mac));
+            final byte[] dekbytes = validateKey(HexUtils.stringToBin(dek));
 
-            PlaintextKeys keys = PlaintextKeys.fromKeys(encbytes, macbytes, dekbytes);
+            final PlaintextKeys keys = PlaintextKeys.fromKeys(encbytes, macbytes, dekbytes);
             if (ver != null) {
                 keys.setVersion(GPUtils.intValue(ver));
             }
             if (div != null) {
-                String kdf = kdf_templates.getOrDefault(div, div);
+                final var kdf = kdf_templates.getOrDefault(div, div);
                 logger.warn("Different keys and using derivation, is this right?");
                 keys.setDiversifier(kdf);
             }
             return Optional.of(keys);
         } else if (mk != null) {
             logger.trace("Using a master key");
-            byte[] master = validateKey(HexUtils.stringToBin(mk));
-            PlaintextKeys keys = PlaintextKeys.fromMasterKey(master);
+            final byte[] master = validateKey(HexUtils.stringToBin(mk));
+            final PlaintextKeys keys = PlaintextKeys.fromMasterKey(master);
             if (div != null) {
                 keys.setDiversifier(kdf_templates.getOrDefault(div, div));
             } else {
@@ -198,29 +200,29 @@ public class PlaintextKeys extends GPCardKeys {
     }
 
     // Returns empty if no variables present, throws illegal argument if variable invalid
-    public static Optional<PlaintextKeys> fromEnvironment(Map<String, String> env, String prefix) {
-        String enc = env.get(prefix + "_ENC");
-        String mac = env.get(prefix + "_MAC");
-        String dek = env.get(prefix + "_DEK");
-        String mk = env.get(prefix);
-        String div = env.get(prefix + "_KDF");
+    public static Optional<PlaintextKeys> fromEnvironment(final Map<String, String> env, final String prefix) {
+        final var enc = env.get(prefix + "_ENC");
+        final var mac = env.get(prefix + "_MAC");
+        final var dek = env.get(prefix + "_DEK");
+        final var mk = env.get(prefix);
+        var div = env.get(prefix + "_KDF");
         if (div != null) {
             div = kdf_templates.getOrDefault(div, div);
         }
-        String kdd = env.get(prefix + "_KDD");
-        String ver = env.get(prefix + "_VER");
-        Optional<PlaintextKeys> r = fromStrings(enc, mac, dek, mk, div, kdd, ver);
+        final var kdd = env.get(prefix + "_KDD");
+        final var ver = env.get(prefix + "_VER");
+        final var r = fromStrings(enc, mac, dek, mk, div, kdd, ver);
         if (r.isPresent()) {
             logger.debug("Got keys from environment, prefix=" + prefix);
         }
         return r;
     }
 
-    public static PlaintextKeys fromMasterKey(byte[] master) {
+    public static PlaintextKeys fromMasterKey(final byte[] master) {
         return new PlaintextKeys(master, null);
     }
 
-    public static PlaintextKeys fromMasterKey(byte[] master, String kdf) {
+    public static PlaintextKeys fromMasterKey(final byte[] master, final String kdf) {
         return new PlaintextKeys(master, kdf);
     }
 
@@ -228,19 +230,19 @@ public class PlaintextKeys extends GPCardKeys {
         return new PlaintextKeys(defaultKeyBytes, null);
     }
 
-    public static PlaintextKeys fromKeys(byte[] enc, byte[] mac, byte[] dek) {
+    public static PlaintextKeys fromKeys(final byte[] enc, final byte[] mac, final byte[] dek) {
         return new PlaintextKeys(enc, mac, dek, null);
     }
 
-    byte[] diversify(byte[] k, KeyPurpose usage, byte[] kdd, String kdf) throws GPException {
+    byte[] diversify(final byte[] k, final KeyPurpose usage, final byte[] kdd, final String kdf) throws GPException {
         String template = kdf_template_expand(kdf, kdd, usage.getValue());
         try {
             final byte[] kv;
             if (scp == SCP03) {
                 template = kdf_template_bitlength(template, k.length * 8);
 
-                byte[] a = kdf_template_finalize(kdf_template_blocka(template));
-                byte[] b = kdf_template_finalize(kdf_template_blockb(template));
+                final byte[] a = kdf_template_finalize(kdf_template_blocka(template));
+                final byte[] b = kdf_template_finalize(kdf_template_blockb(template));
                 return GPCrypto.scp03_kdf(k, a, b, k.length);
             } else {
                 kv = kdf_template_finalize(template);
@@ -258,31 +260,34 @@ public class PlaintextKeys extends GPCardKeys {
     @Override
     public GPKeyInfo getKeyInfo() {
         // all keys are of same length
-        byte[] aKey = cardKeys.get(KeyPurpose.ENC);
+        final var aKey = cardKeys.get(KeyPurpose.ENC);
         final GPKeyInfo.GPKey type;
-        if (aKey.length > 16 || scp == SCP03)
+        if (aKey.length > 16 || scp == SCP03) {
             type = GPKeyInfo.GPKey.AES;
-        else
+        } else {
             type = GPKeyInfo.GPKey.DES3;
+        }
         return new GPKeyInfo(version, 0x01, aKey.length, type);
     }
 
     @Override
     // data must be padded by caller
-    public byte[] encrypt(byte[] data, byte[] sessionContext) throws GeneralSecurityException {
+    public byte[] encrypt(final byte[] data, final byte[] sessionContext) throws GeneralSecurityException {
         if (scp == SCP02) {
-            byte[] sdek = deriveSessionKeySCP02(cardKeys.get(KeyPurpose.DEK), KeyPurpose.DEK, sessionContext);
+            final var sdek = deriveSessionKeySCP02(cardKeys.get(KeyPurpose.DEK), KeyPurpose.DEK, sessionContext);
             return GPCrypto.des3_ecb(data, sdek);
         } else if (scp == SCP01) {
             return GPCrypto.des3_ecb(data, cardKeys.get(KeyPurpose.DEK));
         } else if (scp == SCP03) {
             return GPCrypto.aes_cbc(data, cardKeys.get(KeyPurpose.DEK), new byte[16]);
-        } else throw new IllegalStateException("Unknown SCP version");
+        } else {
+            throw new IllegalStateException("Unknown SCP version");
+        }
     }
 
     @SuppressWarnings("StatementSwitchToExpressionSwitch")
     @Override
-    public byte[] encryptKey(GPCardKeys key, KeyPurpose p, byte[] sessionContext) throws GeneralSecurityException {
+    public byte[] encryptKey(final GPCardKeys key, final KeyPurpose p, final byte[] sessionContext) throws GeneralSecurityException {
         if (!(key instanceof PlaintextKeys other)) {
             throw new IllegalArgumentException(getClass().getName() + " can only handle " + getClass().getName());
         }
@@ -291,15 +296,15 @@ public class PlaintextKeys extends GPCardKeys {
                 logger.debug("Encrypting {} value (KCV={}) with DEK (KCV={})", p, HexUtils.bin2hex(other.kcv(p)), HexUtils.bin2hex(kcv(KeyPurpose.DEK)));
                 return GPCrypto.des3_ecb(other.cardKeys.get(p), cardKeys.get(KeyPurpose.DEK));
             case SCP02:
-                byte[] sdek = deriveSessionKeySCP02(cardKeys.get(KeyPurpose.DEK), KeyPurpose.DEK, sessionContext);
+                final var sdek = deriveSessionKeySCP02(cardKeys.get(KeyPurpose.DEK), KeyPurpose.DEK, sessionContext);
                 logger.debug("Encrypting {} value (KCV={}) with S-DEK (KCV={})", p, HexUtils.bin2hex(other.kcv(p)), HexUtils.bin2hex(GPCrypto.kcv_3des(sdek)));
                 return GPCrypto.des3_ecb(other.cardKeys.get(p), sdek);
             case SCP03:
                 logger.debug("Encrypting {} value (KCV={}) with DEK (KCV={})", p, HexUtils.bin2hex(other.kcv(p)), HexUtils.bin2hex(kcv(KeyPurpose.DEK)));
-                byte[] otherkey = other.cardKeys.get(p);
+                final var otherkey = other.cardKeys.get(p);
                 // Pad with random
-                int n = otherkey.length % 16 + 1;
-                byte[] plaintext = GPCrypto.random(n * otherkey.length);
+                final var n = otherkey.length % 16 + 1;
+                final byte[] plaintext = GPCrypto.random(n * otherkey.length);
                 System.arraycopy(otherkey, 0, plaintext, 0, otherkey.length);
                 // encrypt
                 return GPCrypto.aes_cbc(plaintext, cardKeys.get(KeyPurpose.DEK), new byte[16]);
@@ -310,7 +315,7 @@ public class PlaintextKeys extends GPCardKeys {
 
     @SuppressWarnings("StatementSwitchToExpressionSwitch")
     @Override
-    public byte[] getSessionKey(KeyPurpose p, byte[] session_kdd) {
+    public byte[] getSessionKey(final KeyPurpose p, final byte[] session_kdd) {
         // Calculate session key (ENC-MAC-DEK[-RMAC])
         switch (scp) {
             case SCP01:
@@ -318,27 +323,29 @@ public class PlaintextKeys extends GPCardKeys {
             case SCP02:
                 if (p == KeyPurpose.RMAC) {
                     return deriveSessionKeySCP02(cardKeys.get(KeyPurpose.MAC), KeyPurpose.RMAC, session_kdd);
-                } else
+                } else {
                     return deriveSessionKeySCP02(cardKeys.get(p), p, session_kdd);
+                }
             case SCP03:
                 if (p == KeyPurpose.RMAC) {
                     return deriveSessionKeySCP03(cardKeys.get(KeyPurpose.MAC), KeyPurpose.RMAC, session_kdd);
-                } else
+                } else {
                     return deriveSessionKeySCP03(cardKeys.get(p), p, session_kdd);
+                }
             default:
                 throw new IllegalStateException("Unknown SCP");
         }
     }
 
     @Override
-    public byte[] kcv(KeyPurpose p) {
-        byte[] k = cardKeys.get(p);
+    public byte[] kcv(final KeyPurpose p) {
+        final var k = cardKeys.get(p);
 
-        if (scp == SCP03)
+        if (scp == SCP03) {
             return GPCrypto.kcv_aes(k);
-        else if (scp == SCP01 || scp == SCP02)
+        } else if (scp == SCP01 || scp == SCP02) {
             return GPCrypto.kcv_3des(k);
-        else {
+        } else {
             if (k.length == 16) {
                 logger.warn("Don't know how to calculate KCV, defaulting to SCP02");
                 return GPCrypto.kcv_3des(k);
@@ -349,18 +356,20 @@ public class PlaintextKeys extends GPCardKeys {
         }
     }
 
-    public void setVersion(int version) {
+    public void setVersion(final int version) {
         this.version = version;
     }
 
-    private byte[] deriveSessionKeySCP01(byte[] cardKey, KeyPurpose p, byte[] kdd) {
-        if (p == KeyPurpose.DEK)
+    private byte[] deriveSessionKeySCP01(final byte[] cardKey, final KeyPurpose p, final byte[] kdd) {
+        if (p == KeyPurpose.DEK) {
             return cardKey;
+        }
 
-        if (p == KeyPurpose.RMAC)
+        if (p == KeyPurpose.RMAC) {
             return null;
+        }
 
-        byte[] derivationData = new byte[16];
+        final byte[] derivationData = new byte[16];
         System.arraycopy(kdd, 12, derivationData, 0, 4);
         System.arraycopy(kdd, 0, derivationData, 4, 4);
         System.arraycopy(kdd, 8, derivationData, 8, 4);
@@ -375,9 +384,9 @@ public class PlaintextKeys extends GPCardKeys {
         }
     }
 
-    private byte[] deriveSessionKeySCP02(byte[] cardKey, KeyPurpose p, byte[] sequence) {
+    private byte[] deriveSessionKeySCP02(final byte[] cardKey, final KeyPurpose p, final byte[] sequence) {
         try {
-            byte[] derivationData = new byte[16];
+            final byte[] derivationData = new byte[16];
             // constant(2) | counter(2) | 0x00(12)
             System.arraycopy(SCP02_CONSTANTS.get(p), 0, derivationData, 0, 2);
             System.arraycopy(sequence, 0, derivationData, 2, 2);
@@ -387,7 +396,7 @@ public class PlaintextKeys extends GPCardKeys {
         }
     }
 
-    private byte[] deriveSessionKeySCP03(byte[] cardKey, KeyPurpose p, byte[] kdd) {
+    private byte[] deriveSessionKeySCP03(final byte[] cardKey, final KeyPurpose p, final byte[] kdd) {
         if (p == KeyPurpose.DEK) {
             return cardKey;
         }
@@ -395,7 +404,7 @@ public class PlaintextKeys extends GPCardKeys {
     }
 
     @Override
-    public PlaintextKeys diversify(GPSecureChannelVersion.SCP scp, byte[] kdd) {
+    public PlaintextKeys diversify(final GPSecureChannelVersion.SCP scp, final byte[] kdd) {
         if (kdd != null && kdd.length > 10) {
             throw new IllegalArgumentException("KDD too long: " + kdd.length);
         }
@@ -403,8 +412,9 @@ public class PlaintextKeys extends GPCardKeys {
         super.diversify(scp, kdd);
 
         // Do nothing
-        if (kdf_template == null)
+        if (kdf_template == null) {
             return this;
+        }
 
         logger.debug("KDF: applying '{}' to {} KDD {}", kdf_template, scp, HexUtils.bin2hex(kdd));
 
@@ -413,29 +423,29 @@ public class PlaintextKeys extends GPCardKeys {
         return this;
     }
 
-
     @Override
     public String toString() {
-        String enc = HexUtils.bin2hex(cardKeys.get(KeyPurpose.ENC));
-        String enc_kcv = HexUtils.bin2hex(kcv(KeyPurpose.ENC));
+        final var enc = HexUtils.bin2hex(cardKeys.get(KeyPurpose.ENC));
+        final var enc_kcv = HexUtils.bin2hex(kcv(KeyPurpose.ENC));
 
-        String mac = HexUtils.bin2hex(cardKeys.get(KeyPurpose.MAC));
-        String mac_kcv = HexUtils.bin2hex(kcv(KeyPurpose.MAC));
+        final var mac = HexUtils.bin2hex(cardKeys.get(KeyPurpose.MAC));
+        final var mac_kcv = HexUtils.bin2hex(kcv(KeyPurpose.MAC));
 
-        String dek = HexUtils.bin2hex(cardKeys.get(KeyPurpose.DEK));
-        String dek_kcv = HexUtils.bin2hex(kcv(KeyPurpose.DEK));
+        final var dek = HexUtils.bin2hex(cardKeys.get(KeyPurpose.DEK));
+        final var dek_kcv = HexUtils.bin2hex(kcv(KeyPurpose.DEK));
 
-        return String.format("ENC=%s (KCV: %s) MAC=%s (KCV: %s) DEK=%s (KCV: %s) for %s", enc, enc_kcv, mac, mac_kcv, dek, dek_kcv, scp);
+        return "ENC=%s (KCV: %s) MAC=%s (KCV: %s) DEK=%s (KCV: %s) for %s".formatted(enc, enc_kcv, mac, mac_kcv, dek, dek_kcv, scp);
     }
 
     public void setDiversifier(String template) {
-        if (this.kdf_template != null)
+        if (this.kdf_template != null) {
             throw new IllegalStateException("KDF already set");
+        }
         this.kdf_template = template;
     }
 
     @Override
-    public byte[] scp3_kdf(KeyPurpose purpose, byte[] a, byte[] b, int bytes) {
+    public byte[] scp3_kdf(final KeyPurpose purpose, final byte[] a, final byte[] b, final int bytes) {
         return GPCrypto.scp03_kdf(cardKeys.get(purpose), a, b, bytes);
     }
 
@@ -448,37 +458,40 @@ public class PlaintextKeys extends GPCardKeys {
         template = template.replace("0x", "");
 
         // replace $0..$f - KDD data
-        for (int i = 0; i < kdd.length; i++) {
-            template = template.replace(String.format("$%x", i), String.format("%02x", kdd[i]));
+        for (var i = 0; i < kdd.length; i++) {
+            template = template.replace("$%x".formatted(i), "%02x".formatted(kdd[i]));
         }
         // replace $k - key type
-        template = template.replace("$k", String.format("%02x", keytype));
+        template = template.replace("$k", "%02x".formatted(keytype));
 
         // $_ and $l$l will be replaced in KDF3 code.
         return template;
     }
 
     static String kdf_template_bitlength(String template, int bits) {
-        return template.replace("$l$l", String.format("%04x", bits));
+        return template.replace("$l$l", "%04x".formatted(bits));
     }
 
     static String kdf_template_blocka(String template) {
-        int pos = template.indexOf("$_");
-        if (pos == -1)
+        final var pos = template.indexOf("$_");
+        if (pos == -1) {
             throw new IllegalArgumentException("Invalid template (missing '$_'): " + template);
+        }
         return template.substring(0, pos);
     }
 
     static String kdf_template_blockb(String template) {
-        int pos = template.indexOf("$_");
-        if (pos == -1)
+        final var pos = template.indexOf("$_");
+        if (pos == -1) {
             throw new IllegalArgumentException("Invalid template (missing '$_'): " + template);
+        }
         return template.substring(pos + 2);
     }
 
     static byte[] kdf_template_finalize(String template) throws IllegalArgumentException {
-        if (template.contains("$"))
+        if (template.contains("$")) {
             throw new IllegalArgumentException("Invalid template (still includes '$'): " + template);
+        }
         return HexUtils.hex2bin(template);
     }
 }

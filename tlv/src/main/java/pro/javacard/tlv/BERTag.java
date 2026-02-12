@@ -29,16 +29,14 @@ import java.util.Objects;
 @SuppressWarnings("ArrayRecordComponent") // Defensive copies in constructor and accessor
 public record BERTag(byte[] bytes) implements Tag {
 
-    public BERTag {
-        bytes = validate(bytes).clone();
-    }
+    public BERTag { bytes = validate(bytes).clone(); }
 
     @Override
     public byte[] bytes() {
         return bytes.clone();
     }
 
-    static byte[] validate(byte[] value) {
+    static byte[] validate(final byte[] value) {
         Objects.requireNonNull(value, "tag cannot be null");
 
         if (value.length == 0 || value.length > 4) {
@@ -51,7 +49,7 @@ public record BERTag(byte[] bytes) implements Tag {
         }
 
         // Middle bytes must have continuation bit (0x80) set
-        for (int i = 1; i < value.length - 1; i++) {
+        for (var i = 1; i < value.length - 1; i++) {
             if ((value[i] & 0x80) == 0) {
                 throw new IllegalArgumentException("Tag continuation byte missing 0x80 bit");
             }
@@ -69,16 +67,16 @@ public record BERTag(byte[] bytes) implements Tag {
     }
 
     // Parse from buffer, only move position if successful
-    static BERTag parse(ByteBuffer buffer) {
-        var bytes = new byte[4];
-        var pos = buffer.position();
+    static BERTag parse(final ByteBuffer buffer) {
+        final var bytes = new byte[4];
+        final var pos = buffer.position();
         var len = 0;
 
         var b = buffer.get(pos);
         bytes[len++] = b;
 
         if ((b & 0x1F) == 0x1F) {
-            for (int i = 1; i < 4; i++) {
+            for (var i = 1; i < 4; i++) {
                 b = buffer.get(pos + i);
                 bytes[len++] = b;
                 if ((b & 0x80) == 0) {
@@ -87,7 +85,7 @@ public record BERTag(byte[] bytes) implements Tag {
             }
         }
         // Throws IllegalArgumentException if not valid
-        var tag = new BERTag(Arrays.copyOf(bytes, len));
+        final var tag = new BERTag(Arrays.copyOf(bytes, len));
 
         // Advance position on success only.
         buffer.position(pos + len);
@@ -100,7 +98,7 @@ public record BERTag(byte[] bytes) implements Tag {
     }
 
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
         return obj instanceof BERTag other && Arrays.equals(bytes, other.bytes);
     }
 

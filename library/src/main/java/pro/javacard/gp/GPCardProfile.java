@@ -29,13 +29,12 @@ import java.util.Optional;
 @SuppressWarnings("ClassInitializationDeadlock") // Subclasses are package-private and never loaded independently
 public abstract class GPCardProfile {
 
-    private GPCardProfile() {
-    }
+    private GPCardProfile() {}
 
     public static final Map<String, GPCardProfile> profiles;
 
     static {
-        LinkedHashMap<String, GPCardProfile> tmp = new LinkedHashMap<>();
+        final var tmp = new LinkedHashMap<String, GPCardProfile>();
         tmp.put("default", defaultProfile());
         tmp.put("old", new OldCardProfile());
         profiles = Collections.unmodifiableMap(tmp);
@@ -73,11 +72,11 @@ public abstract class GPCardProfile {
         return new DefaultModernProfile();
     }
 
-    static Optional<GPCardProfile> fromCPLC(byte[] cplc) {
+    static Optional<GPCardProfile> fromCPLC(final byte[] cplc) {
         return Optional.of(defaultProfile());
     }
 
-    public static Optional<GPCardProfile> fromName(String name) {
+    public static Optional<GPCardProfile> fromName(final String name) {
         return Optional.ofNullable(profiles.get(name));
     }
 }

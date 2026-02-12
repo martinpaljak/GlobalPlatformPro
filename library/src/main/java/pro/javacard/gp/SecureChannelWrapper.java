@@ -34,22 +34,24 @@ abstract class SecureChannelWrapper {
     protected boolean rmac; // could be sessions
     protected boolean renc;
 
-
     protected SecureChannelWrapper(byte[] enc, byte[] mac, byte[] rmac, int bs) {
         this.mac = true; // we always start in mac mode for external authenticate
         encKey = enc.clone();
         macKey = mac.clone();
-        if (rmac != null)
+        if (rmac != null) {
             rmacKey = rmac.clone();
+        }
         blockSize = bs;
     }
 
     protected int getBlockSize() {
-        int res = this.blockSize;
-        if (mac)
+        var res = this.blockSize;
+        if (mac) {
             res = res - 8;
-        if (enc)
+        }
+        if (enc) {
             res = res - 8;
+        }
         return res;
     }
 
@@ -57,7 +59,7 @@ abstract class SecureChannelWrapper {
 
     abstract ResponseAPDU unwrap(ResponseAPDU response) throws GPException;
 
-    void setSecurityLevel(EnumSet<GPSession.APDUMode> securityLevel) {
+    void setSecurityLevel(final EnumSet<GPSession.APDUMode> securityLevel) {
         mac = securityLevel.contains(GPSession.APDUMode.MAC);
         enc = securityLevel.contains(GPSession.APDUMode.ENC);
         rmac = securityLevel.contains(GPSession.APDUMode.RMAC);

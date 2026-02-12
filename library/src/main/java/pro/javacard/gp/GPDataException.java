@@ -25,15 +25,15 @@ import apdu4j.core.HexUtils;
 public class GPDataException extends GPException {
     private static final long serialVersionUID = -4966789553820406244L;
 
-    public GPDataException(String message) {
+    public GPDataException(final String message) {
         super(message);
     }
 
-    public GPDataException(String message, Throwable e) {
+    public GPDataException(final String message, final Throwable e) {
         super(message, e);
     }
 
-    public GPDataException(String message, byte[] data) {
+    public GPDataException(final String message, final byte[] data) {
         this(message + ": " + HexUtils.bin2hex(data));
     }
 }

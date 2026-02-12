@@ -12,4 +12,9 @@
     <Class name="pro.javacard.gp.GPCrypto"/>
     <Bug pattern="MS_PKGPROTECT"/>
   </Match>
+  <!-- final boolean constants are inlined by compiler, SpotBugs thinks fields are unread -->
+  <Match>
+    <Class name="pro.javacard.gp.SCP01Wrapper"/>
+    <Bug pattern="SS_SHOULD_BE_STATIC"/>
+  </Match>
 </FindBugsFilter>

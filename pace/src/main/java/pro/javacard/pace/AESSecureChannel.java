@@ -25,35 +25,35 @@ public final class AESSecureChannel implements BIBO {
     private final byte[] enc_key;
     final BIBO channel;
 
-    public AESSecureChannel(byte[] enc, byte[] mac, BIBO channel) {
+    public AESSecureChannel(final byte[] enc, final byte[] mac, final BIBO channel) {
         enc_key = enc.clone();
         mac_key = mac.clone();
         this.ssc = new byte[16];
         this.channel = channel;
     }
 
-    public CommandAPDU wrap(CommandAPDU apdu) throws GeneralSecurityException, IOException {
+    public CommandAPDU wrap(final CommandAPDU apdu) throws GeneralSecurityException, IOException {
         log.debug("CommandAPDU  : {}", HexUtils.bin2hex(apdu.getBytes()));
         // Increment SSC
         buffer_increment(ssc);
         log.trace("Command SSC  : {}", HexUtils.bin2hex(ssc));
 
         // IV is encryption of the SSC
-        byte[] iv = encrypt(enc_key, new byte[16], ssc);
+        final byte[] iv = encrypt(enc_key, new byte[16], ssc);
         log.trace("IV           : {}", HexUtils.bin2hex(iv));
 
-        int cla = apdu.getCLA() | 0x0C;
-        int ins = apdu.getINS();
-        int p1 = apdu.getP1();
-        int p2 = apdu.getP2();
+        final var cla = apdu.getCLA() | 0x0C;
+        final var ins = apdu.getINS();
+        final var p1 = apdu.getP1();
+        final var p2 = apdu.getP2();
 
         // Construct mac input
-        ByteArrayOutputStream macinput = new ByteArrayOutputStream();
+        final var macinput = new ByteArrayOutputStream();
         // Prepend SSC
         macinput.write(ssc);
 
         // Add APDU header
-        ByteArrayOutputStream header = new ByteArrayOutputStream();
+        final var header = new ByteArrayOutputStream();
         header.write(cla);
         header.write(ins);
         header.write(p1);
@@ -66,36 +66,37 @@ public final class AESSecureChannel implements BIBO {
 
         // Encrypt payload
         if (apdu.getData().length > 0) {
-            byte[] plaintext = pad80(apdu.getData(), 16);
+            final byte[] plaintext = pad80(apdu.getData(), 16);
             log.trace("ENC payload  : {}", HexUtils.bin2hex(plaintext));
-            byte[] cgram = encrypt(enc_key, iv, plaintext);
+            final byte[] cgram = encrypt(enc_key, iv, plaintext);
 
             // TLV header. +1 for padding indicator (0x01)
-            newdata = concatenate(new byte[]{(byte) 0x87, (byte) (cgram.length + 1), 0x01}, cgram);
+            newdata = concatenate(new byte[] { (byte) 0x87, (byte) (cgram.length + 1), 0x01 }, cgram);
             log.trace("New payload  : {}", HexUtils.bin2hex(newdata));
 
             // Le FIXME: only short size currently ?
-            macinput.write(pad80(concatenate(newdata, new byte[]{(byte) 0x97, 0x01, (byte) apdu.getNe()}), 16));
+            macinput.write(pad80(concatenate(newdata, new byte[] { (byte) 0x97, 0x01, (byte) apdu.getNe() }), 16));
         } else {
             newdata = new byte[0];
             // Add Le to mac
-            macinput.write(pad80(new byte[]{(byte) 0x97, 0x01, (byte) apdu.getNe()}, 16));
+            macinput.write(pad80(new byte[] { (byte) 0x97, 0x01, (byte) apdu.getNe() }, 16));
         }
 
         log.trace("MAC input    : {}", HexUtils.bin2hex(macinput.toByteArray()));
         // Calculate mac
-        byte[] mac = PACE.aes_mac8(mac_key, macinput.toByteArray());
+        final byte[] mac = PACE.aes_mac8(mac_key, macinput.toByteArray());
         log.trace("Calculated MAC: {}", HexUtils.bin2hex(mac));
 
         // Construct new payload
-        ByteArrayOutputStream payload = new ByteArrayOutputStream();
+        final var payload = new ByteArrayOutputStream();
 
         // encrypted data with 0x87 header
-        if (apdu.getData().length > 0)
+        if (apdu.getData().length > 0) {
             payload.write(newdata);
+        }
 
         //if (apdu.getNe() == 0x00)
-        payload.write(new byte[]{(byte) 0x97, 0x01, (byte) apdu.getNe()});
+        payload.write(new byte[] { (byte) 0x97, 0x01, (byte) apdu.getNe() });
 
         // append mac
         payload.write(0x8e);
@@ -105,72 +106,75 @@ public final class AESSecureChannel implements BIBO {
         return new CommandAPDU(cla, ins, p1, p2, payload.toByteArray(), 256);
     }
 
-    public ResponseAPDU unwrap(ResponseAPDU apdu) throws SecureChannelException, IOException, GeneralSecurityException {
-        if (apdu.getSW() == 0x6987)
+    public ResponseAPDU unwrap(final ResponseAPDU apdu) throws SecureChannelException, IOException, GeneralSecurityException {
+        if (apdu.getSW() == 0x6987) {
             throw new SecureChannelException("Expected Secure Messaging data objects are missing");
-        if (apdu.getSW() == 0x6988)
+        }
+        if (apdu.getSW() == 0x6988) {
             throw new SecureChannelException("Secure Messaging data objects are incorrect");
+        }
 
         buffer_increment(ssc);
         log.trace("Response SSC  : {}", HexUtils.bin2hex(ssc));
-        ByteArrayOutputStream fresh = new ByteArrayOutputStream();
-        ByteArrayOutputStream macinput = new ByteArrayOutputStream();
+        final var fresh = new ByteArrayOutputStream();
+        final var macinput = new ByteArrayOutputStream();
         // Prepend SSC
         macinput.write(ssc);
 
         byte[] cardmac = null;
 
-        var tlvs = TLV.parse(apdu.getData());
+        final var tlvs = TLV.parse(apdu.getData());
 
-        var payloadtag = TLV.find(tlvs, Tag.ber(0x87)).orElse(null);
+        final var payloadtag = TLV.find(tlvs, Tag.ber(0x87)).orElse(null);
         if (payloadtag != null) {
-            byte[] iv = encrypt(enc_key, new byte[16], ssc);
+            final byte[] iv = encrypt(enc_key, new byte[16], ssc);
             log.trace("IV           : {}", HexUtils.bin2hex(iv));
 
-            byte[] payload = payloadtag.value();
-            byte[] cgram = Arrays.copyOfRange(payload, 1, payload.length);
+            final var payload = payloadtag.value();
+            final byte[] cgram = Arrays.copyOfRange(payload, 1, payload.length);
             log.trace("cgram        : {}", HexUtils.bin2hex(cgram));
 
-            byte[] plaintext = decrypt(enc_key, iv, cgram);
+            final byte[] plaintext = decrypt(enc_key, iv, cgram);
             log.trace("plaintext    : {}", HexUtils.bin2hex(plaintext));
 
             fresh.write(unpad80(plaintext));
             macinput.write(TLV.of(Tag.ber(0x87), payload).encode());
         }
 
-        var swtag = TLV.find(tlvs, Tag.ber(0x99)).orElse(null);
+        final var swtag = TLV.find(tlvs, Tag.ber(0x99)).orElse(null);
         if (swtag != null) {
             macinput.write(TLV.of(Tag.ber(0x99), swtag.value()).encode());
             fresh.write(swtag.value());
         }
-        var mactag = TLV.find(tlvs, Tag.ber(0x8e)).orElse(null);
+        final var mactag = TLV.find(tlvs, Tag.ber(0x8e)).orElse(null);
         if (mactag != null) {
             cardmac = mactag.value();
         }
 
         // Calculate mac
-        byte[] mac = PACE.aes_mac8(mac_key, pad80(macinput.toByteArray(), 16));
+        final byte[] mac = PACE.aes_mac8(mac_key, pad80(macinput.toByteArray(), 16));
         log.trace("Our mac       : {}", HexUtils.bin2hex(mac));
 
-        if (!Arrays.equals(cardmac, mac))
+        if (!Arrays.equals(cardmac, mac)) {
             throw new SecureChannelException("Secure channel response MAC failed");
-        byte[] responseapdu = fresh.toByteArray();
+        }
+        final var responseapdu = fresh.toByteArray();
         log.debug("ResponseAPDU : {}", HexUtils.bin2hex(responseapdu));
         return new ResponseAPDU(responseapdu);
     }
 
-    public static byte[] pad80(byte[] text, int blocksize) {
-        int total = (text.length / blocksize + 1) * blocksize;
-        byte[] result = Arrays.copyOfRange(text, 0, total);
+    public static byte[] pad80(final byte[] text, final int blocksize) {
+        final var total = (text.length / blocksize + 1) * blocksize;
+        final byte[] result = Arrays.copyOfRange(text, 0, total);
         result[text.length] = (byte) 0x80;
         return result;
     }
 
-
-    public static byte[] unpad80(byte[] buffer) throws BadPaddingException {
-        if (buffer.length < 1)
+    public static byte[] unpad80(final byte[] buffer) throws BadPaddingException {
+        if (buffer.length < 1) {
             throw new BadPaddingException("Invalid ISO 7816-4 padding");
-        int offset = buffer.length - 1;
+        }
+        var offset = buffer.length - 1;
         while (offset > 0 && buffer[offset] == 0) {
             offset--;
         }
@@ -181,27 +185,28 @@ public final class AESSecureChannel implements BIBO {
     }
 
     private static void buffer_increment(byte[] buffer, int offset, int len) {
-        if (len < 1)
+        if (len < 1) {
             return;
-        for (int i = offset + len - 1; i >= offset; i--) {
+        }
+        for (var i = offset + len - 1; i >= offset; i--) {
             if (buffer[i] != (byte) 0xFF) {
                 buffer[i]++;
                 break;
-            } else
+            } else {
                 buffer[i] = (byte) 0x00;
+            }
         }
     }
 
-    public static void buffer_increment(byte[] buffer) {
+    public static void buffer_increment(final byte[] buffer) {
         buffer_increment(buffer, 0, buffer.length);
     }
 
-
     @Override
-    public byte[] transceive(byte[] bytes) throws BIBOException {
+    public byte[] transceive(final byte[] bytes) throws BIBOException {
         try {
-            byte[] payload = wrap(new CommandAPDU(bytes)).getBytes();
-            ResponseAPDU r = new ResponseAPDU(channel.transceive(payload));
+            final var payload = wrap(new CommandAPDU(bytes)).getBytes();
+            final var r = new ResponseAPDU(channel.transceive(payload));
             return unwrap(r).getBytes();
         } catch (GeneralSecurityException | IOException e) {
             throw new BIBOException("Could not wrap/unwrap: " + e.getMessage(), e);
@@ -215,16 +220,17 @@ public final class AESSecureChannel implements BIBO {
     }
 
     public int getMaxTransceiveLength() {
-        int chunksize = 256 - 18 - 16; // FIXME WTF ?
+        final var chunksize = 256 - 18 - 16; // FIXME WTF ?
         return chunksize;
     }
 
-    public static byte[] concatenate(byte[]... args) {
-        int length = 0, pos = 0;
+    public static byte[] concatenate(final byte[]... args) {
+        var length = 0;
+        var pos = 0;
         for (byte[] arg : args) {
             length += arg.length;
         }
-        byte[] result = new byte[length];
+        final byte[] result = new byte[length];
         for (byte[] arg : args) {
             System.arraycopy(arg, 0, result, pos, arg.length);
             pos += arg.length;
@@ -232,14 +238,14 @@ public final class AESSecureChannel implements BIBO {
         return result;
     }
 
-    static byte[] encrypt(byte[] key, byte[] iv, byte[] data) throws GeneralSecurityException {
-        Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding");
+    static byte[] encrypt(final byte[] key, final byte[] iv, final byte[] data) throws GeneralSecurityException {
+        final Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding");
         cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key, "AES"), new IvParameterSpec(iv));
         return cipher.doFinal(data);
     }
 
-    static byte[] decrypt(byte[] key, byte[] iv, byte[] data) throws GeneralSecurityException {
-        Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding");
+    static byte[] decrypt(final byte[] key, final byte[] iv, final byte[] data) throws GeneralSecurityException {
+        final Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding");
         cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(key, "AES"), new IvParameterSpec(iv));
         return cipher.doFinal(data);
     }

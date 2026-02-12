@@ -33,26 +33,26 @@ import java.security.interfaces.RSAPrivateKey;
 public abstract class DMTokenizer {
     private static final Logger log = LoggerFactory.getLogger(DMTokenizer.class);
 
-    protected DMTokenizer() {
-    }
+    protected DMTokenizer() {}
 
-    abstract protected byte[] getToken(CommandAPDU apdu);
+    protected abstract byte[] getToken(CommandAPDU apdu);
 
-    abstract protected boolean canTokenize(CommandAPDU apdu);
+    protected abstract boolean canTokenize(CommandAPDU apdu);
 
-    public CommandAPDU tokenize(CommandAPDU apdu) {
+    public CommandAPDU tokenize(final CommandAPDU apdu) {
         try {
-            ByteArrayOutputStream data = new ByteArrayOutputStream();
+            final var data = new ByteArrayOutputStream();
             data.write(apdu.getData());
             if (!canTokenize(apdu)) {
                 throw new IllegalArgumentException("No DM token for APDU: " + apdu);
             }
-            byte[] token = getToken(apdu);
+            final var token = getToken(apdu);
 
             if (token.length > 0) {
                 // Handle DELETE and prefix with tag
-                if (apdu.getINS() == 0xE4)
+                if (apdu.getINS() == 0xE4) {
                     data.write(0x9E);
+                }
                 data.write(GPUtils.encodeLength(token.length));
                 data.write(token);
             } else {
@@ -66,9 +66,9 @@ public abstract class DMTokenizer {
         }
     }
 
-    protected byte[] dtbs(CommandAPDU apdu) {
+    protected byte[] dtbs(final CommandAPDU apdu) {
         try {
-            ByteArrayOutputStream bo = new ByteArrayOutputStream();
+            final var bo = new ByteArrayOutputStream();
             bo.write(apdu.getP1());
             bo.write(apdu.getP2());
             bo.write(GPUtils.encodeLcLength(apdu.getData().length, apdu.getNe()));
@@ -79,11 +79,11 @@ public abstract class DMTokenizer {
         }
     }
 
-    public static DMTokenizer forPrivateKey(RSAPrivateKey pkey) {
+    public static DMTokenizer forPrivateKey(final RSAPrivateKey pkey) {
         return new RSATokenizer(pkey);
     }
 
-    public static DMTokenizer forToken(byte[] token) {
+    public static DMTokenizer forToken(final byte[] token) {
         return new StaticTokenizer(token);
     }
 
@@ -96,18 +96,18 @@ public abstract class DMTokenizer {
 
         private final RSAPrivateKey privateKey;
 
-        RSATokenizer(RSAPrivateKey privateKey) {
+        RSATokenizer(final RSAPrivateKey privateKey) {
             this.privateKey = privateKey;
         }
 
         @Override
-        protected boolean canTokenize(CommandAPDU apdu) {
+        protected boolean canTokenize(final CommandAPDU apdu) {
             return true;
         }
 
         @Override
-        protected byte[] getToken(CommandAPDU apdu) {
-            byte[] dtbs = dtbs(apdu);
+        protected byte[] getToken(final CommandAPDU apdu) {
+            final var dtbs = dtbs(apdu);
 
             try {
                 final byte[] token = GPCrypto.rsa_sign(privateKey, dtbs);
@@ -123,12 +123,12 @@ public abstract class DMTokenizer {
     static class NULLTokenizer extends DMTokenizer {
 
         @Override
-        protected byte[] getToken(CommandAPDU apdu) {
+        protected byte[] getToken(final CommandAPDU apdu) {
             return new byte[0];
         }
 
         @Override
-        protected boolean canTokenize(CommandAPDU apdu) {
+        protected boolean canTokenize(final CommandAPDU apdu) {
             return true;
         }
     }
@@ -140,18 +140,18 @@ public abstract class DMTokenizer {
         private final byte[] token;
         private boolean used = false;
 
-        StaticTokenizer(byte[] token) {
+        StaticTokenizer(final byte[] token) {
             this.token = token;
         }
 
         @Override
-        protected byte[] getToken(CommandAPDU apdu) {
+        protected byte[] getToken(final CommandAPDU apdu) {
             used = true;
             return token;
         }
 
         @Override
-        protected boolean canTokenize(CommandAPDU apdu) {
+        protected boolean canTokenize(final CommandAPDU apdu) {
             return !used;
         }
     }

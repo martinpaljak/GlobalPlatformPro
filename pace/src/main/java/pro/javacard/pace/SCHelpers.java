@@ -8,28 +8,28 @@ import java.util.ArrayList;
 import java.util.List;
 
 class SCHelpers {
-    static void dump(TLV tlv, int depth, List<String> result) {
+    static void dump(final TLV tlv, final int depth, final List<String> result) {
         if (tlv.hasChildren()) {
-            result.add(String.format("%s[%s]", " ".repeat(depth * 5), Hex.toHexString(tlv.tag().bytes())));
+            result.add("%s[%s]".formatted(" ".repeat(depth * 5), Hex.toHexString(tlv.tag().bytes())));
 
             for (TLV child : tlv.children()) {
                 dump(child, depth + 1, result);
             }
         } else {
-            result.add(String.format("%s[%s] %s", " ".repeat(depth * 5), Hex.toHexString(tlv.tag().bytes()), Hex.toHexString(tlv.value())));
+            result.add("%s[%s] %s".formatted(" ".repeat(depth * 5), Hex.toHexString(tlv.tag().bytes()), Hex.toHexString(tlv.value())));
         }
     }
 
-    static void dump(List<TLV> list, int depth, List<String> result) {
+    static void dump(final List<TLV> list, final int depth, final List<String> result) {
         for (TLV t : list) {
             dump(t, depth, result);
         }
     }
 
-    public static List<String> visualize_tlv(byte[] payload) {
-        ArrayList<String> result = new ArrayList<>();
+    public static List<String> visualize_tlv(final byte[] payload) {
+        final var result = new ArrayList<String>();
         try {
-            var tlvs = TLV.parse(payload);
+            final var tlvs = TLV.parse(payload);
             dump(tlvs, 0, result);
         } catch (ArrayIndexOutOfBoundsException e) {
             throw new IllegalArgumentException("Not valid TLVs: " + e.getMessage(), e);
@@ -37,10 +37,11 @@ class SCHelpers {
         return result;
     }
 
-    static void trace_tlv(byte[] data, Logger l) {
+    static void trace_tlv(final byte[] data, final Logger l) {
         try {
-            for (String s : visualize_tlv(data))
+            for (String s : visualize_tlv(data)) {
                 l.trace(s);
+            }
         } catch (IllegalArgumentException e) {
             l.error("Invalid TLV data: {}", Hex.toHexString(data), e);
         }

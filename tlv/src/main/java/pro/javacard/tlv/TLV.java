@@ -31,11 +31,11 @@ public final class TLV {
     private final List<TLV> children;
     private TLV parent;
 
-    TLV(Tag tag, byte[] value, List<TLV> children) {
+    TLV(final Tag tag, final byte[] value, final List<TLV> children) {
         this(tag, value, children, null);
     }
 
-    private TLV(Tag tag, byte[] value, List<TLV> children, TLV parent) {
+    private TLV(final Tag tag, final byte[] value, final List<TLV> children, final TLV parent) {
         this.tag = Objects.requireNonNull(tag, "tag cannot be null");
         this.value = value;
         this.children = children == null ? new ArrayList<>() : children;
@@ -43,22 +43,22 @@ public final class TLV {
     }
 
     // Factory methods
-    public static TLV of(Tag tag, byte[] value) {
+    public static TLV of(final Tag tag, final byte[] value) {
         return new TLV(tag, value.clone(), null, null);
     }
 
-    public static TLV of(String tag, byte[] value) {
+    public static TLV of(final String tag, final byte[] value) {
         return new TLV(Tag.ber(tag), value.clone(), null, null);
     }
 
-    public static TLV of(Tag tag, TLV... tlvs) {
+    public static TLV of(final Tag tag, final TLV... tlvs) {
         return of(tag, Arrays.asList(tlvs));
     }
 
-    public static TLV of(Tag tag, Collection<TLV> tlvs) {
+    public static TLV of(final Tag tag, final Collection<TLV> tlvs) {
         Objects.requireNonNull(tag, "tag");
-        var children = new ArrayList<TLV>(tlvs.size());
-        var parent = new TLV(tag, null, children, null);
+        final var children = new ArrayList<TLV>(tlvs.size());
+        final var parent = new TLV(tag, null, children, null);
         for (var tlv : tlvs) {
             Objects.requireNonNull(tlv, "child TLV");
             tlv.parent = parent;
@@ -68,12 +68,12 @@ public final class TLV {
     }
 
     // Fluent builder for constructed TLV
-    public static TLV build(Tag tag) {
+    public static TLV build(final Tag tag) {
         Objects.requireNonNull(tag, "tag");
         return new TLV(tag, null, new ArrayList<>(), null);
     }
 
-    public static TLV build(String tagHex) {
+    public static TLV build(final String tagHex) {
         return build(Tag.ber(tagHex));
     }
 
@@ -88,15 +88,15 @@ public final class TLV {
         if (children.isEmpty()) {
             return new byte[0];
         }
-        var encoded = new ArrayList<byte[]>();
-        int total = 0;
+        final var encoded = new ArrayList<byte[]>();
+        var total = 0;
         for (var child : children) {
-            var bytes = child.encode();
+            final var bytes = child.encode();
             encoded.add(bytes);
             total += bytes.length;
         }
-        var result = new byte[total];
-        int offset = 0;
+        final var result = new byte[total];
+        var offset = 0;
         for (var bytes : encoded) {
             System.arraycopy(bytes, 0, result, offset, bytes.length);
             offset += bytes.length;
@@ -113,12 +113,12 @@ public final class TLV {
     }
 
     // Navigation
-    public TLV find(Tag tag) {
+    public TLV find(final Tag tag) {
         if (this.tag.equals(tag)) {
             return this;
         }
         for (var t : children) {
-            var r = t.find(tag);
+            final var r = t.find(tag);
             if (r != null) {
                 return r;
             }
@@ -126,11 +126,11 @@ public final class TLV {
         return null;
     }
 
-    public TLV find(Tag tag, int maxDepth) {
+    public TLV find(final Tag tag, final int maxDepth) {
         return find(tag, maxDepth, 0);
     }
 
-    private TLV find(Tag tag, int maxDepth, int depth) {
+    private TLV find(final Tag tag, final int maxDepth, final int depth) {
         if (this.tag.equals(tag)) {
             return this;
         }
@@ -138,7 +138,7 @@ public final class TLV {
             return null;
         }
         for (var t : children) {
-            var r = t.find(tag, maxDepth, depth + 1);
+            final var r = t.find(tag, maxDepth, depth + 1);
             if (r != null) {
                 return r;
             }
@@ -146,8 +146,8 @@ public final class TLV {
         return null;
     }
 
-    public List<TLV> findAll(Tag t) {
-        List<TLV> result = new ArrayList<>();
+    public List<TLV> findAll(final Tag t) {
+        final var result = new ArrayList<TLV>();
         if (this.tag.equals(t)) {
             result.add(this);
             return result;
@@ -159,17 +159,18 @@ public final class TLV {
     }
 
     // Static helpers for List<TLV>
-    public static Optional<TLV> find(List<TLV> list, Tag tag) {
+    public static Optional<TLV> find(final List<TLV> list, final Tag tag) {
         for (var tlv : list) {
-            var r = tlv.find(tag);
-            if (r != null)
+            final var r = tlv.find(tag);
+            if (r != null) {
                 return Optional.of(r);
+            }
         }
         return Optional.empty();
     }
 
-    public static List<TLV> findAll(List<TLV> list, Tag tag) {
-        var result = new ArrayList<TLV>();
+    public static List<TLV> findAll(final List<TLV> list, final Tag tag) {
+        final var result = new ArrayList<TLV>();
         for (var tlv : list) {
             result.addAll(tlv.findAll(tag));
         }
@@ -177,7 +178,7 @@ public final class TLV {
     }
 
     // Fluent builder methods
-    public TLV add(TLV tlv) {
+    public TLV add(final TLV tlv) {
         Objects.requireNonNull(tlv, "tlv");
         if (value != null) {
             throw new IllegalStateException("Cannot add children to primitive TLV");
@@ -187,29 +188,29 @@ public final class TLV {
         return this;
     }
 
-    public TLV add(Tag childTag, byte[] value) {
+    public TLV add(final Tag childTag, final byte[] value) {
         Objects.requireNonNull(childTag, "childTag");
         Objects.requireNonNull(value, "value");
         return add(TLV.of(childTag, value));
     }
 
-    public TLV add(String childTagHex, byte[] value) {
+    public TLV add(final String childTagHex, final byte[] value) {
         Objects.requireNonNull(childTagHex, "childTagHex");
         Objects.requireNonNull(value, "value");
         return add(TLV.of(childTagHex, value));
     }
 
-    public TLV add(byte[] childTagBytes, byte[] value) {
+    public TLV add(final byte[] childTagBytes, final byte[] value) {
         Objects.requireNonNull(childTagBytes, "childTagBytes");
         Objects.requireNonNull(value, "value");
         return add(TLV.of(Tag.ber(childTagBytes), value));
     }
 
-    public TLV addByte(Tag tag, byte value) {
+    public TLV addByte(final Tag tag, final byte value) {
         return add(tag, new byte[] { value });
     }
 
-    public TLV addByte(String tag, byte value) {
+    public TLV addByte(final String tag, final byte value) {
         return add(tag, new byte[] { value });
     }
 
@@ -226,23 +227,23 @@ public final class TLV {
     }
 
     // Parsing - convenience methods for BER-TLV
-    public static List<TLV> parse(byte[] data) {
+    public static List<TLV> parse(final byte[] data) {
         return TLVParser.parse(data, Tag.Type.BER);
     }
 
-    public static List<TLV> parse(ByteBuffer buffer) {
+    public static List<TLV> parse(final ByteBuffer buffer) {
         return TLVParser.parse(buffer, Tag.Type.BER);
     }
 
-    public static TLV parseSingle(ByteBuffer buffer) {
+    public static TLV parseSingle(final ByteBuffer buffer) {
         return TLVParser.parseOne(buffer, Tag.Type.BER);
     }
 
     // Visualization
-    private static void visualize(TLV tlv, int indent, List<String> list) {
+    private static void visualize(final TLV tlv, final int indent, final List<String> list) {
         if (tlv.hasChildren()) {
             list.add(" ".repeat(indent) + tlv.tag);
-            int tagLen = tlv.tag.bytes().length;
+            final var tagLen = tlv.tag.bytes().length;
             for (var t : tlv.children) {
                 visualize(t, indent + tagLen * 2 + 2, list);
             }
@@ -252,13 +253,13 @@ public final class TLV {
     }
 
     public List<String> visualize() {
-        var result = new ArrayList<String>();
+        final var result = new ArrayList<String>();
         visualize(this, 0, result);
         return result;
     }
 
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
         return obj instanceof TLV other
                 && this.tag.equals(other.tag)
                 && Arrays.equals(this.value, other.value)

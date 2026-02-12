@@ -33,8 +33,7 @@ import java.util.Optional;
 // Providers are free to derive session keys based on hardware backed master keys
 // PlaintextKeys provides card keys, that are ... plaintext (not backed by hardware)
 public abstract class GPCardKeys {
-    public GPCardKeys() {
-    }
+    public GPCardKeys() {}
 
     private static final Logger logger = LoggerFactory.getLogger(GPCardKeys.class);
 
@@ -53,7 +52,7 @@ public abstract class GPCardKeys {
 
         private final int value;
 
-        KeyPurpose(int value) {
+        KeyPurpose(final int value) {
             this.value = value;
         }
 
@@ -80,9 +79,10 @@ public abstract class GPCardKeys {
     public abstract byte[] kcv(KeyPurpose p);
 
     // Diversify card keys automatically, based on INITIALIZE UPDATE response
-    public GPCardKeys diversify(GPSecureChannelVersion.SCP scp, byte[] kdd) {
-        if (diversified)
+    public GPCardKeys diversify(final GPSecureChannelVersion.SCP scp, final byte[] kdd) {
+        if (diversified) {
             throw new IllegalStateException("Keys already diversified!");
+        }
         this.scp = scp; // We know for sure what is the type of the key.
         if (this.kdd != null && !Arrays.equals(this.kdd, kdd)) {
             logger.warn("KDD-s don't match: {} vs {}", HexUtils.bin2hex(this.kdd), HexUtils.bin2hex(kdd));
@@ -99,7 +99,8 @@ public abstract class GPCardKeys {
 
     @Override
     public String toString() {
-        return String.format("KCV-s (%s) ENC=%s MAC=%s DEK=%s", scp, HexUtils.bin2hex(kcv(KeyPurpose.ENC)), HexUtils.bin2hex(kcv(KeyPurpose.MAC)), HexUtils.bin2hex(kcv(KeyPurpose.DEK)));
+        return "KCV-s (%s) ENC=%s MAC=%s DEK=%s".formatted(scp, HexUtils.bin2hex(kcv(KeyPurpose.ENC)), HexUtils.bin2hex(kcv(KeyPurpose.MAC)),
+                HexUtils.bin2hex(kcv(KeyPurpose.DEK)));
     }
 
     public abstract byte[] scp3_kdf(KeyPurpose purpose, byte[] a, byte[] b, int bytes);

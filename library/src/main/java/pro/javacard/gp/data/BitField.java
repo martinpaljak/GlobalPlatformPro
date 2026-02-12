@@ -41,13 +41,13 @@ public interface BitField<T extends Enum<T> & BitField<T>> {
     // Parse bytes, throw if RFU bits are set
     static <T extends Enum<T> & BitField<T>> Set<T> parse(Class<T> clazz, byte[] bytes, int... validLengths) {
         if (validLengths.length > 0) {
-            boolean valid = Arrays.stream(validLengths).anyMatch(l -> l == bytes.length);
+            final var valid = Arrays.stream(validLengths).anyMatch(l -> l == bytes.length);
             if (!valid) {
                 throw new IllegalArgumentException(clazz.getSimpleName() + " must be " +
                         Arrays.toString(validLengths) + " bytes: " + HexUtils.bin2hex(bytes));
             }
         }
-        var r = parse(clazz, bytes);
+        final var r = parse(clazz, bytes);
         // Check for RFU
         for (var e : r) {
             if (e.def() instanceof Def.RFU) {
@@ -89,7 +89,7 @@ public interface BitField<T extends Enum<T> & BitField<T>> {
     }
 
     static <T extends Enum<T> & BitField<T>> Set<T> parse(Class<T> base, byte[] bytes) {
-        var result = EnumSet.noneOf(base);
+        final var result = EnumSet.noneOf(base);
         for (var e : base.getEnumConstants()) {
             if (has(bytes, e.def(), true)) {
                 result.add(e);
@@ -102,13 +102,13 @@ public interface BitField<T extends Enum<T> & BitField<T>> {
     }
 
     static <T extends Enum<T> & BitField<T>> byte[] toBytes(Set<T> fields, int length) {
-        byte[] result = new byte[length];
+        final byte[] result = new byte[length];
 
         for (var field : fields) {
-            Def def = field.def();
+            final var def = field.def();
             if (def instanceof Def.Bits bits) {
                 for (var bit : bits.bits()) {
-                    int byteIdx = bit >> 3;
+                    final var byteIdx = bit >> 3;
                     if (byteIdx < length) {
                         set_bit(bit, result);
                     }
@@ -127,15 +127,15 @@ public interface BitField<T extends Enum<T> & BitField<T>> {
     }
 
     static <T extends Enum<T> & BitField<T>> byte[] toBytes(Set<T> fields) {
-        byte[] result = toBytes(fields, 16);
+        final byte[] result = toBytes(fields, 16);
 
         // Trim trailing zeros
-        int length = 16;
+        var length = 16;
         while (length > 0 && result[length - 1] == 0) {
             length--;
         }
 
-        byte[] trimmed = new byte[length];
+        final byte[] trimmed = new byte[length];
         System.arraycopy(result, 0, trimmed, 0, length);
         return trimmed;
     }
@@ -150,19 +150,18 @@ public interface BitField<T extends Enum<T> & BitField<T>> {
 
     // JC variants
     static boolean set_bit(byte[] buffer, short offset, byte bit) {
-        short byteIdx = (short) (offset + (bit >> 3));  // offset + bit / 8
-        byte bitInByte = (byte) (7 - (bit & 7));  // 7 - (bit % 8)
-        boolean previous = (byte) ((buffer[byteIdx] >> bitInByte) & 1) == 1;
+        final var byteIdx = (short) (offset + (bit >> 3)); // offset + bit / 8
+        final var bitInByte = (byte) (7 - (bit & 7)); // 7 - (bit % 8)
+        final var previous = (byte) ((buffer[byteIdx] >> bitInByte) & 1) == 1;
         buffer[byteIdx] = (byte) (buffer[byteIdx] | (byte) (1 << bitInByte));
         return previous;
     }
 
     static boolean get_bit(byte[] buffer, short offset, byte bit) {
-        short byteIdx = (short) (offset + (bit >> 3));  // offset + bit / 8
-        byte bitInByte = (byte) (7 - (bit & 7));  // 7 - (bit % 8)
+        final var byteIdx = (short) (offset + (bit >> 3)); // offset + bit / 8
+        final var bitInByte = (byte) (7 - (bit & 7)); // 7 - (bit % 8)
         return (byte) ((buffer[byteIdx] >> bitInByte) & 1) == 1;
     }
-
 
     // n-th bit from the left
     static Def.Bits bit(int n) {
@@ -189,9 +188,9 @@ public interface BitField<T extends Enum<T> & BitField<T>> {
 
     // Calculate the length in bytes required to store the whole bitfield
     static <T extends Enum<T> & BitField<T>> int length(Class<T> clazz) {
-        int max = 0;
+        var max = 0;
         for (var e : clazz.getEnumConstants()) {
-            int len = e.def().length();
+            final var len = e.def().length();
             if (len > max) {
                 max = len;
             }
@@ -207,9 +206,9 @@ public interface BitField<T extends Enum<T> & BitField<T>> {
         default int length() {
             if (this instanceof Def.Bits bits) {
                 // find the highest bit
-                int max = 0;
+                var max = 0;
                 for (byte b : bits.bits()) {
-                    int v = b & 0xFF;
+                    final var v = b & 0xFF;
                     if (v > max) {
                         max = v;
                     }
@@ -225,17 +224,13 @@ public interface BitField<T extends Enum<T> & BitField<T>> {
 
         // Present, if all bits are present
         record Bits(List<Byte> bits) implements Def {
-            public Bits {
-                bits = List.copyOf(bits);
-            }
+            public Bits { bits = List.copyOf(bits); }
         }
 
         // Present, if n-th byte (0-based) has the mask.
-        record ByteMask(byte n, byte mask) implements Def {
-        }
+        record ByteMask(byte n, byte mask) implements Def {}
 
         // Special type for bits that MUST NOT be set.
-        record RFU(Def def) implements Def {
-        }
+        record RFU(Def def) implements Def {}
     }
 }

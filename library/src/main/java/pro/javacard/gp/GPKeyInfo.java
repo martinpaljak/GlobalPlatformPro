@@ -45,20 +45,20 @@ public final class GPKeyInfo {
     private int usage = -1; // bit field
 
     // Called when parsing KeyInfo template
-    public GPKeyInfo(int version, int id, int length, GPKey type) {
+    public GPKeyInfo(final int version, final int id, final int length, final GPKey type) {
         this.version = version;
         this.id = id;
         this.length = length;
         this.type = type;
     }
 
-    public GPKeyInfo(int version, int id, List<GPKeyInfoElement> elements, int access, int usage) {
+    public GPKeyInfo(final int version, final int id, final List<GPKeyInfoElement> elements, final int access, final int usage) {
         this.version = version;
         this.id = id;
-        List<GPKeyInfoElement> valid = elements.stream().filter(GPKeyInfoElement::isValid).collect(Collectors.toList());
+        final var valid = elements.stream().filter(GPKeyInfoElement::isValid).collect(Collectors.toList());
 
         if (elements.size() != valid.size()) {
-            HashSet<GPKeyInfoElement> unknown = new HashSet<>(elements);
+            final var unknown = new HashSet<GPKeyInfoElement>(elements);
             unknown.removeAll(valid);
             logger.warn("Unknown elements ignored: " + unknown);
         }
@@ -69,9 +69,8 @@ public final class GPKeyInfo {
             this.type = elements.get(0).key;
         } else {
             // FIXME: reduce here RSA to a single public key
-            Optional<GPKeyInfoElement> rsa = valid.stream().filter(e -> e.key == GPKey.RSA_PUB_N).findFirst();
-            Optional<GPKeyInfoElement> ecc = valid.stream().filter(e ->
-                    (e.key == GPKey.EC_PRIV) || (e.key == GPKey.EC_PUB)).findFirst();
+            final Optional<GPKeyInfoElement> rsa = valid.stream().filter(e -> e.key == GPKey.RSA_PUB_N).findFirst();
+            final Optional<GPKeyInfoElement> ecc = valid.stream().filter(e -> (e.key == GPKey.EC_PRIV) || (e.key == GPKey.EC_PUB)).findFirst();
             if (rsa.isPresent()) {
                 this.length = rsa.get().keyLength;
                 this.type = GPKey.RSA_PUB_N;
@@ -91,24 +90,23 @@ public final class GPKeyInfo {
         this.usage = usage;
     }
 
-
     // GP 2.1.1 9.3.3.1
     // GP 2.2.1 11.3.3.1 and 11.1.8
-    public static List<GPKeyInfo> parseTemplate(byte[] data) throws GPException {
-        List<GPKeyInfo> r = new ArrayList<>();
+    public static List<GPKeyInfo> parseTemplate(final byte[] data) throws GPException {
+        final var r = new ArrayList<GPKeyInfo>();
 
         if (data == null || data.length == 0) {
             logger.warn("Template is null or zero length");
             return r;
         }
 
-        var tlvs = TLV.parse(data);
+        final var tlvs = TLV.parse(data);
         GPUtils.trace_tlv(data, logger);
 
-        var keysOpt = TLV.find(tlvs, Tag.ber(0xE0));
+        final var keysOpt = TLV.find(tlvs, Tag.ber(0xE0));
         if (keysOpt.isPresent() && keysOpt.get().hasChildren()) {
             for (TLV key : keysOpt.get().findAll(Tag.ber(0xC0))) {
-                final byte[] tmpl = key.value();
+                final var tmpl = key.value();
                 if (tmpl.length == 0) {
                     // Fresh SSD with an empty template.
                     logger.info("Key template has zero length (empty). Skipping.");
@@ -117,18 +115,18 @@ public final class GPKeyInfo {
                 if (tmpl.length < 4) {
                     throw new GPDataException("Key info template shorter than 4 bytes", tmpl);
                 }
-                int offset = 0;
-                int id = tmpl[offset++] & 0xFF;
-                int version = tmpl[offset++] & 0xFF;
+                var offset = 0;
+                final var id = tmpl[offset++] & 0xFF;
+                final var version = tmpl[offset++] & 0xFF;
 
                 // Check if extended template
-                boolean extended = tmpl[offset] == (byte) 0xFF;
+                final var extended = tmpl[offset] == (byte) 0xFF;
 
                 // With extended, last 4 or 5 bytes are access and usage
-                ArrayList<GPKeyInfoElement> elements = new ArrayList<>();
+                final var elements = new ArrayList<GPKeyInfoElement>();
                 // Except for some buggy cards, that return extended elements mixed with basic elements.
-                for (; offset + (extended ? 4 : 0) < tmpl.length; ) {
-                    GPKeyInfoElement element = extended ? GPKeyInfoElement.fromExtendedBytes(tmpl, offset) : new GPKeyInfoElement(tmpl, offset);
+                for (; offset + (extended ? 4 : 0) < tmpl.length;) {
+                    final GPKeyInfoElement element = extended ? GPKeyInfoElement.fromExtendedBytes(tmpl, offset) : new GPKeyInfoElement(tmpl, offset);
                     elements.add(element);
                     logger.trace("Parsed {}", element);
                     offset += element.templateLength;
@@ -147,21 +145,21 @@ public final class GPKeyInfo {
         return r;
     }
 
-    public final static Map<Integer, String> keyVersionPurposes;
+    public static final Map<Integer, String> keyVersionPurposes;
 
     static {
-        LinkedHashMap<Integer, String> tmp = new LinkedHashMap<>();
+        final var tmp = new LinkedHashMap<Integer, String>();
         tmp.put(0x70, "Token Verification");
         tmp.put(0x71, "Receipt Generation");
         tmp.put(0x73, "DAP Verification");
         keyVersionPurposes = Collections.unmodifiableMap(tmp);
     }
 
-    private static Optional<String> getPurposeDescription(GPKeyInfo k) {
+    private static Optional<String> getPurposeDescription(final GPKeyInfo k) {
         return Optional.ofNullable(keyVersionPurposes.get(k.getVersion()));
     }
 
-    private static Optional<String> getTypeDescription(GPKeyInfo k) {
+    private static Optional<String> getTypeDescription(final GPKeyInfo k) {
         if ((k.getType() == GPKey.RSA_PUB_E || k.getType() == GPKey.RSA_PUB_N) && k.getLength() > 0) {
             return Optional.of("RSA-" + k.getLength() * 8 + " public");
         } else if (k.getType() == GPKey.AES && k.getLength() > 0) {
@@ -170,22 +168,23 @@ public final class GPKeyInfo {
         return Optional.empty();
     }
 
-    private static Optional<String> getKeyDescription(GPKeyInfo k) {
-        Optional<String> t = getTypeDescription(k);
-        Optional<String> p = getPurposeDescription(k);
+    private static Optional<String> getKeyDescription(final GPKeyInfo k) {
+        final var t = getTypeDescription(k);
+        final var p = getPurposeDescription(k);
 
         // Detect unaddressable factory keys
-        Optional<String> f = k.getVersion() == 0x00 || k.getVersion() == 0xFF ? Optional.of("factory key") : Optional.empty();
+        final Optional<String> f = k.getVersion() == 0x00 || k.getVersion() == 0xFF ? Optional.of("factory key") : Optional.empty();
         return Stream.of(t, p, f).filter(Optional::isPresent).map(Optional::get).reduce((a, b) -> a + ", " + b);
     }
 
     // Print the key template
-    public static String toString(List<GPKeyInfo> list) {
-        StringBuilder sb = new StringBuilder();
+    public static String toString(final List<GPKeyInfo> list) {
+        final var sb = new StringBuilder();
         for (GPKeyInfo k : list) {
             // print
-            String description = getKeyDescription(k).map(e -> " (" + e + ")").orElse("");
-            sb.append(String.format("Version: %3d (0x%02X) ID: %3d (0x%02X) type: %-12s length: %3d%s%n", k.getVersion(), k.getVersion(), k.getID(), k.getID(), k.getType(), k.getLength(), description));
+            final var description = getKeyDescription(k).map(e -> " (" + e + ")").orElse("");
+            sb.append("Version: %3d (0x%02X) ID: %3d (0x%02X) type: %-12s length: %3d%s%n".formatted(k.getVersion(), k.getVersion(), k.getID(), k.getID(),
+                    k.getType(), k.getLength(), description));
         }
         return sb.toString();
     }
@@ -208,22 +207,22 @@ public final class GPKeyInfo {
 
     @Override
     public String toString() {
-        StringBuilder s = new StringBuilder();
+        final var s = new StringBuilder();
         s.append("type=" + type);
-        if (version >= 1 && version <= 0x7f)
+        if (version >= 1 && version <= 0x7f) {
             s.append(" version=" + GPUtils.intString(version));
-        if (id >= 0 && id <= 0x7F)
+        }
+        if (id >= 0 && id <= 0x7F) {
             s.append(" id=" + GPUtils.intString(id));
+        }
         s.append(" len=" + length);
         return s.toString();
     }
-
 
     public static class GPKeyInfoElement {
         final GPKey key;
         final int keyLength;
         final int templateLength;
-
 
         public static GPKeyInfoElement fromExtendedBytes(byte[] buf, int offset) {
             final int templateLength;
@@ -254,13 +253,13 @@ public final class GPKeyInfo {
                 logger.trace("Parsing B {}", HexUtils.bin2hex(Arrays.copyOfRange(buf, offset, offset + 2)));
                 key = GPKey.get(buf[offset++] & 0xFF).get();
                 // Page 162 of GP 2.3.1 "the indicated length shall be set to '00' (meaning ‘greater than or equal to 256 bytes’)"
-                int l = buf[offset++] & 0xFF;
+                final var l = buf[offset++] & 0xFF;
                 keyLength = l == 0x00 ? 256 : l;
                 templateLength = 2;
             }
         }
 
-        public static boolean isValid(GPKeyInfoElement e) {
+        public static boolean isValid(final GPKeyInfoElement e) {
             return e.key != GPKey.PRIVATE && e.key != GPKey.RFU_ASYMMETRICAL && e.key != GPKey.RFU_SYMMETRICAL;
         }
 
@@ -274,9 +273,13 @@ public final class GPKeyInfo {
         }
 
         @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (!(o instanceof GPKeyInfoElement that)) return false;
+        public boolean equals(final Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (!(o instanceof GPKeyInfoElement that)) {
+                return false;
+            }
             return keyLength == that.keyLength &&
                     templateLength == that.templateLength &&
                     key == that.key;
@@ -326,11 +329,10 @@ public final class GPKeyInfo {
         EC_FIELD_K(0xB7, "ECC field parameter k (cofactor of order of generator)"),
         EC_PARAM_REF(0xF0, "ECC key parameters reference");
 
-
         private final int type;
         private final String description;
 
-        GPKey(int type, String desc) {
+        GPKey(final int type, final String desc) {
             this.type = type;
             this.description = desc;
         }
@@ -343,20 +345,21 @@ public final class GPKeyInfo {
             return this.description;
         }
 
-        public static Optional<GPKey> get(int type) {
+        public static Optional<GPKey> get(final int type) {
             final GPKey result;
-            if ((0x00 <= type) && (type <= 0x7f))
+            if ((0x00 <= type) && (type <= 0x7f)) {
                 result = PRIVATE;
-            else if (type == 0x86 || type == 0x87 || ((0x89 <= type) && (type <= 0x8F)) || ((0x92 <= type) && (type <= 0x9F)))
+            } else if (type == 0x86 || type == 0x87 || ((0x89 <= type) && (type <= 0x8F)) || ((0x92 <= type) && (type <= 0x9F))) {
                 result = RFU_SYMMETRICAL;
-            else if ((0xA9 <= type) && (type <= 0xAF))
+            } else if ((0xA9 <= type) && (type <= 0xAF)) {
                 result = RFU_ASYMMETRICAL;
-            else if ((0xB8 <= type) && (type <= 0xEF))
+            } else if ((0xB8 <= type) && (type <= 0xEF)) {
                 result = RFU_ASYMMETRICAL;
-            else if ((0xF1 <= type) && (type <= 0xFE))
+            } else if ((0xF1 <= type) && (type <= 0xFE)) {
                 result = RFU_ASYMMETRICAL;
-            else
+            } else {
                 return Arrays.stream(values()).filter(e -> e.type == type).findFirst();
+            }
             return Optional.ofNullable(result);
         }
 
@@ -367,7 +370,9 @@ public final class GPKeyInfo {
                 return "RSA";
             } else if (this == EC_PUB) {
                 return "EC";
-            } else return name();
+            } else {
+                return name();
+            }
         }
     }
 }

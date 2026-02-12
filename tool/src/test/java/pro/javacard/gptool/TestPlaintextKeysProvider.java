@@ -26,16 +26,16 @@ public class TestPlaintextKeysProvider {
 
     @Test
     public void testMasterKey() {
-        byte[] key = HexUtils.stringToBin("404142434445464748494a4b4c4d4e4f");
-        GPCardKeys keys = PlaintextKeys.fromMasterKey(key);
+        final byte[] key = HexUtils.stringToBin("404142434445464748494a4b4c4d4e4f");
+        final GPCardKeys keys = PlaintextKeys.fromMasterKey(key);
         Assert.assertNotNull(keys);
     }
 
     @Test
     public void testDiversificationEMV() {
-        byte[] master = HexUtils.stringToBin("404142434445464748494a4b4c4d4e4f");
+        final byte[] master = HexUtils.stringToBin("404142434445464748494a4b4c4d4e4f");
         GPCardKeys keys = PlaintextKeys.fromMasterKey(master, PlaintextKeys.kdf_templates.get("emv"));
-        byte[] kdd = new byte[]{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09};
+        final byte[] kdd = new byte[] { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09 };
         keys = keys.diversify(GPSecureChannelVersion.SCP.SCP02, kdd);
 
         Assert.assertEquals(HexUtils.hex2bin("C33013"), keys.kcv(ENC));
@@ -45,9 +45,9 @@ public class TestPlaintextKeysProvider {
 
     @Test
     public void testDiversificationVISA() {
-        byte[] master = HexUtils.stringToBin("404142434445464748494a4b4c4d4e4f");
+        final byte[] master = HexUtils.stringToBin("404142434445464748494a4b4c4d4e4f");
         GPCardKeys keys = PlaintextKeys.fromMasterKey(master, PlaintextKeys.kdf_templates.get("visa2"));
-        byte[] kdd = new byte[]{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09};
+        final byte[] kdd = new byte[] { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09 };
         keys = keys.diversify(GPSecureChannelVersion.SCP.SCP02, kdd);
 
         Assert.assertEquals(HexUtils.hex2bin("2BE598"), keys.kcv(ENC));
@@ -58,20 +58,20 @@ public class TestPlaintextKeysProvider {
     @Test
     public void testUnknownDiversification() {
         // Unknown KDF template should return null
-        String unknownKdf = PlaintextKeys.kdf_templates.get("foobar");
+        final var unknownKdf = PlaintextKeys.kdf_templates.get("foobar");
         Assert.assertNull(unknownKdf);
     }
 
     @Test
     public void testDefaultKeys() {
-        GPCardKeys keys = PlaintextKeys.defaultKey();
+        final GPCardKeys keys = PlaintextKeys.defaultKey();
         Assert.assertNotNull(keys);
     }
 
     @Test
     public void testDefaultKeysWithDiversifier() {
         GPCardKeys keys = PlaintextKeys.fromMasterKey(PlaintextKeys.DEFAULT_KEY(), PlaintextKeys.kdf_templates.get("kdf3"));
-        byte[] kdd = new byte[]{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09};
+        final byte[] kdd = new byte[] { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09 };
         keys = keys.diversify(GPSecureChannelVersion.SCP.SCP03, kdd);
 
         Assert.assertEquals(HexUtils.hex2bin("E79C05"), keys.kcv(ENC));
@@ -81,8 +81,8 @@ public class TestPlaintextKeysProvider {
 
     @Test
     public void testKDF3() {
-        byte[] kdd = HexUtils.stringToBin("D9B1DE5D0362DEDCE4FB");
-        byte[] master = HexUtils.stringToBin("8C72C72CF908411653018807950D82FBAD947562F0828A0B10B8B9606ABF3BCD");
+        final byte[] kdd = HexUtils.stringToBin("D9B1DE5D0362DEDCE4FB");
+        final byte[] master = HexUtils.stringToBin("8C72C72CF908411653018807950D82FBAD947562F0828A0B10B8B9606ABF3BCD");
 
         System.out.println("Master: " + HexUtils.bin2hex(master));
         System.out.println("KDD: " + HexUtils.bin2hex(kdd));

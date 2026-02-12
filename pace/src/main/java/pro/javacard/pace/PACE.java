@@ -44,7 +44,7 @@ public final class PACE {
         return keyMAC.clone();
     }
 
-    private PACE(byte[] keyENC, byte[] keyMAC) {
+    private PACE(final byte[] keyENC, final byte[] keyMAC) {
         this.keyENC = keyENC;
         this.keyMAC = keyMAC;
         log.info("Computed PACE: ENC: {} MAC:{}", Hex.toHexString(keyENC), Hex.toHexString(keyMAC));
@@ -67,18 +67,18 @@ public final class PACE {
         final byte code;
         final ECParameterSpec spec;
 
-        PACECurve(int code, ECParameterSpec ecParameterSpec) {
+        PACECurve(final int code, final ECParameterSpec ecParameterSpec) {
             this.code = (byte) code;
             this.spec = ecParameterSpec;
         }
     }
 
-
     // B.1.PACE.
-    public static PACE executePACE(APDUBIBO c, byte[] aid, String can, PACECurve curve) throws PACEException, IOException, GeneralSecurityException {
+    public static PACE executePACE(final APDUBIBO c, final byte[] aid, final String can, final PACECurve curve)
+            throws PACEException, IOException, GeneralSecurityException {
 
         // Select the PACE application
-        ResponseAPDU r = c.transmit(new CommandAPDU(0x00, 0xA4, 0x04, 0x00, aid, 256));
+        var r = c.transmit(new CommandAPDU(0x00, 0xA4, 0x04, 0x00, aid, 256));
         PACEException.check(r);
 
         // set security environment
@@ -86,39 +86,39 @@ public final class PACE {
         PACEException.check(r);
 
         // Step 1: get the encrypted nonce
-        r = c.transmit(general_authenticate(new byte[]{0x7c, 0x00}));
+        r = c.transmit(general_authenticate(new byte[] { 0x7c, 0x00 }));
         r = PACEException.check(r);
         SCHelpers.trace_tlv(r.getData(), log);
 
         // Get encrypted nonce
-        TLV encryptedNonce = require_tag(r.getData(), 0x80);
+        final TLV encryptedNonce = require_tag(r.getData(), 0x80);
 
         // Decrypt with derived CAN PI
         // A.3.3.Encrypted Nonce
-        byte[] key = kdf(can.getBytes(StandardCharsets.UTF_8), COUNTER_PI);
-        byte[] nonce = AESSecureChannel.decrypt(key, new byte[16], encryptedNonce.value());
+        final byte[] key = kdf(can.getBytes(StandardCharsets.UTF_8), COUNTER_PI);
+        final byte[] nonce = AESSecureChannel.decrypt(key, new byte[16], encryptedNonce.value());
 
         // Step 2: mapping ephemeral key
         // Generate ephemeral pace mapping key on curve
-        AsymmetricCipherKeyPair host_map = generate(curve.spec);
+        final AsymmetricCipherKeyPair host_map = generate(curve.spec);
 
         // Mapping key public point, uncompressed, is our (PCD) key
-        byte[] host_map_pub = ((ECPublicKeyParameters) host_map.getPublic()).getQ().getEncoded(false);
+        final var host_map_pub = ((ECPublicKeyParameters) host_map.getPublic()).getQ().getEncoded(false);
 
         // GENERAL AUTHENTICATE 81 - Challenge - contains the mapping key public key point in uncompressed format
-        byte[] payload = TLV.build(Tag.ber(0x7C)).add(Tag.ber(0x81), host_map_pub).encode();
+        var payload = TLV.build(Tag.ber(0x7C)).add(Tag.ber(0x81), host_map_pub).encode();
 
-        CommandAPDU apdu2 = general_authenticate(payload);
+        final CommandAPDU apdu2 = general_authenticate(payload);
 
         SCHelpers.trace_tlv(apdu2.getData(), log);
         r = PACEException.check(c.transmit(apdu2));
         SCHelpers.trace_tlv(r.getData(), log);
 
         // Response is card mapping public key on curve
-        TLV card_map_tag = require_tag(r.getData(), 0x82);
+        final TLV card_map_tag = require_tag(r.getData(), 0x82);
 
         // Decode key on mapping curve
-        byte[] card_map_pub = decodePublic(curve.spec, card_map_tag.value());
+        final byte[] card_map_pub = decodePublic(curve.spec, card_map_tag.value());
 
         // Check
         if (Arrays.equals(card_map_pub, host_map_pub)) {
@@ -126,53 +126,53 @@ public final class PACE {
         }
 
         // Map new domain parameters
-        ECParameterSpec parameters = parameterMap(curve.spec, (ECPrivateKeyParameters) host_map.getPrivate(), card_map_pub, nonce);
+        final ECParameterSpec parameters = parameterMap(curve.spec, (ECPrivateKeyParameters) host_map.getPrivate(), card_map_pub, nonce);
 
         // Generate a ephemeral keypair on the given curve
-        AsymmetricCipherKeyPair ephemeral_host = generate(parameters);
-        byte[] ephemeral_host_pub = ((ECPublicKeyParameters) ephemeral_host.getPublic()).getQ().getEncoded(false);
+        final AsymmetricCipherKeyPair ephemeral_host = generate(parameters);
+        final var ephemeral_host_pub = ((ECPublicKeyParameters) ephemeral_host.getPublic()).getQ().getEncoded(false);
 
         // Perform key agreement
         // GENERAL AUTHENTICATE 83 - Commited challenge
         payload = TLV.build(Tag.ber(0x7C)).add(Tag.ber(0x83), ephemeral_host_pub).encode();
-        CommandAPDU apdu3 = general_authenticate(payload);
+        final CommandAPDU apdu3 = general_authenticate(payload);
 
         SCHelpers.trace_tlv(apdu3.getData(), log);
         r = PACEException.check(c.transmit(apdu3));
         SCHelpers.trace_tlv(r.getData(), log);
 
         // We receive a point on the ephemeral curve
-        TLV ephemeral_card_tag = require_tag(r.getData(), 0x84);
+        final TLV ephemeral_card_tag = require_tag(r.getData(), 0x84);
 
         // Decode card public key
-        byte[] ephemeral_card_pub = decodePublic(parameters, ephemeral_card_tag.value());
+        final byte[] ephemeral_card_pub = decodePublic(parameters, ephemeral_card_tag.value());
 
         // Keys can't be equal
-        if (Arrays.equals(ephemeral_host_pub, ephemeral_card_pub))
+        if (Arrays.equals(ephemeral_host_pub, ephemeral_card_pub)) {
             throw new PACEException("PACE security violation: equal keys");
+        }
 
         // Step 5 - ECDH on ephemeral curve
         // Calculate shared key k
-        byte[] k = generateSharedSecret(curve.spec, ((ECPrivateKeyParameters) ephemeral_host.getPrivate()).getD().toByteArray(), ephemeral_card_pub);
+        final byte[] k = generateSharedSecret(curve.spec, ((ECPrivateKeyParameters) ephemeral_host.getPrivate()).getD().toByteArray(), ephemeral_card_pub);
         // Derive key MAC
-        byte[] keyMAC = kdf(k, COUNTER_MAC);
+        final byte[] keyMAC = kdf(k, COUNTER_MAC);
         // Derive key ENC
-        byte[] keyENC = kdf(k, COUNTER_ENC);
-
+        final byte[] keyENC = kdf(k, COUNTER_ENC);
 
         // Calculate our authentication token.
-        byte[] host_auth_token = aes_mac8(keyMAC, auth_token(ephemeral_card_pub));
+        final byte[] host_auth_token = aes_mac8(keyMAC, auth_token(ephemeral_card_pub));
         payload = TLV.build(Tag.ber(0x7C)).add(Tag.ber(0x85), host_auth_token).encode();
 
-        CommandAPDU apdu4 = general_authenticate_last(payload);
+        final CommandAPDU apdu4 = general_authenticate_last(payload);
 
         SCHelpers.trace_tlv(apdu4.getData(), log);
         r = PACEException.check(c.transmit(apdu4));
         SCHelpers.trace_tlv(r.getData(), log);
 
         // Verify card auth token
-        TLV auth_token_card = require_tag(r.getData(), 0x86);
-        byte[] my_auth_token_card = aes_mac8(keyMAC, auth_token(ephemeral_host_pub));
+        final TLV auth_token_card = require_tag(r.getData(), 0x86);
+        final byte[] my_auth_token_card = aes_mac8(keyMAC, auth_token(ephemeral_host_pub));
         if (!Arrays.equals(auth_token_card.value(), my_auth_token_card)) {
             throw new PACEException("PACE: invalid card auth token: " + HexUtils.bin2hex(r.getData()));
         } else {
@@ -181,27 +181,28 @@ public final class PACE {
         return new PACE(keyENC, keyMAC);
     }
 
-    static TLV require_tag(byte[] response, int tag) throws PACEException {
-        var tlvs = TLV.parse(response);
-        var found = TLV.find(tlvs, Tag.ber(tag)).orElse(null);
-        if (found == null)
-            throw new PACEException(String.format("PACE: invalid response, missing tag 0x%02X: %s", tag, HexUtils.bin2hex(response)));
+    static TLV require_tag(final byte[] response, final int tag) throws PACEException {
+        final var tlvs = TLV.parse(response);
+        final var found = TLV.find(tlvs, Tag.ber(tag)).orElse(null);
+        if (found == null) {
+            throw new PACEException("PACE: invalid response, missing tag 0x%02X: %s".formatted(tag, HexUtils.bin2hex(response)));
+        }
         return found;
     }
 
-    static AsymmetricCipherKeyPair generate(ECParameterSpec p) {
-        ECDomainParameters domain = new ECDomainParameters(p.getCurve(), p.getG(), p.getN(), p.getH());
-        ECKeyGenerationParameters keyGenParams = new ECKeyGenerationParameters(domain, new SecureRandom());
-        ECKeyPairGenerator generator = new ECKeyPairGenerator();
+    static AsymmetricCipherKeyPair generate(final ECParameterSpec p) {
+        final var domain = new ECDomainParameters(p.getCurve(), p.getG(), p.getN(), p.getH());
+        final var keyGenParams = new ECKeyGenerationParameters(domain, new SecureRandom());
+        final var generator = new ECKeyPairGenerator();
         generator.init(keyGenParams);
-        AsymmetricCipherKeyPair keyPair = generator.generateKeyPair();
+        final var keyPair = generator.generateKeyPair();
         return keyPair;
     }
 
-    static byte[] decodePublic(ECParameterSpec p, byte[] data) {
-        ECDomainParameters domain = new ECDomainParameters(p.getCurve(), p.getG(), p.getN(), p.getH());
-        ECPoint q = domain.getCurve().decodePoint(data);
-        ECPublicKeyParameters tmp = new ECPublicKeyParameters(q, domain);
+    static byte[] decodePublic(final ECParameterSpec p, final byte[] data) {
+        final var domain = new ECDomainParameters(p.getCurve(), p.getG(), p.getN(), p.getH());
+        final var q = domain.getCurve().decodePoint(data);
+        final var tmp = new ECPublicKeyParameters(q, domain);
         return tmp.getQ().getEncoded(false);
     }
 
@@ -215,11 +216,11 @@ public final class PACE {
     }
 
     // B.14.1. MSE:Set AT
-    private static CommandAPDU set_at(byte[] oid, byte password, PACECurve curve) throws IOException {
-        ByteArrayOutputStream payload = new ByteArrayOutputStream();
+    private static CommandAPDU set_at(final byte[] oid, final byte password, final PACECurve curve) throws IOException {
+        final var payload = new ByteArrayOutputStream();
         payload.write(TLV.of(Tag.ber(0x80), oid).encode()); // Cryptographic mechanism reference
-        payload.write(TLV.of(Tag.ber(0x83), new byte[]{password}).encode()); // Password reference - CAN
-        payload.write(TLV.of(Tag.ber(0x84), new byte[]{curve.code}).encode());
+        payload.write(TLV.of(Tag.ber(0x83), new byte[] { password }).encode()); // Password reference - CAN
+        payload.write(TLV.of(Tag.ber(0x84), new byte[] { curve.code }).encode());
         // P1/P2: PACE: Set Authentication Template for mutual authentication.
         return new CommandAPDU(0x00, 0x22, 0xC1, 0xA4, payload.toByteArray(), 256);
     }
@@ -229,13 +230,13 @@ public final class PACE {
     private static final byte COUNTER_MAC = 0x02;
     private static final byte COUNTER_PI = 0x03;
 
-    static byte[] kdf(byte[] secret, byte counter) throws GeneralSecurityException {
+    static byte[] kdf(final byte[] secret, final byte counter) throws GeneralSecurityException {
         return kdf(secret, counter, null);
     }
 
-    private static byte[] kdf(byte[] secret, byte counter, byte[] nonce) throws GeneralSecurityException {
-        MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
-        byte[] c = {(byte) 0x00, (byte) 0x00, (byte) 0x00, counter};
+    private static byte[] kdf(final byte[] secret, final byte counter, final byte[] nonce) throws GeneralSecurityException {
+        final MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
+        final byte[] c = { (byte) 0x00, (byte) 0x00, (byte) 0x00, counter };
 
         sha256.update(secret);
         // Note: The nonce r is used for Chip Authentication version 2 only (always null for us currently)
@@ -247,27 +248,26 @@ public final class PACE {
     }
 
     // A.3.4.1.Generic Mapping - ephemeral domain parameters.
-    private static ECParameterSpec parameterMap(ECParameterSpec curve, ECPrivateKeyParameters mapKey, byte[] card_pub, byte[] nonce) {
-        ECPoint card_map_pub = curve.getCurve().decodePoint(card_pub);
-        BigInteger d = mapKey.getD();
-        BigInteger s = new BigInteger(1, nonce);
+    private static ECParameterSpec parameterMap(final ECParameterSpec curve, final ECPrivateKeyParameters mapKey, final byte[] card_pub, final byte[] nonce) {
+        final var card_map_pub = curve.getCurve().decodePoint(card_pub);
+        final var d = mapKey.getD();
+        final var s = new BigInteger(1, nonce);
 
-        ECPoint h = card_map_pub.multiply(curve.getH().multiply(d));
-        ECPoint newG = curve.getG().multiply(s).add(h);
+        final var h = card_map_pub.multiply(curve.getH().multiply(d));
+        final var newG = curve.getG().multiply(s).add(h);
 
         return new ECParameterSpec(curve.getCurve(), newG, curve.getN(), curve.getH());
     }
 
-
     // ECDH on curve, X coordinate only
-    public static byte[] generateSharedSecret(ECParameterSpec curve, byte[] sk, byte[] pk) {
-        BigInteger d = new BigInteger(1, sk);
-        ECPoint q = curve.getCurve().decodePoint(pk);
-        ECPoint k = q.multiply(d);
+    public static byte[] generateSharedSecret(final ECParameterSpec curve, final byte[] sk, final byte[] pk) {
+        final var d = new BigInteger(1, sk);
+        final var q = curve.getCurve().decodePoint(pk);
+        final var k = q.multiply(d);
         return positive(k.normalize().getXCoord().toBigInteger().toByteArray());
     }
 
-    public static byte[] positive(byte[] bytes) {
+    public static byte[] positive(final byte[] bytes) {
         if (bytes[0] == 0 && bytes.length % 2 == 1) {
             return Arrays.copyOfRange(bytes, 1, bytes.length);
         }
@@ -275,9 +275,9 @@ public final class PACE {
     }
 
     // A.2.4.2. AES
-    static byte[] aes_mac8(byte[] key, byte[] data) {
-        byte[] fullmac = new byte[16];
-        CMac cMAC = new CMac(AESEngine.newInstance());
+    static byte[] aes_mac8(final byte[] key, final byte[] data) {
+        final byte[] fullmac = new byte[16];
+        final var cMAC = new CMac(AESEngine.newInstance());
         cMAC.init(new KeyParameter(key));
         cMAC.update(data, 0, data.length);
         cMAC.doFinal(fullmac, 0);
@@ -285,7 +285,7 @@ public final class PACE {
     }
 
     // tags 0x85 / 0x86 during step 4. Key is uncompressed public key point
-    private static byte[] auth_token(byte[] key) {
+    private static byte[] auth_token(final byte[] key) {
         // D.3.3. Elliptic Curve Public Keys for OID and key,
         // D.2. Data Objects for 0x7F49 (Public Key)
         return TLV.build(Tag.ber(0x7F, 0x49))

@@ -35,22 +35,22 @@ public class GPException extends RuntimeException {
      */
     public final int sw;
 
-    public GPException(int sw, String message) {
+    public GPException(final int sw, final String message) {
         super(message + ": " + GPData.sw2str(sw));
         this.sw = sw;
     }
 
-    public GPException(String message) {
+    public GPException(final String message) {
         super(message);
         this.sw = 0x0000;
     }
 
-    public GPException(String message, Throwable e) {
+    public GPException(final String message, final Throwable e) {
         super(message, e);
         this.sw = 0x0000;
     }
 
-    public static ResponseAPDU check(ResponseAPDU response, String message, int... sws) throws GPException {
+    public static ResponseAPDU check(final ResponseAPDU response, final String message, final int... sws) throws GPException {
         for (int sw : sws) {
             if (response.getSW() == sw) {
                 return response;
@@ -64,7 +64,7 @@ public class GPException extends RuntimeException {
         throw new GPException(response.getSW(), message);
     }
 
-    public static ResponseAPDU check(ResponseAPDU response) throws GPException {
+    public static ResponseAPDU check(final ResponseAPDU response) throws GPException {
         return check(response, "GlobalPlatform failed");
     }
 }

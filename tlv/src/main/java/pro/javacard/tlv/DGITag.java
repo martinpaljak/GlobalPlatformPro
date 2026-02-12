@@ -37,9 +37,9 @@ public record DGITag(int dgi) implements Tag {
         return new byte[] { (byte) (dgi >> 8), (byte) dgi };
     }
 
-    static DGITag parse(ByteBuffer buffer) {
-        int high = buffer.get() & 0xFF;
-        int low = buffer.get() & 0xFF;
+    static DGITag parse(final ByteBuffer buffer) {
+        final var high = buffer.get() & 0xFF;
+        final var low = buffer.get() & 0xFF;
         return new DGITag((high << 8) | low);
     }
 

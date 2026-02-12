@@ -10,24 +10,23 @@ import java.security.Signature;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.RSAPrivateKey;
 
-public class DAPSigner {
+public final class DAPSigner {
 
     private static final Logger log = LoggerFactory.getLogger(DAPSigner.class);
 
-    private DAPSigner() {
-    }
+    private DAPSigner() {}
 
-    public static byte[] sign(CAPFile cap, PrivateKey key, GPData.LFDBH hash) throws GeneralSecurityException {
-        byte[] dtbs = cap.getLoadFileDataHash(hash.algo);
+    public static byte[] sign(final CAPFile cap, final PrivateKey key, final GPData.LFDBH hash) throws GeneralSecurityException {
+        final var dtbs = cap.getLoadFileDataHash(hash.algo);
         if (key instanceof RSAPrivateKey rkey) {
             log.info("Signing DAP with {} RSA and {}", rkey.getModulus().bitLength(), hash);
             return GPCrypto.rsa_sign(rkey, dtbs);
         } else if (key instanceof ECPrivateKey ecKey) {
             // B.4.3 ECDSA of GPC 2.3.1
-            int componentLength = (ecKey.getParams().getOrder().bitLength() + 7) / 8;
-            String sigAlgo = componentLength > 32 ? "SHA384withECDSA" : "SHA256withECDSA";
+            final var componentLength = (ecKey.getParams().getOrder().bitLength() + 7) / 8;
+            final String sigAlgo = componentLength > 32 ? "SHA384withECDSA" : "SHA256withECDSA";
             log.info("Signing DAP with EC key, component length {} using {}", componentLength, sigAlgo);
-            Signature signer = Signature.getInstance(sigAlgo);
+            final Signature signer = Signature.getInstance(sigAlgo);
             signer.initSign(key);
             signer.update(cap.getLoadFileDataHash(hash.algo));
             return GPCrypto.der2rs(signer.sign(), componentLength);

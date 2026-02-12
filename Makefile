@@ -6,6 +6,7 @@ VERSIONS = org.codehaus.mojo:versions-maven-plugin:2.21.0
 VERSION_RULES = -Dmaven.version.rules=file://$(shell pwd)/version-rules.xml
 
 SOURCES = $(shell find pace tool library -name '*.java' -o -name 'pom.xml') pom.xml Makefile
+XMLS = $(shell find . -name '*.xml' -not -path '*/target/*')
 
 default: today tool/target/gp.jar
 
@@ -40,6 +41,10 @@ check:
 
 versions:
 	./mvnw -B --no-transfer-progress $(VERSIONS):display-parent-updates $(VERSIONS):display-dependency-updates $(VERSIONS):display-plugin-updates $(VERSIONS):display-extension-updates $(VERSION_RULES)
+
+xml:
+	@command -v xmllint >/dev/null 2>&1 || { echo "xmllint not found (install libxml2-utils)"; exit 1; }
+	@for f in $(XMLS); do XMLLINT_INDENT='    ' xmllint --format "$$f" > "$$f.tmp" && mv "$$f.tmp" "$$f"; done
 
 today:
 	# for a dirty tree, set the date to today

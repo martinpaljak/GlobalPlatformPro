@@ -1,18 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-
     <parent>
         <groupId>com.github.martinpaljak</groupId>
         <artifactId>gppro</artifactId>
         <version>26.02.12-SNAPSHOT</version>
     </parent>
-
     <artifactId>gptool</artifactId>
     <name>GlobalPlatformPro CLI tool</name>
-
     <dependencies>
         <!-- For PC/SC reader access -->
         <dependency>
@@ -56,7 +51,6 @@
             <version>2.21.0</version>
         </dependency>
     </dependencies>
-
     <profiles>
         <profile>
             <id>exe</id>
@@ -118,7 +112,6 @@
             </build>
         </profile>
     </profiles>
-
     <build>
         <plugins>
             <plugin>
@@ -136,18 +129,15 @@
                             <createDependencyReducedPom>false</createDependencyReducedPom>
                             <finalName>gp</finalName>
                             <transformers>
-                                <transformer
-                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>pro.javacard.gptool.GPTool</mainClass>
                                     <manifestEntries>
                                         <Multi-Release>true</Multi-Release>
                                         <Implementation-Version>${project.version}</Implementation-Version>
                                     </manifestEntries>
                                 </transformer>
-                                <transformer
-                                        implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
-                                <transformer
-                                        implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer"/>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer"/>
                             </transformers>
                             <filters>
                                 <filter>

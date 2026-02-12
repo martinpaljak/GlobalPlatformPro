@@ -2,6 +2,8 @@ export TZ = UTC # same as Github
 export JAVA_HOME ?= /Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home
 
 MVN_OPTS = -Dmaven.javadoc.skip=true -Dmaven.test.skip=true -Dspotbugs.skip=true
+VERSIONS = org.codehaus.mojo:versions-maven-plugin:2.21.0
+VERSION_RULES = -Dmaven.version.rules=file://$(shell pwd)/version-rules.xml
 
 SOURCES = $(shell find pace tool library -name '*.java' -o -name 'pom.xml') pom.xml Makefile
 
@@ -36,6 +38,9 @@ fast:
 check:
 	./mvnw -Perrorprone -Dmaven.javadoc.skip=true -Dmaven.test.skip=true compile spotbugs:check
 
+versions:
+	./mvnw -B --no-transfer-progress $(VERSIONS):display-parent-updates $(VERSIONS):display-dependency-updates $(VERSIONS):display-plugin-updates $(VERSIONS):display-extension-updates $(VERSION_RULES)
+
 today:
 	# for a dirty tree, set the date to today
-	test -z "$(shell git status --porcelain)" || ./mvnw versions:set -DnewVersion=$(shell date +%y.%m.%d)-SNAPSHOT -DgenerateBackupPoms=false
+	test -z "$(shell git status --porcelain)" || ./mvnw $(VERSIONS):set -DnewVersion=$(shell date +%y.%m.%d)-SNAPSHOT -DgenerateBackupPoms=false

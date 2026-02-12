@@ -24,6 +24,6 @@ public class PACEException extends Exception {
     }
 
     static String SW(int sw) {
-        return String.format("%04X", sw).toUpperCase();
+        return String.format("%04X", sw);
     }
 }

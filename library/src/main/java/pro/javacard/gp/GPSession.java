@@ -323,13 +323,13 @@ public class GPSession {
         }
     }
 
-    private void setBlockSize(byte[] blocksize) {
-        int bs = new BigInteger(1, blocksize).intValue();
+    private void setBlockSize(byte[] blockSize) {
+        int bs = new BigInteger(1, blockSize).intValue();
         if (bs > this.blockSize) {
             logger.warn("Ignoring auto-detected block size that exceeds set maximum: " + bs);
         } else {
             this.blockSize = bs;
-            logger.debug("Auto-detected block size: " + blockSize);
+            logger.debug("Auto-detected block size: {}", bs);
         }
     }
 
@@ -359,6 +359,7 @@ public class GPSession {
     /*
      * Establishes a secure channel (INITIALIZE UPDATE + EXTERNAL AUTHENTICATE) to a security domain or application
      */
+    @SuppressWarnings("StatementSwitchToExpressionSwitch")
     public void openSecureChannel(GPCardKeys keys, GPSecureChannelVersion scp, byte[] host_challenge, EnumSet<APDUMode> securityLevel)
             throws IOException, GPException {
 
@@ -892,10 +893,7 @@ public class GPSession {
         dirty = true;
     }
 
-    /*
-     * Delete file {@code aid} on the card. Delete dependencies as well if
-     * {@code deleteDeps} is true.
-     */
+    // Delete file aid on the card. Delete dependencies as well if deleteDeps is true.
     public void deleteAID(AID aid, boolean deleteDeps) throws GPException, IOException {
         ByteArrayOutputStream bo = new ByteArrayOutputStream();
         try {
@@ -1066,6 +1064,7 @@ public class GPSession {
         return bo.toByteArray();
     }
 
+    @SuppressWarnings("StatementSwitchToExpressionSwitch")
     byte[] encodeECKey(ECPublicKey pubkey) {
         ByteArrayOutputStream bo = new ByteArrayOutputStream();
 
@@ -1110,12 +1109,11 @@ public class GPSession {
 
         bo.write(version); // Key Version number
 
-        if (key instanceof RSAPublicKey) {
-            bo.write(encodeRSAKey((RSAPublicKey) key));
-        } else if (key instanceof ECPublicKey) {
-            bo.write(encodeECKey((ECPublicKey) key));
-        } else if (key instanceof SecretKey) {
-            SecretKey sk = (SecretKey) key;
+        if (key instanceof RSAPublicKey rsaKey) {
+            bo.write(encodeRSAKey(rsaKey));
+        } else if (key instanceof ECPublicKey ecKey) {
+            bo.write(encodeECKey(ecKey));
+        } else if (key instanceof SecretKey sk) {
             if (sk.getAlgorithm().equals("DESede")) {
                 logger.info("PUT KEY KCV: {}", HexUtils.bin2hex(GPCrypto.kcv_3des(sk.getEncoded())));
                 bo.write(encodeKey(cardKeys, Arrays.copyOf(sk.getEncoded(), 16), GPKey.DES3));
@@ -1262,7 +1260,7 @@ public class GPSession {
         }
 
         public static APDUMode fromString(String s) {
-            return valueOf(s.trim().toUpperCase());
+            return valueOf(s.trim().toUpperCase(Locale.ROOT));
         }
     }
 }

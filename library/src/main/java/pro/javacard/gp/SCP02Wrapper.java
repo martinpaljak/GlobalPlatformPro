@@ -33,6 +33,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
 // SCP02 15 - CMAC on modified APDU, ICV zero, ICV encryption, no RMAC (55 = well-known random)
+@SuppressWarnings("InconsistentCapitalization") // rmac param is the key; rMac field is the output buffer
 class SCP02Wrapper extends SecureChannelWrapper {
     private static final Logger logger = LoggerFactory.getLogger(SCP02Wrapper.class);
 
@@ -63,6 +64,7 @@ class SCP02Wrapper extends SecureChannelWrapper {
         macModifiedAPDU = true;
     }
 
+    @Override
     public CommandAPDU wrap(CommandAPDU command) throws GPException {
 
         try {
@@ -164,6 +166,7 @@ class SCP02Wrapper extends SecureChannelWrapper {
         }
     }
 
+    @Override
     public ResponseAPDU unwrap(ResponseAPDU response) throws GPException {
         if (rmac) {
             if (response.getData().length < 8) {

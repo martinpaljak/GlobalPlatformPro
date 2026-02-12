@@ -167,8 +167,8 @@ public final class GPData {
             return Arrays.stream(values()).filter(e -> e.name().equalsIgnoreCase(s)).findFirst();
         }
 
-        public static ArrayList<LFDBH> fromBytes(byte[] v) {
-            ArrayList<LFDBH> r = new ArrayList<>();
+        public static List<LFDBH> fromBytes(byte[] v) {
+            List<LFDBH> r = new ArrayList<>();
             for (int i = 0; i < v.length; i++) {
                 final int j = i; // TODO: IntStream.range() ?
                 r.add(Arrays.stream(values()).filter(e -> e.value == (v[j] & 0xFF)).findFirst()
@@ -184,6 +184,7 @@ public final class GPData {
     }
 
     // GPC 2.3.1 Table H-9 and Table H-10
+    @SuppressWarnings("ImmutableEnumChecker") // Def is effectively immutable
     public enum SIGNATURE implements BitField<SIGNATURE> {
         // First byte
         RSA1024_SHA1(byte_mask(0, 0x01)),
@@ -306,7 +307,6 @@ public final class GPData {
                 t = v.find(Tag.ber(0x88));
                 if (t != null) {
                     System.out.println("Supported ECC Key Parameters: " + HexUtils.bin2hex(t.value()));
-                    continue;
                 }
             }
         }

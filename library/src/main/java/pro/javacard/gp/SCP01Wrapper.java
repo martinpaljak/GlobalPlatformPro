@@ -51,6 +51,7 @@ class SCP01Wrapper extends SecureChannelWrapper {
         }
     }
 
+    @Override
     public CommandAPDU wrap(CommandAPDU command) throws GPException {
         try {
             if (!mac && !enc) {
@@ -144,6 +145,7 @@ class SCP01Wrapper extends SecureChannelWrapper {
         }
     }
 
+    @Override
     public ResponseAPDU unwrap(ResponseAPDU response) throws GPException {
         return response;
     }

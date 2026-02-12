@@ -108,6 +108,7 @@ public class GPCommands {
     }
 
     // Figure out load parameters
+    @SuppressWarnings("StatementSwitchToExpressionSwitch")
     public static void load(GPSession gp, CAPFile cap, AID to, AID dapAID, LFDBH hash) throws GPException, IOException {
         GPRegistry reg = gp.getRegistry();
 
@@ -135,23 +136,11 @@ public class GPCommands {
             lfdbh = null;
         }
 
-        final byte[] dap;
+        // FIXME: see #304
         if (dapRequired) {
-            if (1 == 1) throw new IllegalArgumentException("Broken code, see #304");
-            // FIXME: see #304
-            switch (lfdbh) {
-                case SHA1:
-                    dap = new byte[128]; //cap.getMetaInfEntry(CAPFile.DAP_RSA_V1_SHA1_FILE);
-                    break;
-                case SHA256:
-                    dap = new byte[128]; // cap.getMetaInfEntry(CAPFile.DAP_RSA_V1_SHA256_FILE);
-                    break;
-                default:
-                    throw new IllegalArgumentException("Unsupported DAP hash algorithm: " + hash);
-            }
-        } else {
-            dap = null;
+            throw new IllegalArgumentException("Broken code, see #304");
         }
+        final byte[] dap = null;
         gp.loadCapFile(cap, targetAID, Optional.ofNullable(dapAID).orElse(targetAID), dap, lfdbh);
     }
 }

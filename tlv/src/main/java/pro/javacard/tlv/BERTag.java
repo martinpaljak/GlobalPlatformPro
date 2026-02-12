@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.Objects;
 
 // BER-TLV tag (ISO 7816-4)
+@SuppressWarnings("ArrayRecordComponent") // Defensive copies in constructor and accessor
 public record BERTag(byte[] bytes) implements Tag {
 
     public BERTag {

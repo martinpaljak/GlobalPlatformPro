@@ -77,8 +77,7 @@ public class GPRegistryEntry {
 
     @Override
     public boolean equals(Object other) {
-        if (other instanceof GPRegistryEntry) {
-            GPRegistryEntry o = (GPRegistryEntry) other;
+        if (other instanceof GPRegistryEntry o) {
             return o.kind.equals(this.kind) && o.aid.equals(this.aid);
         }
         return false;
@@ -150,6 +149,7 @@ public class GPRegistryEntry {
         }
     }
 
+    @SuppressWarnings("ImmutableEnumChecker") // Predicate lambdas are effectively immutable
     public enum SSDLifeCycle implements ByteEnum {
         // GP 2.2.1 Table 11-5
         INSTALLED(v -> v == 0x03),
@@ -169,6 +169,7 @@ public class GPRegistryEntry {
         }
     }
 
+    @SuppressWarnings("ImmutableEnumChecker") // Predicate lambdas are effectively immutable
     public enum APPLifeCycle implements ByteEnum {
         INSTALLED(v -> v == 0x03),
         SELECTABLE(v -> (v & 0xFF) <= 0x7F),
@@ -186,6 +187,7 @@ public class GPRegistryEntry {
         }
     }
 
+    @SuppressWarnings("ImmutableEnumChecker") // Predicate lambdas are effectively immutable
     public enum PKGLifeCycle implements ByteEnum {
         // GP 2.2.1 Table 11-3
         LOADED(v -> v == 0x01),
@@ -247,6 +249,7 @@ public class GPRegistryEntry {
         this.domain = dom;
     }
 
+    @Override
     public String toString() {
         return String.format("%s: %s, %s", kind, HexUtils.bin2hex(aid.getBytes()), getLifeCycleString());
     }
@@ -275,6 +278,7 @@ public class GPRegistryEntry {
 
     // See GP 2.2.1 11.1.2 Tables 11-7, 11-8, 11-9
     // See GP 2.1.1 Table 9-7 (matches 2.2 Table 11-7)
+    @SuppressWarnings("ImmutableEnumChecker") // Def is effectively immutable
     public enum Privilege implements BitField<Privilege> {
         // 1st byte
         SecurityDomain(byte_mask(0, 0x80)),

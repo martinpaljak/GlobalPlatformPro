@@ -31,6 +31,7 @@ import pro.javacard.pace.PACE;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -186,7 +187,7 @@ abstract class GPCommandLineInterface {
     static class LFDBHConverter implements ValueConverter<GPData.LFDBH> {
         @Override
         public GPData.LFDBH convert(String s) {
-            String valid = String.join(",", Arrays.stream(GPData.LFDBH.values()).map(e -> e.name().toLowerCase()).collect(Collectors.toList()));
+            String valid = String.join(",", Arrays.stream(GPData.LFDBH.values()).map(e -> e.name().toLowerCase(Locale.ROOT)).collect(Collectors.toList()));
             return GPData.LFDBH.fromString(s).orElseThrow(() -> new IllegalArgumentException(s + " is not a valid hash (valid are: " + valid + ")"));
         }
 

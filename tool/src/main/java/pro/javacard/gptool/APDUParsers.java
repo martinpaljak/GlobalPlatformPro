@@ -156,6 +156,7 @@ public class APDUParsers {
                     return validate(Hex.decode(hex_cleanup(s)));
                 } catch (IllegalArgumentException | DecoderException e) {
                     // Otherwise support giving header and payload separated by space and fill payload length in automagically
+                    @SuppressWarnings("StringSplitter") // Trailing empty strings are not relevant here
                     String[] pieces = s.split("\\s+");
                     if (pieces.length == 2) {
                         byte[][] pcs = new byte[2][];

@@ -71,6 +71,7 @@ public final class GPRegistry implements Iterable<GPRegistryEntry> {
         return entries.stream().filter(e -> e.getModules().contains(applet)).findFirst();
     }
 
+    @Override
     public Iterator<GPRegistryEntry> iterator() {
         return entries.iterator();
     }

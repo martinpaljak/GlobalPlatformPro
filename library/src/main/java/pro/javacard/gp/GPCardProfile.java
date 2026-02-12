@@ -26,6 +26,7 @@ import java.util.Optional;
 
 // Various per-device configurations and workarounds
 // TODO: retire with preferences
+@SuppressWarnings("ClassInitializationDeadlock") // Subclasses are package-private and never loaded independently
 public abstract class GPCardProfile {
 
     private GPCardProfile() {

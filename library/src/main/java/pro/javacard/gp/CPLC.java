@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 
 import java.time.DateTimeException;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -39,6 +40,7 @@ public final class CPLC {
         return values.get(f);
     }
 
+    @Override
     public String toString() {
         return Arrays.stream(Field.values()).map(i -> i.toString() + "=" + HexUtils.bin2hex(values.get(i))).collect(Collectors.joining(", ", "[CPLC: ", "]"));
     }
@@ -95,11 +97,11 @@ public final class CPLC {
     }
 
     public static String toDateFailsafe(byte[] v) {
-        return toRelativeDate(v, LocalDate.now()).map(e -> e.format(DateTimeFormatter.ISO_LOCAL_DATE)).orElse("invalid date format");
+        return toRelativeDate(v, LocalDate.now(ZoneOffset.UTC)).map(e -> e.format(DateTimeFormatter.ISO_LOCAL_DATE)).orElse("invalid date format");
     }
 
     public static byte[] today() {
-        return dateToBytes(LocalDate.now());
+        return dateToBytes(LocalDate.now(ZoneOffset.UTC));
     }
 
     public static byte[] dateToBytes(LocalDate d) {

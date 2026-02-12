@@ -34,11 +34,14 @@ public final class GPKeyInfo {
     private static final Logger logger = LoggerFactory.getLogger(GPKeyInfo.class);
 
     private GPKey type;
+    @SuppressWarnings("UnusedVariable") // FIXME: handle them as optionals
     private List<GPKeyInfoElement> elements;
     private int version = 0; // 1..7f
     private int id = -1; // 0..7f
     private int length = -1;
+    @SuppressWarnings("UnusedVariable") // FIXME: handle them as optionals
     private int access = -1; // bit field
+    @SuppressWarnings("UnusedVariable") // FIXME: handle them as optionals
     private int usage = -1; // bit field
 
     // Called when parsing KeyInfo template
@@ -159,7 +162,7 @@ public final class GPKeyInfo {
     }
 
     private static Optional<String> getTypeDescription(GPKeyInfo k) {
-        if (k.getType() == GPKey.RSA_PUB_E || k.getType() == GPKey.RSA_PUB_N && k.getLength() > 0) {
+        if ((k.getType() == GPKey.RSA_PUB_E || k.getType() == GPKey.RSA_PUB_N) && k.getLength() > 0) {
             return Optional.of("RSA-" + k.getLength() * 8 + " public");
         } else if (k.getType() == GPKey.AES && k.getLength() > 0) {
             return Optional.of("AES-" + k.getLength() * 8);
@@ -203,6 +206,7 @@ public final class GPKeyInfo {
         return type;
     }
 
+    @Override
     public String toString() {
         StringBuilder s = new StringBuilder();
         s.append("type=" + type);
@@ -272,8 +276,7 @@ public final class GPKeyInfo {
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            GPKeyInfoElement that = (GPKeyInfoElement) o;
+            if (!(o instanceof GPKeyInfoElement that)) return false;
             return keyLength == that.keyLength &&
                     templateLength == that.templateLength &&
                     key == that.key;

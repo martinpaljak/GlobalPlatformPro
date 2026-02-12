@@ -125,7 +125,6 @@ public final class GPTool extends GPCommandLineInterface {
 
     static byte[] selfhash() {
         ProtectionDomain pd = GPTool.class.getProtectionDomain();
-        String hash = null;
         if (pd != null && pd.getCodeSource() != null && pd.getCodeSource().getLocation() != null) {
             try {
                 var location = pd.getCodeSource().getLocation();
@@ -309,10 +308,10 @@ public final class GPTool extends GPCommandLineInterface {
             if (args.has(OPT_DM_KEY)) {
                 Optional<PrivateKey> dmkey = args.valueOf(OPT_DM_KEY).getPrivate();
 
-                if (dmkey.isEmpty() || !(dmkey.get() instanceof RSAPrivateKey)) {
+                if (dmkey.isEmpty() || !(dmkey.get() instanceof RSAPrivateKey rsaKey)) {
                     throw new IllegalArgumentException("Only RSA private keys are supported for DM");
                 }
-                gp.setTokenizer(DMTokenizer.forPrivateKey((RSAPrivateKey) dmkey.get()));
+                gp.setTokenizer(DMTokenizer.forPrivateKey(rsaKey));
             } else if (args.has(OPT_DM_TOKEN)) {
                 byte[] token = args.valueOf(OPT_DM_TOKEN).value();
                 gp.setTokenizer(DMTokenizer.forToken(token));
@@ -356,8 +355,7 @@ public final class GPTool extends GPCommandLineInterface {
             }
 
             // Legacy KDF option and key version
-            if (keys instanceof PlaintextKeys) {
-                PlaintextKeys keyz = (PlaintextKeys) keys;
+            if (keys instanceof PlaintextKeys keyz) {
 
                 if (args.has(OPT_KEY_KDF)) {
                     keyz.setDiversifier(PlaintextKeys.kdf_templates.getOrDefault(args.valueOf(OPT_KEY_KDF), args.valueOf(OPT_KEY_KDF)));
@@ -871,9 +869,8 @@ public final class GPTool extends GPCommandLineInterface {
 
                     // From provider
                     newKeys = lockKey.orElseThrow(() -> new IllegalArgumentException("Can not lock without keys :)"));
-                    if (newKeys instanceof PlaintextKeys) {
+                    if (newKeys instanceof PlaintextKeys pk) {
                         // Adjust the mode and version with plaintext keys
-                        PlaintextKeys pk = (PlaintextKeys) newKeys;
                         List<GPKeyInfo> current = gp.getKeyInfoTemplate();
                         if (kdf != null) {
                             pk.setDiversifier(kdf);
@@ -916,8 +913,7 @@ public final class GPTool extends GPCommandLineInterface {
 
                     gp.putKeys(newKeys, replace);
 
-                    if (args.has(OPT_LOCK) && newKeys instanceof PlaintextKeys) {
-                        PlaintextKeys pk = (PlaintextKeys) newKeys;
+                    if (args.has(OPT_LOCK) && newKeys instanceof PlaintextKeys pk) {
                         if (pk.getMasterKey().isPresent())
                             System.out.println(gp.getAID() + " locked with: " + HexUtils.bin2hex(pk.getMasterKey().get()));
                         if (pk.getTemplate() != null)
@@ -987,7 +983,7 @@ public final class GPTool extends GPCommandLineInterface {
         try {
             // <kdf>:<hex> or <kdf>:default
             for (Map.Entry<String, String> d : PlaintextKeys.kdf_templates.entrySet()) {
-                if (spec.toLowerCase().startsWith(d.getKey() + ":")) {
+                if (spec.toLowerCase(Locale.ROOT).startsWith(d.getKey() + ":")) {
                     byte[] k = hexOrDefault(spec.substring(d.getKey().length() + 1));
                     return Optional.of(PlaintextKeys.fromMasterKey(k, d.getValue()));
                 }
@@ -1002,7 +998,7 @@ public final class GPTool extends GPCommandLineInterface {
     }
 
     private static byte[] hexOrDefault(String v) {
-        if ("default".startsWith(v.toLowerCase()))
+        if ("default".startsWith(v.toLowerCase(Locale.ROOT)))
             return PlaintextKeys.DEFAULT_KEY();
         return HexUtils.stringToBin(v);
     }
@@ -1012,6 +1008,7 @@ public final class GPTool extends GPCommandLineInterface {
     static Predicate<GPRegistryEntry> dapDomainFilter = e -> e.hasPrivilege(Privilege.MandatedDAPVerification) || e.hasPrivilege(Privilege.DAPVerification);
 
     // Extract parameters and call GPCommands.load()
+    @SuppressWarnings("StatementSwitchToExpressionSwitch")
     private static void loadCAP(OptionSet args, GPSession gp, CAPFile capFile) throws GPException, IOException {
         try {
             AID to = optional(args, OPT_TO).orElse(gp.getAID());
@@ -1173,6 +1170,7 @@ public final class GPTool extends GPCommandLineInterface {
     }
 
     // NOTE: Integer is used because byte[] is not good for a set.
+    @SuppressWarnings({"StringSplitter", "MixedMutabilityReturnType"})
     static List<Integer> split(String s) {
         // remove whitespace and "0x" instances
         s = s.replaceAll("\\s+", "").replaceAll("0[xX]", "");
@@ -1221,6 +1219,7 @@ public final class GPTool extends GPCommandLineInterface {
         };
     }
 
+    @SuppressWarnings("StringSplitter")
     private static EnumSet<Privilege> getPrivileges(OptionSet args) {
         EnumSet<Privilege> privs = EnumSet.noneOf(Privilege.class);
         if (args.has(OPT_PRIVS)) {

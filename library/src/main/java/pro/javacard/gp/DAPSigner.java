@@ -19,13 +19,11 @@ public class DAPSigner {
 
     public static byte[] sign(CAPFile cap, PrivateKey key, GPData.LFDBH hash) throws GeneralSecurityException {
         byte[] dtbs = cap.getLoadFileDataHash(hash.algo);
-        if (key instanceof RSAPrivateKey) {
-            RSAPrivateKey rkey = (RSAPrivateKey) key;
+        if (key instanceof RSAPrivateKey rkey) {
             log.info("Signing DAP with {} RSA and {}", rkey.getModulus().bitLength(), hash);
             return GPCrypto.rsa_sign(rkey, dtbs);
-        } else if (key instanceof ECPrivateKey) {
+        } else if (key instanceof ECPrivateKey ecKey) {
             // B.4.3 ECDSA of GPC 2.3.1
-            ECPrivateKey ecKey = (ECPrivateKey) key;
             int componentLength = (ecKey.getParams().getOrder().bitLength() + 7) / 8;
             String sigAlgo = componentLength > 32 ? "SHA384withECDSA" : "SHA256withECDSA";
             log.info("Signing DAP with EC key, component length {} using {}", componentLength, sigAlgo);

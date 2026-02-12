@@ -78,30 +78,28 @@ public class Key {
             try (InputStream inputStream = Files.newInputStream(p)) {
                 try (PEMParser pem = new PEMParser(new InputStreamReader(inputStream, StandardCharsets.US_ASCII))) {
                     Object ohh = pem.readObject();
-                    if (ohh instanceof PEMKeyPair) {
-                        PEMKeyPair kp = (PEMKeyPair) ohh;
+                    if (ohh instanceof PEMKeyPair kp) {
                         KeyPair keyPair = new JcaPEMKeyConverter().getKeyPair(kp);
                         return new Key(v, null, keyPair.getPublic(), keyPair.getPrivate());
-                    } else if (ohh instanceof SubjectPublicKeyInfo) {
-                        return new Key(v, null, new JcaPEMKeyConverter().getPublicKey((SubjectPublicKeyInfo) ohh), null);
-                    } else if (ohh instanceof X509CertificateHolder) {
-                        X509CertificateHolder certHolder = (X509CertificateHolder) ohh;
+                    } else if (ohh instanceof SubjectPublicKeyInfo spki) {
+                        return new Key(v, null, new JcaPEMKeyConverter().getPublicKey(spki), null);
+                    } else if (ohh instanceof X509CertificateHolder certHolder) {
                         try {
                             return new Key(v, null, new JcaX509CertificateConverter().getCertificate(certHolder).getPublicKey(), null);
                         } catch (CertificateException ce) {
                             throw new IllegalArgumentException("Can not read certificate from PEM: " + ce.getMessage());
                         }
-                    } else if (ohh instanceof PrivateKeyInfo) {
-                        PrivateKey pk = new JcaPEMKeyConverter().getPrivateKey((PrivateKeyInfo) ohh);
+                    } else if (ohh instanceof PrivateKeyInfo pki) {
+                        PrivateKey pk = new JcaPEMKeyConverter().getPrivateKey(pki);
                         // TODO: do this for other key types as well
-                        if (pk instanceof RSAPrivateKey) {
-                            BigInteger modulus = ((RSAPrivateKey) pk).getModulus();
-                            BigInteger exponent = ((RSAPrivateKey) pk).getPublicExponent();
+                        if (pk instanceof RSAPrivateKey rsaKey) {
+                            BigInteger modulus = rsaKey.getModulus();
+                            BigInteger exponent = rsaKey.getPublicExponent();
                             PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(new RSAPublicKeySpec(modulus, exponent));
                             return new Key(v, null, publicKey, pk);
-                        } else if (pk instanceof RSAPrivateCrtKey) {
-                            BigInteger modulus = ((RSAPrivateCrtKey) pk).getModulus();
-                            BigInteger exponent = ((RSAPrivateCrtKey) pk).getPublicExponent();
+                        } else if (pk instanceof RSAPrivateCrtKey rsaCrtKey) {
+                            BigInteger modulus = rsaCrtKey.getModulus();
+                            BigInteger exponent = rsaCrtKey.getPublicExponent();
                             PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(new RSAPublicKeySpec(modulus, exponent));
                             return new Key(v, null, publicKey, pk);
                         } else {

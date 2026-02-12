@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.Locale;
 
 class SCP03Wrapper extends SecureChannelWrapper {
     // Both are block size length
@@ -37,7 +38,7 @@ class SCP03Wrapper extends SecureChannelWrapper {
 
     // FIXME: incorporate GPCardProfile here
     static final String COUNTER_WORKAROUND = "globalplatformpro.scp03.buggycounterworkaround";
-    private String buggyCounterEnv = System.getenv().getOrDefault(COUNTER_WORKAROUND.replace(".", "_").toUpperCase(), "false");
+    private String buggyCounterEnv = System.getenv().getOrDefault(COUNTER_WORKAROUND.replace(".", "_").toUpperCase(Locale.ROOT), "false");
     private boolean counterIsBuggy = System.getProperty(COUNTER_WORKAROUND, buggyCounterEnv).equalsIgnoreCase("true");
 
     private boolean s16 = false; // S16 mode

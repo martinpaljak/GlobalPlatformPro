@@ -33,6 +33,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 
 public final class GPUtils {
     private GPUtils() {
@@ -40,7 +41,7 @@ public final class GPUtils {
 
     // Knows both hex and dec
     public static int intValue(String s) {
-        if (s.trim().toLowerCase().startsWith("0x")) {
+        if (s.trim().toLowerCase(Locale.ROOT).startsWith("0x")) {
             return Integer.parseInt(s.substring(2), 16);
         }
         return Integer.parseInt(s, 10);
@@ -58,7 +59,7 @@ public final class GPUtils {
         StringBuilder s = new StringBuilder();
         for (byte b : bytes) {
             char c = (char) b;
-            s.append(((c >= 0x20) && (c < 0x7f)) ? (c) : ("."));
+            s.append((c >= 0x20 && c < 0x7f) ? c : '.');
         }
         return "|" + s + "|";
     }

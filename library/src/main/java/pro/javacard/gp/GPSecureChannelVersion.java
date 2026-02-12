@@ -60,6 +60,7 @@ public final class GPSecureChannelVersion {
         return new GPSecureChannelVersion(scp, i);
     }
 
+    @Override
     public String toString() {
         return i == 0 ? scp.name() : String.format("%s (i=%02x)", scp.name(), i);
     }

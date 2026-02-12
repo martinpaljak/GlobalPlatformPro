@@ -280,11 +280,12 @@ public class PlaintextKeys extends GPCardKeys {
         } else throw new IllegalStateException("Unknown SCP version");
     }
 
+    @SuppressWarnings("StatementSwitchToExpressionSwitch")
     @Override
     public byte[] encryptKey(GPCardKeys key, KeyPurpose p, byte[] sessionContext) throws GeneralSecurityException {
-        if (!(key instanceof PlaintextKeys))
+        if (!(key instanceof PlaintextKeys other)) {
             throw new IllegalArgumentException(getClass().getName() + " can only handle " + getClass().getName());
-        PlaintextKeys other = (PlaintextKeys) key;
+        }
         switch (scp) {
             case SCP01:
                 logger.debug("Encrypting {} value (KCV={}) with DEK (KCV={})", p, HexUtils.bin2hex(other.kcv(p)), HexUtils.bin2hex(kcv(KeyPurpose.DEK)));
@@ -307,6 +308,7 @@ public class PlaintextKeys extends GPCardKeys {
         }
     }
 
+    @SuppressWarnings("StatementSwitchToExpressionSwitch")
     @Override
     public byte[] getSessionKey(KeyPurpose p, byte[] session_kdd) {
         // Calculate session key (ENC-MAC-DEK[-RMAC])
@@ -407,9 +409,7 @@ public class PlaintextKeys extends GPCardKeys {
         logger.debug("KDF: applying '{}' to {} KDD {}", kdf_template, scp, HexUtils.bin2hex(kdd));
 
         // Calculate per-card keys from master key(s), if needed
-        for (Map.Entry<KeyPurpose, byte[]> e : cardKeys.entrySet()) {
-            cardKeys.put(e.getKey(), diversify(e.getValue(), e.getKey(), kdd, kdf_template));
-        }
+        cardKeys.replaceAll((purpose, key) -> diversify(key, purpose, kdd, kdf_template));
         return this;
     }
 

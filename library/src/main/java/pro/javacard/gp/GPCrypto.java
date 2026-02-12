@@ -306,13 +306,11 @@ public final class GPCrypto {
     public static PublicKey pem2PublicKey(InputStream in) throws IOException {
         try (PEMParser pem = new PEMParser(new InputStreamReader(in, StandardCharsets.US_ASCII))) {
             Object ohh = pem.readObject();
-            if (ohh instanceof PEMKeyPair) {
-                PEMKeyPair kp = (PEMKeyPair) ohh;
+            if (ohh instanceof PEMKeyPair kp) {
                 return new JcaPEMKeyConverter().getKeyPair(kp).getPublic();
-            } else if (ohh instanceof SubjectPublicKeyInfo) {
-                return new JcaPEMKeyConverter().getPublicKey((SubjectPublicKeyInfo) ohh);
-            } else if (ohh instanceof X509CertificateHolder) {
-                X509CertificateHolder certHolder = (X509CertificateHolder) ohh;
+            } else if (ohh instanceof SubjectPublicKeyInfo spki) {
+                return new JcaPEMKeyConverter().getPublicKey(spki);
+            } else if (ohh instanceof X509CertificateHolder certHolder) {
                 try {
                     return new JcaX509CertificateConverter().getCertificate(certHolder).getPublicKey();
                 } catch (CertificateException ce) {
@@ -326,16 +324,16 @@ public final class GPCrypto {
     public static PrivateKey pem2PrivateKey(InputStream in) throws IOException {
         try (PEMParser pem = new PEMParser(new InputStreamReader(in, StandardCharsets.US_ASCII))) {
             Object ohh = pem.readObject();
-            if (ohh instanceof PEMKeyPair) {
-                PEMKeyPair kp = (PEMKeyPair) ohh;
+            if (ohh instanceof PEMKeyPair kp) {
                 return new JcaPEMKeyConverter().getKeyPair(kp).getPrivate();
-            } else if (ohh instanceof PrivateKeyInfo) {
-                return new JcaPEMKeyConverter().getPrivateKey((PrivateKeyInfo) ohh);
+            } else if (ohh instanceof PrivateKeyInfo pki) {
+                return new JcaPEMKeyConverter().getPrivateKey(pki);
             } else throw new IllegalArgumentException("Can not read PEM");
         }
     }
 
     // Do shuffling as necessary
+    @SuppressWarnings("StatementSwitchToExpressionSwitch")
     static byte[] resize_des(byte[] key, int length) {
         switch (length) {
             case 24:

@@ -28,6 +28,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.interfaces.RSAPrivateKey;
+import javax.crypto.SecretKey;
 
 // NOTE: Thanks goes to Gregor Johannson for initial implementation
 public abstract class DMTokenizer {
@@ -83,6 +84,10 @@ public abstract class DMTokenizer {
         return new RSATokenizer(pkey);
     }
 
+    public static DMTokenizer forAESKey(final SecretKey key) {
+        return new AESTokenizer(key);
+    }
+
     public static DMTokenizer forToken(final byte[] token) {
         return new StaticTokenizer(token);
     }
@@ -111,6 +116,33 @@ public abstract class DMTokenizer {
 
             try {
                 final byte[] token = GPCrypto.rsa_sign(privateKey, dtbs);
+                log.trace("DM token: {}", HexUtils.bin2hex(token));
+                return token;
+            } catch (GeneralSecurityException e) {
+                throw new GPException("Can not calculate DM token: " + e.getMessage(), e);
+            }
+        }
+    }
+
+    // AES CMAC token - GP 2.3.1 section B.2.2 and C.4
+    static class AESTokenizer extends DMTokenizer {
+
+        private final SecretKey key;
+
+        AESTokenizer(final SecretKey key) {
+            this.key = key;
+        }
+
+        @Override
+        protected boolean canTokenize(final CommandAPDU apdu) {
+            return true;
+        }
+
+        @Override
+        protected byte[] getToken(final CommandAPDU apdu) {
+            final var dtbs = dtbs(apdu);
+            try {
+                final byte[] token = GPCrypto.aes_cmac(key, dtbs, 128);
                 log.trace("DM token: {}", HexUtils.bin2hex(token));
                 return token;
             } catch (GeneralSecurityException e) {

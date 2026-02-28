@@ -37,6 +37,8 @@ import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
+import javax.crypto.Mac;
+import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.ByteArrayOutputStream;
@@ -203,6 +205,14 @@ public final class GPCrypto {
         final byte[] out = new byte[cmac.getMacSize()];
         cmac.doFinal(out, 0);
         return Arrays.copyOf(out, lengthBits / 8);
+    }
+
+    // JCA-based CMAC - requires a provider (e.g. BC) to be registered by the caller
+    public static byte[] aes_cmac(final SecretKey key, final byte[] data, final int lengthBits) throws GeneralSecurityException {
+        final var mac = Mac.getInstance("AESCMAC");
+        mac.init(key);
+        mac.update(data);
+        return Arrays.copyOf(mac.doFinal(), lengthBits / 8);
     }
 
     public static byte[] scp03_kdf_blocka(final byte constant, final int blocklen_bits) {

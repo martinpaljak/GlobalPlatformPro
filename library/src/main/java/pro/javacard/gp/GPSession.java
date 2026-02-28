@@ -1201,11 +1201,12 @@ public class GPSession {
                 return response.getData();
             }
             // Filter out common noise when modules are not reported by card.
-            if (sw == 0x6A86 && p1 == 0x10) {
+            // 6A86 (Incorrect P1/P2) and 6A81 (Function not supported) for P1=0x10 mean
+            // the card does not support Executable Module listing.
+            // Neither is a defined GET STATUS error - GPC 2.3.1 Table 11-39
+            if ((sw == 0x6A86 || sw == 0x6A81) && p1 == 0x10) {
                 logger.debug("GET STATUS failed for " + HexUtils.bin2hex(cmd.getBytes()) + " with " + GPData.sw2str(response.getSW()));
             } else {
-                // 0x6A86 - no tags support or ISD asked from SSD
-                // 0a6A81 - Same as 6A88 ?
                 logger.warn("GET STATUS failed for " + HexUtils.bin2hex(cmd.getBytes()) + " with " + GPData.sw2str(response.getSW()));
             }
             return response.getData();

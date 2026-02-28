@@ -155,8 +155,30 @@ public final class GPKeyInfo {
         keyVersionPurposes = Collections.unmodifiableMap(tmp);
     }
 
+    // GPC_SPE_093 (Amendment F - SCP11 v1.4) Section 5.1 Table 5-2
+    public static final Map<Integer, String> keyIDPurposes;
+
+    static {
+        final var tmp = new LinkedHashMap<Integer, String>();
+        tmp.put(0x10, "SCP11 CA Verification");
+        tmp.put(0x11, "SCP11a Key Agreement");
+        tmp.put(0x12, "SCP11a Data Encryption");
+        tmp.put(0x13, "SCP11b Key Agreement");
+        tmp.put(0x14, "SCP11b Data Encryption");
+        tmp.put(0x15, "SCP11c Key Agreement");
+        tmp.put(0x16, "SCP11c Data Encryption");
+        for (int i = 0x20; i <= 0x2F; i++) {
+            tmp.put(i, "SCP11 CA Verification");
+        }
+        keyIDPurposes = Collections.unmodifiableMap(tmp);
+    }
+
     private static Optional<String> getPurposeDescription(final GPKeyInfo k) {
-        return Optional.ofNullable(keyVersionPurposes.get(k.getVersion()));
+        final var versionPurpose = Optional.ofNullable(keyVersionPurposes.get(k.getVersion()));
+        if (versionPurpose.isPresent()) {
+            return versionPurpose;
+        }
+        return Optional.ofNullable(keyIDPurposes.get(k.getID()));
     }
 
     private static Optional<String> getTypeDescription(final GPKeyInfo k) {
@@ -164,8 +186,22 @@ public final class GPKeyInfo {
             return Optional.of("RSA-" + k.getLength() * 8 + " public");
         } else if (k.getType() == GPKey.AES && k.getLength() > 0) {
             return Optional.of("AES-" + k.getLength() * 8);
+        } else if (k.getType() == GPKey.EC_PUB && k.getLength() > 0) {
+            return Optional.of(ecCurveName(k.getLength()).map(c -> c + " public").orElse("EC public"));
+        } else if (k.getType() == GPKey.EC_PRIV && k.getLength() > 0) {
+            return Optional.of(ecCurveName(k.getLength()).map(c -> c + " private").orElse("EC private"));
         }
         return Optional.empty();
+    }
+
+    // Uncompressed point size = 2 * field_size + 1, private key size = field_size
+    private static Optional<String> ecCurveName(final int length) {
+        return switch (length) {
+            case 32, 65 -> Optional.of("P-256");
+            case 48, 97 -> Optional.of("P-384");
+            case 66, 133 -> Optional.of("P-521");
+            default -> Optional.empty();
+        };
     }
 
     private static Optional<String> getKeyDescription(final GPKeyInfo k) {

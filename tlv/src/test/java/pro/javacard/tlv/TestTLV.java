@@ -211,12 +211,12 @@ class TestTLV {
     @Test
     public void testParsingErrors() {
         // Buffer underflow
-        Assert.assertThrows(IndexOutOfBoundsException.class, () -> TLV.parse(hex("9F")));
+        Assert.assertThrows(TLVParseException.class, () -> TLV.parse(hex("9F")));
 
         // Length overflow in BER
         // 84 FF FF FF FF -> 4 bytes length, code says throw if > 3 bytes (0x1000000)
         // Code: if (n > 3) throw new IllegalArgumentException("Length too large");
-        Assert.assertThrows(IllegalArgumentException.class, () -> TLV.parse(hex("9F 84 FF FF FF FF")));
+        Assert.assertThrows(TLVParseException.class, () -> TLV.parse(hex("9F 84 FF FF FF FF")));
     }
 
     @Test

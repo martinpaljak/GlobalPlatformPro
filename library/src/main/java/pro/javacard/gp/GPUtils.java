@@ -26,6 +26,7 @@ import apdu4j.core.HexUtils;
 import org.bouncycastle.util.encoders.Hex;
 import org.slf4j.Logger;
 import pro.javacard.tlv.TLV;
+import pro.javacard.tlv.TLVParseException;
 
 import java.io.ByteArrayOutputStream;
 import java.math.BigInteger;
@@ -211,7 +212,7 @@ public final class GPUtils {
         try {
             final var tlvs = TLV.parse(payload);
             dump(tlvs, 0, result);
-        } catch (ArrayIndexOutOfBoundsException | IllegalStateException e) {
+        } catch (TLVParseException e) {
             throw new IllegalArgumentException("Not valid TLVs: " + e.getMessage(), e);
         }
         return result;

@@ -67,8 +67,8 @@ public final class TLVParser {
             } else {
                 return new TLV(tag, value, null);
             }
-        } catch (java.nio.BufferUnderflowException e) {
-            throw new IllegalArgumentException("Insufficient data to parse TLV", e);
+        } catch (java.nio.BufferUnderflowException | IndexOutOfBoundsException | IllegalArgumentException e) {
+            throw new TLVParseException("Insufficient data to parse TLV", e);
         }
     }
 }

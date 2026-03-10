@@ -37,6 +37,7 @@ import pro.javacard.gp.GPRegistryEntry.Kind;
 import pro.javacard.gp.GPRegistryEntry.Privilege;
 import pro.javacard.gp.data.BitField;
 import pro.javacard.tlv.TLV;
+import pro.javacard.tlv.TLVParseException;
 import pro.javacard.tlv.Tag;
 
 import javax.crypto.SecretKey;
@@ -168,7 +169,7 @@ public class GPSession {
             // Detect security domain based on default select
             tlvs = TLV.parse(response.getData());
             GPUtils.trace_tlv(response.getData(), logger);
-        } catch (ArrayIndexOutOfBoundsException | IllegalStateException e) {
+        } catch (TLVParseException e) {
             // WORKAROUND: Exists a card, which returns plain AID as response
             logger.warn("Could not parse SELECT response: " + e.getMessage());
             throw new GPDataException("Could not auto-detect ISD AID", response.getData());
@@ -258,7 +259,7 @@ public class GPSession {
         try {
             tlvs = TLV.parse(fci);
             GPUtils.trace_tlv(fci, logger);
-        } catch (ArrayIndexOutOfBoundsException | IllegalStateException e) {
+        } catch (TLVParseException e) {
             logger.warn("Could not parse SELECT response: " + e.getMessage());
             return;
         }
@@ -745,7 +746,7 @@ public class GPSession {
                 if (TLV.find(tlvs, Tag.ber(0xC9)).isPresent()) {
                     valid = true;
                 }
-            } catch (ArrayIndexOutOfBoundsException | IllegalStateException e) {
+            } catch (TLVParseException e) {
                 logger.warn("Installation parameters did not parse as valid TLV, assuming simple app parameters!");
             }
             // Simple use: only unstructured application parameters without existing tag, prepend 0xC9

@@ -26,7 +26,7 @@ public final class GPSecureChannelVersion {
     public final SCP scp;
 
     public enum SCP {
-        SCP01(1), SCP02(2), SCP03(3), SCP11(0x11), SCP80(0x80);
+        SCP01(0x01), SCP02(0x02), SCP03(0x03), SCP11(0x11), SCP80(0x80), SCP81(0x81);
 
         private final int value;
 

@@ -18,7 +18,7 @@
         <dependency>
             <groupId>com.github.martinpaljak</groupId>
             <artifactId>capfile</artifactId>
-            <version>25.12.01</version>
+            <version>26.03.08-SNAPSHOT</version>
         </dependency>
         <!-- For logging -->
         <dependency>

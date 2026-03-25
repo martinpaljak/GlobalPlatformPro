@@ -131,7 +131,7 @@ public class APDUParsers {
         return Hex.toHexString(b);
     }
 
-    static byte[] stringToAPDU(String s) {
+    public static byte[] stringToAPDU(String s) {
         Objects.requireNonNull(s);
 
         s = s.trim();

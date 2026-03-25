@@ -21,14 +21,12 @@ package pro.javacard.gp;
 
 import apdu4j.core.CommandAPDU;
 import apdu4j.core.HexUtils;
-import apdu4j.core.ResponseAPDU;
 import pro.javacard.capfile.AID;
 import pro.javacard.capfile.CAPFile;
 import pro.javacard.capfile.WellKnownAID;
 import pro.javacard.gp.GPData.LFDBH;
 import pro.javacard.gp.GPRegistryEntry.Privilege;
 
-import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -39,14 +37,14 @@ public final class GPCommands {
 
     private GPCommands() {}
 
-    private static void storeDGI(final GPSession gp, final byte[] payload) throws GPException, IOException {
+    private static void storeDGI(final GPSession gp, final byte[] payload) throws GPException {
         // Single DGI. 0x90 should work as well but 0x80 is actually respected by cards.
         final var cmd = new CommandAPDU(GPSession.CLA_GP, GPSession.INS_STORE_DATA, 0x80, 0x00, payload);
         final var response = gp.transmit(cmd);
         GPException.check(response, "STORE DATA failed");
     }
 
-    public static void setPrePerso(final GPSession gp, final byte[] data) throws GPException, IOException {
+    public static void setPrePerso(final GPSession gp, final byte[] data) throws GPException {
         if (data == null || data.length != 8) {
             throw new IllegalArgumentException("PrePerso data must be 8 bytes");
         }
@@ -54,7 +52,7 @@ public final class GPCommands {
         storeDGI(gp, payload);
     }
 
-    public static void setPerso(final GPSession gp, final byte[] data) throws GPException, IOException {
+    public static void setPerso(final GPSession gp, final byte[] data) throws GPException {
         if (data == null || data.length != 8) {
             throw new IllegalArgumentException("Perso data must be 8 bytes");
         }
@@ -112,7 +110,7 @@ public final class GPCommands {
 
     // Figure out load parameters
     @SuppressWarnings("StatementSwitchToExpressionSwitch")
-    public static void load(final GPSession gp, final CAPFile cap, final AID to, final AID dapAID, final LFDBH hash) throws GPException, IOException {
+    public static void load(final GPSession gp, final CAPFile cap, final AID to, final AID dapAID, final LFDBH hash) throws GPException {
         final var reg = gp.getRegistry();
 
         // Override target domain

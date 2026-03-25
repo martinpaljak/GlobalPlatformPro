@@ -22,7 +22,6 @@ package pro.javacard.gp;
 import apdu4j.core.APDUBIBO;
 import apdu4j.core.CommandAPDU;
 import apdu4j.core.HexUtils;
-import apdu4j.core.ResponseAPDU;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,7 +29,6 @@ import pro.javacard.gp.data.BitField;
 import pro.javacard.tlv.TLV;
 import pro.javacard.tlv.Tag;
 
-import java.io.IOException;
 import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -313,7 +311,7 @@ public final class GPData {
     }
 
     // NB! This assumes a selected (I)SD!
-    public static void dump(final APDUBIBO channel) throws IOException, GPException {
+    public static void dump(final APDUBIBO channel) throws GPException {
         final byte[] cplc = fetchCPLC(channel);
         if (cplc != null) {
             System.out.println(CPLC.fromBytes(cplc).toPrettyString());

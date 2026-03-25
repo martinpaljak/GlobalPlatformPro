@@ -21,10 +21,8 @@
 package pro.javacard.gptool;
 
 import apdu4j.core.*;
-import apdu4j.pcsc.CardBIBO;
-import apdu4j.pcsc.PCSCReader;
-import apdu4j.pcsc.TerminalManager;
-import apdu4j.pcsc.terminals.LoggingCardTerminal;
+import apdu4j.pcsc.NoMatchingReaderException;
+import apdu4j.pcsc.Readers;
 import joptsimple.OptionSet;
 import joptsimple.OptionSpec;
 import pro.javacard.capfile.AID;
@@ -41,9 +39,6 @@ import pro.javacard.tlv.TLV;
 import pro.javacard.tlv.Tag;
 
 import javax.crypto.SecretKey;
-import javax.smartcardio.Card;
-import javax.smartcardio.CardException;
-import javax.smartcardio.CardTerminal;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -52,7 +47,6 @@ import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
 import java.security.PrivateKey;
-import java.security.ProtectionDomain;
 import java.security.interfaces.RSAPrivateKey;
 import java.util.*;
 import java.util.function.Function;
@@ -146,15 +140,24 @@ public final class GPTool extends GPCommandLineInterface {
 
     // To keep basic gp.jar together with apdu4j app, this is just a minimalist wrapper
     public static void main(final String[] argv) {
-        Card c = null;
         var ret = 1;
-
-        final var resetOnDisconnect = Boolean.parseBoolean(System.getenv().getOrDefault(ENV_GP_PCSC_RESET, "false"));
-        var exclusive = Boolean.parseBoolean(System.getenv().getOrDefault(ENV_GP_PCSC_EXCLUSIVE, "false"));
-        final var transact = Boolean.parseBoolean(System.getenv().getOrDefault(ENV_GP_PCSC_TRANSACT, "true"));
 
         try {
             final OptionSet args = parseArguments(argv);
+
+            // Early jump to next-gen tool via ServiceLoader
+            if (args.has(OPT_NG) || "true".equalsIgnoreCase(System.getenv("GP_NG"))) {
+                try {
+                    var ext = java.util.ServiceLoader.load(pro.javacard.gp.ToolExtension.class).findFirst()
+                            .orElseThrow(() -> new IllegalStateException("nextgen module not available"));
+                    System.exit(ext.run(argv));
+                } catch (UnsupportedClassVersionError | java.util.ServiceConfigurationError e) {
+                    System.err.println("Error: -ng requires Java 21+ runtime (running on "
+                            + System.getProperty("java.version") + ")");
+                    System.exit(1);
+                }
+            }
+
             setupLogging(args);
             showPreamble(argv, args);
 
@@ -169,58 +172,38 @@ public final class GPTool extends GPCommandLineInterface {
                 return;
             }
 
-            final TerminalManager terminalManager = TerminalManager.getDefault();
-            final var readers = TerminalManager.listPCSC(terminalManager.terminals().list(), null, false);
+            // Build reader selector with DWIM: env vars first, then CLI override
+            var selector = Readers.fromEnvironment(ENV_GP_READER, ENV_GP_READER_IGNORE);
 
+            // List readers if -r without argument
             if (args.has(OPT_READER) && !args.hasArgument(OPT_READER)) {
                 System.out.println("Available readers:");
-                readers.forEach(r -> System.out.printf("- %s%n", r.getName()));
+                selector.list().forEach(r -> System.out.printf("- %s%n", r.name()));
+                return;
             }
-            final String useReader = args.hasArgument(OPT_READER) ? args.valueOf(OPT_READER) : System.getenv(ENV_GP_READER);
-            final String ignoreReader = System.getenv(ENV_GP_READER_IGNORE);
-
-            // FIXME: simplify
-            var reader = TerminalManager.getLucky(TerminalManager.dwimify(readers, useReader, ignoreReader), terminalManager.terminals());
-
-            if (reader.isEmpty()) {
-                System.err.println("Specify reader with -r/$GP_READER; available readers:");
-                readers.forEach(r -> System.err.printf("- %s%n", r.getName()));
-                System.exit(1);
-            }
-            if (args.has(OPT_PCSC_EXCLUSIVE)) {
-                exclusive = true;
+            if (args.hasArgument(OPT_READER)) {
+                selector = selector.select(args.valueOf(OPT_READER));
             }
 
-            reader = reader.map(e -> args.has(OPT_DEBUG) ? LoggingCardTerminal.getInstance(e) : e);
-            final String protocol = exclusive ? "EXCLUSIVE;*" : "*";
-            c = reader.get().connect(protocol);
-            if (transact) {
-                c.beginExclusive();
+            if (args.has(OPT_PCSC_EXCLUSIVE) || Boolean.parseBoolean(System.getenv().getOrDefault(ENV_GP_PCSC_EXCLUSIVE, "false"))) {
+                selector = selector.exclusive();
             }
-            ret = new GPTool().run(CardBIBO.wrap(c), argv);
+            selector = selector.transactions(Boolean.parseBoolean(System.getenv().getOrDefault(ENV_GP_PCSC_TRANSACT, "true")));
+            selector = selector.reset(Boolean.parseBoolean(System.getenv().getOrDefault(ENV_GP_PCSC_RESET, "false")));
+            if (args.has(OPT_DEBUG)) {
+                selector = selector.log(System.out);
+            }
+
+            ret = selector.run(bibo -> new GPTool().run(bibo, argv));
+        } catch (NoMatchingReaderException e) {
+            System.err.println("Specify reader with -r/$GP_READER; available readers:");
+            e.getAvailable().forEach(r -> System.err.printf("- %s%n", r));
         } catch (IllegalArgumentException e) {
             System.err.println("Invalid argument: " + e.getMessage());
             trace(e);
         } catch (Exception e) {
             System.err.println("Error: " + e.getMessage());
             trace(e);
-        } finally {
-            if (c != null) {
-                if (transact) {
-                    try {
-                        c.endExclusive();
-                    } catch (CardException e) {
-                        verbose("Exception when ending card transaction: " + e.getMessage());
-                        trace(e);
-                    }
-                }
-                try {
-                    c.disconnect(resetOnDisconnect);
-                } catch (CardException e) {
-                    verbose("Exception when disconnecting card: " + e.getMessage());
-                    trace(e);
-                }
-            }
         }
         System.exit(ret);
     }
@@ -232,7 +215,7 @@ public final class GPTool extends GPCommandLineInterface {
     }
 
     // Main entry point when called with a card connection
-    public int run(final BIBO bibo, final String[] argv) {
+    public int run(final APDUBIBO channel0, final String[] argv) {
         try {
             final OptionSet args = parseArguments(argv);
             setupLogging(args);
@@ -249,15 +232,14 @@ public final class GPTool extends GPCommandLineInterface {
                 cap = CAPFile.fromFile(capfile.toPath());
             }
 
-            // Now actually talk to possible terminals
-            var channel = new APDUBIBO(bibo);
+            var channel = channel0;
             // Run PACE to enable contactless interface
             if (args.has(OPT_PACE) || args.has(OPT_PACE_SM)) {
                 final byte[] aid = args.has(OPT_PACE) ? args.valueOf(OPT_PACE).getBytes() : args.valueOf(OPT_PACE_SM).getBytes();
                 try {
                     final PACE pace = PACE.executePACE(channel, aid, args.valueOf(OPT_CAN), args.valueOf(OPT_PACE_CURVE));
                     if (args.has(OPT_PACE_SM)) {
-                        channel = new APDUBIBO(new AESSecureChannel(pace.getENC(), pace.getMAC(), bibo));
+                        channel = new APDUBIBO(new AESSecureChannel(pace.getENC(), pace.getMAC(), channel0));
                     }
                 } catch (PACEException | GeneralSecurityException e) {
                     System.err.println("Could not run PACE: " + e.getMessage());
@@ -1007,7 +989,7 @@ public final class GPTool extends GPCommandLineInterface {
         return 1;
     }
 
-    private void warnIfNoDelegatedManagement(final GPSession session) throws IOException {
+    private void warnIfNoDelegatedManagement(final GPSession session) {
         if (session.getCurrentDomain().hasPrivilege(Privilege.DelegatedManagement) && !session.delegatedManagementEnabled()) {
             System.err.println("# Warning: specify delegated management key or token with --dm-key/--dm-token");
         }
@@ -1049,7 +1031,7 @@ public final class GPTool extends GPCommandLineInterface {
 
     // Extract parameters and call GPCommands.load()
     @SuppressWarnings("StatementSwitchToExpressionSwitch")
-    private static void loadCAP(OptionSet args, GPSession gp, CAPFile capFile) throws GPException, IOException {
+    private static void loadCAP(OptionSet args, GPSession gp, CAPFile capFile) throws GPException {
         try {
             final var to = optional(args, OPT_TO).orElse(gp.getAID());
             final var targetDomain = gp.getRegistry().getDomain(to).orElseThrow(() -> new IllegalArgumentException("Target domain does not exist: " + to));

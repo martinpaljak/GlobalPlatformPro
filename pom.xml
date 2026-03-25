@@ -13,7 +13,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <project.build.outputTimestamp>2026-02-11T09:26:17Z</project.build.outputTimestamp>
-        <apdu4j.version>26.03.16-SNAPSHOT</apdu4j.version>
+        <apdu4j.version>26.03.23-SNAPSHOT</apdu4j.version>
     </properties>
     <organization>
         <name>Martin Paljak and contributors</name>

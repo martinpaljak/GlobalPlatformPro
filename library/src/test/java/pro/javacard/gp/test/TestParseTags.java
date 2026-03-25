@@ -12,6 +12,7 @@ import pro.javacard.gp.GPRegistryEntry.Privilege;
 import pro.javacard.gp.data.BitField;
 
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -63,9 +64,9 @@ public class TestParseTags {
         Assert.assertEquals(Optional.of(LocalDate.of(2011, 07, 29)), CPLC.toRelativeDate(b, LocalDate.of(2021, 07, 28)));
 
         b = HexUtils.hex2bin("0000");
-        Assert.assertTrue(CPLC.toRelativeDate(b, LocalDate.now()).isEmpty());
+        Assert.assertTrue(CPLC.toRelativeDate(b, LocalDate.now(ZoneOffset.UTC)).isEmpty());
 
-        final LocalDate now = LocalDate.now();
+        final LocalDate now = LocalDate.now(ZoneOffset.UTC);
         Assert.assertEquals(CPLC.toRelativeDate(CPLC.dateToBytes(now), now), Optional.of(now));
         final byte[] today = CPLC.dateToBytes(now);
         System.out.printf("Today is %s what is %s%n", HexUtils.bin2hex(today), CPLC.toRelativeDate(today, now));
@@ -88,7 +89,7 @@ public class TestParseTags {
     @Test
     public void testCPLCDateParseInvalid() throws Exception {
         final var b = HexUtils.hex2bin("1410");
-        Assert.assertEquals(CPLC.toRelativeDate(b, LocalDate.now()), Optional.empty());
+        Assert.assertEquals(CPLC.toRelativeDate(b, LocalDate.now(ZoneOffset.UTC)), Optional.empty());
     }
 
     @Test(expectedExceptions = GPDataException.class)

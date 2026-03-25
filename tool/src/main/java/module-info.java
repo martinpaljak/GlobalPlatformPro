@@ -3,7 +3,6 @@
 module gptool {
     requires transitive pro.javacard.globalplatform;
     requires pro.javacard.pace;
-    requires java.smartcardio;
     requires jopt.simple;
     requires apdu4j.pcsc;
     requires pro.javacard.tlv;

@@ -26,8 +26,6 @@ import org.slf4j.LoggerFactory;
 import pro.javacard.capfile.AID;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.Arrays;
 
 public abstract class ReceiptVerifier {
@@ -104,55 +102,39 @@ public abstract class ReceiptVerifier {
 
     // Context data generators for different operatings and receipt types.
     public static byte[] load(final AID pkg, final AID sd) {
-        try {
-            final var baos = new ByteArrayOutputStream();
-            baos.write(pkg.getLength());
-            baos.write(pkg.getBytes());
-            baos.write(sd.getLength());
-            baos.write(sd.getBytes());
-            return baos.toByteArray();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        final var baos = new ByteArrayOutputStream();
+        baos.write(pkg.getLength());
+        baos.writeBytes(pkg.getBytes());
+        baos.write(sd.getLength());
+        baos.writeBytes(sd.getBytes());
+        return baos.toByteArray();
     }
 
     public static byte[] install_make_selectable(final AID pkg, final AID instance) {
-        try {
-            final var baos = new ByteArrayOutputStream();
-            baos.write(pkg.getLength());
-            baos.write(pkg.getBytes());
-            baos.write(instance.getLength());
-            baos.write(instance.getBytes());
-            return baos.toByteArray();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        final var baos = new ByteArrayOutputStream();
+        baos.write(pkg.getLength());
+        baos.writeBytes(pkg.getBytes());
+        baos.write(instance.getLength());
+        baos.writeBytes(instance.getBytes());
+        return baos.toByteArray();
     }
 
     public static byte[] extradite(final AID from, final AID what, final AID to) {
-        try {
-            final var baos = new ByteArrayOutputStream();
-            baos.write(from.getLength());
-            baos.write(from.getBytes());
-            baos.write(what.getLength());
-            baos.write(what.getBytes());
-            baos.write(to.getLength());
-            baos.write(to.getBytes());
-            return baos.toByteArray();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        final var baos = new ByteArrayOutputStream();
+        baos.write(from.getLength());
+        baos.writeBytes(from.getBytes());
+        baos.write(what.getLength());
+        baos.writeBytes(what.getBytes());
+        baos.write(to.getLength());
+        baos.writeBytes(to.getBytes());
+        return baos.toByteArray();
     }
 
     public static byte[] delete(final AID what) {
-        try {
-            final var baos = new ByteArrayOutputStream();
-            baos.write(what.getLength());
-            baos.write(what.getBytes());
-            return baos.toByteArray();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        final var baos = new ByteArrayOutputStream();
+        baos.write(what.getLength());
+        baos.writeBytes(what.getBytes());
+        return baos.toByteArray();
     }
 
     public static class ReceiptVerificationException extends RuntimeException {

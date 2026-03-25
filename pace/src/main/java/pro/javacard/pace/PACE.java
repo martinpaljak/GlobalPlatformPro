@@ -3,7 +3,6 @@ package pro.javacard.pace;
 import apdu4j.core.APDUBIBO;
 import apdu4j.core.CommandAPDU;
 import apdu4j.core.HexUtils;
-import apdu4j.core.ResponseAPDU;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.engines.AESEngine;
 import org.bouncycastle.crypto.generators.ECKeyPairGenerator;
@@ -11,7 +10,6 @@ import org.bouncycastle.crypto.macs.CMac;
 import org.bouncycastle.crypto.params.*;
 import org.bouncycastle.jce.ECNamedCurveTable;
 import org.bouncycastle.jce.spec.ECParameterSpec;
-import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.util.encoders.Hex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,7 +17,6 @@ import pro.javacard.tlv.TLV;
 import pro.javacard.tlv.Tag;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
@@ -75,7 +72,7 @@ public final class PACE {
 
     // B.1.PACE.
     public static PACE executePACE(final APDUBIBO c, final byte[] aid, final String can, final PACECurve curve)
-            throws PACEException, IOException, GeneralSecurityException {
+            throws PACEException, GeneralSecurityException {
 
         // Select the PACE application
         var r = c.transmit(new CommandAPDU(0x00, 0xA4, 0x04, 0x00, aid, 256));
@@ -216,11 +213,11 @@ public final class PACE {
     }
 
     // B.14.1. MSE:Set AT
-    private static CommandAPDU set_at(final byte[] oid, final byte password, final PACECurve curve) throws IOException {
+    private static CommandAPDU set_at(final byte[] oid, final byte password, final PACECurve curve) {
         final var payload = new ByteArrayOutputStream();
-        payload.write(TLV.of(Tag.ber(0x80), oid).encode()); // Cryptographic mechanism reference
-        payload.write(TLV.of(Tag.ber(0x83), new byte[] { password }).encode()); // Password reference - CAN
-        payload.write(TLV.of(Tag.ber(0x84), new byte[] { curve.code }).encode());
+        payload.writeBytes(TLV.of(Tag.ber(0x80), oid).encode()); // Cryptographic mechanism reference
+        payload.writeBytes(TLV.of(Tag.ber(0x83), new byte[]{password}).encode()); // Password reference - CAN
+        payload.writeBytes(TLV.of(Tag.ber(0x84), new byte[]{curve.code}).encode());
         // P1/P2: PACE: Set Authentication Template for mutual authentication.
         return new CommandAPDU(0x00, 0x22, 0xC1, 0xA4, payload.toByteArray(), 256);
     }

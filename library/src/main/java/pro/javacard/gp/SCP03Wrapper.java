@@ -25,7 +25,6 @@ import apdu4j.core.ResponseAPDU;
 
 import javax.crypto.NoSuchPaddingException;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
@@ -85,13 +84,13 @@ class SCP03Wrapper extends SecureChannelWrapper {
                 lc = lc + maclen;
 
                 final var bo = new ByteArrayOutputStream();
-                bo.write(chaining_value);
+                bo.writeBytes(chaining_value);
                 bo.write(cla);
                 bo.write(command.getINS());
                 bo.write(command.getP1());
                 bo.write(command.getP2());
-                bo.write(GPUtils.encodeLcLength(lc, command.getNe()));
-                bo.write(data);
+                bo.writeBytes(GPUtils.encodeLcLength(lc, command.getNe()));
+                bo.writeBytes(data);
                 final var cmac_input = bo.toByteArray();
                 final byte[] cmac = GPCrypto.aes_cmac(macKey, cmac_input, 128);
                 // Set new chaining value
@@ -103,9 +102,9 @@ class SCP03Wrapper extends SecureChannelWrapper {
             CommandAPDU newAPDU = null;
 
             final var newData = new ByteArrayOutputStream();
-            newData.write(data);
+            newData.writeBytes(data);
             if (mac) {
-                newData.write(cmd_mac);
+                newData.writeBytes(cmd_mac);
             }
             if (command.getNe() > 0) {
                 newAPDU = new CommandAPDU(cla, command.getINS(), command.getP1(), command.getP2(), newData.toByteArray(), command.getNe());
@@ -114,8 +113,6 @@ class SCP03Wrapper extends SecureChannelWrapper {
             }
             return newAPDU;
 
-        } catch (IOException e) {
-            throw new RuntimeException("APDU wrapping failed", e);
         } catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
             throw new IllegalStateException("APDU wrapping failed", e);
         } catch (GeneralSecurityException e) {
@@ -147,7 +144,7 @@ class SCP03Wrapper extends SecureChannelWrapper {
                 System.arraycopy(response.getData(), respLen, actualMac, 0, maclen);
 
                 final var bo = new ByteArrayOutputStream();
-                bo.write(chaining_value);
+                bo.writeBytes(chaining_value);
                 bo.write(response.getData(), 0, respLen);
                 bo.write(response.getSW1());
                 bo.write(response.getSW2());
@@ -177,14 +174,12 @@ class SCP03Wrapper extends SecureChannelWrapper {
                 // Now decrypt the data with S-ENC, with the new IV
                 final byte[] data = GPCrypto.aes_cbc_decrypt(response.getData(), encKey, iv);
                 final var o = new ByteArrayOutputStream();
-                o.write(GPCrypto.unpad80(data));
+                o.writeBytes(GPCrypto.unpad80(data));
                 o.write(response.getSW1());
                 o.write(response.getSW2());
                 response = new ResponseAPDU(o.toByteArray());
             }
             return response;
-        } catch (IOException e) {
-            throw new RuntimeException("APDU unwrapping failed", e);
         } catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
             throw new IllegalStateException("APDU unwrapping failed", e);
         } catch (GeneralSecurityException e) {

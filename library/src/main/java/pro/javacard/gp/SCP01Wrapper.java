@@ -24,7 +24,6 @@ import apdu4j.core.ResponseAPDU;
 
 import javax.crypto.NoSuchPaddingException;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
 
@@ -90,7 +89,7 @@ class SCP01Wrapper extends SecureChannelWrapper {
                 t.write(origP1);
                 t.write(origP2);
                 t.write(newLc);
-                t.write(origData);
+                t.writeBytes(origData);
 
                 icv = GPCrypto.mac_3des(t.toByteArray(), macKey, icv);
 
@@ -106,11 +105,11 @@ class SCP01Wrapper extends SecureChannelWrapper {
                 // Prepend length to padding
 
                 t.write(origLc);
-                t.write(origData);
+                t.writeBytes(origData);
                 if ((t.size() % 8) != 0) {
                     final byte[] x = GPCrypto.pad80(t.toByteArray(), 8);
                     t.reset();
-                    t.write(x);
+                    t.writeBytes(x);
                 }
 
                 newLc += t.size() - origData.length;
@@ -126,18 +125,16 @@ class SCP01Wrapper extends SecureChannelWrapper {
             t.write(origP2);
             if (newLc > 0) {
                 t.write(newLc);
-                t.write(newData);
+                t.writeBytes(newData);
             }
             if (mac) {
-                t.write(icv);
+                t.writeBytes(icv);
             }
             if (le > 0) {
                 t.write(le);
             }
             final var wrapped = new CommandAPDU(t.toByteArray());
             return wrapped;
-        } catch (IOException e) {
-            throw new RuntimeException("APDU wrapping failed", e);
         } catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
             throw new IllegalStateException("APDU wrapping failed", e);
         } catch (GeneralSecurityException e) {

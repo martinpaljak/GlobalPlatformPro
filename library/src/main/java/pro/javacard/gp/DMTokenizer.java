@@ -25,7 +25,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.interfaces.RSAPrivateKey;
 import javax.crypto.SecretKey;
@@ -41,43 +40,35 @@ public abstract class DMTokenizer {
     protected abstract boolean canTokenize(CommandAPDU apdu);
 
     public CommandAPDU tokenize(final CommandAPDU apdu) {
-        try {
-            final var data = new ByteArrayOutputStream();
-            data.write(apdu.getData());
-            if (!canTokenize(apdu)) {
-                throw new IllegalArgumentException("No DM token for APDU: " + apdu);
-            }
-            final var token = getToken(apdu);
-
-            if (token.length > 0) {
-                // Handle DELETE and prefix with tag
-                if (apdu.getINS() == 0xE4) {
-                    data.write(0x9E);
-                }
-                data.write(GPUtils.encodeLength(token.length));
-                data.write(token);
-            } else {
-                if (apdu.getINS() != 0xE4) {
-                    data.write(0); // No token in LV chain and no tag in TLV case
-                }
-            }
-            return new CommandAPDU(apdu.getCLA(), apdu.getINS(), apdu.getP1(), apdu.getP2(), data.toByteArray()); // FIXME: Le handling
-        } catch (IOException e) {
-            throw new GPException("Could not tokenize APDU: " + e.getMessage(), e);
+        final var data = new ByteArrayOutputStream();
+        data.writeBytes(apdu.getData());
+        if (!canTokenize(apdu)) {
+            throw new IllegalArgumentException("No DM token for APDU: " + apdu);
         }
+        final var token = getToken(apdu);
+
+        if (token.length > 0) {
+            // Handle DELETE and prefix with tag
+            if (apdu.getINS() == 0xE4) {
+                data.write(0x9E);
+            }
+            data.writeBytes(GPUtils.encodeLength(token.length));
+            data.writeBytes(token);
+        } else {
+            if (apdu.getINS() != 0xE4) {
+                data.write(0); // No token in LV chain and no tag in TLV case
+            }
+        }
+        return new CommandAPDU(apdu.getCLA(), apdu.getINS(), apdu.getP1(), apdu.getP2(), data.toByteArray()); // FIXME: Le handling
     }
 
     protected byte[] dtbs(final CommandAPDU apdu) {
-        try {
-            final var bo = new ByteArrayOutputStream();
-            bo.write(apdu.getP1());
-            bo.write(apdu.getP2());
-            bo.write(GPUtils.encodeLcLength(apdu.getData().length, apdu.getNe()));
-            bo.write(apdu.getData());
-            return bo.toByteArray();
-        } catch (IOException e) {
-            throw new RuntimeException("Memory error", e);
-        }
+        final var bo = new ByteArrayOutputStream();
+        bo.write(apdu.getP1());
+        bo.write(apdu.getP2());
+        bo.writeBytes(GPUtils.encodeLcLength(apdu.getData().length, apdu.getNe()));
+        bo.writeBytes(apdu.getData());
+        return bo.toByteArray();
     }
 
     public static DMTokenizer forPrivateKey(final RSAPrivateKey pkey) {

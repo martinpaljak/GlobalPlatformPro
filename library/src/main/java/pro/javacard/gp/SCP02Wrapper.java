@@ -27,7 +27,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.crypto.NoSuchPaddingException;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
@@ -75,7 +74,7 @@ class SCP02Wrapper extends SecureChannelWrapper {
                 rMac.write(command.getP2());
                 if (command.getNc() >= 0) {
                     rMac.write(command.getNc());
-                    rMac.write(command.getData());
+                    rMac.writeBytes(command.getData());
                 }
             }
 
@@ -116,7 +115,7 @@ class SCP02Wrapper extends SecureChannelWrapper {
                 t.write(origP1);
                 t.write(origP2);
                 t.write(newLc);
-                t.write(origData);
+                t.writeBytes(origData);
 
                 logger.trace("MAC input: {}", HexUtils.bin2hex(t.toByteArray()));
                 icv = GPCrypto.mac_des_3des(macKey, t.toByteArray(), icv);
@@ -130,7 +129,7 @@ class SCP02Wrapper extends SecureChannelWrapper {
             }
 
             if (enc && (origLc > 0)) {
-                t.write(GPCrypto.pad80(origData, 8));
+                t.writeBytes(GPCrypto.pad80(origData, 8));
                 newLc += t.size() - origData.length;
 
                 newData = GPCrypto.des3_cbc(t.toByteArray(), encKey, new byte[8]);
@@ -144,18 +143,16 @@ class SCP02Wrapper extends SecureChannelWrapper {
             t.write(origP2);
             if (newLc > 0) {
                 t.write(newLc); // XXX: extended length
-                t.write(newData);
+                t.writeBytes(newData);
             }
             if (mac) {
-                t.write(icv);
+                t.writeBytes(icv);
             }
             if (le > 0) {
                 t.write(le);
             }
             final var wrapped = new CommandAPDU(t.toByteArray());
             return wrapped;
-        } catch (IOException e) {
-            throw new RuntimeException("APDU wrapping failed", e);
         } catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
             throw new IllegalStateException("APDU wrapping failed", e);
         } catch (GeneralSecurityException e) {

@@ -41,10 +41,7 @@ import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.cert.CertificateException;
@@ -220,15 +217,11 @@ public final class GPCrypto {
         final byte[] label = new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
         final var bo = new ByteArrayOutputStream();
-        try {
-            bo.write(label); // 11 bytes of label
-            bo.write(constant); // constant for the last byte
-            bo.write(0x00); // separator
-            bo.write((blocklen_bits >> 8) & 0xFF); // block size in two bytes
-            bo.write(blocklen_bits & 0xFF);
-        } catch (IOException ioe) {
-            throw new RuntimeException(ioe);
-        }
+        bo.writeBytes(label); // 11 bytes of label
+        bo.write(constant); // constant for the last byte
+        bo.write(0x00); // separator
+        bo.write((blocklen_bits >> 8) & 0xFF); // block size in two bytes
+        bo.write(blocklen_bits & 0xFF);
         return bo.toByteArray();
     }
 

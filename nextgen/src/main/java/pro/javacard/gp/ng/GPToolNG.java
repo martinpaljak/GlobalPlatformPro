@@ -57,7 +57,6 @@ import java.util.stream.Collectors;
 public final class GPToolNG extends GPCommandLineInterface implements ToolExtension {
     // NOTE: can't have a static logger here, as it is set up based on args and env. This class should only use stdout/stderr.
 
-    private static boolean isVerbose = false;
     private static boolean isTrace = false;
 
     static final String ENV_GP_AID = "GP_AID";
@@ -105,7 +104,6 @@ public final class GPToolNG extends GPCommandLineInterface implements ToolExtens
         System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "warn");
 
         if (args.has(OPT_VERBOSE)) {
-            isVerbose = true;
             System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "info");
         }
         if (args.has(OPT_DEBUG) && args.has(OPT_VERBOSE)) {
@@ -785,12 +783,6 @@ public final class GPToolNG extends GPCommandLineInterface implements ToolExtens
             }
         }
         return privs;
-    }
-
-    private static void verbose(String s) {
-        if (isVerbose) {
-            System.out.println("# " + s);
-        }
     }
 
     private static void trace(Exception e) {

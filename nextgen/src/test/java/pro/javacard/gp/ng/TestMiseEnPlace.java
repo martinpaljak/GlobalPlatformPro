@@ -24,7 +24,6 @@ import apdu4j.apdulette.MiseEnPlaceChef;
 import apdu4j.core.HexUtils;
 import apdu4j.prefs.Preferences;
 import pro.javacard.capfile.AID;
-import pro.javacard.gp.ng.GPRegistryEntryNG;
 import org.testng.annotations.Test;
 
 import java.util.EnumSet;

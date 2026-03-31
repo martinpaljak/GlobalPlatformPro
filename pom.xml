@@ -334,6 +334,26 @@
             </modules>
         </profile>
         <profile>
+            <id>fixup</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.openrewrite.maven</groupId>
+                        <artifactId>rewrite-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>rewrite-fixup</id>
+                                <phase>process-test-classes</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
             <id>check</id>
             <activation>
                 <jdk>[21,)</jdk>
@@ -398,29 +418,9 @@
                         <executions>
                             <execution>
                                 <id>rewrite-check</id>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>dryRun</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-        <profile>
-            <id>fixup</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.openrewrite.maven</groupId>
-                        <artifactId>rewrite-maven-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>rewrite-fixup</id>
                                 <phase>process-test-classes</phase>
                                 <goals>
-                                    <goal>run</goal>
+                                    <goal>dryRun</goal>
                                 </goals>
                             </execution>
                         </executions>

@@ -12,7 +12,6 @@ import pro.javacard.gp.GPCrypto;
 import java.io.FileInputStream;
 import java.security.Security;
 import java.security.interfaces.RSAPrivateKey;
-import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
 import static pro.javacard.gp.GPSession.*;

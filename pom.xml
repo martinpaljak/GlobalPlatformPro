@@ -336,6 +336,7 @@
         <profile>
             <id>check</id>
             <activation>
+                <jdk>[21,)</jdk>
                 <property>
                     <name>env.CI</name>
                     <value>true</value>

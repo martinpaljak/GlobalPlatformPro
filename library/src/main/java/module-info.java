@@ -2,6 +2,7 @@
 @SuppressWarnings({"requires-automatic"})
 module pro.javacard.globalplatform {
     requires transitive apdu4j.core;
+
     requires pro.javacard.tlv;
     requires org.bouncycastle.pkix;
     requires org.bouncycastle.provider; // FIXME: Hex. uses this

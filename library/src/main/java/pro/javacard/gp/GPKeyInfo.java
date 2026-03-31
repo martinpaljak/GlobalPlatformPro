@@ -167,7 +167,7 @@ public final class GPKeyInfo {
         tmp.put(0x14, "SCP11b Data Encryption");
         tmp.put(0x15, "SCP11c Key Agreement");
         tmp.put(0x16, "SCP11c Data Encryption");
-        for (int i = 0x20; i <= 0x2F; i++) {
+        for (var i = 0x20; i <= 0x2F; i++) {
             tmp.put(i, "SCP11 CA Verification");
         }
         keyIDPurposes = Collections.unmodifiableMap(tmp);

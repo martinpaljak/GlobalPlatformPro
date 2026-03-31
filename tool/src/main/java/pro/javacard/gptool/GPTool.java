@@ -148,10 +148,10 @@ public final class GPTool extends GPCommandLineInterface {
             // Early jump to next-gen tool via ServiceLoader
             if (args.has(OPT_NG) || "true".equalsIgnoreCase(System.getenv("GP_NG"))) {
                 try {
-                    var ext = java.util.ServiceLoader.load(pro.javacard.gp.ToolExtension.class).findFirst()
+                    var ext = ServiceLoader.load(ToolExtension.class).findFirst()
                             .orElseThrow(() -> new IllegalStateException("nextgen module not available"));
                     System.exit(ext.run(argv));
-                } catch (UnsupportedClassVersionError | java.util.ServiceConfigurationError e) {
+                } catch (UnsupportedClassVersionError | ServiceConfigurationError e) {
                     System.err.println("Error: -ng requires Java 21+ runtime (running on "
                             + System.getProperty("java.version") + ")");
                     System.exit(1);

@@ -42,7 +42,7 @@ public abstract class ReceiptVerifier {
         return Arrays.copyOfRange(response, 2 + response[1], response[0] + 1);
     }
 
-    abstract boolean check(ResponseAPDU response, byte[] context);
+    public abstract boolean check(ResponseAPDU response, byte[] context);
 
     boolean log_only = false;
 
@@ -60,7 +60,7 @@ public abstract class ReceiptVerifier {
 
         // XXX: the use of "log only" arguments, boolean function and exceptions is not nice. Refactor
         @Override
-        boolean check(final ResponseAPDU response, final byte[] context) throws ReceiptVerificationException {
+        public boolean check(final ResponseAPDU response, final byte[] context) throws ReceiptVerificationException {
             // Context is the concatenation of command parameters sent to the card before receiving the receipt.
             final var data = response.getData();
             if (data[0] == 0x00) {
@@ -95,7 +95,7 @@ public abstract class ReceiptVerifier {
         public NullVerifier() {}
 
         @Override
-        boolean check(final ResponseAPDU response, final byte[] context) {
+        public boolean check(final ResponseAPDU response, final byte[] context) {
             return true;
         }
     }

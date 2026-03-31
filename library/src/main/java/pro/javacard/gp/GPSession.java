@@ -927,7 +927,7 @@ public class GPSession {
         return cardKeys.encrypt(plaintext, sessionContext);
     }
 
-    private byte[] encodeKey(final GPCardKeys dek, final byte[] other, final GPKeyInfo.GPKey type) {
+    public static byte[] encodeKey(final GPCardKeys dek, final byte[] other, final GPKeyInfo.GPKey type, final byte[] sessionContext) {
         try {
             final var baos = new ByteArrayOutputStream();
             if (type == GPKey.AES) {
@@ -1023,7 +1023,7 @@ public class GPSession {
         }
     }
 
-    byte[] encodeRSAKey(final RSAPublicKey key) {
+    public static byte[] encodeRSAKey(final RSAPublicKey key) {
         final var bo = new ByteArrayOutputStream();
         final byte[] modulus = GPUtils.positive(key.getModulus());
         final byte[] exponent = GPUtils.positive(key.getPublicExponent());
@@ -1038,29 +1038,21 @@ public class GPSession {
         return bo.toByteArray();
     }
 
-    @SuppressWarnings("StatementSwitchToExpressionSwitch")
-    byte[] encodeECKey(final ECPublicKey pubkey) {
+    public static byte[] encodeECKey(final ECPublicKey pubkey) {
         final var bo = new ByteArrayOutputStream();
-
         final var fieldSize = pubkey.getParams().getCurve().getField().getFieldSize();
-        final String curveName;
-        final byte curveRef;
-        switch (fieldSize) {
-            case 256:
-                curveName = "secp256r1";
-                curveRef = 0x00;
-                break;
-            case 384:
-                curveName = "secp384r1";
-                curveRef = 0x01;
-                break;
-            case 521:
-                curveName = "secp521r1";
-                curveRef = 0x02;
-                break;
-            default:
-                throw new IllegalArgumentException("Unsupported EC field size: " + fieldSize);
-        }
+        final var curveName = switch (fieldSize) {
+            case 256 -> "secp256r1";
+            case 384 -> "secp384r1";
+            case 521 -> "secp521r1";
+            default -> throw new IllegalArgumentException("Unsupported EC field size: " + fieldSize);
+        };
+        final byte curveRef = switch (fieldSize) {
+            case 256 -> 0x00;
+            case 384 -> 0x01;
+            case 521 -> 0x02;
+            default -> throw new IllegalArgumentException("Unsupported EC field size: " + fieldSize);
+        };
         final var key = ECNamedCurveTable.getByName(curveName).getCurve().createPoint(pubkey.getW().getAffineX(), pubkey.getW().getAffineY())
                 .getEncoded(false);
 
@@ -1086,10 +1078,10 @@ public class GPSession {
         } else if (key instanceof SecretKey sk) {
             if ("DESede".equals(sk.getAlgorithm())) {
                 logger.info("PUT KEY KCV: {}", HexUtils.bin2hex(GPCrypto.kcv_3des(sk.getEncoded())));
-                bo.writeBytes(encodeKey(cardKeys, Arrays.copyOf(sk.getEncoded(), 16), GPKey.DES3));
+                bo.writeBytes(encodeKey(cardKeys, Arrays.copyOf(sk.getEncoded(), 16), GPKey.DES3, sessionContext));
             } else if ("AES".equals(sk.getAlgorithm())) {
                 logger.info("PUT KEY KCV: {}", HexUtils.bin2hex(GPCrypto.kcv_aes(sk.getEncoded())));
-                bo.writeBytes(encodeKey(cardKeys, sk.getEncoded(), GPKey.AES));
+                bo.writeBytes(encodeKey(cardKeys, sk.getEncoded(), GPKey.AES, sessionContext));
             } else {
                 throw new IllegalArgumentException("Only 3DES and AES symmetric keys are supported: " + sk.getAlgorithm());
             }

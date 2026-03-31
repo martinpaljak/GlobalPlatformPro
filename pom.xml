@@ -12,7 +12,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <project.build.outputTimestamp>2026-02-11T09:26:17Z</project.build.outputTimestamp>
+        <project.build.outputTimestamp>2026-02-11T09:26:18Z</project.build.outputTimestamp>
         <apdu4j.version>26.03.23-SNAPSHOT</apdu4j.version>
     </properties>
     <organization>
@@ -43,13 +43,13 @@
         </repository>
     </repositories>
     <modules>
-        <module>prefs</module>
         <module>tlv</module>
         <module>library</module>
         <module>pace</module>
         <module>tool</module>
     </modules>
     <build>
+        <defaultGoal>clean verify</defaultGoal>
         <plugins>
             <!-- Minimum Maven version. Not really relevant with wrapper -->
             <plugin>
@@ -107,7 +107,7 @@
             <plugin>
                 <groupId>com.diffplug.spotless</groupId>
                 <artifactId>spotless-maven-plugin</artifactId>
-                <version>3.3.0</version>
+                <version>3.4.0</version>
                 <configuration>
                     <java>
                         <excludes>
@@ -118,114 +118,6 @@
                         </eclipse>
                         <toggleOffOn/>
                     </java>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.openrewrite.maven</groupId>
-                <artifactId>rewrite-maven-plugin</artifactId>
-                <version>6.33.0</version>
-                <configuration>
-                    <activeRecipes>
-                        <!-- Control flow -->
-                        <recipe>org.openrewrite.staticanalysis.NeedBraces</recipe>
-                        <recipe>org.openrewrite.staticanalysis.EmptyBlock</recipe>
-                        <recipe>org.openrewrite.staticanalysis.FallThrough</recipe>
-                        <recipe>org.openrewrite.staticanalysis.DefaultComesLast</recipe>
-                        <!-- Equality and comparison -->
-                        <recipe>org.openrewrite.staticanalysis.EqualsAvoidsNull</recipe>
-                        <recipe>org.openrewrite.staticanalysis.StringLiteralEquality</recipe>
-                        <recipe>org.openrewrite.staticanalysis.IndexOfReplaceableByContains</recipe>
-                        <recipe>org.openrewrite.staticanalysis.IndexOfShouldNotCompareGreaterThanZero</recipe>
-                        <recipe>org.openrewrite.staticanalysis.CovariantEquals</recipe>
-                        <recipe>org.openrewrite.staticanalysis.RenameMethodsNamedHashcodeEqualOrToString</recipe>
-                        <!-- Modifier correctness -->
-                        <recipe>org.openrewrite.staticanalysis.ModifierOrder</recipe>
-                        <recipe>org.openrewrite.staticanalysis.FinalClass</recipe>
-                        <recipe>org.openrewrite.staticanalysis.StaticMethodNotFinal</recipe>
-                        <recipe>org.openrewrite.staticanalysis.NestedEnumsAreNotStatic</recipe>
-                        <!-- Declarations and scope -->
-                        <!--<recipe>org.openrewrite.staticanalysis.HiddenField</recipe>-->
-                        <recipe>org.openrewrite.staticanalysis.MultipleVariableDeclarations</recipe>
-                        <!-- Dead code and redundancy -->
-                        <recipe>org.openrewrite.staticanalysis.NoRedundantJumpStatements</recipe>
-                        <recipe>org.openrewrite.staticanalysis.RemoveExtraSemicolons</recipe>
-                        <recipe>org.openrewrite.staticanalysis.UnnecessaryParentheses</recipe>
-                        <recipe>org.openrewrite.staticanalysis.NoToStringOnStringType</recipe>
-                        <recipe>org.openrewrite.staticanalysis.NoValueOfOnStringType</recipe>
-                        <!--<recipe>org.openrewrite.staticanalysis.RemoveUnneededBlock</recipe>-->
-                        <!--<recipe>org.openrewrite.staticanalysis.IsEmptyCallOnCollections</recipe>-->
-                        <!-- Boolean and control flow simplification -->
-                        <recipe>org.openrewrite.staticanalysis.SimplifyBooleanReturn</recipe>
-                        <recipe>org.openrewrite.staticanalysis.BooleanChecksNotInverted</recipe>
-                        <!--<recipe>org.openrewrite.staticanalysis.SimplifyBooleanExpression</recipe>-->
-                        <!--<recipe>org.openrewrite.staticanalysis.SimplifyConstantIfBranchExecution</recipe>-->
-                        <!-- Type safety and modern Java -->
-                        <recipe>org.openrewrite.staticanalysis.UseDiamondOperator</recipe>
-                        <recipe>org.openrewrite.staticanalysis.RemoveRedundantTypeCast</recipe>
-                        <recipe>org.openrewrite.staticanalysis.InstanceOfPatternMatch</recipe>
-                        <recipe>org.openrewrite.staticanalysis.UseJavaStyleArrayDeclarations</recipe>
-                        <recipe>org.openrewrite.staticanalysis.PrimitiveWrapperClassConstructorToValueOf</recipe>
-                        <recipe>org.openrewrite.staticanalysis.MissingOverrideAnnotation</recipe>
-                        <recipe>org.openrewrite.staticanalysis.ReplaceClassIsInstanceWithInstanceof</recipe>
-                        <!-- String handling -->
-                        <recipe>org.openrewrite.staticanalysis.UseStringReplace</recipe>
-                        <recipe>org.openrewrite.staticanalysis.ReplaceStringBuilderWithString</recipe>
-                        <recipe>org.openrewrite.staticanalysis.CaseInsensitiveComparisonsDoNotChangeCase</recipe>
-                        <!--<recipe>org.openrewrite.staticanalysis.ChainStringBuilderAppendCalls</recipe>-->
-                        <!--<recipe>org.openrewrite.staticanalysis.UpperCaseLiteralSuffixes</recipe>-->
-                        <!-- Exception and resource handling -->
-                        <recipe>org.openrewrite.staticanalysis.CatchClauseOnlyRethrows</recipe>
-                        <recipe>org.openrewrite.staticanalysis.CombineSemanticallyEqualCatchBlocks</recipe>
-                        <recipe>org.openrewrite.staticanalysis.UnnecessaryCloseInTryWithResources</recipe>
-                        <!--<recipe>org.openrewrite.staticanalysis.UnnecessaryThrows</recipe>-->
-                        <!-- Serialization safety -->
-                        <recipe>org.openrewrite.staticanalysis.NoFinalizer</recipe>
-                        <recipe>org.openrewrite.staticanalysis.NoDoubleBraceInitialization</recipe>
-                        <!-- Threading -->
-                        <recipe>org.openrewrite.staticanalysis.ReplaceThreadRunWithThreadStart</recipe>
-                        <!-- Finality -->
-                        <recipe>org.openrewrite.staticanalysis.FinalizePrivateFields</recipe>
-                        <recipe>org.openrewrite.staticanalysis.FinalizeLocalVariables</recipe>
-                        <recipe>org.openrewrite.staticanalysis.FinalizeMethodArguments</recipe>
-                        <!-- Naming -->
-                        <recipe>org.openrewrite.staticanalysis.RenameExceptionInEmptyCatch</recipe>
-                        <!-- Modern Java -->
-                        <recipe>org.openrewrite.staticanalysis.UseStandardCharset</recipe>
-                        <recipe>org.openrewrite.java.migrate.lang.UseVar</recipe>
-                        <recipe>org.openrewrite.java.migrate.lang.var.UseVarForTypeCast</recipe>
-                        <recipe>org.openrewrite.java.migrate.lang.StringFormatted</recipe>
-                        <recipe>org.openrewrite.java.RemoveUnusedImports</recipe>
-                    </activeRecipes>
-                    <failOnDryRunResults>true</failOnDryRunResults>
-                </configuration>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.openrewrite.recipe</groupId>
-                        <artifactId>rewrite-static-analysis</artifactId>
-                        <version>2.30.0</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>org.openrewrite.recipe</groupId>
-                        <artifactId>rewrite-migrate-java</artifactId>
-                        <version>3.30.0</version>
-                    </dependency>
-                </dependencies>
-            </plugin>
-            <plugin>
-                <groupId>com.github.spotbugs</groupId>
-                <artifactId>spotbugs-maven-plugin</artifactId>
-                <version>4.9.8.2</version>
-                <executions>
-                    <execution>
-                        <id>parent-spotbugs</id>
-                        <phase>verify</phase>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <excludeFilterFile>spotbugs.xml</excludeFilterFile>
                 </configuration>
             </plugin>
             <plugin>
@@ -286,6 +178,93 @@
                     <artifactId>maven-resources-plugin</artifactId>
                     <version>3.5.0</version>
                 </plugin>
+                <plugin>
+                    <groupId>org.openrewrite.maven</groupId>
+                    <artifactId>rewrite-maven-plugin</artifactId>
+                    <version>6.35.0</version>
+                    <configuration>
+                        <activeRecipes>
+                            <!-- Control flow -->
+                            <recipe>org.openrewrite.staticanalysis.NeedBraces</recipe>
+                            <recipe>org.openrewrite.staticanalysis.EmptyBlock</recipe>
+                            <recipe>org.openrewrite.staticanalysis.FallThrough</recipe>
+                            <recipe>org.openrewrite.staticanalysis.DefaultComesLast</recipe>
+                            <!-- Equality and comparison -->
+                            <recipe>org.openrewrite.staticanalysis.EqualsAvoidsNull</recipe>
+                            <recipe>org.openrewrite.staticanalysis.StringLiteralEquality</recipe>
+                            <recipe>org.openrewrite.staticanalysis.IndexOfReplaceableByContains</recipe>
+                            <recipe>org.openrewrite.staticanalysis.IndexOfShouldNotCompareGreaterThanZero</recipe>
+                            <recipe>org.openrewrite.staticanalysis.CovariantEquals</recipe>
+                            <recipe>org.openrewrite.staticanalysis.RenameMethodsNamedHashcodeEqualOrToString</recipe>
+                            <!-- Modifier correctness -->
+                            <recipe>org.openrewrite.staticanalysis.ModifierOrder</recipe>
+                            <recipe>org.openrewrite.staticanalysis.FinalClass</recipe>
+                            <recipe>org.openrewrite.staticanalysis.StaticMethodNotFinal</recipe>
+                            <recipe>org.openrewrite.staticanalysis.NestedEnumsAreNotStatic</recipe>
+                            <!-- Declarations and scope -->
+                            <!--<recipe>org.openrewrite.staticanalysis.HiddenField</recipe>-->
+                            <recipe>org.openrewrite.staticanalysis.MultipleVariableDeclarations</recipe>
+                            <!-- Dead code and redundancy -->
+                            <recipe>org.openrewrite.staticanalysis.NoRedundantJumpStatements</recipe>
+                            <recipe>org.openrewrite.staticanalysis.RemoveExtraSemicolons</recipe>
+                            <recipe>org.openrewrite.staticanalysis.UnnecessaryParentheses</recipe>
+                            <recipe>org.openrewrite.staticanalysis.NoToStringOnStringType</recipe>
+                            <recipe>org.openrewrite.staticanalysis.NoValueOfOnStringType</recipe>
+                            <!--<recipe>org.openrewrite.staticanalysis.RemoveUnneededBlock</recipe>-->
+                            <!--<recipe>org.openrewrite.staticanalysis.IsEmptyCallOnCollections</recipe>-->
+                            <!-- Boolean and control flow simplification -->
+                            <recipe>org.openrewrite.staticanalysis.SimplifyBooleanReturn</recipe>
+                            <recipe>org.openrewrite.staticanalysis.BooleanChecksNotInverted</recipe>
+                            <!--<recipe>org.openrewrite.staticanalysis.SimplifyBooleanExpression</recipe>-->
+                            <!--<recipe>org.openrewrite.staticanalysis.SimplifyConstantIfBranchExecution</recipe>-->
+                            <!-- Type safety and modern Java -->
+                            <recipe>org.openrewrite.staticanalysis.UseDiamondOperator</recipe>
+                            <recipe>org.openrewrite.staticanalysis.RemoveRedundantTypeCast</recipe>
+                            <recipe>org.openrewrite.staticanalysis.InstanceOfPatternMatch</recipe>
+                            <recipe>org.openrewrite.staticanalysis.UseJavaStyleArrayDeclarations</recipe>
+                            <recipe>org.openrewrite.staticanalysis.PrimitiveWrapperClassConstructorToValueOf</recipe>
+                            <recipe>org.openrewrite.staticanalysis.MissingOverrideAnnotation</recipe>
+                            <recipe>org.openrewrite.staticanalysis.ReplaceClassIsInstanceWithInstanceof</recipe>
+                            <!-- String handling -->
+                            <recipe>org.openrewrite.staticanalysis.UseStringReplace</recipe>
+                            <recipe>org.openrewrite.staticanalysis.ReplaceStringBuilderWithString</recipe>
+                            <recipe>org.openrewrite.staticanalysis.CaseInsensitiveComparisonsDoNotChangeCase</recipe>
+                            <!--<recipe>org.openrewrite.staticanalysis.ChainStringBuilderAppendCalls</recipe>-->
+                            <!--<recipe>org.openrewrite.staticanalysis.UpperCaseLiteralSuffixes</recipe>-->
+                            <!-- Exception and resource handling -->
+                            <recipe>org.openrewrite.staticanalysis.CatchClauseOnlyRethrows</recipe>
+                            <recipe>org.openrewrite.staticanalysis.CombineSemanticallyEqualCatchBlocks</recipe>
+                            <recipe>org.openrewrite.staticanalysis.UnnecessaryCloseInTryWithResources</recipe>
+                            <!--<recipe>org.openrewrite.staticanalysis.UnnecessaryThrows</recipe>-->
+                            <!-- Serialization safety -->
+                            <recipe>org.openrewrite.staticanalysis.NoFinalizer</recipe>
+                            <recipe>org.openrewrite.staticanalysis.NoDoubleBraceInitialization</recipe>
+                            <!-- Threading -->
+                            <recipe>org.openrewrite.staticanalysis.ReplaceThreadRunWithThreadStart</recipe>
+                            <!-- Naming -->
+                            <recipe>org.openrewrite.staticanalysis.RenameExceptionInEmptyCatch</recipe>
+                            <!-- Modern Java -->
+                            <recipe>org.openrewrite.staticanalysis.UseStandardCharset</recipe>
+                            <recipe>org.openrewrite.java.migrate.lang.UseVar</recipe>
+                            <recipe>org.openrewrite.java.migrate.lang.var.UseVarForTypeCast</recipe>
+                            <recipe>org.openrewrite.java.migrate.lang.StringFormatted</recipe>
+                            <recipe>org.openrewrite.java.RemoveUnusedImports</recipe>
+                        </activeRecipes>
+                        <failOnDryRunResults>true</failOnDryRunResults>
+                    </configuration>
+                    <dependencies>
+                        <dependency>
+                            <groupId>org.openrewrite.recipe</groupId>
+                            <artifactId>rewrite-static-analysis</artifactId>
+                            <version>2.31.0</version>
+                        </dependency>
+                        <dependency>
+                            <groupId>org.openrewrite.recipe</groupId>
+                            <artifactId>rewrite-migrate-java</artifactId>
+                            <version>3.31.1</version>
+                        </dependency>
+                    </dependencies>
+                </plugin>
             </plugins>
         </pluginManagement>
     </build>
@@ -298,7 +277,17 @@
             </dependency>
             <dependency>
                 <groupId>com.github.martinpaljak</groupId>
+                <artifactId>apdu4j-prefs</artifactId>
+                <version>${apdu4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.martinpaljak</groupId>
                 <artifactId>apdu4j-pcsc</artifactId>
+                <version>${apdu4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.martinpaljak</groupId>
+                <artifactId>apdu4j-apdulette</artifactId>
                 <version>${apdu4j.version}</version>
             </dependency>
             <dependency>
@@ -325,18 +314,62 @@
     </dependencyManagement>
     <profiles>
         <profile>
-            <id>errorprone</id>
+            <id>jdk21</id>
+            <activation>
+                <jdk>[21,)</jdk>
+            </activation>
+            <modules>
+                <module>nextgen</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>ide</id>
+            <activation>
+                <file>
+                    <exists>${basedir}/apdu4j/pom.xml</exists>
+                </file>
+            </activation>
+            <modules>
+                <module>apdu4j</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>check</id>
+            <activation>
+                <property>
+                    <name>env.CI</name>
+                    <value>true</value>
+                </property>
+            </activation>
             <build>
                 <plugins>
+                    <plugin>
+                        <groupId>com.github.spotbugs</groupId>
+                        <artifactId>spotbugs-maven-plugin</artifactId>
+                        <version>4.9.8.3</version>
+                        <executions>
+                            <execution>
+                                <id>parent-spotbugs</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <excludeFilterFile>spotbugs.xml</excludeFilterFile>
+                        </configuration>
+                    </plugin>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-compiler-plugin</artifactId>
                         <configuration>
                             <fork>true</fork>
-                            <compilerArgs combine.children="append">
+                            <compilerArgs>
+                                <arg>-Xlint:all</arg>
                                 <arg>-XDcompilePolicy=simple</arg>
                                 <arg>--should-stop=ifError=FLOW</arg>
-                                <arg>-Xplugin:ErrorProne</arg>
+                                <arg>-Xplugin:ErrorProne -Xep:ArrayRecordComponent:OFF -Xep:ImmutableEnumChecker:OFF</arg>
                                 <arg>-XDaddTypeAnnotationsToSymbol=true</arg>
                                 <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED</arg>
                                 <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED</arg>
@@ -357,6 +390,39 @@
                                 </path>
                             </annotationProcessorPaths>
                         </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.openrewrite.maven</groupId>
+                        <artifactId>rewrite-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>rewrite-check</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>dryRun</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>fixup</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.openrewrite.maven</groupId>
+                        <artifactId>rewrite-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>rewrite-fixup</id>
+                                <phase>process-test-classes</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                            </execution>
+                        </executions>
                     </plugin>
                 </plugins>
             </build>

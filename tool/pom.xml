@@ -26,6 +26,7 @@
             <artifactId>pace</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <!-- apdu4j-apdulette moved to nextgen module -->
         <!-- For logging in the command line tool -->
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -48,10 +49,24 @@
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-cbor</artifactId>
-            <version>2.21.1</version>
+            <version>2.21.2</version>
         </dependency>
     </dependencies>
     <profiles>
+        <profile>
+            <id>jdk21</id>
+            <activation>
+                <jdk>[21,)</jdk>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>com.github.martinpaljak</groupId>
+                    <artifactId>gptool-nextgen</artifactId>
+                    <version>${project.version}</version>
+                    <optional>true</optional>
+                </dependency>
+            </dependencies>
+        </profile>
         <profile>
             <id>exe</id>
             <build>

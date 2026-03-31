@@ -197,6 +197,9 @@ abstract class GPCommandLineInterface {
     protected static OptionSpec<String> OPT_PROFILE = parser.acceptsAll(Arrays.asList("P", "profile"), "Use pre-defined profile").withRequiredArg()
             .describedAs("profile");
 
+    // Next-gen tool
+    protected static OptionSpec<Void> OPT_NG = parser.accepts("ng", "Use next-gen tool");
+
     // PC/SC options
     protected static OptionSpec<Void> OPT_PCSC_EXCLUSIVE = parser.acceptsAll(Arrays.asList("X", "pcsc-exclusive"), "Exclusive PC/SC access to the reader");
 

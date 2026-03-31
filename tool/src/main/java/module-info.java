@@ -5,6 +5,8 @@ module gptool {
     requires pro.javacard.pace;
     requires jopt.simple;
     requires apdu4j.pcsc;
+
+    requires apdu4j.prefs;
     requires pro.javacard.tlv;
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.databind;
@@ -12,4 +14,6 @@ module gptool {
     requires org.bouncycastle.provider;
     requires org.bouncycastle.pkix;
     requires org.slf4j;
+
+    uses pro.javacard.gp.ToolExtension;
 }

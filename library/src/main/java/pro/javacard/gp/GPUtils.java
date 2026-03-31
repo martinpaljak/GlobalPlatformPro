@@ -158,7 +158,7 @@ public final class GPUtils {
     }
 
     // JavaCard requires values without sign byte (assumed positive)
-    static byte[] positive(BigInteger i) {
+    public static byte[] positive(BigInteger i) {
         final var bytes = i.toByteArray();
         return positive(bytes);
     }

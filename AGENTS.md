@@ -2,6 +2,7 @@
 
 - Use `./mvnw` (Maven wrapper), never `mvn`
 - Use `./mvnw compile` or module-specific builds during development
+- When compiling a single module with `-pl`, always use `-am` (also-make) to build its dependencies: `./mvnw compile -pl tool -am`
 - Run `./mvnw verify` as the final check — must be clean before committing
 - Java 17+ required
 - Compiler uses `-Werror -Xlint:all` — all warnings are errors
@@ -14,7 +15,7 @@ Run `make versions` to check for newer versions of dependencies, plugins, and ex
 
 Before committing, run these in order:
 
-1. `./mvnw -Perrorprone -Dmaven.javadoc.skip=true -Dmaven.test.skip=true compile spotbugs:check` — Error Prone and SpotBugs static analysis
+1. `./mvnw -Pcheck -Dmaven.javadoc.skip=true -Dmaven.test.skip=true compile spotbugs:check` — Error Prone and SpotBugs static analysis
 2. `./mvnw rewrite:run spotless:apply` — OpenRewrite auto-fixes and code formatting
 3. `./mvnw verify` — final build + tests, must be clean
 

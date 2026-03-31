@@ -17,4 +17,13 @@
         <Class name="pro.javacard.gp.SCP01Wrapper"/>
         <Bug pattern="SS_SHOULD_BE_STATIC"/>
     </Match>
+    <!-- SCP state records deliberately share key byte[] refs across state transitions; close() zeros them -->
+    <Match>
+        <Or>
+            <Class name="pro.javacard.gp.ng.SCP01$State"/>
+            <Class name="pro.javacard.gp.ng.SCP02$State"/>
+            <Class name="pro.javacard.gp.ng.SCP03$State"/>
+        </Or>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
 </FindBugsFilter>

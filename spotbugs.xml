@@ -26,4 +26,13 @@
         </Or>
         <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
     </Match>
+    <!-- SessionKeys records deliberately share key byte[] refs; close() zeros them -->
+    <Match>
+        <Or>
+            <Class name="pro.javacard.gp.ng.SessionKeys$SCP01Keys"/>
+            <Class name="pro.javacard.gp.ng.SessionKeys$SCP02Keys"/>
+            <Class name="pro.javacard.gp.ng.SessionKeys$SCP03Keys"/>
+        </Or>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
 </FindBugsFilter>

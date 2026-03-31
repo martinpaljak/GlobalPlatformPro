@@ -37,6 +37,9 @@ import pro.javacard.capfile.CAPFile;
 import pro.javacard.gp.*;
 import pro.javacard.gp.GPSession.APDUMode;
 import pro.javacard.gp.emv.DGIData;
+import pro.javacard.tlv.TLV;
+import pro.javacard.tlv.TLVParseException;
+import pro.javacard.tlv.Tag;
 import javax.crypto.SecretKey;
 import java.io.File;
 import java.io.IOException;
@@ -409,9 +412,15 @@ public final class GPToolNG extends GPCommandLineInterface implements ToolExtens
             var privs = getPrivilegesNG(args);
             privs.add(GPRegistryEntryNG.Privilege.SecurityDomain);
 
-            var params = optional(args, OPT_PARAMS).map(HexBytes::value).orElse(new byte[0]);
-            postAuth.add(GlobalPlatformCookbook.install_domain(packageAID, appletAID, instanceAID, privs, params,
-                    !args.has(OPT_SAD), args.has(OPT_ALLOW_TO), args.has(OPT_ALLOW_FROM)));
+            var baseParams = optional(args, OPT_PARAMS).map(HexBytes::value).orElse(new byte[0]);
+            var allowTo = args.has(OPT_ALLOW_TO);
+            var allowFrom = args.has(OPT_ALLOW_FROM);
+            var appendScp = !args.has(OPT_SAD);
+            postAuth.add(Cookbook.deferred(prefs -> {
+                var scpVersion = appendScp ? prefs.valueOf(GlobalPlatformCookbook.SCP_VERSION).orElse(null) : null;
+                var params = domain_install_params(baseParams, scpVersion, allowTo, allowFrom);
+                return GlobalPlatformCookbook.install_and_make_selectable(packageAID, appletAID, instanceAID, privs, params);
+            }));
         }
 
         // Key management
@@ -686,6 +695,28 @@ public final class GPToolNG extends GPCommandLineInterface implements ToolExtens
         } catch (IllegalArgumentException e) {
             return Optional.empty();
         }
+    }
+
+    // Build domain install params: append SCP version, allow-to, allow-from tags if not already present
+    private static byte[] domain_install_params(byte[] baseParams, GPSecureChannelVersion scpVersion,
+            boolean allowTo, boolean allowFrom) {
+        List<TLV> parsed;
+        try {
+            parsed = TLV.parse(baseParams);
+        } catch (TLVParseException e) {
+            return baseParams;
+        }
+        var p = baseParams;
+        if (scpVersion != null && TLV.find(parsed, Tag.ber(0x81)).isEmpty()) {
+            p = GPUtils.concatenate(p, TLV.of(Tag.ber(0x81), new byte[]{scpVersion.scp.getValue(), (byte) scpVersion.i}).encode());
+        }
+        if (allowTo && TLV.find(parsed, Tag.ber(0x82)).isEmpty()) {
+            p = GPUtils.concatenate(p, TLV.of(Tag.ber(0x82), new byte[]{0x20, 0x20}).encode());
+        }
+        if (allowFrom && TLV.find(parsed, Tag.ber(0x87)).isEmpty()) {
+            p = GPUtils.concatenate(p, TLV.of(Tag.ber(0x87), new byte[]{0x20, 0x20}).encode());
+        }
+        return p;
     }
 
     private static byte[] hexOrDefault(String v) {

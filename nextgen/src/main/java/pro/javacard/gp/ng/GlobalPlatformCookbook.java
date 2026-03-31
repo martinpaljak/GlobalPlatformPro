@@ -38,6 +38,7 @@ import pro.javacard.gp.GPUtils;
 import pro.javacard.gp.ReceiptVerifier;
 import pro.javacard.gp.data.BitField;
 import pro.javacard.tlv.TLV;
+import pro.javacard.tlv.TLVParseException;
 import pro.javacard.tlv.Tag;
 
 import pro.javacard.capfile.CAPFile;
@@ -742,7 +743,7 @@ public final class GlobalPlatformCookbook {
                 } else {
                     installParams = TLV.of(Tag.ber(0xC9), installParams).encode();
                 }
-            } catch (Exception e) {
+            } catch (TLVParseException e) {
                 // Not valid TLV - treat as raw app parameters, wrap in C9
                 installParams = TLV.of(Tag.ber(0xC9), installParams).encode();
             }
@@ -767,34 +768,6 @@ public final class GlobalPlatformCookbook {
             AID instanceAID, Set<GPRegistryEntryNG.Privilege> privileges, byte[] installParams) {
         final var data = build_install_data(packageAID, appletAID, instanceAID, privileges, installParams);
         return gp_dm(INS_INSTALL, 0x0C, 0x00, data, ReceiptVerifier.install_make_selectable(packageAID, instanceAID));
-    }
-
-    // INSTALL [for install and make selectable] for security domains with SCP/extradition params
-    // Appends TLV tags 0x81 (SCP version), 0x82 (allow-to), 0x87 (allow-from) at prepare-time
-    public static Recipe<ResponseAPDU> install_domain(AID packageAID, AID appletAID, AID instanceAID,
-            Set<GPRegistryEntryNG.Privilege> privileges, byte[] baseParams,
-            boolean appendScp, boolean allowTo, boolean allowFrom) {
-        return deferred(prefs -> {
-            var p = baseParams;
-            // Parse baseParams as TLV to check if tags are already present
-            List<TLV> parsed = null;
-            try {
-                parsed = TLV.parse(baseParams);
-            } catch (Exception e) { /* params may not be valid TLV */ }
-            if (appendScp && parsed != null && TLV.find(parsed, Tag.ber(0x81)).isEmpty()) {
-                var scpV = prefs.valueOf(SCP_VERSION);
-                if (scpV.isPresent()) {
-                    p = GPUtils.concatenate(p, TLV.of(Tag.ber(0x81), new byte[]{scpV.get().scp.getValue(), (byte) scpV.get().i}).encode());
-                }
-            }
-            if (allowTo && parsed != null && TLV.find(parsed, Tag.ber(0x82)).isEmpty()) {
-                p = GPUtils.concatenate(p, TLV.of(Tag.ber(0x82), new byte[]{0x20, 0x20}).encode());
-            }
-            if (allowFrom && parsed != null && TLV.find(parsed, Tag.ber(0x87)).isEmpty()) {
-                p = GPUtils.concatenate(p, TLV.of(Tag.ber(0x87), new byte[]{0x20, 0x20}).encode());
-            }
-            return install_and_make_selectable(packageAID, appletAID, instanceAID, privileges, p);
-        });
     }
 
     // === Content management: INSTALL variants (GPC 2.3.1 11.5) ===

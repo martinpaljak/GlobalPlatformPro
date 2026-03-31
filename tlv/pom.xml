@@ -4,7 +4,7 @@
     <parent>
         <groupId>com.github.martinpaljak</groupId>
         <artifactId>gppro</artifactId>
-        <version>26.02.12-SNAPSHOT</version>
+        <version>26.03.31-SNAPSHOT</version>
     </parent>
     <artifactId>tlv</artifactId>
     <name>BER-TLV library</name>

@@ -49,38 +49,4 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>io.github.git-commit-id</groupId>
-                <artifactId>git-commit-id-maven-plugin</artifactId>
-                <version>9.1.0</version>
-                <executions>
-                    <execution>
-                        <id>store-git-info</id>
-                        <phase>validate</phase>
-                        <goals>
-                            <goal>revision</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <runOnlyOnce>false</runOnlyOnce>
-                    <generateGitPropertiesFile>true</generateGitPropertiesFile>
-                    <generateGitPropertiesFilename>
-                        ${project.build.directory}/generated-resources/pro/javacard/gp/git.properties
-                    </generateGitPropertiesFilename>
-                    <includeOnlyProperties>
-                        <includeOnlyProperty>^git.commit.id.describe$</includeOnlyProperty>
-                    </includeOnlyProperties>
-                    <commitIdGenerationMode>full</commitIdGenerationMode>
-                    <gitDescribe>
-                        <tags>true</tags>
-                        <always>true</always>
-                        <dirty>-dirty</dirty>
-                    </gitDescribe>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
 </project>

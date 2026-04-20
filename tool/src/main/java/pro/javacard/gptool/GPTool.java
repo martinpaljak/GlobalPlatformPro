@@ -23,6 +23,8 @@ package pro.javacard.gptool;
 import apdu4j.core.*;
 import apdu4j.pcsc.NoMatchingReaderException;
 import apdu4j.pcsc.Readers;
+import apdu4j.prefs.Preference;
+import apdu4j.prefs.Preferences;
 import joptsimple.OptionSet;
 import joptsimple.OptionSpec;
 import pro.javacard.capfile.AID;
@@ -65,6 +67,8 @@ public final class GPTool extends GPCommandLineInterface {
     static final String ENV_GP_AID = "GP_AID";
     static final String ENV_GP_READER = "GP_READER";
     static final String ENV_GP_READER_IGNORE = "GP_READER_IGNORE";
+    static final Preference<String> READER_PREF = Preference.parameter("gp.reader", String.class, false);
+    static final Preference<String> READER_IGNORE_PREF = Preference.parameter("gp.reader.ignore", String.class, false);
     static final String ENV_GP_TRACE = "GP_TRACE";
     static final String ENV_GP_PCSC_RESET = "GP_PCSC_RESET";
     static final String ENV_GP_PCSC_EXCLUSIVE = "GP_PCSC_EXCLUSIVE";
@@ -173,7 +177,7 @@ public final class GPTool extends GPCommandLineInterface {
             }
 
             // Build reader selector with DWIM: env vars first, then CLI override
-            var selector = Readers.fromEnvironment(ENV_GP_READER, ENV_GP_READER_IGNORE);
+            var selector = Readers.fromPreferences(Preferences.fromEnvironment(), READER_PREF, READER_IGNORE_PREF);
 
             // List readers if -r without argument
             if (args.has(OPT_READER) && !args.hasArgument(OPT_READER)) {

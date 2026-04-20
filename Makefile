@@ -16,10 +16,9 @@ tool/target/gp.jar: $(SOURCES)
 srcbuild:
 	# override the version, which would be "unsupported" without a git checkout
 ifdef GPPRO_VERSION
-	mkdir -p ./library/target/classes/pro/javacard/gp
-	echo "git.commit.id.describe=$(GPPRO_VERSION)" > ./library/target/classes/pro/javacard/gp/git.properties
+	./mvnw $(VERSIONS):set -DnewVersion=$(GPPRO_VERSION) -DgenerateBackupPoms=false
 endif
-	./mvnw $(MVN_OPTS) -Dmaven.gitcommitid.skip=true package
+	./mvnw $(MVN_OPTS) package
 
 dep: $(SOURCES)
 	./mvnw $(MVN_OPTS) install

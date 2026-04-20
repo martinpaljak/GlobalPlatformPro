@@ -62,6 +62,8 @@ public final class GPToolNG extends GPCommandLineInterface implements ToolExtens
     static final String ENV_GP_AID = "GP_AID";
     static final String ENV_GP_READER = "GP_READER";
     static final String ENV_GP_READER_IGNORE = "GP_READER_IGNORE";
+    static final Preference<String> READER_PREF = Preference.parameter("gp.reader", String.class, false);
+    static final Preference<String> READER_IGNORE_PREF = Preference.parameter("gp.reader.ignore", String.class, false);
     static final String ENV_GP_TRACE = "GP_TRACE";
     static final String ENV_GP_PCSC_RESET = "GP_PCSC_RESET";
     static final String ENV_GP_PCSC_EXCLUSIVE = "GP_PCSC_EXCLUSIVE";
@@ -570,7 +572,7 @@ public final class GPToolNG extends GPCommandLineInterface implements ToolExtens
 
     // Build reader selector from CLI options and environment
     static ReaderSelector buildReaderSelector(OptionSet args, Map<String, String> env) {
-        var selector = Readers.fromEnvironment(ENV_GP_READER, ENV_GP_READER_IGNORE);
+        var selector = Readers.fromPreferences(Preferences.fromEnvironment(), READER_PREF, READER_IGNORE_PREF);
 
         if (args.hasArgument(OPT_READER)) {
             selector = selector.select(args.valueOf(OPT_READER));
@@ -624,7 +626,7 @@ public final class GPToolNG extends GPCommandLineInterface implements ToolExtens
 
             // List readers if -r without argument
             if (args.has(OPT_READER) && !args.hasArgument(OPT_READER)) {
-                var selector = Readers.fromEnvironment(ENV_GP_READER, ENV_GP_READER_IGNORE);
+                var selector = Readers.fromPreferences(Preferences.fromEnvironment(), READER_PREF, READER_IGNORE_PREF);
                 System.out.println("Available readers:");
                 selector.list().forEach(r -> System.out.printf("- %s%n", r.name()));
                 return 0;

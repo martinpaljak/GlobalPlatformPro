@@ -59,8 +59,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
-import apdu4j.apdulette.Cookbook.Gather;
-
 import static apdu4j.apdulette.Cookbook.*;
 
 // Composable GP card interaction recipes, executed by a Chef.
@@ -251,12 +249,15 @@ public final class GlobalPlatformCookbook {
         return send(new CommandAPDU(0x00, 0xA4, 0x04, 0x00, aid, 256), expect(0x9000, 0x6283));
     }
 
-    // SELECT for JCOP identification - throws KitchenDisaster if card is unfused
+    // SELECT for JCOP identification - fails recipe if card is unfused
     public static Recipe<ResponseAPDU> check_jcop_unfused() {
         return send(new CommandAPDU(0x00, 0xA4, 0x04, 0x00, JCOP_IDENTIFY, 256))
-                .validate(
-                        r -> !(r.getData().length > 15 && r.getData()[14] == 0x00),
-                        () -> new KitchenDisaster("Unfused JCOP detected"));
+                .then(r -> {
+                    if (r.getData().length > 15 && r.getData()[14] == 0x00) {
+                        return Recipe.<ResponseAPDU>error("Unfused JCOP detected");
+                    }
+                    return Recipe.premade(r);
+                });
     }
 
     // Try AIDs from list, chained with orElse fallback
@@ -403,20 +404,16 @@ public final class GlobalPlatformCookbook {
     public static Recipe<byte[]> get_status(final int p1) {
         return deferred(prefs -> {
             final var p2 = prefs.get(STATUS_USE_TAGS) ? 0x02 : 0x00;
+            final var alsoDone = p1 == 0x10
+                    ? List.of(0x6A88, 0x6A86, 0x6A81)
+                    : List.of(0x6A88);
             return gather(
                     cmd(INS_GET_STATUS, p1, p2, GET_STATUS_FILTER),
-                    (r, _n) -> switch (r.getSW()) {
-                        case 0x9000 -> new Gather.Done(r.getData());
-                        case 0x6310 -> new Gather.More(r.getData(),
-                                cmd(INS_GET_STATUS, p1, p2 | 0x01, GET_STATUS_FILTER));
-                        case 0x6A88 -> new Gather.Done(new byte[0]);
-                        default -> {
-                            if ((r.getSW() == 0x6A86 || r.getSW() == 0x6A81) && p1 == 0x10) {
-                                yield new Gather.Done(new byte[0]);
-                            }
-                            yield new Gather.Fail("GET STATUS failed (SW: %04X)".formatted(r.getSW()));
-                        }
-                    });
+                    0x6310,
+                    r -> cmd(INS_GET_STATUS, p1, p2 | 0x01, GET_STATUS_FILTER),
+                    0x9000,
+                    "GET STATUS failed",
+                    alsoDone);
         });
     }
 

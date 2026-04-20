@@ -2,7 +2,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.github.martinpaljak</groupId>
-    <version>26.04.20</version>
+    <version>26.04.21-SNAPSHOT</version>
     <artifactId>gppro</artifactId>
     <packaging>pom</packaging>
     <name>GlobalPlatformPro</name>
@@ -12,7 +12,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <project.build.outputTimestamp>2026-04-20T05:38:21Z</project.build.outputTimestamp>
+        <project.build.outputTimestamp>2026-04-20T05:38:26Z</project.build.outputTimestamp>
         <apdu4j.version>26.04.20.1</apdu4j.version>
     </properties>
     <organization>

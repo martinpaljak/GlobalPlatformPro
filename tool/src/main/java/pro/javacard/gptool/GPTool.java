@@ -202,7 +202,7 @@ public final class GPTool extends GPCommandLineInterface {
     }
 
     // Main entry point when called with a card connection
-    public int run(final APDUBIBO channel0, final String[] argv) {
+    public int run(final BIBO channel0, final String[] argv) {
         try {
             final OptionSet args = parseArguments(argv);
             setupLogging(args);
@@ -226,7 +226,7 @@ public final class GPTool extends GPCommandLineInterface {
                 try {
                     final PACE pace = PACE.executePACE(channel, aid, args.valueOf(OPT_CAN), args.valueOf(OPT_PACE_CURVE));
                     if (args.has(OPT_PACE_SM)) {
-                        channel = new APDUBIBO(new AESSecureChannel(pace.getENC(), pace.getMAC(), channel0));
+                        channel = new AESSecureChannel(pace.getENC(), pace.getMAC(), channel0);
                     }
                 } catch (PACEException | GeneralSecurityException e) {
                     System.err.println("Could not run PACE: " + e.getMessage());

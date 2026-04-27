@@ -3,7 +3,7 @@
 
 package pro.javacard.gp;
 
-import apdu4j.core.APDUBIBO;
+import apdu4j.core.BIBO;
 import apdu4j.core.CommandAPDU;
 import apdu4j.core.HexUtils;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
@@ -295,7 +295,7 @@ public final class GPData {
     }
 
     // NB! This assumes a selected (I)SD!
-    public static void dump(final APDUBIBO channel) throws GPException {
+    public static void dump(final BIBO channel) throws GPException {
         final byte[] cplc = fetchCPLC(channel);
         if (cplc != null) {
             System.out.println(CPLC.fromBytes(cplc).toPrettyString());
@@ -343,11 +343,11 @@ public final class GPData {
     }
 
     // Just to encapsulate tag constants behind meaningful name
-    public static byte[] fetchCPLC(final APDUBIBO channel) {
+    public static byte[] fetchCPLC(final BIBO channel) {
         return getData(channel, 0x9f, 0x7f, "CPLC", true);
     }
 
-    public static byte[] fetchKeyInfoTemplate(final APDUBIBO channel) {
+    public static byte[] fetchKeyInfoTemplate(final BIBO channel) {
         return getData(channel, 0x00, 0xE0, "Key Info Template", false);
     }
 
@@ -394,7 +394,7 @@ public final class GPData {
         return oid.substring("1.2.840.114283.2.".length());
     }
 
-    public static byte[] getData(final APDUBIBO channel, final int p1, final int p2, final String name, final boolean failsafe) {
+    public static byte[] getData(final BIBO channel, final int p1, final int p2, final String name, final boolean failsafe) {
         logger.trace("GET DATA({})", name);
         var resp = channel.transmit(new CommandAPDU(CLA_GP, GPSession.INS_GET_DATA, p1, p2, 256));
         if (failsafe && resp.getSW() != GPSession.SW_NO_ERROR) {

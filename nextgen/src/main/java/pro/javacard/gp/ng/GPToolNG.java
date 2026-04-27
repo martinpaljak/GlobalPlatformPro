@@ -574,7 +574,7 @@ public final class GPToolNG extends GPCommandLineInterface implements ToolExtens
 
     // Execute pre-auth and post-auth recipes against a card
     static int executeRecipes(BIBOSA stack, RecipePlan plan, CardKeys keys, EnumSet<APDUMode> mode, Preferences prefs) {
-        var channel = new APDUBIBO(stack);
+        var channel = stack;
         var rawChef = Chef.of(channel);
         for (var r : plan.preAuth()) {
             prefs = prefs.merge(rawChef.serve(r, prefs).preferences());

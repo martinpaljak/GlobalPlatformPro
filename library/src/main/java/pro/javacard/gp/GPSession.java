@@ -5,7 +5,7 @@
 
 package pro.javacard.gp;
 
-import apdu4j.core.APDUBIBO;
+import apdu4j.core.BIBO;
 import apdu4j.core.CommandAPDU;
 import apdu4j.core.HexUtils;
 import apdu4j.core.ResponseAPDU;
@@ -84,7 +84,7 @@ public class GPSession {
     private GPCardKeys cardKeys = null;
     private byte[] sessionContext;
     private SecureChannelWrapper wrapper = null;
-    private APDUBIBO channel;
+    private BIBO channel;
     private GPRegistry registry = null;
     private DMTokenizer tokenizer = DMTokenizer.none();
     private ReceiptVerifier verifier = new ReceiptVerifier.NullVerifier();
@@ -94,11 +94,11 @@ public class GPSession {
     /*
      * Maintaining locks to the underlying hardware is the duty of the caller
      */
-    public GPSession(APDUBIBO channel, AID sdAID) {
+    public GPSession(BIBO channel, AID sdAID) {
         this(channel, sdAID, GPCardProfile.defaultProfile());
     }
 
-    public GPSession(APDUBIBO channel, AID sdAID, GPCardProfile profile) {
+    public GPSession(BIBO channel, AID sdAID, GPCardProfile profile) {
         if (channel == null) {
             throw new IllegalArgumentException("A card session is required");
         }
@@ -108,7 +108,7 @@ public class GPSession {
     }
 
     // Try to find GlobalPlatform from a card
-    public static GPSession discover(final APDUBIBO channel) throws GPException {
+    public static GPSession discover(final BIBO channel) throws GPException {
         if (channel == null) {
             throw new IllegalArgumentException("channel is null");
         }
@@ -170,7 +170,7 @@ public class GPSession {
     }
 
     // Establishes connection to a specific AID (selects it)
-    public static GPSession connect(APDUBIBO channel, AID sdAID) throws GPException {
+    public static GPSession connect(BIBO channel, AID sdAID) throws GPException {
         if (channel == null) {
             throw new IllegalArgumentException("A card session is required");
         }
@@ -208,7 +208,7 @@ public class GPSession {
         return this.scpVersion;
     }
 
-    public APDUBIBO getCardChannel() {
+    public BIBO getCardChannel() {
         return channel;
     }
 

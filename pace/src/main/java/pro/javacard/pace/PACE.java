@@ -3,7 +3,7 @@
 
 package pro.javacard.pace;
 
-import apdu4j.core.APDUBIBO;
+import apdu4j.core.BIBO;
 import apdu4j.core.CommandAPDU;
 import apdu4j.core.HexUtils;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
@@ -74,7 +74,7 @@ public final class PACE {
     }
 
     // B.1.PACE.
-    public static PACE executePACE(final APDUBIBO c, final byte[] aid, final String can, final PACECurve curve)
+    public static PACE executePACE(final BIBO c, final byte[] aid, final String can, final PACECurve curve)
             throws PACEException, GeneralSecurityException {
 
         // Select the PACE application

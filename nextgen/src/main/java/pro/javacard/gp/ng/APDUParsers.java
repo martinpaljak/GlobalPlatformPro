@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2022 Martin Paljak <martin@martinpaljak.net>
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 package pro.javacard.gp.ng;
 
 import apdu4j.core.CommandAPDU;

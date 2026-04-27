@@ -1,0 +1,64 @@
+version = 1
+
+# Project-owned configuration, build, and documentation files.
+# Inherits the project's primary license (LGPL-3.0-or-later) per REUSE.software v3.3.
+[[annotations]]
+path = [
+    "LICENSE",
+    "Makefile",
+    "README.md",
+    "AGENTS.md",
+    "CONTRIBUTING.md",
+    ".gitignore",
+    ".github/**",
+    ".mvn/jvm.config",
+    ".mvn/maven.config",
+    "pom.xml",
+    "library/pom.xml",
+    "pace/pom.xml",
+    "tool/pom.xml",
+    "nextgen/pom.xml",
+    "spotbugs.xml",
+    "version-rules.xml",
+    "eclipse-formatter.xml",
+    "tests/**",
+    "docs/README.md",
+    "docs/JavaCardBuyersGuide/README.md",
+    "docs/TestedCards/README.md",
+    "library/src/test/resources/**",
+    "nextgen/src/main/resources/**",
+    "nextgen/src/test/resources/**",
+]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2015 Martin Paljak <martin@martinpaljak.net>"
+SPDX-License-Identifier = "LGPL-3.0-or-later"
+
+# tlv/ module is independently MIT-licensed.
+[[annotations]]
+path = [
+    "tlv/pom.xml",
+]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2025 Martin Paljak <martin@martinpaljak.net>"
+SPDX-License-Identifier = "MIT"
+
+# Maven Wrapper - vendored from the Apache Maven project (Apache-2.0).
+[[annotations]]
+path = [
+    "mvnw",
+    "mvnw.cmd",
+    ".mvn/wrapper/**",
+]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "The Apache Software Foundation"
+SPDX-License-Identifier = "Apache-2.0"
+
+# GlobalPlatform specifications (PDF + extracted text). Subject to the
+# GlobalPlatform Specification License Agreement; same identifier as jcardengine.
+[[annotations]]
+path = [
+    "docs/pdfs/**",
+]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "GlobalPlatform, Inc."
+SPDX-License-Identifier = "LicenseRef-GlobalPlatform-API"

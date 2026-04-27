@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2021 Martin Paljak <martin@martinpaljak.net>
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 package pro.javacard.gptool;
 
 import org.testng.Assert;

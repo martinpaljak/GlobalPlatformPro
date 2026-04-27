@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2024 Martin Paljak <martin@martinpaljak.net>
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 package pro.javacard.pace;
 
 import org.bouncycastle.util.encoders.Hex;

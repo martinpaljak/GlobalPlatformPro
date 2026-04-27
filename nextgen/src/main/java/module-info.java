@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2023 Martin Paljak <martin@martinpaljak.net>
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 @SuppressWarnings({"requires-automatic"})
 module gptool.nextgen {
     requires pro.javacard.globalplatform;

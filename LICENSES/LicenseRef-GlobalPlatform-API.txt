@@ -1,0 +1,29 @@
+This License Agreement (Agreement) is a legal agreement between you and GlobalPlatform, Inc. (Licensor), which is the owner of the specification (Specification) you will be downloading when you complete this Agreement. As used in this Agreement, "you" means the company, entity or individual that is acquiring a license under this Agreement.
+
+By clicking on the "ACCEPT" button below, you are agreeing that you will be bound by and are becoming a party to this Agreement. If you are an entity, and an individual is entering into this Agreement on your behalf, then you will be bound by this Agreement when that individual clicks on the "ACCEPT" button. When they do so, it will also constitute a representation by the individual that s/he is authorized to bind you as a party to this Agreement. If you do not agree to all of the terms of this Agreement, click the "DO NOT ACCEPT" button at the end of this Agreement.
+
+1. License Grant.
+Licensor hereby grants you the right, without charge, on a perpetual, non- exclusive and worldwide basis, the right to utilize the Specification for the purpose of developing, making, having made, using, marketing, importing, offering to sell or license, and selling or licensing, and to otherwise distribute, products complying with the Specification, in all cases subject to the conditions set forth in this Agreement and any relevant patent and other intellectual property rights of third parties (which may include members of Licensor). This license grant does not include the right to sublicense, modify or create derivative works based upon the Specification. For the avoidance of doubt, products implementing this Specification are not deemed to be derivative works of the Specification.
+
+2. NO WARRANTIES.
+THE SPECIFICATION IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, ACCURACY, COMPLETENESS AND NONINFRINGEMENT OF THIRD PARTY RIGHTS. IN NO EVENT SHALL LICENSOR, ITS MEMBERS OR ITS CONTRIBUTORS BE LIABLE FOR ANY CLAIM, OR ANY DIRECT, SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES, OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THE SPECIFICATION.
+
+3. THIRD PARTY RIGHTS.
+Without limiting the generality of Section 2 above, LICENSOR ASSUMES NO RESPONSIBILITY TO COMPILE, CONFIRM, UPDATE OR MAKE PUBLIC ANY THIRD PARTY ASSERTIONS OF PATENT OR OTHER INTELLECTUAL PROPERTY RIGHTS THAT MIGHT NOW OR IN THE FUTURE BE INFRINGED BY AN IMPLEMENTATION OF THE SPECIFICATION IN ITS CURRENT, OR IN ANY FUTURE FORM. IF ANY SUCH RIGHTS ARE DESCRIBED ON THE SPECIFICATION, LICENSOR TAKES NO POSITION AS TO THE VALIDITY OR INVALIDITY OF SUCH ASSERTIONS, OR THAT ALL SUCH ASSERTIONS THAT HAVE OR MAY BE MADE ARE SO LISTED.
+
+4. TERMINATION OF LICENSE.
+In the event of a breach of this Agreement by you or any of your employees or members, Licensor shall give you written notice and an opportunity to cure. If the breach is not cured within thirty (30) days after written notice, or if the breach is of a nature that cannot be cured, then Licensor may immediately or thereafter terminate the licenses granted in this Agreement.
+
+5. MISCELLANEOUS.
+All notices required under this Agreement shall be in writing, and shall be deemed effective five days from deposit in the mails. Notices and correspondence to either party shall be sent to its address as it appears below. This Agreement shall be construed and interpreted under the internal laws of the United States and the State of California, without giving effect to its principles of conflict of law.
+
+GlobalPlatform, Inc.
+544 Hillside Road
+Redwood City, CA 94062
+USA GlobalPlatform, Inc.
+
+6. EXPORT REGULATIONS.
+The Specification, or portions thereof, including technical data, may be subject to U.S. export control laws, including the U.S. Export Administration Act and its associated regulations, and may be subject to export or import regulations in other countries. Licensee agrees to comply strictly with all such regulations and acknowledges that it has the responsibility to obtain all export, re-export, import or other licenses in connection with its use of the Specification or any product complying with the Specification.
+
+7. RESTRICTED RIGHTS.
+Use, duplication or disclosure by the United States government is subject to the restrictions as set forth in the Rights in Technical Data and Computer Software Clauses in DFARS 252.227-7013© (1) (ii) and FAR 52.227- 19(a) through (d) as applicable.

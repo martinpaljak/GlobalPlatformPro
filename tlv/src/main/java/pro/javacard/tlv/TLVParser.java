@@ -3,6 +3,7 @@
 
 package pro.javacard.tlv;
 
+import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -49,7 +50,7 @@ public final class TLVParser {
             } else {
                 return new TLV(tag, value, null);
             }
-        } catch (java.nio.BufferUnderflowException | IndexOutOfBoundsException | IllegalArgumentException e) {
+        } catch (BufferUnderflowException | IndexOutOfBoundsException | IllegalArgumentException e) {
             throw new TLVParseException("Insufficient data to parse TLV", e);
         }
     }

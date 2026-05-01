@@ -182,12 +182,8 @@ public final class PACE {
     }
 
     static TLV require_tag(final byte[] response, final int tag) throws PACEException {
-        final var tlvs = TLV.parse(response);
-        final var found = TLV.find(tlvs, Tag.ber(tag)).orElse(null);
-        if (found == null) {
-            throw new PACEException("PACE: invalid response, missing tag 0x%02X: %s".formatted(tag, HexUtils.bin2hex(response)));
-        }
-        return found;
+        return TLV.find(TLV.parse(response), Tag.ber(tag))
+                .orElseThrow(() -> new PACEException("PACE: invalid response, missing tag 0x%02X: %s".formatted(tag, HexUtils.bin2hex(response))));
     }
 
     static AsymmetricCipherKeyPair generate(final ECParameterSpec p) {

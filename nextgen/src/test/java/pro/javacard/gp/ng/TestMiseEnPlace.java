@@ -7,6 +7,7 @@ import apdu4j.apdulette.MiseEnPlaceChef;
 import apdu4j.core.HexUtils;
 import apdu4j.prefs.Preferences;
 import pro.javacard.capfile.AID;
+import pro.javacard.gp.GPDataException;
 import org.testng.annotations.Test;
 
 import java.util.EnumSet;
@@ -75,7 +76,7 @@ public class TestMiseEnPlace {
     }
 
     // init_update needs real card data - MiseEnPlaceChef feeds empty 9000, parsing fails
-    @Test(expectedExceptions = pro.javacard.gp.GPDataException.class)
+    @Test(expectedExceptions = GPDataException.class)
     public void testInitUpdateFailsWithMockData() {
         chef.cook(GlobalPlatformCookbook.init_update(0, 0, HexUtils.hex2bin("0102030405060708")), prefs);
     }

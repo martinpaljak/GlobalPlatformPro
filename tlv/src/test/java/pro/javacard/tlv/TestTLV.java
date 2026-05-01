@@ -6,8 +6,12 @@ package pro.javacard.tlv;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
 class TestTLV {
@@ -155,6 +159,13 @@ class TestTLV {
         Assert.assertNotNull(t.find(Tag.ber("81")));
         Assert.assertNull(t.find(Tag.ber("82")));
 
+        // Require: hit returns same as find; miss throws with tag in message
+        Assert.assertSame(t.require(Tag.ber("81")), t.find(Tag.ber("81")));
+        final var miss = Assert.expectThrows(NoSuchElementException.class, () -> t.require(Tag.ber("82")));
+        Assert.assertTrue(miss.getMessage().contains("[82]") && miss.getMessage().contains("not found"), miss.getMessage());
+        final var missCtx = Assert.expectThrows(NoSuchElementException.class, () -> t.require(Tag.ber("82"), "while parsing FCI"));
+        Assert.assertTrue(missCtx.getMessage().contains("[82]") && missCtx.getMessage().contains("while parsing FCI"), missCtx.getMessage());
+
         // Find deeply
         final var deep = TLV.build("7F01").add(t);
         Assert.assertNotNull(deep.find(Tag.ber("81"), 2)); // Depth sufficient
@@ -237,18 +248,18 @@ class TestTLV {
     public void testLenBufferMethods() {
         // Len.ber(ByteBuffer) cases
         // 1 byte length
-        Assert.assertEquals(Len.ber(java.nio.ByteBuffer.wrap(hex("7F"))), 127);
+        Assert.assertEquals(Len.ber(ByteBuffer.wrap(hex("7F"))), 127);
         // 2 byte length (81 80)
-        Assert.assertEquals(Len.ber(java.nio.ByteBuffer.wrap(hex("81 80"))), 128);
+        Assert.assertEquals(Len.ber(ByteBuffer.wrap(hex("81 80"))), 128);
         // 3 byte length (82 01 00)
-        Assert.assertEquals(Len.ber(java.nio.ByteBuffer.wrap(hex("82 01 00"))), 256);
+        Assert.assertEquals(Len.ber(ByteBuffer.wrap(hex("82 01 00"))), 256);
         // Invalid length (84 ...) -> > 3 bytes
         Assert.assertThrows(IllegalArgumentException.class,
-                () -> Len.ber(java.nio.ByteBuffer.wrap(hex("84 00 00 00 00"))));
+                () -> Len.ber(ByteBuffer.wrap(hex("84 00 00 00 00"))));
 
         // Len.ext(ByteBuffer) cases
-        Assert.assertEquals(Len.ext(java.nio.ByteBuffer.wrap(hex("FE"))), 254);
-        Assert.assertEquals(Len.ext(java.nio.ByteBuffer.wrap(hex("FF 00 FF"))), 255);
+        Assert.assertEquals(Len.ext(ByteBuffer.wrap(hex("FE"))), 254);
+        Assert.assertEquals(Len.ext(ByteBuffer.wrap(hex("FF 00 FF"))), 255);
     }
 
     @Test
@@ -290,6 +301,13 @@ class TestTLV {
         Assert.assertTrue(TLV.find(list2, Tag.ber("81")).isPresent());
         Assert.assertTrue(TLV.find(list2, Tag.ber("82")).isEmpty());
 
+        // TLV.require(List, Tag): hit equals find().get(); miss throws with tag in message; multi-byte tag covered
+        Assert.assertSame(TLV.require(list2, Tag.ber("81")), TLV.find(list2, Tag.ber("81")).get());
+        final var sMiss = Assert.expectThrows(NoSuchElementException.class, () -> TLV.require(list2, Tag.ber("9F70")));
+        Assert.assertTrue(sMiss.getMessage().contains("[9F70]") && sMiss.getMessage().contains("not found"), sMiss.getMessage());
+        final var sMissCtx = Assert.expectThrows(NoSuchElementException.class, () -> TLV.require(list2, Tag.ber("82"), "in card response"));
+        Assert.assertTrue(sMissCtx.getMessage().contains("[82]") && sMissCtx.getMessage().contains("in card response"), sMissCtx.getMessage());
+
         // TLV.findAll(List, Tag)
         Assert.assertEquals(TLV.findAll(list2, Tag.ber("81")).size(), 1);
         Assert.assertEquals(TLV.findAll(list2, Tag.ber("82")).size(), 0);
@@ -309,12 +327,12 @@ class TestTLV {
     public void testTLVWrappers() {
         // TLV.parse(ByteBuffer)
         final var data = hex("9F 45 01 01");
-        final var list = TLV.parse(java.nio.ByteBuffer.wrap(data));
+        final var list = TLV.parse(ByteBuffer.wrap(data));
         Assert.assertEquals(list.size(), 1);
         Assert.assertEquals(list.get(0).tag(), Tag.ber("9F45"));
 
         // TLV.parseSingle(ByteBuffer)
-        final var t = TLV.parseSingle(java.nio.ByteBuffer.wrap(data));
+        final var t = TLV.parseSingle(ByteBuffer.wrap(data));
         Assert.assertEquals(t.tag(), Tag.ber("9F45"));
 
         // TLV.of(Tag, TLV...) varargs
@@ -353,7 +371,7 @@ class TestTLV {
 
     @Test
     public void testOfWithNullChild() {
-        final var list = new java.util.ArrayList<TLV>();
+        final var list = new ArrayList<TLV>();
         list.add(null);
         Assert.assertThrows(NullPointerException.class, () -> TLV.of(Tag.ber("E0"), list));
     }
@@ -434,12 +452,12 @@ class TestTLV {
         // new BERTag called. Last byte 81 has high bit set. Throws.
         // This covers the "loop finishes without break" path in parse()
         final var data = hex("9F 81 81 81");
-        Assert.assertThrows(IllegalArgumentException.class, () -> BERTag.parse(java.nio.ByteBuffer.wrap(data)));
+        Assert.assertThrows(IllegalArgumentException.class, () -> BERTag.parse(ByteBuffer.wrap(data)));
     }
 
     @Test
     public void testOfNullCollection() {
-        Assert.assertThrows(NullPointerException.class, () -> TLV.of(Tag.ber("E0"), (java.util.Collection<TLV>) null));
+        Assert.assertThrows(NullPointerException.class, () -> TLV.of(Tag.ber("E0"), (Collection<TLV>) null));
     }
 
     @Test

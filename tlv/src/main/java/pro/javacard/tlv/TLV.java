@@ -140,6 +140,19 @@ public final class TLV {
         return result;
     }
 
+    // Like find(Tag), but throws NoSuchElementException with the tag in the message
+    public TLV require(final Tag tag) {
+        return require(tag, null);
+    }
+
+    public TLV require(final Tag tag, final String context) {
+        final var r = find(tag);
+        if (r == null) {
+            throw new NoSuchElementException(notFoundMessage(tag, context));
+        }
+        return r;
+    }
+
     // Static helpers for List<TLV>
     public static Optional<TLV> find(final List<TLV> list, final Tag tag) {
         for (var tlv : list) {
@@ -149,6 +162,19 @@ public final class TLV {
             }
         }
         return Optional.empty();
+    }
+
+    public static TLV require(final List<TLV> list, final Tag tag) {
+        return require(list, tag, null);
+    }
+
+    public static TLV require(final List<TLV> list, final Tag tag, final String context) {
+        return find(list, tag).orElseThrow(() -> new NoSuchElementException(notFoundMessage(tag, context)));
+    }
+
+    private static String notFoundMessage(final Tag tag, final String context) {
+        final var base = "Tag " + tag.toHex() + " not found";
+        return context == null ? base : base + ": " + context;
     }
 
     public static List<TLV> findAll(final List<TLV> list, final Tag tag) {

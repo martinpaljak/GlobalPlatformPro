@@ -287,8 +287,8 @@ public final class PlaintextKeys extends GPCardKeys {
                 logger.debug("Encrypting {} value (KCV={}) with DEK (KCV={})", p, HexUtils.bin2hex(other.kcv(p)), HexUtils.bin2hex(kcv(KeyPurpose.DEK)));
                 final var otherkey = other.cardKeys.get(p);
                 // Pad with random
-                final var n = otherkey.length % 16 + 1;
-                final byte[] plaintext = GPCrypto.random(n * otherkey.length);
+                final var n = 16 * ((otherkey.length + 15) / 16);
+                final byte[] plaintext = GPCrypto.random(n);
                 System.arraycopy(otherkey, 0, plaintext, 0, otherkey.length);
                 // encrypt
                 return GPCrypto.aes_cbc(plaintext, cardKeys.get(KeyPurpose.DEK), new byte[16]);

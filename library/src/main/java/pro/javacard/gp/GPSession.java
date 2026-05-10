@@ -914,8 +914,8 @@ public class GPSession {
             final var baos = new ByteArrayOutputStream();
             if (type == GPKey.AES) {
                 // Pad with random
-                final var n = other.length % 16 + 1;
-                final byte[] plaintext = GPCrypto.random(n * other.length);
+                final var n = 16 * ((other.length + 15) / 16);
+                final byte[] plaintext = GPCrypto.random(n);
                 System.arraycopy(other, 0, plaintext, 0, other.length);
 
                 final var cgram = dek.encrypt(plaintext, sessionContext);

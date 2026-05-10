@@ -229,8 +229,8 @@ public final class PlaintextCardKeys implements CardKeys, AutoCloseable {
                 }
                 case SCP03 -> {
                     // Pad with random for AES key wrapping
-                    var n = keyValue.length % 16 + 1;
-                    var plaintext = GPCrypto.random(n * keyValue.length);
+                    var n = 16 * ((keyValue.length + 15) / 16);
+                    var plaintext = GPCrypto.random(n);
                     System.arraycopy(keyValue, 0, plaintext, 0, keyValue.length);
                     yield GPCrypto.aes_cbc(plaintext, dek, new byte[16]);
                 }

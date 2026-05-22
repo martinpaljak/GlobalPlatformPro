@@ -69,7 +69,7 @@
                                     <message>Project requires JDK 17+</message>
                                 </requireJavaVersion>
                                 <requireMavenVersion>
-                                    <version>[3.9.15,)</version>
+                                    <version>[3.9.16,)</version>
                                 </requireMavenVersion>
                                 <requirePluginVersions/>
                             </rules>

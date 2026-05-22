@@ -119,6 +119,15 @@ public final class TLV {
         return result;
     }
 
+    // The single direct child with this tag, if any; throws if more than one match
+    public Optional<TLV> findOne(final Tag t) {
+        final var matches = findAll(t);
+        if (matches.size() > 1) {
+            throw new IllegalArgumentException("Multiple matches for tag " + t);
+        }
+        return matches.stream().findFirst();
+    }
+
     // Like find(Tag), but throws NoSuchElementException with the tag in the message
     public TLV require(final Tag tag) {
         return require(tag, null);
@@ -169,6 +178,15 @@ public final class TLV {
             }
         }
         return result;
+    }
+
+    // The single top-level entry of the list with this tag, if any; throws if more than one match
+    public static Optional<TLV> findOne(final List<TLV> list, final Tag tag) {
+        final var matches = findAll(list, tag);
+        if (matches.size() > 1) {
+            throw new IllegalArgumentException("Multiple matches for tag " + tag);
+        }
+        return matches.stream().findFirst();
     }
 
     // Fluent builder methods

@@ -312,6 +312,19 @@ class TestTLV {
         Assert.assertEquals(list2.get(0).findAll(Tag.ber("81")).size(), 1);
         Assert.assertEquals(list2.get(0).findAll(Tag.ber("82")).size(), 0);
 
+        // TLV.findOne(List, Tag) and TLV#findOne(Tag): direct/top-level only, no recursion
+        Assert.assertSame(TLV.findOne(list2, Tag.ber("E0")).get(), t);
+        Assert.assertTrue(TLV.findOne(list2, Tag.ber("81")).isEmpty());     // 81 is nested under E0
+        Assert.assertTrue(list2.get(0).findOne(Tag.ber("81")).isPresent()); // direct child of E0
+        Assert.assertTrue(list2.get(0).findOne(Tag.ber("82")).isEmpty());
+
+        // findOne throws on multiple matches
+        final var twoSame = TLV.of(Tag.ber("E1"),
+                List.of(TLV.of("82", hex("01")), TLV.of("82", hex("02"))));
+        Assert.assertThrows(IllegalArgumentException.class, () -> twoSame.findOne(Tag.ber("82")));
+        final var listTwoSame = List.of(TLV.of("83", hex("AA")), TLV.of("83", hex("BB")));
+        Assert.assertThrows(IllegalArgumentException.class, () -> TLV.findOne(listTwoSame, Tag.ber("83")));
+
         // TLV.add(byte[], byte[])
         final var t2 = TLV.build("E0").add(hex("81"), hex("01"));
         Assert.assertTrue(t2.hasChildren());

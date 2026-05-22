@@ -38,7 +38,7 @@ class TestTLV {
 
         final var lookup = TLV.find(result, Tag.ber("9f45"));
         Assert.assertEquals(lookup, Optional.of(TLV.of("9f45", hex("222222"))));
-        final var lookup2 = TLV.findAll(result, Tag.ber("9f45"));
+        final var lookup2 = result.get(0).findAll(Tag.ber("9f45"));
         Assert.assertEquals(lookup2.size(), 2);
     }
 
@@ -166,11 +166,10 @@ class TestTLV {
         final var missCtx = Assert.expectThrows(NoSuchElementException.class, () -> t.require(Tag.ber("82"), "while parsing FCI"));
         Assert.assertTrue(missCtx.getMessage().contains("[82]") && missCtx.getMessage().contains("while parsing FCI"), missCtx.getMessage());
 
-        // Find deeply
+        // Find descends recursively; self is never a candidate
         final var deep = TLV.build("7F01").add(t);
-        Assert.assertNotNull(deep.find(Tag.ber("81"), 2)); // Depth sufficient
-        Assert.assertNull(deep.find(Tag.ber("81"), 0)); // Depth 0 only checks root? Code: if (maxDepth >= 0 && depth >=
-                                                        // maxDepth) return null
+        Assert.assertNotNull(deep.find(Tag.ber("81")));
+        Assert.assertNull(deep.find(Tag.ber("7F01")));
 
         // Check "end"
         Assert.assertEquals(t.children().get(0).end(), t);
@@ -308,9 +307,10 @@ class TestTLV {
         final var sMissCtx = Assert.expectThrows(NoSuchElementException.class, () -> TLV.require(list2, Tag.ber("82"), "in card response"));
         Assert.assertTrue(sMissCtx.getMessage().contains("[82]") && sMissCtx.getMessage().contains("in card response"), sMissCtx.getMessage());
 
-        // TLV.findAll(List, Tag)
-        Assert.assertEquals(TLV.findAll(list2, Tag.ber("81")).size(), 1);
-        Assert.assertEquals(TLV.findAll(list2, Tag.ber("82")).size(), 0);
+        Assert.assertEquals(TLV.findAll(list2, Tag.ber("E0")).size(), 1);
+        Assert.assertEquals(TLV.findAll(list2, Tag.ber("81")).size(), 0);
+        Assert.assertEquals(list2.get(0).findAll(Tag.ber("81")).size(), 1);
+        Assert.assertEquals(list2.get(0).findAll(Tag.ber("82")).size(), 0);
 
         // TLV.add(byte[], byte[])
         final var t2 = TLV.build("E0").add(hex("81"), hex("01"));
@@ -351,11 +351,31 @@ class TestTLV {
     }
 
     @Test
-    public void testFindAllRoot() {
-        final var t = TLV.of("9F45", hex("01"));
-        final var results = t.findAll(Tag.ber("9F45"));
-        Assert.assertEquals(results.size(), 1);
-        Assert.assertEquals(results.get(0), t);
+    public void testFindAllDirectChildren() {
+        final var t = TLV.build("E0")
+                .add("9F45", hex("01"))
+                .add("9F45", hex("02"))
+                .add("9F46", hex("03"));
+        Assert.assertEquals(t.findAll(Tag.ber("9F45")).size(), 2);
+        Assert.assertEquals(t.findAll(Tag.ber("9F46")).size(), 1);
+        Assert.assertEquals(t.findAll(Tag.ber("E0")).size(), 0);
+        Assert.assertTrue(TLV.of("9F45", hex("01")).findAll(Tag.ber("9F45")).isEmpty());
+    }
+
+    @Test
+    public void testFindBreadthFirst() {
+        final var deep = TLV.of("C0", hex("01"));
+        final var shallow = TLV.of("C0", hex("02"));
+        final var a0 = TLV.of(Tag.ber("A0"), TLV.of(Tag.ber("B0"), deep), shallow);
+        Assert.assertEquals(a0.find(Tag.ber("C0")), shallow);
+    }
+
+    @Test
+    public void testFindAllNonRecursive() {
+        final var direct = TLV.of("C0", hex("01"));
+        final var nested = TLV.of("C0", hex("02"));
+        final var e0 = TLV.of(Tag.ber("E0"), direct, TLV.of(Tag.ber("E1"), nested));
+        Assert.assertEquals(e0.findAll(Tag.ber("C0")), List.of(direct));
     }
 
     @Test

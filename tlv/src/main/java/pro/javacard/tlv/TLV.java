@@ -95,47 +95,26 @@ public final class TLV {
     }
 
     // Navigation
+    // First TLV with this tag found anywhere below this node, or null
     public TLV find(final Tag tag) {
-        if (this.tag.equals(tag)) {
-            return this;
-        }
-        for (var t : children) {
-            final var r = t.find(tag);
-            if (r != null) {
-                return r;
+        final var queue = new ArrayDeque<TLV>(children);
+        while (!queue.isEmpty()) {
+            final var node = queue.poll();
+            if (node.tag.equals(tag)) {
+                return node;
             }
+            queue.addAll(node.children);
         }
         return null;
     }
 
-    public TLV find(final Tag tag, final int maxDepth) {
-        return find(tag, maxDepth, 0);
-    }
-
-    private TLV find(final Tag tag, final int maxDepth, final int depth) {
-        if (this.tag.equals(tag)) {
-            return this;
-        }
-        if (maxDepth >= 0 && depth >= maxDepth) {
-            return null;
-        }
-        for (var t : children) {
-            final var r = t.find(tag, maxDepth, depth + 1);
-            if (r != null) {
-                return r;
-            }
-        }
-        return null;
-    }
-
+    // Direct children with this tag; deeper matches are not returned
     public List<TLV> findAll(final Tag t) {
         final var result = new ArrayList<TLV>();
-        if (this.tag.equals(t)) {
-            result.add(this);
-            return result;
-        }
-        for (var tlv : children) {
-            result.addAll(tlv.findAll(t));
+        for (var child : children) {
+            if (child.tag.equals(t)) {
+                result.add(child);
+            }
         }
         return result;
     }
@@ -154,16 +133,20 @@ public final class TLV {
     }
 
     // Static helpers for List<TLV>
+    // First TLV with this tag found anywhere in the list or below
     public static Optional<TLV> find(final List<TLV> list, final Tag tag) {
-        for (var tlv : list) {
-            final var r = tlv.find(tag);
-            if (r != null) {
-                return Optional.of(r);
+        final var queue = new ArrayDeque<TLV>(list);
+        while (!queue.isEmpty()) {
+            final var node = queue.poll();
+            if (node.tag.equals(tag)) {
+                return Optional.of(node);
             }
+            queue.addAll(node.children);
         }
         return Optional.empty();
     }
 
+    // Like find(List, Tag), but throws NoSuchElementException with the tag in the message
     public static TLV require(final List<TLV> list, final Tag tag) {
         return require(list, tag, null);
     }
@@ -177,10 +160,13 @@ public final class TLV {
         return context == null ? base : base + ": " + context;
     }
 
+    // Top-level entries of the list with this tag; deeper matches are not returned
     public static List<TLV> findAll(final List<TLV> list, final Tag tag) {
         final var result = new ArrayList<TLV>();
         for (var tlv : list) {
-            result.addAll(tlv.findAll(tag));
+            if (tlv.tag.equals(tag)) {
+                result.add(tlv);
+            }
         }
         return result;
     }
@@ -243,6 +229,7 @@ public final class TLV {
         return TLVParser.parse(buffer, Tag.Type.BER);
     }
 
+    // Parse exactly one BER-TLV and advance the buffer past it
     public static TLV parseSingle(final ByteBuffer buffer) {
         return TLVParser.parseOne(buffer, Tag.Type.BER);
     }

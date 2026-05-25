@@ -70,20 +70,7 @@ public final class TLV {
         if (children.isEmpty()) {
             return new byte[0];
         }
-        final var encoded = new ArrayList<byte[]>();
-        var total = 0;
-        for (var child : children) {
-            final var bytes = child.encode();
-            encoded.add(bytes);
-            total += bytes.length;
-        }
-        final var result = new byte[total];
-        var offset = 0;
-        for (var bytes : encoded) {
-            System.arraycopy(bytes, 0, result, offset, bytes.length);
-            offset += bytes.length;
-        }
-        return result;
+        return encode(children);
     }
 
     public List<TLV> children() {
@@ -236,6 +223,28 @@ public final class TLV {
     // Encoding
     public byte[] encode() {
         return TLVEncoder.encode(this);
+    }
+
+    // Concatenate encoded TLVs (no parent tag wrapping)
+    public static byte[] encode(TLV... tlvs) {
+        return encode(Arrays.asList(tlvs));
+    }
+
+    public static byte[] encode(Collection<TLV> tlvs) {
+        var parts = new ArrayList<byte[]>(tlvs.size());
+        var total = 0;
+        for (var tlv : tlvs) {
+            var bytes = tlv.encode();
+            parts.add(bytes);
+            total += bytes.length;
+        }
+        var result = new byte[total];
+        var offset = 0;
+        for (var bytes : parts) {
+            System.arraycopy(bytes, 0, result, offset, bytes.length);
+            offset += bytes.length;
+        }
+        return result;
     }
 
     // Parsing - convenience methods for BER-TLV

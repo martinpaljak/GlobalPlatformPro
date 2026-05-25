@@ -3,8 +3,6 @@
 
 package pro.javacard.tlv;
 
-import java.util.ArrayList;
-
 // Stateless TLV encoder
 public final class TLVEncoder {
     private TLVEncoder() {}
@@ -13,24 +11,9 @@ public final class TLVEncoder {
         final var tag = tlv.tag();
         final var tagBytes = tag.bytes();
 
-        final byte[] valueBytes;
-        if (tlv.hasChildren()) {
-            final var kids = new ArrayList<byte[]>();
-            var total = 0;
-            for (TLV child : tlv.children()) {
-                final var kid = encode(child);
-                total += kid.length;
-                kids.add(kid);
-            }
-            valueBytes = new byte[total];
-            var offset = 0;
-            for (var kid : kids) {
-                System.arraycopy(kid, 0, valueBytes, offset, kid.length);
-                offset += kid.length;
-            }
-        } else {
-            valueBytes = tlv.value();
-        }
+        final byte[] valueBytes = tlv.hasChildren()
+                ? TLV.encode(tlv.children())
+                : tlv.value();
 
         final byte[] lengthBytes = tag instanceof BERTag
                 ? Len.ber(valueBytes.length)

@@ -197,9 +197,14 @@ public final class PACE {
         return keyPair;
     }
 
-    static byte[] decodePublic(final ECParameterSpec p, final byte[] data) {
+    static byte[] decodePublic(final ECParameterSpec p, final byte[] data) throws PACEException {
         final var domain = new ECDomainParameters(p.getCurve(), p.getG(), p.getN(), p.getH());
         final var q = domain.getCurve().decodePoint(data);
+        // TR-03110 Part-2: REQUIRED to validate public keys received from the card.
+        // isValid() covers on-curve and subgroup order, but returns true for infinity, so reject that explicitly.
+        if (q.isInfinity() || !q.isValid()) {
+            throw new PACEException("PACE: received invalid public point: " + HexUtils.bin2hex(data));
+        }
         final var tmp = new ECPublicKeyParameters(q, domain);
         return tmp.getQ().getEncoded(false);
     }

@@ -982,7 +982,7 @@ public final class GPTool extends GPCommandLineInterface {
             System.err.println("ERROR: " + e.getMessage());
             trace(e);
         } catch (ReceiptVerifier.ReceiptVerificationException e) {
-            /// XXX: refactor
+            // XXX: refactor
             System.err.println("WARNING: Operation completed, but receipt verification failed");
         } catch (GeneralSecurityException e) {
             throw new RuntimeException(e);

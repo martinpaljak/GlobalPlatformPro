@@ -248,7 +248,8 @@
                             <recipe>org.openrewrite.java.migrate.lang.UseVar</recipe>
                             <recipe>org.openrewrite.java.migrate.lang.var.UseVarForTypeCast</recipe>
                             <recipe>org.openrewrite.java.migrate.lang.StringFormatted</recipe>
-                            <recipe>org.openrewrite.java.RemoveUnusedImports</recipe>
+                            <!-- acts up with JDK 25, requiring import static org.testng.Assert.*; to have direct imports
+                            <recipe>org.openrewrite.java.RemoveUnusedImports</recipe> -->
                         </activeRecipes>
                         <failOnDryRunResults>true</failOnDryRunResults>
                     </configuration>

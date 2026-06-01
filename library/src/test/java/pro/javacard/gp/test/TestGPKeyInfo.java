@@ -8,8 +8,6 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 import pro.javacard.gp.GPKeyInfo;
 
-import java.util.List;
-
 public class TestGPKeyInfo {
     static {
         System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "trace");

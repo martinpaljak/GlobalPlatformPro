@@ -12,10 +12,10 @@ import org.testng.annotations.Test;
 import pro.javacard.gp.DMTokenizer;
 import pro.javacard.gp.GPCrypto;
 
+import javax.crypto.spec.SecretKeySpec;
 import java.io.FileInputStream;
 import java.security.Security;
 import java.security.interfaces.RSAPrivateKey;
-import javax.crypto.spec.SecretKeySpec;
 
 import static pro.javacard.gp.GPSession.*;
 

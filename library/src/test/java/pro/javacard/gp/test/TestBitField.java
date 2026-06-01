@@ -11,7 +11,6 @@ import pro.javacard.gp.GPRegistryEntry.Privilege;
 import pro.javacard.gp.data.BitField;
 
 import java.util.EnumSet;
-import java.util.Set;
 
 public class TestBitField {
 

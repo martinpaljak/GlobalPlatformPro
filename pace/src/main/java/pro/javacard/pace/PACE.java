@@ -19,7 +19,6 @@ import org.slf4j.LoggerFactory;
 import pro.javacard.tlv.TLV;
 import pro.javacard.tlv.TLVs;
 import pro.javacard.tlv.Tag;
-import static pro.javacard.tlv.TLV.ba;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
@@ -27,6 +26,8 @@ import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.Arrays;
+
+import static pro.javacard.tlv.TLV.ba;
 
 // https://www.bsi.bund.de/SharedDocs/Downloads/EN/BSI/Publications/TechGuidelines/TR03110/BSI_TR-03110_Part-3-V2_2.pdf?__blob=publicationFile&v=1
 // Also: https://www.bsi.bund.de/SharedDocs/Downloads/EN/BSI/Publications/TechGuidelines/TR03111/BSI-TR-03111_V-2-0_pdf.pdf?__blob=publicationFile&v=1 ?

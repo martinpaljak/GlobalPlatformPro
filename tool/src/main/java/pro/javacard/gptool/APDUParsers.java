@@ -10,7 +10,6 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.json.JsonReadFeature;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.fasterxml.jackson.dataformat.cbor.databind.CBORMapper;
@@ -20,7 +19,6 @@ import org.bouncycastle.util.encoders.Hex;
 import pro.javacard.gp.GPUtils;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Objects;
 
 public class APDUParsers {

@@ -16,9 +16,7 @@ import pro.javacard.gp.data.BitField;
 
 import java.time.LocalDate;
 import java.time.ZoneOffset;
-import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 public class TestParseTags {
 

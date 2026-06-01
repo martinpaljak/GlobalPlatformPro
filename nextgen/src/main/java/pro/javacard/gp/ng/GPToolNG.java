@@ -798,7 +798,7 @@ public final class GPToolNG extends GPCommandLineInterface implements ToolExtens
         if (allowFrom) {
             amended = amended.compute(TPath.of(0x87), v -> extradite_all(v, "0x87", "--allow-from"));
         }
-        return amended == params ? baseParams : amended.encode();
+        return amended.equals(params) ? baseParams : amended.encode();
     }
 
     // Install parameters from --params plus any contactless (--cl-*) options. This is the

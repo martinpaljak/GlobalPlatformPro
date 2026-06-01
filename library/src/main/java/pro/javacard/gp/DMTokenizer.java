@@ -9,10 +9,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pro.javacard.tlv.TLV;
 
+import javax.crypto.SecretKey;
 import java.io.ByteArrayOutputStream;
 import java.security.GeneralSecurityException;
 import java.security.interfaces.RSAPrivateKey;
-import javax.crypto.SecretKey;
 
 // NOTE: Thanks goes to Gregor Johannson for initial implementation
 public abstract class DMTokenizer {

@@ -19,9 +19,8 @@ import pro.javacard.gp.GPRegistryEntry.Kind;
 import pro.javacard.gp.GPRegistryEntry.Privilege;
 import pro.javacard.gp.data.BitField;
 import pro.javacard.tlv.TLV;
-import pro.javacard.tlv.TLVs;
-import static pro.javacard.tlv.TLV.ba;
 import pro.javacard.tlv.TLVParseException;
+import pro.javacard.tlv.TLVs;
 import pro.javacard.tlv.Tag;
 
 import javax.crypto.SecretKey;
@@ -36,6 +35,7 @@ import java.util.stream.Collectors;
 
 import static pro.javacard.gp.GPCardKeys.KeyPurpose;
 import static pro.javacard.gp.GPSecureChannelVersion.SCP.*;
+import static pro.javacard.tlv.TLV.ba;
 
 /**
  * Represents a connection to a GlobalPlatform Card (BIBO interface)

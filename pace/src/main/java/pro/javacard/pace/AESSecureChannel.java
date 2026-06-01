@@ -8,7 +8,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pro.javacard.tlv.TLV;
 import pro.javacard.tlv.Tag;
-import static pro.javacard.tlv.TLV.ba;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -17,6 +16,8 @@ import javax.crypto.spec.SecretKeySpec;
 import java.io.ByteArrayOutputStream;
 import java.security.GeneralSecurityException;
 import java.util.Arrays;
+
+import static pro.javacard.tlv.TLV.ba;
 
 // Secure channel around CardChannel.transmit() apdu4j.CommandAPDU/ResponseAPDU pairs
 // TR 03110-3: F.Secure Messaging (Normative)
@@ -146,13 +147,13 @@ public final class AESSecureChannel implements BIBO {
         }
 
         // The processing status (tag 99) is mandatory
-        final byte[] sw = tlvs.find(0x99).map(TLV::value)
+        final var sw = tlvs.find(0x99).map(TLV::value)
                 .orElseThrow(() -> new SecureChannelException("Response status (tag 99) missing"));
         macinput.writeBytes(TLV.of(Tag.ber(0x99), sw).encode());
         fresh.writeBytes(sw);
 
         // The response MAC (tag 8E) is mandatory
-        final byte[] cardmac = tlvs.find(0x8e).map(TLV::value)
+        final var cardmac = tlvs.find(0x8e).map(TLV::value)
                 .orElseThrow(() -> new SecureChannelException("Response MAC (tag 8E) missing"));
 
         // Calculate mac

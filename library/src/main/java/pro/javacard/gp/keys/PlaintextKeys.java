@@ -8,14 +8,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pro.javacard.gp.*;
 
-import static pro.javacard.tlv.TLV.ba;
-
 import javax.crypto.NoSuchPaddingException;
 import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
 import static pro.javacard.gp.GPSecureChannelVersion.SCP.*;
+import static pro.javacard.tlv.TLV.ba;
 
 // Handles plaintext card keys.
 // Supports diversification of card keys with a few known algorithms.

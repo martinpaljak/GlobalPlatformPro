@@ -3,8 +3,10 @@
 
 package pro.javacard.gptool;
 
-import apdu4j.core.*;
-import static apdu4j.core.HexUtils.bin2hex;
+import apdu4j.core.BIBO;
+import apdu4j.core.CommandAPDU;
+import apdu4j.core.HexBytes;
+import apdu4j.core.HexUtils;
 import apdu4j.pcsc.NoMatchingReaderException;
 import apdu4j.pcsc.Readers;
 import apdu4j.prefs.Preference;
@@ -24,7 +26,6 @@ import pro.javacard.pace.PACEException;
 import pro.javacard.tlv.TLV;
 import pro.javacard.tlv.TLVs;
 import pro.javacard.tlv.TPath;
-import static pro.javacard.tlv.TLV.ba;
 
 import javax.crypto.SecretKey;
 import java.io.File;
@@ -41,7 +42,9 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import static apdu4j.core.HexUtils.bin2hex;
 import static pro.javacard.gp.GPSecureChannelVersion.SCP.*;
+import static pro.javacard.tlv.TLV.ba;
 
 // Does the CLI parameter parsing and associated execution
 public final class GPTool extends GPCommandLineInterface {

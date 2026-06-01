@@ -4,6 +4,7 @@
 package pro.javacard.gptool;
 
 import apdu4j.core.*;
+import static apdu4j.core.HexUtils.bin2hex;
 import apdu4j.pcsc.NoMatchingReaderException;
 import apdu4j.pcsc.Readers;
 import apdu4j.prefs.Preference;
@@ -21,7 +22,9 @@ import pro.javacard.pace.AESSecureChannel;
 import pro.javacard.pace.PACE;
 import pro.javacard.pace.PACEException;
 import pro.javacard.tlv.TLV;
-import pro.javacard.tlv.Tag;
+import pro.javacard.tlv.TLVs;
+import pro.javacard.tlv.TPath;
+import static pro.javacard.tlv.TLV.ba;
 
 import javax.crypto.SecretKey;
 import java.io.File;
@@ -127,23 +130,25 @@ public final class GPTool extends GPCommandLineInterface {
 
     // To keep basic gp.jar together with apdu4j app, this is just a minimalist wrapper
     public static void main(final String[] argv) {
+        // Jump to the next-gen tool before any legacy parsing, so that nextgen-only options
+        // (e.g. --cl-*/--crs-*) are not rejected by the legacy option parser.
+        if (Arrays.asList(argv).contains("--ng") || Arrays.asList(argv).contains("-ng")
+                || "true".equalsIgnoreCase(System.getenv("GP_NG"))) {
+            try {
+                var ext = ServiceLoader.load(ToolExtension.class).findFirst()
+                        .orElseThrow(() -> new IllegalStateException("nextgen module not available"));
+                System.exit(ext.run(argv));
+            } catch (UnsupportedClassVersionError | ServiceConfigurationError e) {
+                System.err.println("Error: -ng requires Java 21+ runtime (running on "
+                        + System.getProperty("java.version") + ")");
+                System.exit(1);
+            }
+        }
+
         var ret = 1;
 
         try {
             final OptionSet args = parseArguments(argv);
-
-            // Early jump to next-gen tool via ServiceLoader
-            if (args.has(OPT_NG) || "true".equalsIgnoreCase(System.getenv("GP_NG"))) {
-                try {
-                    var ext = ServiceLoader.load(ToolExtension.class).findFirst()
-                            .orElseThrow(() -> new IllegalStateException("nextgen module not available"));
-                    System.exit(ext.run(argv));
-                } catch (UnsupportedClassVersionError | ServiceConfigurationError e) {
-                    System.err.println("Error: -ng requires Java 21+ runtime (running on "
-                            + System.getProperty("java.version") + ")");
-                    System.exit(1);
-                }
-            }
 
             setupLogging(args);
             showPreamble(argv, args);
@@ -333,7 +338,7 @@ public final class GPTool extends GPCommandLineInterface {
                         System.err.println("Error: no keys given");
                         return 1;
                     } else {
-                        System.err.println("# Warning: no keys given, defaulting to " + HexUtils.bin2hex(PlaintextKeys.DEFAULT_KEY()));
+                        System.err.println("# Warning: no keys given, defaulting to " + bin2hex(PlaintextKeys.DEFAULT_KEY()));
                     }
                 }
                 keys = cliKeys.or(() -> envKeys).orElse(PlaintextKeys.defaultKey());
@@ -631,7 +636,7 @@ public final class GPTool extends GPCommandLineInterface {
                     final var privs = getPrivileges(args);
 
                     // Parameters
-                    final var params = optional(args, OPT_PARAMS).map(HexBytes::value).orElse(new byte[0]);
+                    final var params = optional(args, OPT_PARAMS).map(HexBytes::value).orElse(ba());
 
                     // shoot
                     gp.installAndMakeSelectable(packageAID, appletAID, instanceAID, privs, params);
@@ -639,29 +644,27 @@ public final class GPTool extends GPCommandLineInterface {
 
                 // --domain <AID>
                 if (args.has(OPT_DOMAIN)) {
-                    // Validate parameters
-                    List<TLV> parameters = null;
+                    // Extradition rule value meaning "any security domain" (82 = allow-to, 87 = allow-from)
+                    final byte[] EXTRADITE_ALL = ba(0x20, 0x20);
 
-                    byte[] params;
-                    // If parameters given by user
+                    // Editable install parameters; rawParams holds verbatim bytes only when the user
+                    // supplied something we can not parse as TLV (and therefore can not amend).
+                    TLVs parameters = TLVs.of();
+                    byte[] rawParams = null;
                     if (args.has(OPT_PARAMS)) {
-                        params = args.valueOf(OPT_PARAMS).value();
-                        // Try to parse
+                        rawParams = args.valueOf(OPT_PARAMS).value();
                         try {
-                            parameters = TLV.parse(params); // this throws
+                            parameters = TLVs.parse(rawParams); // this throws
                         } catch (Exception e) {
-                            // and fail if what is given is not TLV that we can modify.
+                            // Fail if we are asked to amend parameters we can not parse.
                             if (args.has(OPT_ALLOW_FROM) || args.has(OPT_ALLOW_TO)) {
                                 throw new IllegalArgumentException(
-                                        OPT_ALLOW_FROM + " and " + OPT_ALLOW_TO + " not available, could not parse parameters: " + HexUtils.bin2hex(params));
+                                        OPT_ALLOW_FROM + " and " + OPT_ALLOW_TO + " not available, could not parse parameters: " + bin2hex(rawParams));
                             }
-                            // If we don't need to modify parameters, just give a handy warning
-                            System.err.println("Warning: could not parse parameters as TLV: " + HexUtils.bin2hex(params));
+                            // Otherwise just warn and pass them through verbatim.
+                            System.err.println("Warning: could not parse parameters as TLV: " + bin2hex(rawParams));
+                            parameters = null;
                         }
-                    } else {
-                        params = new byte[0];
-                        // This results in empty non-null parameters
-                        parameters = TLV.parse(params);
                     }
 
                     // Default AID-s
@@ -686,44 +689,53 @@ public final class GPTool extends GPCommandLineInterface {
                     final var privs = getPrivileges(args);
                     privs.add(Privilege.SecurityDomain);
 
-                    // By default same SCP as current
-                    if (!args.has(OPT_SAD) && !gp.getProfile().oldStyleSSDParameters()) {
-                        if (parameters != null && TLV.find(parameters, Tag.ber(0x81)).isEmpty()) {
-                            params = GPUtils.concatenate(params,
-                                    new byte[] { (byte) 0x81, 0x02, gp.getSecureChannel().scp.getValue(), (byte) gp.getSecureChannel().i });
-                        } else {
-                            System.err.println("Notice: 0x81 (secure channel) already in parameters or no parameters");
+                    // Amend the parameter tree (only when it parsed). Each rule is added unless its
+                    // tag is already present, in which case we keep the user's value and warn.
+                    if (parameters != null) {
+                        // By default same SCP as current
+                        if (!args.has(OPT_SAD) && !gp.getProfile().oldStyleSSDParameters()) {
+                            parameters = parameters.compute(TPath.of(0x81), v -> {
+                                if (v != null) {
+                                    System.err.println("Notice: 0x81 (secure channel) already present in parameters");
+                                    return v;
+                                }
+                                return ba(gp.getSecureChannel().scp.getValue(), gp.getSecureChannel().i);
+                            });
+                        }
+                        // Extradition rules
+                        if (args.has(OPT_ALLOW_TO)) {
+                            parameters = parameters.compute(TPath.of(0x82), v -> {
+                                if (v != null) {
+                                    System.err.println("Warning: 0x82 already present as %s, %s not applied".formatted(bin2hex(v), OPT_ALLOW_TO));
+                                    return v;
+                                }
+                                return EXTRADITE_ALL;
+                            });
+                        }
+                        if (args.has(OPT_ALLOW_FROM)) {
+                            parameters = parameters.compute(TPath.of(0x87), v -> {
+                                if (v != null) {
+                                    System.err.println("Warning: 0x87 already present as %s, %s not applied".formatted(bin2hex(v), OPT_ALLOW_FROM));
+                                    return v;
+                                }
+                                return EXTRADITE_ALL;
+                            });
                         }
                     }
 
-                    // Extradition rules
-                    if (args.has(OPT_ALLOW_TO)) {
-                        if (parameters != null) {
-                            if (TLV.find(parameters, Tag.ber(0x82)).isEmpty()) {
-                                params = GPUtils.concatenate(params, new byte[] { (byte) 0x82, 0x02, 0x20, 0x20 });
-                            } else {
-                                System.err.println("Warning: 0x82 already in parameters, " + OPT_ALLOW_TO + " not applied");
-                            }
-                        }
-                    }
-
-                    if (args.has(OPT_ALLOW_FROM)) {
-                        if (parameters != null) {
-                            if (TLV.find(parameters, Tag.ber(0x87)).isEmpty()) {
-                                params = GPUtils.concatenate(params, new byte[] { (byte) 0x87, 0x02, 0x20, 0x20 });
-                            } else {
-                                System.err.println("Warning: 0x87 already in parameters, " + OPT_ALLOW_FROM + " not applied");
-                            }
-                        }
-                    }
-
-                    // Old style actually only allows one parameter, the 45
+                    // Resolve the final bytes: old style allows only the 45; otherwise the amended tree,
+                    // or the verbatim bytes when they were not parseable as TLV.
+                    final byte[] params;
                     if (args.has(OPT_ALLOW_TO) && gp.getProfile().oldStyleSSDParameters()) {
-                        params = HexUtils.hex2bin("C90145");
+                        params = TLV.of(0xC9, ba(0x45)).encode();
+                    } else if (parameters != null) {
+                        params = parameters.encode();
+                    } else {
+                        params = rawParams;
                     }
 
                     if (parameters != null || args.has(OPT_ALLOW_TO) || args.has(OPT_ALLOW_FROM)) {
-                        verbose("Final parameters: %s".formatted(HexUtils.bin2hex(params)));
+                        verbose("Final parameters: %s".formatted(bin2hex(params)));
                     }
                     // shoot
                     gp.installAndMakeSelectable(packageAID, appletAID, instanceAID, privs, params);
@@ -799,7 +811,7 @@ public final class GPTool extends GPCommandLineInterface {
                             .map(v -> {
                                 final var cmd = new CommandAPDU(v);
                                 if (cmd.getINS() != (GPSession.INS_STORE_DATA & 0xFF)) {
-                                    throw new IllegalArgumentException("Not a STORE DATA APDU: " + HexUtils.bin2hex(v));
+                                    throw new IllegalArgumentException("Not a STORE DATA APDU: " + bin2hex(v));
                                 }
                                 return cmd;
                             })
@@ -922,10 +934,10 @@ public final class GPTool extends GPCommandLineInterface {
 
                     if (args.has(OPT_LOCK) && newKeys instanceof PlaintextKeys pk) {
                         if (pk.getMasterKey().isPresent()) {
-                            System.out.println(gp.getAID() + " locked with: " + HexUtils.bin2hex(pk.getMasterKey().get()));
+                            System.out.println(gp.getAID() + " locked with: " + bin2hex(pk.getMasterKey().get()));
                         }
                         if (pk.getTemplate() != null) {
-                            System.out.println("Keys were diversified with " + pk.getTemplate() + " and " + HexUtils.bin2hex(kdd));
+                            System.out.println("Keys were diversified with " + pk.getTemplate() + " and " + bin2hex(kdd));
                         }
                         System.out.println("Write this down, DO NOT FORGET/LOSE IT!");
                     } else {

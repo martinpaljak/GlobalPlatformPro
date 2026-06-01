@@ -6,25 +6,24 @@ package pro.javacard.tlv;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.List;
 
 // Stateless TLV parser
 public final class TLVParser {
     private TLVParser() {}
 
-    public static List<TLV> parse(final ByteBuffer buf, final Tag.Type type) {
+    public static TLVs parse(final ByteBuffer buf, final Tag.Type type) {
         final var result = new ArrayList<TLV>();
         while (buf.hasRemaining()) {
             result.add(parseOne(buf, type));
         }
-        return List.copyOf(result);
+        return TLVs.of(result);
     }
 
-    public static List<TLV> parse(final byte[] data, final Tag.Type type) {
+    public static TLVs parse(final byte[] data, final Tag.Type type) {
         return parse(ByteBuffer.wrap(data), type);
     }
 
-    public static List<TLV> parse(final byte[] data, final int offset, final int length, final Tag.Type type) {
+    public static TLVs parse(final byte[] data, final int offset, final int length, final Tag.Type type) {
         return parse(ByteBuffer.wrap(data, offset, length), type);
     }
 

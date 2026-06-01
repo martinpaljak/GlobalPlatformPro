@@ -9,7 +9,6 @@ import pro.javacard.gp.data.BitField;
 import pro.javacard.gp.ng.GPRegistryEntryNG.Kind;
 import pro.javacard.gp.ng.GPRegistryEntryNG.Privilege;
 import pro.javacard.tlv.TLV;
-import pro.javacard.tlv.Tag;
 
 import java.util.*;
 import java.util.stream.Stream;
@@ -103,28 +102,24 @@ public record GPRegistryNG(List<GPRegistryEntryNG> entries) implements Iterable<
         var tlvs = TLV.parse(data);
         var result = new ArrayList<GPRegistryEntryNG>();
 
-        for (TLV t : TLV.findAll(tlvs, Tag.ber(0xE3))) {
+        for (var t : tlvs.findAll(0xE3)) {
             if (!t.hasChildren()) {continue;}
 
             var b = new GPRegistryEntryNG.Builder().kind(type);
 
-            var aidTag = t.find(Tag.ber(0x4F));
-            if (aidTag != null) {
-                b.aid(new AID(aidTag.value()));
-            }
-
-            var lcTag = t.find(Tag.ber(0x9F, 0x70));
-            if (lcTag != null) {
-                b.lifecycle(lcTag.value()[0] & 0xFF);
-            }
-
-            var privTag = t.find(Tag.ber(0xC5));
-            if (privTag != null) {
-                b.privileges(BitField.parse(Privilege.class, privTag.value(), 1, 3));
-            }
+            t.find(0x4F).ifPresent(aidTag -> b.aid(new AID(aidTag.value())));
+            t.find(0x9F70).ifPresent(lcTag -> {
+                var lc = lcTag.value();
+                b.lifecycle(lc[0] & 0xFF);
+                // Amendment C: second byte of 9F70 carries the contactless activation state
+                if (lc.length >= 2) {
+                    b.state(lc[1] & 0xFF);
+                }
+            });
+            t.find(0xC5).ifPresent(privTag -> b.privileges(BitField.parse(Privilege.class, privTag.value(), 1, 3)));
 
             // GP 2.3 11.1.7 - implicit selection
-            for (TLV cf : t.findAll(Tag.ber(0xCF))) {
+            for (var cf : t.findAll(0xCF)) {
                 var cfb = cf.value();
                 if (cfb.length != 1) {
                     throw new GPDataException("Tag CF not single byte", cfb);
@@ -138,24 +133,14 @@ public record GPRegistryNG(List<GPRegistryEntryNG> entries) implements Iterable<
                 }
             }
 
-            var loadFileTag = t.find(Tag.ber(0xC4));
-            if (loadFileTag != null) {
-                b.loadFile(new AID(loadFileTag.value()));
-            }
+            t.find(0xC4).ifPresent(loadFileTag -> b.loadFile(new AID(loadFileTag.value())));
+            t.find(0xCE).ifPresent(versionTag -> b.version(versionTag.value()));
 
-            var versionTag = t.find(Tag.ber(0xCE));
-            if (versionTag != null) {
-                b.version(versionTag.value());
-            }
-
-            for (TLV lf : t.findAll(Tag.ber(0x84))) {
+            for (var lf : t.findAll(0x84)) {
                 b.addModule(new AID(lf.value()));
             }
 
-            var domainTag = t.find(Tag.ber(0xCC));
-            if (domainTag != null) {
-                b.domain(new AID(domainTag.value()));
-            }
+            t.find(0xCC).ifPresent(domainTag -> b.domain(new AID(domainTag.value())));
 
             // APP->SSD promotion handled by record compact constructor
             result.add(b.build());

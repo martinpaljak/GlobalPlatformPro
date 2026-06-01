@@ -1,5 +1,5 @@
 export TZ = UTC # same as Github
-export JAVA_HOME ?= /Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home
+export JAVA_HOME ?= /Library/Java/JavaVirtualMachines/zulu-21.jdk/Contents/Home
 
 MVN_OPTS = -Dmaven.javadoc.skip=true -Dmaven.test.skip=true -Dspotbugs.skip=true
 VERSIONS = org.codehaus.mojo:versions-maven-plugin:2.21.0

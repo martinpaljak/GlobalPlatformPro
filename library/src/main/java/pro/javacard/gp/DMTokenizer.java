@@ -7,6 +7,7 @@ import apdu4j.core.CommandAPDU;
 import apdu4j.core.HexUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pro.javacard.tlv.TLV;
 
 import java.io.ByteArrayOutputStream;
 import java.security.GeneralSecurityException;
@@ -32,12 +33,13 @@ public abstract class DMTokenizer {
         final var token = getToken(apdu);
 
         if (token.length > 0) {
-            // Handle DELETE and prefix with tag
+            // DELETE carries the token in a 9E TLV; other commands append it as a bare length-value
             if (apdu.getINS() == 0xE4) {
-                data.write(0x9E);
+                data.writeBytes(TLV.of(0x9E, token).encode());
+            } else {
+                data.writeBytes(GPUtils.encodeLength(token.length));
+                data.writeBytes(token);
             }
-            data.writeBytes(GPUtils.encodeLength(token.length));
-            data.writeBytes(token);
         } else {
             if (apdu.getINS() != 0xE4) {
                 data.write(0); // No token in LV chain and no tag in TLV case

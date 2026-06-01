@@ -7,7 +7,6 @@ import apdu4j.core.HexUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pro.javacard.tlv.TLV;
-import pro.javacard.tlv.Tag;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -87,9 +86,9 @@ public final class GPKeyInfo {
         final var tlvs = TLV.parse(data);
         GPUtils.trace_tlv(data, logger);
 
-        final var keysOpt = TLV.find(tlvs, Tag.ber(0xE0));
+        final var keysOpt = tlvs.find(0xE0);
         if (keysOpt.isPresent() && keysOpt.get().hasChildren()) {
-            for (TLV key : keysOpt.get().findAll(Tag.ber(0xC0))) {
+            for (TLV key : keysOpt.get().findAll(0xC0)) {
                 final var tmpl = key.value();
                 if (tmpl.length == 0) {
                     // Fresh SSD with an empty template.
@@ -272,7 +271,7 @@ public final class GPKeyInfo {
             } else {
                 logger.trace("Parsing B {}", HexUtils.bin2hex(Arrays.copyOfRange(buf, offset, offset + 2)));
                 key = GPKey.get(buf[offset++] & 0xFF).get();
-                // Page 162 of GP 2.3.1 "the indicated length shall be set to '00' (meaning ‘greater than or equal to 256 bytes’)"
+                // Page 162 of GP 2.3.1 "the indicated length shall be set to '00' (meaning 'greater than or equal to 256 bytes')"
                 final var l = buf[offset++] & 0xFF;
                 keyLength = l == 0x00 ? 256 : l;
                 templateLength = 2;

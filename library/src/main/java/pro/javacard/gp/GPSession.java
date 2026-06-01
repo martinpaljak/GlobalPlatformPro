@@ -19,6 +19,8 @@ import pro.javacard.gp.GPRegistryEntry.Kind;
 import pro.javacard.gp.GPRegistryEntry.Privilege;
 import pro.javacard.gp.data.BitField;
 import pro.javacard.tlv.TLV;
+import pro.javacard.tlv.TLVs;
+import static pro.javacard.tlv.TLV.ba;
 import pro.javacard.tlv.TLVParseException;
 import pro.javacard.tlv.Tag;
 
@@ -145,7 +147,7 @@ public class GPSession {
             logger.warn("Card Manager is LOCKED");
         }
 
-        final List<TLV> tlvs;
+        final TLVs tlvs;
         try {
             // Detect security domain based on default select
             tlvs = TLV.parse(response.getData());
@@ -156,17 +158,13 @@ public class GPSession {
             throw new GPDataException("Could not auto-detect ISD AID", response.getData());
         }
 
-        final var fcitag = TLV.find(tlvs, Tag.ber(0x6F));
-        if (fcitag.isPresent()) {
-            final var isdaid = fcitag.get().find(Tag.ber(0x84));
-            // WORKAROUND: exists a card that returns a zero length AID in template
-            if (isdaid != null && isdaid.value().length > 0) {
-                final var detectedAID = new AID(isdaid.value());
-                logger.debug("Auto-detected ISD: " + detectedAID);
-                return new GPSession(channel, detectedAID);
-            }
-        }
-        throw new GPDataException("Could not auto-detect ISD AID", response.getData());
+        final var isdaid = tlvs.find(0x6F).flatMap(fci -> fci.find(0x84)).map(TLV::value)
+                // WORKAROUND: exists a card that returns a zero length AID in template
+                .filter(v -> v.length > 0)
+                .orElseThrow(() -> new GPDataException("Could not auto-detect ISD AID", response.getData()));
+        final var detectedAID = new AID(isdaid);
+        logger.debug("Auto-detected ISD: " + detectedAID);
+        return new GPSession(channel, detectedAID);
     }
 
     // Establishes connection to a specific AID (selects it)
@@ -236,7 +234,7 @@ public class GPSession {
     }
 
     private void parse_select_response(final byte[] fci) throws GPException {
-        final List<TLV> tlvs;
+        final TLVs tlvs;
         try {
             tlvs = TLV.parse(fci);
             GPUtils.trace_tlv(fci, logger);
@@ -244,67 +242,40 @@ public class GPSession {
             logger.warn("Could not parse SELECT response: " + e.getMessage());
             return;
         }
-        final var fcitagOpt = TLV.find(tlvs, Tag.ber(0x6F));
-        if (fcitagOpt.isPresent()) {
-            final var fcitag = fcitagOpt.get();
-            final var isdaid = fcitag.find(Tag.ber(0x84));
-            if (isdaid != null) {
+        tlvs.find(0x6F).ifPresentOrElse(fcitag -> {
+            fcitag.find(0x84).ifPresent(isdaid -> {
                 final var detectedAID = new AID(isdaid.value());
                 if (!detectedAID.equals(sdAID)) {
                     logger.warn("SD AID in FCI (%s) does not match the requested AID (%s). Using reported AID!".formatted(detectedAID, sdAID));
                     // So one can select only the prefix
                     sdAID = detectedAID;
                 }
-            }
+            });
 
-            //
-            final var prop = fcitag.find(Tag.ber(0xA5));
-            if (prop != null) {
-
-                final var isdd = prop.find(Tag.ber(0x73));
-                if (isdd != null) {
-                    // Tag 73 is a constructed tag.
-                    final var oidtag = isdd.find(Tag.ber(0x06));
-                    if (oidtag != null) {
-                        // 1.2.840.114283.1
-                        if (Arrays.equals(oidtag.value(), HexUtils.hex2bin("2A864886FC6B01"))) {
-                            // Detect versions
-                            final var vertag = isdd.find(Tag.ber(0x60));
-                            if (vertag != null) {
-                                final var veroid = vertag.find(Tag.ber(0x06));
-                                if (veroid != null) {
-                                    // TODO: react to it maybe? Not that relevant in 2.2 era
-                                    logger.debug("Auto-detected GP version: " + GPData.oid2version(veroid.value()));
-                                }
-                            }
-                        } else if (GPData.oid2string(oidtag.value()).startsWith("1.2.840.114283.4.") && oidtag.value().length == 9) {
-                            final var data = oidtag.value();
-                            // SCP version
-                            logger.debug("Auto-detected SCP version: {}", GPSecureChannelVersion.valueOf(data[7] & 0xFF, data[8] & 0xFF));
-                        } else {
-                            logger.warn("Unrecognized card recognition data: {}", HexUtils.bin2hex(oidtag.value()));
-                        }
+            fcitag.find(0xA5).ifPresentOrElse(prop -> {
+                // Tag 73 is a constructed tag.
+                prop.find(0x73).ifPresent(isdd -> isdd.find(0x06).ifPresentOrElse(oidtag -> {
+                    // 1.2.840.114283.1
+                    if (Arrays.equals(oidtag.value(), HexUtils.hex2bin("2A864886FC6B01"))) {
+                        // Detect versions
+                        isdd.find(0x60).flatMap(vertag -> vertag.find(0x06)).ifPresent(veroid ->
+                                // TODO: react to it maybe? Not that relevant in 2.2 era
+                                logger.debug("Auto-detected GP version: " + GPData.oid2version(veroid.value())));
+                    } else if (GPData.oid2string(oidtag.value()).startsWith("1.2.840.114283.4.") && oidtag.value().length == 9) {
+                        final var data = oidtag.value();
+                        // SCP version
+                        logger.debug("Auto-detected SCP version: {}", GPSecureChannelVersion.valueOf(data[7] & 0xFF, data[8] & 0xFF));
                     } else {
-                        logger.warn("No Global Platform OID found");
+                        logger.warn("Unrecognized card recognition data: {}", HexUtils.bin2hex(oidtag.value()));
                     }
-                }
+                }, () -> logger.warn("No Global Platform OID found")));
 
                 // Lifecycle
-                final var lc = prop.find(Tag.ber(0x9F, 0x6E));
-                if (lc != null) {
-                    logger.debug("Lifecycle data (ignored): " + HexUtils.bin2hex(lc.value()));
-                }
+                prop.find(0x9F6E).ifPresent(lc -> logger.debug("Lifecycle data (ignored): " + HexUtils.bin2hex(lc.value())));
                 // Max block size
-                final var maxbs = prop.find(Tag.ber(0x9F, 0x65));
-                if (maxbs != null) {
-                    setBlockSize(maxbs.value());
-                }
-            } else {
-                logger.warn("No mandatory proprietary info present in FCI");
-            }
-        } else {
-            logger.warn("No FCI returned to SELECT");
-        }
+                prop.find(0x9F65).ifPresent(maxbs -> setBlockSize(maxbs.value()));
+            }, () -> logger.warn("No mandatory proprietary info present in FCI"));
+        }, () -> logger.warn("No FCI returned to SELECT"));
     }
 
     private void setBlockSize(final byte[] blockSize) {
@@ -652,23 +623,15 @@ public class GPSession {
 
         // Construct load block
         final var loadBlock = new ByteArrayOutputStream();
-        // Add DAP block, if signature present
+        // Add DAP block, if signature present. E2 content: [4F AID][C3 DAP]
         if (dap != null && dapDomain != null) {
-            loadBlock.write(0xE2);
-            final var dapLenBytes = GPUtils.encodeLength(dap.length);
-            // E2 content: [4F][1-byte AID len][AID] [C3][encoded DAP len][DAP]
-            loadBlock.writeBytes(GPUtils.encodeLength(1 + 1 + dapDomain.getLength() + 1 + dapLenBytes.length + dap.length));
-            loadBlock.write(0x4F);
-            loadBlock.write(dapDomain.getLength());
-            loadBlock.writeBytes(dapDomain.getBytes());
-            loadBlock.write(0xC3);
-            loadBlock.writeBytes(dapLenBytes);
-            loadBlock.writeBytes(dap);
+            loadBlock.writeBytes(TLV.build(0xE2)
+                    .add(0x4F, dapDomain.getBytes())
+                    .add(0xC3, dap)
+                    .encode());
         }
         // See GP 2.1.1 Table 9-40, GP 2.2.1 11.6.2.3 / Table 11-58
-        loadBlock.write(0xC4);
-        loadBlock.writeBytes(GPUtils.encodeLength(code.length));
-        loadBlock.writeBytes(code);
+        loadBlock.writeBytes(TLV.of(0xC4, code).encode());
 
         // Split according to available block size
         final var blocks = GPUtils.splitArray(loadBlock.toByteArray(), wrapper.getBlockSize());
@@ -704,7 +667,7 @@ public class GPSession {
         }
         // Empty mandatory app parameters
         if (installParams == null || installParams.length == 0) {
-            installParams = new byte[]{(byte) 0xC9, 0x00};
+            installParams = TLV.of(0xC9, ba()).encode();
         } else {
             var valid = false;
             // Handle #360 - only modify/fixup installation parameters when needed.
@@ -712,7 +675,7 @@ public class GPSession {
                 final var tlvs = TLV.parse(installParams);
                 GPUtils.trace_tlv(installParams, logger);
                 // If applications parameters are already present (must not be first tag), do not add anything
-                if (TLV.find(tlvs, Tag.ber(0xC9)).isPresent()) {
+                if (tlvs.find(0xC9).isPresent()) {
                     valid = true;
                 }
             } catch (TLVParseException e) {
@@ -859,11 +822,8 @@ public class GPSession {
 
     // Delete file aid on the card. Delete dependencies as well if deleteDeps is true.
     public void deleteAID(final AID aid, final boolean deleteDeps) throws GPException {
-        final var bo = new ByteArrayOutputStream();
-        bo.write(0x4f);
-        bo.write(aid.getLength());
-        bo.writeBytes(aid.getBytes());
-        var command = new CommandAPDU(CLA_GP, INS_DELETE, 0x00, deleteDeps ? 0x80 : 0x00, bo.toByteArray());
+        final var data = TLV.of(0x4F, aid.getBytes()).encode();
+        var command = new CommandAPDU(CLA_GP, INS_DELETE, 0x00, deleteDeps ? 0x80 : 0x00, data);
         command = tokenizer.tokenize(command);
         final var response = transmitTLV(command);
         GPException.check(response, "DELETE failed");
@@ -878,20 +838,15 @@ public class GPSession {
             throw new IllegalArgumentException("Must specify either key version or key ID");
         }
 
-        final var bo = new ByteArrayOutputStream();
+        final var fields = new ArrayList<TLV>();
         if (keyid != null) {
-            bo.write(0xd0); // Key Identifier
-            bo.write(1);
-            bo.write(keyid);
+            fields.add(TLV.of(0xD0, ba(keyid))); // Key Identifier
         }
-
         if (keyver != null) {
-            bo.write(0xd2); // Key Version Number
-            bo.write(1); // length
-            bo.write(keyver);
+            fields.add(TLV.of(0xD2, ba(keyver))); // Key Version Number
         }
 
-        final var delete = new CommandAPDU(CLA_GP, INS_DELETE, 0x00, 0x00, bo.toByteArray());
+        final var delete = new CommandAPDU(CLA_GP, INS_DELETE, 0x00, 0x00, TLV.encode(fields));
         final var response = transmit(delete);
         // XXX: better message
         final var msg = "DELETE failed for key %s".formatted(keyver != null ? GPUtils.intString(keyver) : GPUtils.intString(keyid));
@@ -900,7 +855,7 @@ public class GPSession {
 
     public void renameISD(final AID newaid) throws GPException {
         final var rename = new CommandAPDU(CLA_GP, INS_STORE_DATA, 0x90, 0x00,
-                GPUtils.concatenate(new byte[]{0x4f, (byte) newaid.getLength()}, newaid.getBytes()));
+                TLV.of(0x4F, newaid.getBytes()).encode());
         final var response = transmit(rename);
         GPException.check(response, "Rename failed");
     }
@@ -1005,23 +960,14 @@ public class GPSession {
         }
     }
 
-    public static byte[] encodeRSAKey(final RSAPublicKey key) {
-        final var bo = new ByteArrayOutputStream();
-        final byte[] modulus = GPUtils.positive(key.getModulus());
-        final byte[] exponent = GPUtils.positive(key.getPublicExponent());
-
-        bo.write(0xA1); // Modulus
-        bo.writeBytes(GPUtils.encodeLength(modulus.length));
-        bo.writeBytes(modulus);
-        bo.write(0xA0);
-        bo.writeBytes(GPUtils.encodeLength(exponent.length));
-        bo.writeBytes(exponent);
-        bo.write(0x00); // No KCV
-        return bo.toByteArray();
+    public static void encodeRSAKey(final ByteArrayOutputStream bo, final RSAPublicKey key) {
+        // A1 modulus, A0 exponent, trailing 0x00 = no KCV
+        bo.writeBytes(TLV.of(0xA1, GPUtils.positive(key.getModulus())).encode());
+        bo.writeBytes(TLV.of(0xA0, GPUtils.positive(key.getPublicExponent())).encode());
+        bo.write(0x00);
     }
 
-    public static byte[] encodeECKey(final ECPublicKey pubkey) {
-        final var bo = new ByteArrayOutputStream();
+    public static void encodeECKey(final ByteArrayOutputStream bo, final ECPublicKey pubkey) {
         final var fieldSize = pubkey.getParams().getCurve().getField().getFieldSize();
         final var curveName = switch (fieldSize) {
             case 256 -> "secp256r1";
@@ -1038,14 +984,10 @@ public class GPSession {
         final var key = ECNamedCurveTable.getByName(curveName).getCurve().createPoint(pubkey.getW().getAffineX(), pubkey.getW().getAffineY())
                 .getEncoded(false);
 
-        bo.write(0xB0); // EC Public key
-        bo.writeBytes(GPUtils.encodeLength(key.length));
-        bo.writeBytes(key);
-        bo.write(0xF0); // ECC key parameters reference
-        bo.write(0x01);
-        bo.write(curveRef);
-        bo.write(0x00); // No KCV
-        return bo.toByteArray();
+        // B0 EC public key, F0 curve reference, trailing 0x00 = no KCV
+        bo.writeBytes(TLV.of(0xB0, key).encode());
+        bo.writeBytes(TLV.of(0xF0, ba(curveRef)).encode());
+        bo.write(0x00);
     }
 
     // Puts a public or otherwise plaintext key (for DAP/DM purposes (format 1))
@@ -1054,9 +996,9 @@ public class GPSession {
         bo.write(version); // Key Version number
 
         if (key instanceof RSAPublicKey rsaKey) {
-            bo.writeBytes(encodeRSAKey(rsaKey));
+            encodeRSAKey(bo, rsaKey);
         } else if (key instanceof ECPublicKey ecKey) {
-            bo.writeBytes(encodeECKey(ecKey));
+            encodeECKey(bo, ecKey);
         } else if (key instanceof SecretKey sk) {
             if ("DESede".equals(sk.getAlgorithm())) {
                 logger.info("PUT KEY KCV: {}", HexUtils.bin2hex(GPCrypto.kcv_3des(sk.getEncoded())));
@@ -1158,23 +1100,23 @@ public class GPSession {
         final var registry = new GPRegistry();
 
         // Issuer security domain
-        var data = getConcatenatedStatus(0x80, new byte[]{0x4F, 0x00}, profile.getStatusUsesTags());
+        var data = getConcatenatedStatus(0x80, ba(0x4F, 0x00), profile.getStatusUsesTags());
         registry.parse_and_populate(0x80, data, Kind.ISD, profile);
 
         // Apps and security domains
-        data = getConcatenatedStatus(0x40, new byte[]{0x4F, 0x00}, profile.getStatusUsesTags());
+        data = getConcatenatedStatus(0x40, ba(0x4F, 0x00), profile.getStatusUsesTags());
         registry.parse_and_populate(0x40, data, Kind.APP, profile);
 
         // Load files with modules is better than just load files. Registry does not allow to update
         // existing entries
         if (profile.doesReportModules()) {
             // Load files with modules
-            data = getConcatenatedStatus(0x10, new byte[]{0x4F, 0x00}, profile.getStatusUsesTags());
+            data = getConcatenatedStatus(0x10, ba(0x4F, 0x00), profile.getStatusUsesTags());
             registry.parse_and_populate(0x10, data, Kind.PKG, profile);
         }
 
         // Load files
-        data = getConcatenatedStatus(0x20, new byte[]{0x4F, 0x00}, profile.getStatusUsesTags());
+        data = getConcatenatedStatus(0x20, ba(0x4F, 0x00), profile.getStatusUsesTags());
         registry.parse_and_populate(0x20, data, Kind.PKG, profile);
 
         return registry;

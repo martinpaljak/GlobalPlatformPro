@@ -17,9 +17,10 @@ import org.bouncycastle.util.encoders.Hex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pro.javacard.tlv.TLV;
+import pro.javacard.tlv.TLVs;
 import pro.javacard.tlv.Tag;
+import static pro.javacard.tlv.TLV.ba;
 
-import java.io.ByteArrayOutputStream;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
@@ -86,9 +87,9 @@ public final class PACE {
         PACEException.check(r);
 
         // Step 1: get the encrypted nonce
-        r = c.transmit(general_authenticate(new byte[] { 0x7c, 0x00 }));
+        r = c.transmit(general_authenticate(TLV.build(0x7C).encode()));
         r = PACEException.check(r);
-        SCHelpers.trace_tlv(r.getData(), log);
+        trace_tlv(r.getData());
 
         // Get encrypted nonce
         final TLV encryptedNonce = require_tag(r.getData(), 0x80);
@@ -110,9 +111,9 @@ public final class PACE {
 
         final CommandAPDU apdu2 = general_authenticate(payload);
 
-        SCHelpers.trace_tlv(apdu2.getData(), log);
+        trace_tlv(apdu2.getData());
         r = PACEException.check(c.transmit(apdu2));
-        SCHelpers.trace_tlv(r.getData(), log);
+        trace_tlv(r.getData());
 
         // Response is card mapping public key on curve
         final TLV card_map_tag = require_tag(r.getData(), 0x82);
@@ -137,9 +138,9 @@ public final class PACE {
         payload = TLV.build(Tag.ber(0x7C)).add(Tag.ber(0x83), ephemeral_host_pub).encode();
         final CommandAPDU apdu3 = general_authenticate(payload);
 
-        SCHelpers.trace_tlv(apdu3.getData(), log);
+        trace_tlv(apdu3.getData());
         r = PACEException.check(c.transmit(apdu3));
-        SCHelpers.trace_tlv(r.getData(), log);
+        trace_tlv(r.getData());
 
         // We receive a point on the ephemeral curve
         final TLV ephemeral_card_tag = require_tag(r.getData(), 0x84);
@@ -166,9 +167,9 @@ public final class PACE {
 
         final CommandAPDU apdu4 = general_authenticate_last(payload);
 
-        SCHelpers.trace_tlv(apdu4.getData(), log);
+        trace_tlv(apdu4.getData());
         r = PACEException.check(c.transmit(apdu4));
-        SCHelpers.trace_tlv(r.getData(), log);
+        trace_tlv(r.getData());
 
         // Verify card auth token
         final TLV auth_token_card = require_tag(r.getData(), 0x86);
@@ -182,7 +183,8 @@ public final class PACE {
     }
 
     static TLV require_tag(final byte[] response, final int tag) throws PACEException {
-        return TLV.find(TLV.parse(response), Tag.ber(tag))
+        // General Authenticate wraps response data objects in a 7C Dynamic Authentication Data template
+        return TLVs.parse(response).find(0x7C, tag)
                 .orElseThrow(() -> new PACEException("PACE: invalid response, missing tag 0x%02X: %s".formatted(tag, HexUtils.bin2hex(response))));
     }
 
@@ -213,12 +215,22 @@ public final class PACE {
 
     // B.14.1. MSE:Set AT
     private static CommandAPDU set_at(final byte[] oid, final byte password, final PACECurve curve) {
-        final var payload = new ByteArrayOutputStream();
-        payload.writeBytes(TLV.of(Tag.ber(0x80), oid).encode()); // Cryptographic mechanism reference
-        payload.writeBytes(TLV.of(Tag.ber(0x83), new byte[]{password}).encode()); // Password reference - CAN
-        payload.writeBytes(TLV.of(Tag.ber(0x84), new byte[]{curve.code}).encode());
+        // 80 cryptographic mechanism reference, 83 password reference (CAN), 84 curve
+        final var payload = TLV.encode(
+                TLV.of(0x80, oid),
+                TLV.of(0x83, ba(password)),
+                TLV.of(0x84, ba(curve.code)));
         // P1/P2: PACE: Set Authentication Template for mutual authentication.
-        return new CommandAPDU(0x00, 0x22, 0xC1, 0xA4, payload.toByteArray(), 256);
+        return new CommandAPDU(0x00, 0x22, 0xC1, 0xA4, payload, 256);
+    }
+
+    // Log parsed TLV structure at trace level; never break flow on malformed debug data
+    private static void trace_tlv(final byte[] data) {
+        try {
+            TLVs.visualize(data).forEach(log::trace);
+        } catch (RuntimeException e) {
+            log.error("Invalid TLV data: {}", Hex.toHexString(data), e);
+        }
     }
 
     // A.2.3. Key Derivation Function SHA256 of: secret || nonce || counter (4 bytes)

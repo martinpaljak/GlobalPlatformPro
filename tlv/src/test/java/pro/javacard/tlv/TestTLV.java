@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HexFormat;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 
 class TestTLV {
@@ -21,12 +20,12 @@ class TestTLV {
 
     @Test
     public void testConstruction() {
-        final var tlv = TLV.of("9f45", hex("01020304"));
+        final var tlv = TLV.of(0x9F45, hex("01020304"));
         Assert.assertEquals(tlv.encode(), hex("9F450401020304"));
-        final var tlv1 = TLV.build("7f42")
-                .add("9f45", hex("222222"))
-                .add("9f46", hex("333333"))
-                .add("9f45", hex("444444"));
+        final var tlv1 = TLV.build(0x7F42)
+                .add(0x9F45, hex("222222"))
+                .add(0x9F46, hex("333333"))
+                .add(0x9F45, hex("444444"));
 
         final var bin = tlv1.encode();
         Assert.assertEquals(bin, hex("7F42129F45032222229F46033333339F4503444444"));
@@ -36,10 +35,15 @@ class TestTLV {
         Assert.assertEquals(strings,
                 List.of("[7F42]", "      [9F45] 222222", "      [9F46] 333333", "      [9F45] 444444"));
 
-        final var lookup = TLV.find(result, Tag.ber("9f45"));
-        Assert.assertEquals(lookup, Optional.of(TLV.of("9f45", hex("222222"))));
-        final var lookup2 = result.get(0).findAll(Tag.ber("9f45"));
-        Assert.assertEquals(lookup2.size(), 2);
+        // 9F45 appears twice under 7F42, so find is ambiguous and throws; findAll returns both
+        Assert.expectThrows(IllegalArgumentException.class, () -> result.find(0x7F42, 0x9F45));
+        final var matches = result.get(0).findAll(Tag.ber("9f45"));
+        Assert.assertEquals(matches.size(), 2);
+        Assert.assertEquals(matches.get(0).value(), hex("222222"));
+
+        // integer tag overloads mirror the Tag versions; find resolves a unique tag
+        Assert.assertEquals(result.get(0).findAll(0x9F45).size(), 2);
+        Assert.assertEquals(result.get(0).find(0x9F46).orElseThrow().value(), hex("333333"));
     }
 
     @Test
@@ -56,8 +60,8 @@ class TestTLV {
     @Test
     public void testAddByte() {
         final var tlv = TLV.build(Tag.ber(0x70))
-                .addByte(Tag.ber(0x80), (byte) 0x01)
-                .addByte("81", (byte) 0xFF);
+                .add(Tag.ber(0x80), TLV.ba(0x01))
+                .add(0x81, TLV.ba(0xFF));
 
         final var encoded = tlv.encode();
         Assert.assertEquals(encoded, hex("70 06 80 01 01 81 01 FF"));
@@ -148,28 +152,22 @@ class TestTLV {
 
     @Test
     public void testTLVMethods() {
-        final var t = TLV.build("9F45").add("81", hex("01"));
+        final var t = TLV.build(0x9F45).add(0x81, hex("01"));
 
         // Children
         Assert.assertTrue(t.hasChildren());
         Assert.assertEquals(t.children().size(), 1);
         Assert.assertEquals(t.value(), t.children().get(0).encode());
 
-        // Find
-        Assert.assertNotNull(t.find(Tag.ber("81")));
-        Assert.assertNull(t.find(Tag.ber("82")));
+        // Find: first direct child with the tag (does not descend)
+        Assert.assertTrue(t.find(Tag.ber("81")).isPresent());
+        Assert.assertTrue(t.find(Tag.ber("82")).isEmpty());
 
-        // Require: hit returns same as find; miss throws with tag in message
-        Assert.assertSame(t.require(Tag.ber("81")), t.find(Tag.ber("81")));
-        final var miss = Assert.expectThrows(NoSuchElementException.class, () -> t.require(Tag.ber("82")));
-        Assert.assertTrue(miss.getMessage().contains("[82]") && miss.getMessage().contains("not found"), miss.getMessage());
-        final var missCtx = Assert.expectThrows(NoSuchElementException.class, () -> t.require(Tag.ber("82"), "while parsing FCI"));
-        Assert.assertTrue(missCtx.getMessage().contains("[82]") && missCtx.getMessage().contains("while parsing FCI"), missCtx.getMessage());
-
-        // Find descends recursively; self is never a candidate
-        final var deep = TLV.build("7F01").add(t);
-        Assert.assertNotNull(deep.find(Tag.ber("81")));
-        Assert.assertNull(deep.find(Tag.ber("7F01")));
+        // Direct only: a nested tag is not matched, and self is never a candidate
+        final var deep = TLV.build(0x7F01).add(t);
+        Assert.assertTrue(deep.find(Tag.ber("9F45")).isPresent()); // direct child
+        Assert.assertTrue(deep.find(Tag.ber("81")).isEmpty());     // nested under 9F45, not direct
+        Assert.assertTrue(deep.find(Tag.ber("7F01")).isEmpty());   // self never a candidate
 
         // Check "end"
         Assert.assertEquals(t.children().get(0).end(), t);
@@ -177,19 +175,19 @@ class TestTLV {
         Assert.assertEquals(t.end(), deep);
 
         // New root TLV for exception check
-        final var root = TLV.build("9F45");
+        final var root = TLV.build(0x9F45);
         Assert.assertThrows(IllegalStateException.class, () -> root.end()); // No parent
 
         // Add to primitive
-        final var p = TLV.of("81", hex("01"));
-        Assert.assertThrows(IllegalStateException.class, () -> p.add("82", hex("02")));
+        final var p = TLV.of(0x81, hex("01"));
+        Assert.assertThrows(IllegalStateException.class, () -> p.add(0x82, hex("02")));
     }
 
     @Test
     public void testEqualsAndHashCode() {
-        final var t1 = TLV.of("9F45", hex("01"));
-        final var t2 = TLV.of("9F45", hex("01"));
-        final var t3 = TLV.of("9F46", hex("01"));
+        final var t1 = TLV.of(0x9F45, hex("01"));
+        final var t2 = TLV.of(0x9F45, hex("01"));
+        final var t3 = TLV.of(0x9F46, hex("01"));
 
         Assert.assertEquals(t1, t1);
         Assert.assertEquals(t1, t2);
@@ -272,13 +270,25 @@ class TestTLV {
 
     @Test
     public void testVisualizerRecursive() {
-        final var t = TLV.build("E0").add("81", hex("01")).add(TLV.build("E1").add("82", hex("02")));
+        final var t = TLV.build(0xE0).add(0x81, hex("01")).add(TLV.build(0xE1).add(0x82, hex("02")));
         final var vis = t.visualize();
         Assert.assertTrue(vis.size() > 0);
         Assert.assertTrue(vis.stream().anyMatch(s -> s.contains("[E0]")));
         Assert.assertTrue(vis.stream().anyMatch(s -> s.contains("[81]")));
         Assert.assertTrue(vis.stream().anyMatch(s -> s.contains("[E1]")));
         Assert.assertTrue(vis.stream().anyMatch(s -> s.contains("[82]")));
+    }
+
+    @Test
+    public void byteArrays() {
+        Assert.assertEquals(TLV.ba(), new byte[0]);
+        Assert.assertEquals(TLV.ba(0x00), new byte[] { 0x00 });
+        Assert.assertEquals(TLV.ba(0xFF), new byte[] { (byte) 0xFF });
+        Assert.assertEquals(TLV.ba(0x34, 0x22), new byte[] { 0x34, 0x22 });
+        Assert.assertEquals(TLV.ba(0x01, 0x02, 0x03), new byte[] { 0x01, 0x02, 0x03 });
+        Assert.expectThrows(IllegalArgumentException.class, () -> TLV.ba(0x100));
+        Assert.expectThrows(IllegalArgumentException.class, () -> TLV.ba(-1));
+        Assert.expectThrows(IllegalArgumentException.class, () -> TLV.ba(0x10, 0x100));
     }
 
     @Test
@@ -291,42 +301,37 @@ class TestTLV {
         Assert.assertEquals(list.get(0).tag(), Tag.simple((byte) 0x01));
 
         // TLV.of(Tag, Collection)
-        final var children = List.of(TLV.of("81", hex("01")));
+        final var children = List.of(TLV.of(0x81, hex("01")));
         final var t = TLV.of(Tag.ber("E0"), children);
         Assert.assertEquals(t.children().size(), 1);
 
-        // TLV.find(List, Tag)
+        // TLVs path find replaces the old recursive static find
         final var list2 = List.of(t);
-        Assert.assertTrue(TLV.find(list2, Tag.ber("81")).isPresent());
-        Assert.assertTrue(TLV.find(list2, Tag.ber("82")).isEmpty());
-
-        // TLV.require(List, Tag): hit equals find().get(); miss throws with tag in message; multi-byte tag covered
-        Assert.assertSame(TLV.require(list2, Tag.ber("81")), TLV.find(list2, Tag.ber("81")).get());
-        final var sMiss = Assert.expectThrows(NoSuchElementException.class, () -> TLV.require(list2, Tag.ber("9F70")));
-        Assert.assertTrue(sMiss.getMessage().contains("[9F70]") && sMiss.getMessage().contains("not found"), sMiss.getMessage());
-        final var sMissCtx = Assert.expectThrows(NoSuchElementException.class, () -> TLV.require(list2, Tag.ber("82"), "in card response"));
-        Assert.assertTrue(sMissCtx.getMessage().contains("[82]") && sMissCtx.getMessage().contains("in card response"), sMissCtx.getMessage());
+        final var roots = TLVs.of(list2);
+        Assert.assertTrue(roots.find(0xE0, 0x81).isPresent()); // nested, addressed by path
+        Assert.assertTrue(roots.find(0x81).isEmpty());         // not a top-level entry
 
         Assert.assertEquals(TLV.findAll(list2, Tag.ber("E0")).size(), 1);
         Assert.assertEquals(TLV.findAll(list2, Tag.ber("81")).size(), 0);
         Assert.assertEquals(list2.get(0).findAll(Tag.ber("81")).size(), 1);
         Assert.assertEquals(list2.get(0).findAll(Tag.ber("82")).size(), 0);
 
-        // TLV.findOne(List, Tag) and TLV#findOne(Tag): direct/top-level only, no recursion
-        Assert.assertSame(TLV.findOne(list2, Tag.ber("E0")).get(), t);
-        Assert.assertTrue(TLV.findOne(list2, Tag.ber("81")).isEmpty());     // 81 is nested under E0
-        Assert.assertTrue(list2.get(0).findOne(Tag.ber("81")).isPresent()); // direct child of E0
-        Assert.assertTrue(list2.get(0).findOne(Tag.ber("82")).isEmpty());
+        // find is the single-finder: present for one match, empty for none; direct/top-level only
+        Assert.assertSame(TLV.find(list2, Tag.ber("E0")).get(), t);          // static, top-level
+        Assert.assertTrue(TLV.find(list2, Tag.ber("81")).isEmpty());         // 81 is nested, not top-level
+        Assert.assertTrue(list2.get(0).find(Tag.ber("81")).isPresent());     // instance, direct child of E0
+        Assert.assertTrue(list2.get(0).find(Tag.ber("82")).isEmpty());
 
-        // findOne throws on multiple matches
+        // find throws on multiple matches; findAll is the multi-finder
         final var twoSame = TLV.of(Tag.ber("E1"),
-                List.of(TLV.of("82", hex("01")), TLV.of("82", hex("02"))));
-        Assert.assertThrows(IllegalArgumentException.class, () -> twoSame.findOne(Tag.ber("82")));
-        final var listTwoSame = List.of(TLV.of("83", hex("AA")), TLV.of("83", hex("BB")));
-        Assert.assertThrows(IllegalArgumentException.class, () -> TLV.findOne(listTwoSame, Tag.ber("83")));
+                List.of(TLV.of(0x82, hex("01")), TLV.of(0x82, hex("02"))));
+        Assert.assertThrows(IllegalArgumentException.class, () -> twoSame.find(Tag.ber("82")));
+        Assert.assertEquals(twoSame.findAll(Tag.ber("82")).size(), 2);
+        final var listTwoSame = List.of(TLV.of(0x83, hex("AA")), TLV.of(0x83, hex("BB")));
+        Assert.assertThrows(IllegalArgumentException.class, () -> TLV.find(listTwoSame, Tag.ber("83")));
 
         // TLV.add(byte[], byte[])
-        final var t2 = TLV.build("E0").add(hex("81"), hex("01"));
+        final var t2 = TLV.build(0xE0).add(hex("81"), hex("01"));
         Assert.assertTrue(t2.hasChildren());
 
         // Tag default methods or missing bits?
@@ -349,8 +354,8 @@ class TestTLV {
         Assert.assertEquals(t.tag(), Tag.ber("9F45"));
 
         // TLV.of(Tag, TLV...) varargs
-        final var child1 = TLV.of("81", hex("01"));
-        final var child2 = TLV.of("82", hex("02"));
+        final var child1 = TLV.of(0x81, hex("01"));
+        final var child2 = TLV.of(0x82, hex("02"));
         final var parent = TLV.of(Tag.ber("E0"), child1, child2);
         Assert.assertEquals(parent.children().size(), 2);
     }
@@ -365,36 +370,37 @@ class TestTLV {
 
     @Test
     public void testFindAllDirectChildren() {
-        final var t = TLV.build("E0")
-                .add("9F45", hex("01"))
-                .add("9F45", hex("02"))
-                .add("9F46", hex("03"));
+        final var t = TLV.build(0xE0)
+                .add(0x9F45, hex("01"))
+                .add(0x9F45, hex("02"))
+                .add(0x9F46, hex("03"));
         Assert.assertEquals(t.findAll(Tag.ber("9F45")).size(), 2);
         Assert.assertEquals(t.findAll(Tag.ber("9F46")).size(), 1);
         Assert.assertEquals(t.findAll(Tag.ber("E0")).size(), 0);
-        Assert.assertTrue(TLV.of("9F45", hex("01")).findAll(Tag.ber("9F45")).isEmpty());
+        Assert.assertTrue(TLV.of(0x9F45, hex("01")).findAll(Tag.ber("9F45")).isEmpty());
     }
 
     @Test
-    public void testFindBreadthFirst() {
-        final var deep = TLV.of("C0", hex("01"));
-        final var shallow = TLV.of("C0", hex("02"));
+    public void testFindDirectChild() {
+        final var deep = TLV.of(0xC0, hex("01"));
+        final var shallow = TLV.of(0xC0, hex("02"));
         final var a0 = TLV.of(Tag.ber("A0"), TLV.of(Tag.ber("B0"), deep), shallow);
-        Assert.assertEquals(a0.find(Tag.ber("C0")), shallow);
+        // find returns the first direct child and never descends into B0 to reach 'deep'
+        Assert.assertEquals(a0.find(Tag.ber("C0")), Optional.of(shallow));
     }
 
     @Test
     public void testFindAllNonRecursive() {
-        final var direct = TLV.of("C0", hex("01"));
-        final var nested = TLV.of("C0", hex("02"));
+        final var direct = TLV.of(0xC0, hex("01"));
+        final var nested = TLV.of(0xC0, hex("02"));
         final var e0 = TLV.of(Tag.ber("E0"), direct, TLV.of(Tag.ber("E1"), nested));
         Assert.assertEquals(e0.findAll(Tag.ber("C0")), List.of(direct));
     }
 
     @Test
     public void testEqualsDeep() {
-        final var t1 = TLV.of("9F45", hex("01"));
-        final var t2 = TLV.of("9F45", hex("02")); // Diff value
+        final var t1 = TLV.of(0x9F45, hex("01"));
+        final var t2 = TLV.of(0x9F45, hex("02")); // Diff value
         Assert.assertNotEquals(t1, t2);
 
         final var c1 = TLV.of(Tag.ber("E0"), t1);
@@ -428,8 +434,8 @@ class TestTLV {
         // but TLV.of(Tag, byte[]) makes value != null.
         // TLV.build(Tag) makes value == null.
 
-        final var t1 = TLV.of("9F01", hex("01")); // value != null
-        final var t2 = TLV.build("9F01"); // value == null
+        final var t1 = TLV.of(0x9F01, hex("01")); // value != null
+        final var t2 = TLV.build(0x9F01); // value == null
 
         // This hits Arrays.equals(value, other.value) -> Arrays.equals(byte[], null) ->
         // false
@@ -450,27 +456,27 @@ class TestTLV {
     @Test
     public void testEqualsSystematic() {
         // A && B && C && D
-        final var t1 = TLV.of("9F01", hex("01"));
+        final var t1 = TLV.of(0x9F01, hex("01"));
 
         // A false: instanceof
         Assert.assertNotEquals(t1, "string");
 
         // A true, B false: tag mismatch
-        final var t2 = TLV.of("9F02", hex("01"));
+        final var t2 = TLV.of(0x9F02, hex("01"));
         Assert.assertNotEquals(t1, t2);
 
         // A true, B true, C false: value mismatch
-        final var t3 = TLV.of("9F01", hex("02"));
+        final var t3 = TLV.of(0x9F01, hex("02"));
         Assert.assertNotEquals(t1, t3);
 
         // A true, B true, C true, D false: children mismatch
         // Need constructed TLVs for this.
-        final var p1 = TLV.build("E0").add(t1);
-        final var p2 = TLV.build("E0").add(t3); // t3 has diff value, so child is diff
+        final var p1 = TLV.build(0xE0).add(t1);
+        final var p2 = TLV.build(0xE0).add(t3); // t3 has diff value, so child is diff
         Assert.assertNotEquals(p1, p2);
 
         // All true
-        final var p3 = TLV.build("E0").add(t1);
+        final var p3 = TLV.build(0xE0).add(t1);
         Assert.assertEquals(p1, p3);
     }
 
@@ -500,7 +506,7 @@ class TestTLV {
 
     @Test
     public void testEqualsObject() {
-        final var t = TLV.build("9F01");
+        final var t = TLV.build(0x9F01);
         Assert.assertNotEquals(t, new Object());
     }
 }

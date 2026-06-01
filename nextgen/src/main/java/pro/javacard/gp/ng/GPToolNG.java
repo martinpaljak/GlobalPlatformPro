@@ -17,15 +17,23 @@ import joptsimple.OptionSet;
 import joptsimple.OptionSpec;
 import pro.javacard.capfile.AID;
 import pro.javacard.capfile.CAPFile;
+import pro.javacard.capfile.WellKnownAID;
 import pro.javacard.gp.*;
 import pro.javacard.gp.GPSession.APDUMode;
 import pro.javacard.gp.emv.DGIData;
 import pro.javacard.tlv.TLV;
 import pro.javacard.tlv.TLVParseException;
+import pro.javacard.tlv.TLVs;
+import pro.javacard.tlv.TPath;
 import pro.javacard.tlv.Tag;
+import static pro.javacard.tlv.TLV.ba;
+import static apdu4j.core.HexUtils.bin2hex;
 import javax.crypto.SecretKey;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -35,12 +43,24 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-
 // Does the CLI parameter parsing and associated execution
 public final class GPToolNG extends GPCommandLineInterface implements ToolExtension {
     // NOTE: can't have a static logger here, as it is set up based on args and env. This class should only use stdout/stderr.
 
     private static boolean isTrace = false;
+    private static boolean isVerbose = false;
+
+    // Diagnostic line, only shown with -v; prefixed with # like the rest of the meta output
+    private static void verbose(String s) {
+        if (isVerbose) {
+            System.out.println("# " + s);
+        }
+    }
+
+    // Diagnostics that must surface without -v (e.g. amending the caller's --params) go to stderr.
+    private static void warn(String s) {
+        System.err.println("# " + s);
+    }
 
     static final String ENV_GP_AID = "GP_AID";
     static final String ENV_GP_READER = "GP_READER";
@@ -89,6 +109,7 @@ public final class GPToolNG extends GPCommandLineInterface implements ToolExtens
         System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "warn");
 
         if (args.has(OPT_VERBOSE)) {
+            isVerbose = true;
             System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "info");
         }
         if (args.has(OPT_DEBUG) && args.has(OPT_VERBOSE)) {
@@ -180,7 +201,7 @@ public final class GPToolNG extends GPCommandLineInterface implements ToolExtens
                 if (args.has(OPT_SAD)) {
                     throw new IllegalArgumentException("no keys given");
                 } else {
-                    System.err.println("# Warning: no keys given, defaulting to " + HexUtils.bin2hex(PlaintextCardKeys.defaultKeyBytes()));
+                    System.err.println("# Warning: no keys given, defaulting to " + bin2hex(PlaintextCardKeys.defaultKeyBytes()));
                 }
             }
             ngKeys = cliKeys.or(() -> envKeys).orElse(PlaintextCardKeys.defaultKey());
@@ -272,6 +293,27 @@ public final class GPToolNG extends GPCommandLineInterface implements ToolExtens
             }
         }
 
+        // Contactless Registry Service: plaintext commands against the CRS application
+        if (args.has(OPT_CRS_LIST) || args.has(OPT_CRS_INFO) || args.has(OPT_CRS_ACTIVATE) || args.has(OPT_CRS_DEACTIVATE)) {
+            preAuth.add(GlobalPlatformCookbook.select_aid(GlobalPlatformCookbook.CRS_AID));
+            if (args.has(OPT_CRS_LIST)) {
+                // The filter argument is optional: no value means list everything
+                byte[] prefix = args.has(OPT_CRS_LIST) ? args.valueOf(OPT_CRS_LIST).getBytes() : new byte[0];
+                preAuth.add(GlobalPlatformCookbook.crs_get_status(prefix, args.has(OPT_VERBOSE)).consume(GPToolNG::print_crs_status));
+            }
+            if (args.has(OPT_CRS_INFO)) {
+                preAuth.add(GlobalPlatformCookbook.crs_get_data().consume(GPToolNG::print_crs_info));
+            }
+            if (!args.valuesOf(OPT_CRS_DEACTIVATE).isEmpty()) {
+                var requested = args.valuesOf(OPT_CRS_DEACTIVATE);
+                preAuth.add(GlobalPlatformCookbook.crs_set_status(requested, false).consume(affected -> crs_set_result(requested, false, affected)));
+            }
+            if (!args.valuesOf(OPT_CRS_ACTIVATE).isEmpty()) {
+                var requested = args.valuesOf(OPT_CRS_ACTIVATE);
+                preAuth.add(GlobalPlatformCookbook.crs_set_status(requested, true).consume(affected -> crs_set_result(requested, true, affected)));
+            }
+        }
+
         // Cleanup: delete content and keys
         if (args.has(OPT_DELETE)) {
             for (AID a : args.valuesOf(OPT_DELETE)) {
@@ -335,7 +377,7 @@ public final class GPToolNG extends GPCommandLineInterface implements ToolExtens
 
             // Install
             var privs = getPrivilegesNG(args);
-            var params = args.has(OPT_PARAMS) ? args.valueOf(OPT_PARAMS).value() : new byte[0];
+            var params = install_params(args);
             postAuth.add(GlobalPlatformCookbook.install_and_make_selectable(capfile.getPackageAID(), appaid, instanceaid, privs, params));
         }
 
@@ -347,14 +389,14 @@ public final class GPToolNG extends GPCommandLineInterface implements ToolExtens
                 var applet = optional(args, OPT_APPLET).orElse(installCap.getAppletAIDs().get(0));
                 var instance = optional(args, OPT_CREATE).orElse(applet);
                 var privs = getPrivilegesNG(args);
-                var params = args.has(OPT_PARAMS) ? args.valueOf(OPT_PARAMS).value() : new byte[0];
+                var params = install_params(args);
                 postAuth.add(GlobalPlatformCookbook.install_and_make_selectable(installCap.getPackageAID(), applet, instance, privs, params));
             } else {
                 var instance = AID.fromString(pathOrAid);
                 var applet = optional(args, OPT_APPLET).orElse(instance);
                 var pkg = optional(args, OPT_PACKAGE).orElseThrow(() -> new IllegalArgumentException("Specify --package when --install-only is an AID"));
                 var privs = getPrivilegesNG(args);
-                var params = args.has(OPT_PARAMS) ? args.valueOf(OPT_PARAMS).value() : new byte[0];
+                var params = install_params(args);
                 postAuth.add(GlobalPlatformCookbook.install_and_make_selectable(pkg, applet, instance, privs, params));
             }
         }
@@ -377,8 +419,15 @@ public final class GPToolNG extends GPCommandLineInterface implements ToolExtens
             }
             var instanceAID = args.valueOf(OPT_CREATE);
             var privs = getPrivilegesNG(args);
-            var params = optional(args, OPT_PARAMS).map(HexBytes::value).orElse(new byte[0]);
+            var params = install_params(args);
             postAuth.add(GlobalPlatformCookbook.install_and_make_selectable(packageAID, appletAID, instanceAID, privs, params));
+        }
+
+        if (args.has(OPT_UPDATE)) {
+            var instanceAID = args.valueOf(OPT_UPDATE);
+            var privs = getPrivilegesNG(args);
+            var params = install_params(args);
+            postAuth.add(GlobalPlatformCookbook.install_for_registry_update(instanceAID, privs, params));
         }
 
         if (args.has(OPT_DOMAIN)) {
@@ -395,13 +444,9 @@ public final class GPToolNG extends GPCommandLineInterface implements ToolExtens
             var privs = getPrivilegesNG(args);
             privs.add(GPRegistryEntryNG.Privilege.SecurityDomain);
 
-            var baseParams = optional(args, OPT_PARAMS).map(HexBytes::value).orElse(new byte[0]);
-            var allowTo = args.has(OPT_ALLOW_TO);
-            var allowFrom = args.has(OPT_ALLOW_FROM);
-            var appendScp = !args.has(OPT_SAD);
             postAuth.add(Cookbook.deferred(prefs -> {
-                var scpVersion = appendScp ? prefs.valueOf(GlobalPlatformCookbook.SCP_VERSION).orElse(null) : null;
-                var params = domain_install_params(baseParams, scpVersion, allowTo, allowFrom);
+                var scpVersion = args.has(OPT_SAD) ? null : prefs.valueOf(GlobalPlatformCookbook.SCP_VERSION).orElse(null);
+                var params = domain_install_params(args, scpVersion);
                 return GlobalPlatformCookbook.install_and_make_selectable(packageAID, appletAID, instanceAID, privs, params);
             }));
         }
@@ -550,11 +595,18 @@ public final class GPToolNG extends GPCommandLineInterface implements ToolExtens
             postAuth.add(GlobalPlatformCookbook.get_registry().consume(reg -> printRegistry(reg, args.has(OPT_VERBOSE))));
         }
 
+        // Authentication targets the currently selected application. Legacy auto-selected the ISD
+        // first; mirror that when no explicit target was chosen, so management commands also work on
+        // cards where the ISD is not the application selected by default after reset.
+        if (!postAuth.isEmpty() && !args.has(OPT_CONNECT) && !env.containsKey(ENV_GP_AID)) {
+            preAuth.add(GlobalPlatformCookbook.select_default());
+        }
+
         return new RecipePlan(List.copyOf(preAuth), List.copyOf(postAuth));
     }
 
     // Build reader selector from CLI options and environment
-    static ReaderSelector buildReaderSelector(OptionSet args, Map<String, String> env) {
+    static ReaderSelector buildReaderSelector(OptionSet args, Map<String, String> env, OutputStream dump) {
         var selector = Readers.fromPreferences(Preferences.fromEnvironment(), READER_PREF, READER_IGNORE_PREF);
 
         if (args.hasArgument(OPT_READER)) {
@@ -569,7 +621,22 @@ public final class GPToolNG extends GPCommandLineInterface implements ToolExtens
         if (args.has(OPT_DEBUG)) {
             selector = selector.log(System.out);
         }
+        if (dump != null) {
+            selector = selector.dump(dump);
+        }
         return selector;
+    }
+
+    // Open the --dump target, or null when not dumping; caller closes it
+    private static OutputStream openDumpStream(OptionSet args) {
+        if (!args.has(OPT_DUMP)) {
+            return null;
+        }
+        try {
+            return new FileOutputStream(args.valueOf(OPT_DUMP));
+        } catch (FileNotFoundException e) {
+            throw new IllegalArgumentException("Cannot open dump file: " + e.getMessage());
+        }
     }
 
     // Execute pre-auth and post-auth recipes against a card
@@ -621,8 +688,10 @@ public final class GPToolNG extends GPCommandLineInterface implements ToolExtens
             var cliPrefs = buildCliPrefs(args);
             var plan = buildRecipes(args, env, keys, cap, cliPrefs);
 
-            var selector = buildReaderSelector(args, env);
-            ret = selector.open(stack -> executeRecipes(stack, plan, keys, mode, cliPrefs));
+            try (var dump = openDumpStream(args)) {
+                var selector = buildReaderSelector(args, env, dump);
+                ret = selector.open(stack -> executeRecipes(stack, plan, keys, mode, cliPrefs));
+            }
         } catch (NoMatchingReaderException e) {
             System.err.println("Specify reader with -r/$GP_READER; available readers:");
             e.getAvailable().forEach(r -> System.err.printf("- %s%n", r));
@@ -680,26 +749,144 @@ public final class GPToolNG extends GPCommandLineInterface implements ToolExtens
         }
     }
 
-    // Build domain install params: append SCP version, allow-to, allow-from tags if not already present
-    private static byte[] domain_install_params(byte[] baseParams, GPSecureChannelVersion scpVersion,
-            boolean allowTo, boolean allowFrom) {
-        List<TLV> parsed;
+    // Extradition rule value meaning "any security domain" (82 = allow-to, 87 = allow-from)
+    private static final byte[] EXTRADITE_ALL = ba(0x20, 0x20);
+
+    // Merge the allow-all extradition bits into an existing value, or supply them when absent.
+    static byte[] extradite_all(byte[] current, String tag, String opt) {
+        if (current == null) {
+            warn("Added " + tag + " (" + opt + ") as " + bin2hex(EXTRADITE_ALL));
+            return EXTRADITE_ALL.clone();
+        }
+        final var merged = new byte[]{(byte) (current[0] | EXTRADITE_ALL[0]), (byte) (current[1] | EXTRADITE_ALL[1])};
+        warn("Merged " + opt + " into " + tag + ": " + bin2hex(current) + " -> " + bin2hex(merged));
+        return merged;
+    }
+
+    // Build domain install params from --params: append SCP version, allow-to (82), allow-from (87) unless present
+    static byte[] domain_install_params(OptionSet args, GPSecureChannelVersion scpVersion) {
+        var baseParams = optional(args, OPT_PARAMS).map(HexBytes::value).orElse(ba());
+        var allowTo = args.has(OPT_ALLOW_TO);
+        var allowFrom = args.has(OPT_ALLOW_FROM);
+        TLVs params;
         try {
-            parsed = TLV.parse(baseParams);
+            params = TLVs.parse(baseParams);
         } catch (TLVParseException e) {
+            // Cannot amend what we cannot parse: fail if extradition was requested, else pass through
+            if (allowTo || allowFrom) {
+                throw new IllegalArgumentException("Could not parse parameters to apply extradition rules: " + bin2hex(baseParams));
+            }
             return baseParams;
         }
-        var p = baseParams;
-        if (scpVersion != null && TLV.find(parsed, Tag.ber(0x81)).isEmpty()) {
-            p = GPUtils.concatenate(p, TLV.of(Tag.ber(0x81), new byte[]{scpVersion.scp.getValue(), (byte) scpVersion.i}).encode());
+        // compute reads each tag's current value: SCP (81) keeps a user-supplied value, extradition
+        // (82/87) merges the allow-all bits into one. An unchanged tree returns the original bytes
+        var amended = params;
+        if (scpVersion != null) {
+            final var scp = ba(scpVersion.scp.getValue(), scpVersion.i);
+            amended = amended.compute(TPath.of(0x81), v -> {
+                if (v != null) {
+                    warn("Kept 0x81 (secure channel): " + bin2hex(v));
+                    return v;
+                }
+                warn("Added 0x81 (secure channel): " + bin2hex(scp));
+                return scp;
+            });
         }
-        if (allowTo && TLV.find(parsed, Tag.ber(0x82)).isEmpty()) {
-            p = GPUtils.concatenate(p, TLV.of(Tag.ber(0x82), new byte[]{0x20, 0x20}).encode());
+        if (allowTo) {
+            amended = amended.compute(TPath.of(0x82), v -> extradite_all(v, "0x82", "--allow-to"));
         }
-        if (allowFrom && TLV.find(parsed, Tag.ber(0x87)).isEmpty()) {
-            p = GPUtils.concatenate(p, TLV.of(Tag.ber(0x87), new byte[]{0x20, 0x20}).encode());
+        if (allowFrom) {
+            amended = amended.compute(TPath.of(0x87), v -> extradite_all(v, "0x87", "--allow-from"));
         }
-        return p;
+        return amended == params ? baseParams : amended.encode();
+    }
+
+    // Install parameters from --params plus any contactless (--cl-*) options. This is the
+    // authoritative creator of the install-parameters field: it emits empty Application Specific
+    // Parameters (C9 00) when no --params is given, wraps an unparseable --params value as C9, and
+    // guarantees a top-level C9 sibling beside any Amendment C contactless EF (System Specific
+    // Parameters) template it creates or amends. With --cl-* options the EF is built from scratch
+    // or amended in place, the command line taking precedence over values already in --params.
+    static byte[] install_params(OptionSet args) {
+        var base = optional(args, OPT_PARAMS).map(HexBytes::value).orElse(ba());
+
+        var any = args.has(OPT_CL_ACTIVATED) || args.has(OPT_CL_NOTIFY) || args.has(OPT_CL_NOTIFY_REMOVE)
+                || args.has(OPT_CL_FAMILY) || args.has(OPT_CL_DISPLAY_OPTIONAL)
+                || args.has(OPT_CL_CONTACT) || args.has(OPT_CL_CONTACTLESS);
+        if (!any) {
+            // No --params means empty application parameters; otherwise the user supplied the full set
+            return base.length == 0 ? TLV.of(0xC9, ba()).encode() : base;
+        }
+
+        // Normalise base into a TLV list so the EF template can live as a top-level sibling of C9
+        TLVs params;
+        if (base.length == 0) {
+            params = TLVs.of(TLV.of(0xC9, ba()));
+        } else {
+            try {
+                params = TLVs.parse(base);
+                verbose("Install parameters parsed as " + params.size() + " TLV(s)");
+            } catch (TLVParseException e) {
+                params = TLVs.of(TLV.of(Tag.ber(0xC9), base));
+                verbose("Install parameters are not TLV; treating as C9 application parameters");
+            }
+        }
+
+        // Amend an existing contactless template, otherwise build one from scratch
+        var existing = params.find(0xEF);
+        var ef = existing.map(TLV::children).orElseGet(TLVs::of);
+        if (existing.isPresent()) {
+            verbose("Existing EF contactless template found; amending with command line values");
+        }
+
+        // A0 Contactless Protocol Parameters (Table 11-3), A1 User Interaction Parameters
+        if (args.has(OPT_CL_ACTIVATED)) {
+            ef = ef.set(0xA0, 0x81, ba(0x01));
+        }
+        // Override the interface mask only when named explicitly; otherwise default a fresh
+        // template to both interfaces without clobbering a mask already carried by --params
+        if (args.has(OPT_CL_CONTACT) || args.has(OPT_CL_CONTACTLESS) || ef.find(0xA0, 0xA5).isEmpty()) {
+            ef = ef.set(0xA0, 0xA5, 0x82, ba(interface_mask(args.has(OPT_CL_CONTACT), args.has(OPT_CL_CONTACTLESS))));
+        }
+        for (var aid : args.valuesOf(OPT_CL_NOTIFY)) {
+            ef = ef.add(0xA1, 0xA3, TLV.of(Tag.ber(0x4F), aid.getBytes()));
+        }
+        for (var aid : args.valuesOf(OPT_CL_NOTIFY_REMOVE)) {
+            ef = ef.add(0xA1, 0xA4, TLV.of(Tag.ber(0x4F), aid.getBytes()));
+        }
+        if (args.has(OPT_CL_FAMILY)) {
+            ef = ef.set(0xA1, 0x87, ba(args.valueOf(OPT_CL_FAMILY)));
+        }
+        if (args.has(OPT_CL_DISPLAY_OPTIONAL)) {
+            ef = ef.set(0xA1, 0x88, ba(0x01));
+        }
+
+        // Assemble the parameters: every existing tag except EF, an empty C9 sibling if none yet,
+        // then the created or amended contactless template last.
+        var rebuilt = new ArrayList<>(params.delete(0xEF));
+        if (params.find(0xC9).isEmpty()) {
+            rebuilt.add(0, TLV.of(0xC9, ba()));
+        }
+        rebuilt.add(TLV.of(Tag.ber(0xEF), ef));
+        var result = TLVs.of(rebuilt).encode();
+
+        if (base.length > 0) {
+            warn("Adjusted install parameters for contactless options");
+            if (isVerbose) {
+                verbose("Install parameters after:");
+                TLVs.visualize(result).forEach(l -> verbose("  " + l));
+            }
+        }
+        return result;
+    }
+
+    // Communication Interface Identifier bitmask (GPC Amendment C Table 5-2): b8 contact, b7 contactless.
+    // Neither flag means both interfaces; specifying both flags is equivalent to specifying neither.
+    private static int interface_mask(boolean contact, boolean contactless) {
+        if (contact == contactless) {
+            return 0xC0;
+        }
+        return contact ? 0x80 : 0x40;
     }
 
     private static byte[] hexOrDefault(String v) {
@@ -779,35 +966,100 @@ public final class GPToolNG extends GPCommandLineInterface implements ToolExtens
     // === Recipe output helpers ===
 
     private static void printDiscovery(Preferences discovered) {
-        discovered.valueOf(GlobalPlatformCookbook.ISD_AID).ifPresent(aid -> System.out.println("ISD: " + HexUtils.bin2hex(aid.getBytes())));
+        discovered.valueOf(GlobalPlatformCookbook.ISD_AID).ifPresent(aid -> System.out.println("ISD: " + bin2hex(aid.getBytes())));
         discovered.valueOf(GlobalPlatformCookbook.GP_VERSION).ifPresent(v -> System.out.println("GP version: " + v));
         discovered.valueOf(GlobalPlatformCookbook.SCP_VERSION).ifPresent(v -> System.out.println("SCP version: " + v));
         discovered.valueOf(GlobalPlatformCookbook.CPLC).ifPresent(cplc -> System.out.println(CPLC.fromBytes(cplc).toPrettyString()));
-        discovered.valueOf(GlobalPlatformCookbook.IIN).ifPresent(v -> System.out.println("IIN: " + HexUtils.bin2hex(v)));
-        discovered.valueOf(GlobalPlatformCookbook.CIN).ifPresent(v -> System.out.println("CIN: " + HexUtils.bin2hex(v)));
-        discovered.valueOf(GlobalPlatformCookbook.KDD).ifPresent(v -> System.out.println("KDD: " + HexUtils.bin2hex(v)));
-        discovered.valueOf(GlobalPlatformCookbook.SSC).ifPresent(v -> System.out.println("SSC: " + HexUtils.bin2hex(v)));
-        discovered.valueOf(GlobalPlatformCookbook.CARD_DATA).ifPresent(v -> System.out.println("Card Data: " + HexUtils.bin2hex(v)));
-        discovered.valueOf(GlobalPlatformCookbook.CARD_CAPABILITIES).ifPresent(v -> System.out.println("Card Capabilities: " + HexUtils.bin2hex(v)));
-        discovered.valueOf(GlobalPlatformCookbook.KEY_INFO).ifPresent(v -> System.out.println("Key Info: " + HexUtils.bin2hex(v)));
+        discovered.valueOf(GlobalPlatformCookbook.IIN).ifPresent(v -> System.out.println("IIN: " + bin2hex(v)));
+        discovered.valueOf(GlobalPlatformCookbook.CIN).ifPresent(v -> System.out.println("CIN: " + bin2hex(v)));
+        discovered.valueOf(GlobalPlatformCookbook.KDD).ifPresent(v -> System.out.println("KDD: " + bin2hex(v)));
+        discovered.valueOf(GlobalPlatformCookbook.SSC).ifPresent(v -> System.out.println("SSC: " + bin2hex(v)));
+        discovered.valueOf(GlobalPlatformCookbook.CARD_DATA).ifPresent(v -> System.out.println("Card Data: " + bin2hex(v)));
+        discovered.valueOf(GlobalPlatformCookbook.CARD_CAPABILITIES).ifPresent(v -> System.out.println("Card Capabilities: " + bin2hex(v)));
+        discovered.valueOf(GlobalPlatformCookbook.KEY_INFO).ifPresent(v -> System.out.println("Key Info: " + bin2hex(v)));
+    }
+
+    // Describe a contactless state byte (9F70 second byte)
+    private static String crs_state_word(int clState) {
+        return switch (clState) {
+            case GlobalPlatformCookbook.CRSEntry.ACTIVATED -> "ACTIVATED";
+            case GlobalPlatformCookbook.CRSEntry.DEACTIVATED -> "DEACTIVATED";
+            case GlobalPlatformCookbook.CRSEntry.NON_ACTIVATABLE -> "NON_ACTIVATABLE";
+            default -> "0x%02X".formatted(clState);
+        };
+    }
+
+    private static void print_crs_status(List<GlobalPlatformCookbook.CRSEntry> entries) {
+        if (entries.isEmpty()) {
+            verbose("No contactless applications");
+            return;
+        }
+        for (var e : entries) {
+            System.out.printf("%s %s (lifecycle 0x%02X)%n", bin2hex(e.aid().getBytes()), crs_state_word(e.clState()), e.lifecycle());
+            if (!e.crelList().isEmpty()) {
+                System.out.println("  CREL: " + e.crelList().stream().map(a -> bin2hex(a.getBytes())).collect(Collectors.joining(", ")));
+            }
+        }
+    }
+
+    private static void print_crs_info(GlobalPlatformCookbook.CRSInfo info) {
+        // Version is the two-byte 9F08 value, shown as major.minor
+        System.out.printf("CRS version: %d.%d%n", (info.version() >> 8) & 0xFF, info.version() & 0xFF);
+        System.out.println("Update counter: " + info.counter());
+    }
+
+    // Silent by default. Verbose reports each AID that actually changed state; a conflict is an error.
+    private static void crs_set_result(List<AID> requested, boolean activate, List<AID> affected) {
+        var word = activate ? "ACTIVATED" : "DEACTIVATED";
+        for (var aid : requested) {
+            if (!affected.contains(aid)) {
+                verbose(bin2hex(aid.getBytes()) + " -> " + word);
+            }
+        }
+        if (!affected.isEmpty()) {
+            throw new GPException("SET STATUS conflict for: " + affected.stream().map(a -> bin2hex(a.getBytes())).collect(Collectors.joining(", ")));
+        }
+    }
+
+    // Implicit selection channels, formatted like the legacy listing: "Contactless(0), Contact(1)"
+    private static Optional<String> implicitSelection(GPRegistryEntryNG e) {
+        var parts = new ArrayList<String>();
+        if (!e.implicitContactless().isEmpty()) {
+            parts.add("Contactless(" + e.implicitContactless().stream().sorted().map(Object::toString).collect(Collectors.joining(",")) + ")");
+        }
+        if (!e.implicitContact().isEmpty()) {
+            parts.add("Contact(" + e.implicitContact().stream().sorted().map(Object::toString).collect(Collectors.joining(",")) + ")");
+        }
+        return parts.isEmpty() ? Optional.empty() : Optional.of(String.join(", ", parts));
     }
 
     private static void printRegistry(GPRegistryNG registry, boolean verbose) {
         var tab = "     ";
         for (var e : registry) {
-            System.out.println(e.kind().toShortString() + ": " + HexUtils.bin2hex(e.aid().getBytes()) + " (" + e.getLifeCycleString() + ")");
+            System.out.print(e.kind().toShortString() + ": " + bin2hex(e.aid().getBytes()) + " (" + e.getLifeCycleString() + ")");
+            // Readable AID annotation (well-known name or printable bytes), as in the legacy listing
+            if (verbose && e.kind() != GPRegistryEntryNG.Kind.IssuerSecurityDomain) {
+                System.out.println(" (" + WellKnownAID.getName(e.aid()).orElse(GPUtils.bin2readable(e.aid().getBytes())) + ")");
+            } else {
+                System.out.println();
+            }
 
             if (verbose) {
                 e.getDomain().ifPresent(d -> System.out.println(tab + "Parent:   " + d));
                 if (e.isPackage()) {
                     System.out.println(tab + "Version:  " + e.getVersionString());
                     for (var m : e.modules()) {
-                        System.out.println(tab + "Applet:   " + HexUtils.bin2hex(m.getBytes()));
+                        System.out.println(tab + "Applet:   " + bin2hex(m.getBytes()));
                     }
                 } else {
                     e.getSource().ifPresent(s -> System.out.println(tab + "From:     " + s));
+                    implicitSelection(e).ifPresent(s -> System.out.println(tab + "Selected: " + s));
                     if (!e.privileges().isEmpty()) {
                         System.out.println(tab + "Privs:    " + e.privileges().stream().map(Enum::toString).collect(Collectors.joining(", ")));
+                    }
+                    // Contactless activation state, if the card reported it (9F70 second byte)
+                    if (e.state() != null) {
+                        System.out.println(tab + "State:    " + crs_state_word(e.state()));
                     }
                 }
             }

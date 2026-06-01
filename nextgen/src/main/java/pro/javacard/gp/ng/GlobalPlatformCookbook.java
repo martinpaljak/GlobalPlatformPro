@@ -20,8 +20,11 @@ import pro.javacard.gp.GPSession;
 import pro.javacard.gp.GPUtils;
 import pro.javacard.gp.ReceiptVerifier;
 import pro.javacard.gp.data.BitField;
+import pro.javacard.tlv.LV;
 import pro.javacard.tlv.TLV;
 import pro.javacard.tlv.TLVParseException;
+import pro.javacard.tlv.TLVs;
+import pro.javacard.tlv.TPath;
 import pro.javacard.tlv.Tag;
 
 import pro.javacard.capfile.CAPFile;
@@ -43,6 +46,7 @@ import java.util.Set;
 import java.util.function.Function;
 
 import static apdu4j.apdulette.Cookbook.*;
+import static pro.javacard.tlv.TLV.ba;
 
 // Composable GP card interaction recipes, executed by a Chef.
 // IMPORTANT: this class MUST remain pure - only data and Recipe composition.
@@ -50,6 +54,12 @@ import static apdu4j.apdulette.Cookbook.*;
 // All recipes are pure descriptions of what to do; the caller's Chef executes them.
 public final class GlobalPlatformCookbook {
     private GlobalPlatformCookbook() {}
+
+    // The common INSTALL/extradite shape: five length-value elements (the install
+    // token is appended later by gp_dm).
+    static byte[] lv(final byte[] a, final byte[] b, final byte[] c, final byte[] d, final byte[] e) {
+        return LV.encode(a, b, c, d, e);
+    }
 
     // GP constants
     static final int CLA_GP = 0x80;
@@ -67,6 +77,9 @@ public final class GlobalPlatformCookbook {
     // Well-known AIDs
     static final byte[] DEFAULT_ISD = HexUtils.hex2bin("A000000151000000");
     static final byte[] JCOP_IDENTIFY = HexUtils.hex2bin("A000000167413000FF");
+
+    // Contactless Registry Service application (GPC Amendment C)
+    static final byte[] CRS_AID = HexUtils.hex2bin("A00000015143525300");
 
     // GP CommandAPDU: CLA=80, Le=256
     static CommandAPDU cmd(final int ins, final int p1, final int p2) {
@@ -94,6 +107,12 @@ public final class GlobalPlatformCookbook {
             var tok = prefs.valueOf(DM_TOKENIZER);
             if (tok.isPresent()) {
                 apdu = tok.get().tokenize(apdu);
+            } else if (ins == INS_INSTALL) {
+                // Every INSTALL data field ends with a mandatory token-length field
+                // (GPC 2.4 Tables 11-42, 11-43, 11-44, 11-46). With no DM token the
+                // length is 00 - mirroring NULLTokenizer. DELETE (E4) carries its
+                // token under tag 9E and gets no trailing 00, so it is left untouched.
+                apdu = cmd(ins, p1, p2, GPUtils.concatenate(data, ba(0x00)));
             }
             var recipe = send(apdu);
             var verifier = prefs.valueOf(RECEIPT_VERIFIER);
@@ -290,34 +309,30 @@ public final class GlobalPlatformCookbook {
         // TLVParseException propagates - broken FCI after successful SELECT is a real error
         final var tlvs = TLV.parse(data);
 
-        final var fciOpt = TLV.find(tlvs, Tag.ber(0x6F));
-        if (fciOpt.isEmpty()) {
+        final var fci = tlvs.find(0x6F);
+        if (fci.isEmpty()) {
             return prefs;
         }
-        final var fci = fciOpt.get();
+        final var children = fci.get().children();
 
-        // AID from tag 84
-        final var aidTag = fci.find(Tag.ber(0x84));
-        if (aidTag != null && aidTag.value().length > 0) {
-            prefs = prefs.with(ISD_AID, new AID(aidTag.value()));
+        // AID from tag 84 (direct child of 6F)
+        final var aidTag = TPath.find(children, 0x84);
+        if (aidTag.isPresent() && aidTag.get().value().length > 0) {
+            prefs = prefs.with(ISD_AID, new AID(aidTag.get().value()));
         }
 
-        final var prop = fci.find(Tag.ber(0xA5));
-        if (prop == null) {
-            return prefs;
+        // Card Recognition Data (6F -> A5 -> 73)
+        final var isdd = TPath.find(children, 0xA5, 0x73);
+        if (isdd.isPresent()) {
+            prefs = parse_card_recognition_data(prefs, isdd.get());
         }
 
-        // Card Recognition Data (73)
-        final var isdd = prop.find(Tag.ber(0x73));
-        if (isdd != null) {
-            prefs = parse_card_recognition_data(prefs, isdd);
-        }
-
-        // Block size from tag 9F65
-        final var maxbs = prop.find(Tag.ber(0x9F, 0x65));
-        if (maxbs != null && maxbs.value().length > 0 && maxbs.value().length <= 2) {
+        // Block size from tag 9F65 (6F -> A5 -> 9F65)
+        final var maxbs = TPath.find(children, 0xA5, 0x9F65);
+        if (maxbs.isPresent() && maxbs.get().value().length > 0 && maxbs.get().value().length <= 2) {
+            final var bsv = maxbs.get().value();
             var bs = 0;
-            for (byte b : maxbs.value()) {
+            for (byte b : bsv) {
                 bs = (bs << 8) | (b & 0xFF);
             }
             if (bs > 0) {
@@ -330,21 +345,19 @@ public final class GlobalPlatformCookbook {
 
     // Parse Card Recognition Data (GPC 2.3.1 H.2, tag 73)
     public static Preferences parse_card_recognition_data(Preferences prefs, TLV isdd) {
+        final var children = isdd.children();
+
         // GP version from tag 60 -> 06
-        final var verTag = isdd.find(Tag.ber(0x60));
-        if (verTag != null) {
-            final var verOid = verTag.find(Tag.ber(0x06));
-            if (verOid != null) {
-                prefs = prefs.with(GP_VERSION, GPData.oid2version(verOid.value()));
-            }
+        final var verOid = TPath.find(children, 0x60, 0x06);
+        if (verOid.isPresent()) {
+            prefs = prefs.with(GP_VERSION, GPData.oid2version(verOid.get().value()));
         }
 
         // SCP version from tag 64 -> 06
-        final var scpTag = isdd.find(Tag.ber(0x64));
-        if (scpTag != null) {
-            final var scpOid = scpTag.find(Tag.ber(0x06));
-            if (scpOid != null && scpOid.value().length == 9) {
-                final var d = scpOid.value();
+        final var scpOid = TPath.find(children, 0x64, 0x06);
+        if (scpOid.isPresent()) {
+            final var d = scpOid.get().value();
+            if (d.length == 9) {
                 prefs = prefs.with(SCP_VERSION, GPSecureChannelVersion.valueOf(d[7] & 0xFF, d[8] & 0xFF));
             }
         }
@@ -380,7 +393,7 @@ public final class GlobalPlatformCookbook {
 
     // === GET STATUS recipes ===
 
-    static final byte[] GET_STATUS_FILTER = new byte[]{0x4F, 0x00};
+    static final byte[] GET_STATUS_FILTER = ba(0x4F, 0x00);
 
     // GET STATUS (GPC 2.3.1 11.4) with 6310 continuation
     // Reads STATUS_USE_TAGS at prepare-time: P2=0x02 (TLV, Table 11-39) or P2=0x00 (legacy)
@@ -631,14 +644,14 @@ public final class GlobalPlatformCookbook {
         if (keyVersion == null && keyId == null) {
             throw new IllegalArgumentException("Must specify either key version or key ID");
         }
-        final var bo = new ByteArrayOutputStream();
+        final var fields = new ArrayList<TLV>();
         if (keyId != null) {
-            bo.writeBytes(TLV.of(Tag.ber(0xD0), new byte[]{keyId.byteValue()}).encode());
+            fields.add(TLV.of(0xD0, ba(keyId)));
         }
         if (keyVersion != null) {
-            bo.writeBytes(TLV.of(Tag.ber(0xD2), new byte[]{keyVersion.byteValue()}).encode());
+            fields.add(TLV.of(0xD2, ba(keyVersion)));
         }
-        return gp(INS_DELETE, 0x00, 0x00, bo.toByteArray());
+        return gp(INS_DELETE, 0x00, 0x00, TLV.encode(fields));
     }
 
     // === Content management: LOAD (GPC 2.3.1 11.6) ===
@@ -646,16 +659,8 @@ public final class GlobalPlatformCookbook {
     // INSTALL [for load] (GPC 2.3.1 11.5.2.3.1, Table 11-45)
     public static Recipe<ResponseAPDU> install_for_load(final AID packageAID, final AID targetDomain,
             final byte[] hash, final byte[] loadParams) {
-        final var bo = new ByteArrayOutputStream();
-        bo.write(packageAID.getLength());
-        bo.writeBytes(packageAID.getBytes());
-        bo.write(targetDomain.getLength());
-        bo.writeBytes(targetDomain.getBytes());
-        bo.write(hash.length);
-        bo.writeBytes(hash);
-        bo.writeBytes(GPUtils.encodeLength(loadParams.length));
-        bo.writeBytes(loadParams);
-        return gp_dm(INS_INSTALL, 0x02, 0x00, bo.toByteArray(), ReceiptVerifier.load(packageAID, targetDomain));
+        final var data = LV.encode(packageAID.getBytes(), targetDomain.getBytes(), hash, loadParams);
+        return gp_dm(INS_INSTALL, 0x02, 0x00, data, ReceiptVerifier.load(packageAID, targetDomain));
     }
 
     // LOAD (GPC 2.3.1 11.6.2.3, Table 11-58) - chunked by BLOCK_SIZE preference
@@ -682,12 +687,16 @@ public final class GlobalPlatformCookbook {
     }
 
     // Composed: INSTALL [for load] then LOAD for a CAPFile
-    // Reads LOAD_HASH preference for LFDBH algorithm
     // dapBlock: pre-built DAP block (null for none)
     public static Recipe<ResponseAPDU> load_cap(final CAPFile cap, final AID targetDomain, final byte[] dapBlock) {
         return deferred(prefs -> {
-            final var hash = cap.getLoadFileDataHash(prefs.get(LOAD_HASH));
-            return install_for_load(cap.getPackageAID(), targetDomain, hash, new byte[0])
+            // The Load File Data Block Hash is only required when something signs over it:
+            // a DAP signature on the load file, or a delegated management Load Token.
+            // Otherwise it is optional (GPC 2.3.1 11.5.2.3.1) and some cards reject an
+            // unexpected hash, so omit it (length 00) unless needed. Algorithm from LOAD_HASH.
+            final var needHash = (dapBlock != null && dapBlock.length > 0) || prefs.valueOf(DM_TOKENIZER).isPresent();
+            final var hash = needHash ? cap.getLoadFileDataHash(prefs.get(LOAD_HASH)) : new byte[0];
+            return install_for_load(cap.getPackageAID(), targetDomain, hash, ba())
                     .and(load(build_load_block(cap.getCode(), dapBlock)));
         });
     }
@@ -714,14 +723,18 @@ public final class GlobalPlatformCookbook {
             instanceAID = appletAID;
         }
         if (installParams == null || installParams.length == 0) {
-            installParams = new byte[]{(byte) 0xC9, 0x00};
+            installParams = TLV.of(0xC9, ba()).encode();
         } else {
             // If C9 tag already present, use as-is; otherwise wrap raw bytes in C9
             try {
-                if (TLV.find(TLV.parse(installParams), Tag.ber(0xC9)).isPresent()) {
-                    // Already valid TLV with C9 - use as-is
-                } else {
-                    installParams = TLV.of(Tag.ber(0xC9), installParams).encode();
+                var tlvs = TLVs.parse(installParams);
+                if (tlvs.find(0xC9).isEmpty()) {
+                    if (tlvs.find(0xEF).isPresent()) {
+                        // EF system parameters stay a top-level sibling of C9, never nested inside it
+                        installParams = GPUtils.concatenate(TLV.of(0xC9, ba()).encode(), installParams);
+                    } else {
+                        installParams = TLV.of(Tag.ber(0xC9), installParams).encode();
+                    }
                 }
             } catch (TLVParseException e) {
                 // Not valid TLV - treat as raw app parameters, wrap in C9
@@ -729,18 +742,7 @@ public final class GlobalPlatformCookbook {
             }
         }
         final var privs = BitField.encode(privileges, 3);
-        final var bo = new ByteArrayOutputStream();
-        bo.write(packageAID.getLength());
-        bo.writeBytes(packageAID.getBytes());
-        bo.write(appletAID.getLength());
-        bo.writeBytes(appletAID.getBytes());
-        bo.write(instanceAID.getLength());
-        bo.writeBytes(instanceAID.getBytes());
-        bo.write(privs.length);
-        bo.writeBytes(privs);
-        bo.writeBytes(GPUtils.encodeLength(installParams.length));
-        bo.writeBytes(installParams);
-        return bo.toByteArray();
+        return lv(packageAID.getBytes(), appletAID.getBytes(), instanceAID.getBytes(), privs, installParams);
     }
 
     // INSTALL [for install and make selectable] (GPC 2.3.1 11.5.2.3.2 + 11.5.2.3.3)
@@ -754,16 +756,9 @@ public final class GlobalPlatformCookbook {
 
     // INSTALL [for extradition] (GPC 2.3.1 11.5.2.3.4, Table 11-47)
     public static Recipe<ResponseAPDU> extradite(final AID what, final AID to) {
-        final var bo = new ByteArrayOutputStream();
-        bo.write(to.getLength());
-        bo.writeBytes(to.getBytes());
-        bo.write(0x00);
-        bo.write(what.getLength());
-        bo.writeBytes(what.getBytes());
-        bo.write(0x00);
-        bo.write(0x00);
+        final var data = lv(to.getBytes(), null, what.getBytes(), null, null);
         return deferred(prefs -> {
-            var apdu = cmd(INS_INSTALL, 0x10, 0x00, bo.toByteArray());
+            var apdu = cmd(INS_INSTALL, 0x10, 0x00, data);
             var tok = prefs.valueOf(DM_TOKENIZER);
             if (tok.isPresent()) {
                 apdu = tok.get().tokenize(apdu);
@@ -779,18 +774,24 @@ public final class GlobalPlatformCookbook {
         });
     }
 
+    // INSTALL [for registry update] (GPC 2.4 11.5.2.3.5, Table 11-46), P1=0x40.
+    // Update an instance's registry data without reinstalling: no SD AID (no extradition),
+    // privileges omitted (length 00) unless changed. gp_dm appends the token-length.
+    public static Recipe<ResponseAPDU> install_for_registry_update(final AID instanceAID,
+            final Set<GPRegistryEntryNG.Privilege> privileges, final byte[] installParams) {
+        final var params = installParams == null ? new byte[0] : installParams;
+        final var privs = privileges.isEmpty() ? null : BitField.encode(privileges, 3);
+        // Leading nulls are the empty SD AID and data length fields.
+        final var data = lv(null, null, instanceAID.getBytes(), privs, params);
+        // No Registry Update Receipt context in the library, so receipt verification is skipped.
+        return gp_dm(INS_INSTALL, 0x40, 0x00, data);
+    }
+
     // INSTALL [for make selectable] (GPC 2.3.1 11.5.2.3.3) - set default selected
     public static Recipe<ResponseAPDU> make_default_selected(final AID aid) {
         final var privs = BitField.encode(EnumSet.of(GPRegistryEntryNG.Privilege.CardReset), 3);
-        final var bo = new ByteArrayOutputStream();
-        bo.write(0x00);
-        bo.write(0x00);
-        bo.write(aid.getLength());
-        bo.writeBytes(aid.getBytes());
-        bo.write(privs.length);
-        bo.writeBytes(privs);
-        bo.write(0x00);
-        return gp(INS_INSTALL, 0x08, 0x00, bo.toByteArray());
+        final var data = lv(null, null, aid.getBytes(), privs, null);
+        return gp(INS_INSTALL, 0x08, 0x00, data);
     }
 
     // Rename ISD via STORE DATA (GPC 2.3.1 11.11)
@@ -809,6 +810,124 @@ public final class GlobalPlatformCookbook {
     // SET STATUS for applet lifecycle
     public static Recipe<ResponseAPDU> set_applet_status(final AID aid, final boolean lock) {
         return gp(INS_SET_STATUS, 0x40, lock ? 0x80 : 0x00, aid.getBytes());
+    }
+
+    // === Contactless Registry Service (GPC Amendment C) ===
+
+    // A listed application: AID, lifecycle byte, contactless state byte (9F70)
+    // and the optional CREL Application AID List (A4) naming its event listeners
+    public record CRSEntry(AID aid, int lifecycle, int clState, List<AID> crelList) {
+        public CRSEntry {
+            crelList = List.copyOf(crelList);
+        }
+
+        // Contactless state values (9F70 second byte)
+        public static final int DEACTIVATED = 0x00;
+        public static final int ACTIVATED = 0x01;
+        public static final int NON_ACTIVATABLE = 0x80;
+    }
+
+    // CRS version and event counter, from GET DATA (A5) or the SELECT FCI proprietary template
+    public record CRSInfo(int version, int counter) {}
+
+    // GET STATUS filter prefix matching all applications
+    static final byte[] CRS_ALL = ba(0x4F, 0x00);
+
+    // Parse concatenated 61 templates into listed applications (Amendment C 6.2)
+    public static List<CRSEntry> parse_crs_status(final byte[] respData) {
+        final var result = new ArrayList<CRSEntry>();
+        for (var app : TLV.parse(respData)) {
+            if (!app.tag().equals(Tag.ber(0x61))) {
+                continue;
+            }
+            final var aid = new AID(TPath.find(app.children(), 0x4F).orElseThrow().value());
+            final var state = TPath.find(app.children(), 0x9F70).orElseThrow().value();
+            // 9F70 = [lifecycle, contactless state]
+            final var lifecycle = state.length > 0 ? state[0] & 0xFF : 0;
+            final var clState = state.length > 1 ? state[1] & 0xFF : 0;
+            // A4 is the optional CREL Application AID List: a sequence of 4F AIDs.
+            // Returned only when 5C-requested, so an absent A4 yields an empty list.
+            final var crelList = TPath.findAll(app.children(), 0xA4, 0x4F).stream()
+                    .map(a -> new AID(a.value())).toList();
+            result.add(new CRSEntry(aid, lifecycle, clState, crelList));
+        }
+        return result;
+    }
+
+    // Parse the bare A5 proprietary template from a GET DATA(A5) response (GPC 2.3 Contactless, Table 3-32)
+    public static CRSInfo parse_crs_info(final byte[] respData) {
+        final var a5 = TLVs.parse(respData).find(0xA5).orElseThrow(() -> new TLVParseException("No A5 in CRS data"));
+        final var ver = TPath.find(a5.children(), 0x9F08).orElseThrow().value();
+        final var ctr = TPath.find(a5.children(), 0x80).orElseThrow().value();
+        return new CRSInfo(big_endian(ver), big_endian(ctr));
+    }
+
+    // Parse failed/conflict AID lists from a SET STATUS error response (A1 or 61 template)
+    public static List<AID> parse_crs_failures(final byte[] respData) {
+        final var result = new ArrayList<AID>();
+        for (var entry : TLV.parse(respData)) {
+            final var tag = entry.tag();
+            if (tag.equals(Tag.ber(0x4F))) {
+                // bare AID at top level
+                result.add(new AID(entry.value()));
+            } else if (tag.equals(Tag.ber(0xA1)) || tag.equals(Tag.ber(0x61))
+                    || tag.equals(Tag.ber(0xA0)) || tag.equals(Tag.ber(0xA2)) || tag.equals(Tag.ber(0xA4))) {
+                // list template carrying one or more 4F AIDs
+                result.addAll(entry.findAll(0x4F).stream().map(a -> new AID(a.value())).toList());
+            }
+        }
+        return result;
+    }
+
+    static int big_endian(final byte[] b) {
+        var v = 0;
+        for (var x : b) {
+            v = (v << 8) | (x & 0xFF);
+        }
+        return v;
+    }
+
+    // CRS GET STATUS (Amendment C 6.2) with 6310 continuation -> listed applications
+    // Empty prefix queries all applications (4F 00). When withCrel is set, a 5C tag list
+    // requests the optional A4 CREL Application AID List alongside the AID and state.
+    // A4 must be requested together with the always-present tags: a 5C list naming only A4
+    // makes the card answer 6A88 when no application carries a CREL list.
+    public static Recipe<List<CRSEntry>> crs_get_status(final byte[] aidPrefix, final boolean withCrel) {
+        final var search = aidPrefix == null || aidPrefix.length == 0
+                ? CRS_ALL
+                : TLV.of(Tag.ber(0x4F), aidPrefix).encode();
+        // 5C tag list selecting AID (4F), state (9F70) and the CREL list (A4)
+        final var tagList = TLV.of(Tag.ber(0x5C), ba(0x4F, 0x9F, 0x70, 0xA4)).encode();
+        final var filter = withCrel ? GPUtils.concatenate(search, tagList) : search;
+        return gather(
+                cmd(INS_GET_STATUS, 0x40, 0x00, filter),
+                0x6310,
+                r -> cmd(INS_GET_STATUS, 0x40, 0x01, filter),
+                0x9000,
+                "CRS GET STATUS failed",
+                List.of())
+                .map(GlobalPlatformCookbook::parse_crs_status);
+    }
+
+    // CRS GET DATA (Amendment C) -> version and event counter
+    public static Recipe<CRSInfo> crs_get_data() {
+        return data(cmd(INS_GET_DATA, 0x00, 0xA5), GlobalPlatformCookbook::parse_crs_info);
+    }
+
+    // CRS SET STATUS (Amendment C): activate or deactivate one or more applications.
+    // P2 = 01 ACTIVATE, 00 DEACTIVATE - never 0x80 (rejected with 6A86).
+    // On 6320 (some failed) / 6330 (conflict) the response carries the affected AIDs.
+    public static Recipe<List<AID>> crs_set_status(final List<AID> aids, final boolean activate) {
+        final var bo = new ByteArrayOutputStream();
+        for (var aid : aids) {
+            bo.writeBytes(TLV.of(Tag.ber(0x4F), aid.getBytes()).encode());
+        }
+        return send(cmd(INS_SET_STATUS, 0x01, activate ? 0x01 : 0x00, bo.toByteArray()), any())
+                .then(r -> switch (r.getSW()) {
+                    case 0x9000 -> Recipe.premade(List.<AID>of());
+                    case 0x6320, 0x6330 -> Recipe.premade(parse_crs_failures(r.getData()));
+                    default -> Recipe.error("CRS SET STATUS failed (SW: %04X)".formatted(r.getSW()));
+                });
     }
 
     // === Content management: STORE DATA (GPC 2.3.1 11.11) ===
@@ -846,7 +965,7 @@ public final class GlobalPlatformCookbook {
         return deferred(prefs -> {
             var scpVersion = prefs.valueOf(SCP_VERSION);
             var padBlock = scpVersion.map(v -> v.scp == GPSecureChannelVersion.SCP.SCP03 ? 16 : 8).orElse(8);
-            var ctx = prefs.valueOf(SESSION_CONTEXT).orElse(new byte[0]);
+            var ctx = prefs.valueOf(SESSION_CONTEXT).orElse(ba());
             var commands = new ArrayList<CommandAPDU>();
             for (var i = 0; i < dgiBlocks.size(); i++) {
                 var dgi = dgiBlocks.get(i);
@@ -904,7 +1023,7 @@ public final class GlobalPlatformCookbook {
     public static Recipe<ResponseAPDU> put_symmetric_key(final CardKeys currentKeys, final byte[] rawKey,
             final boolean isAES, final int version, final boolean replace) {
         return deferred(prefs -> {
-            var ctx = prefs.valueOf(SESSION_CONTEXT).orElse(new byte[0]);
+            var ctx = prefs.valueOf(SESSION_CONTEXT).orElse(ba());
             var wrapped = currentKeys.wrapKey(rawKey, ctx);
             var kcv = isAES ? GPCrypto.kcv_aes(rawKey) : GPCrypto.kcv_3des(rawKey);
             var bo = new ByteArrayOutputStream();
@@ -930,7 +1049,7 @@ public final class GlobalPlatformCookbook {
     public static Recipe<ResponseAPDU> put_key_set(final CardKeys currentKeys, final PlaintextCardKeys newKeys,
             final boolean replace) {
         return deferred(prefs -> {
-            var ctx = prefs.valueOf(SESSION_CONTEXT).orElse(new byte[0]);
+            var ctx = prefs.valueOf(SESSION_CONTEXT).orElse(ba());
             var bo = new ByteArrayOutputStream();
             bo.write(newKeys.keyInfo().version());
             for (var p : CardKeys.KeyPurpose.cardKeys()) {
@@ -961,10 +1080,10 @@ public final class GlobalPlatformCookbook {
     // PUT KEY for a full key set with auto-diversification based on key version range
     public static Recipe<ResponseAPDU> put_key_set_diversified(CardKeys currentKeys, PlaintextCardKeys newKeys, boolean replace) {
         return deferred(prefs -> {
-            var kdd = prefs.valueOf(KDD).orElse(new byte[0]);
+            var kdd = prefs.valueOf(KDD).orElse(ba());
             var scpVer = prefs.valueOf(SCP_VERSION);
             var diversified = diversify_by_version(newKeys, kdd, scpVer);
-            var ctx = prefs.valueOf(SESSION_CONTEXT).orElse(new byte[0]);
+            var ctx = prefs.valueOf(SESSION_CONTEXT).orElse(ba());
             var bo = new ByteArrayOutputStream();
             bo.write(diversified.keyInfo().version());
             for (var p : CardKeys.KeyPurpose.cardKeys()) {
@@ -1026,7 +1145,7 @@ public final class GlobalPlatformCookbook {
                 .getEncoded(false);
         var bo = new ByteArrayOutputStream();
         bo.writeBytes(TLV.of(Tag.ber(0xB0), point).encode());
-        bo.writeBytes(TLV.of(Tag.ber(0xF0), new byte[]{curveRef}).encode());
+        bo.writeBytes(TLV.of(Tag.ber(0xF0), ba(curveRef)).encode());
         bo.write(0x00); // No KCV
         return bo.toByteArray();
     }

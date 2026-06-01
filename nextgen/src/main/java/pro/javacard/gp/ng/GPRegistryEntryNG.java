@@ -22,7 +22,9 @@ public record GPRegistryEntryNG(
         byte[] version,
         List<AID> modules,
         Set<Integer> implicitContact,
-        Set<Integer> implicitContactless
+        Set<Integer> implicitContactless,
+        // Contactless activation state (9F70 second byte); present on Amendment C cards only, otherwise null
+        Integer state
 ) {
     public GPRegistryEntryNG {
         // Note: caller assures that privileges are present
@@ -31,7 +33,8 @@ public record GPRegistryEntryNG(
         if (kind == Kind.Application && privileges.contains(Privilege.SecurityDomain)) {
             kind = Kind.SecurityDomain;
         }
-        privileges = Set.copyOf(privileges);
+        // EnumSet iterates in declaration order, so privilege listings are deterministic
+        privileges = privileges.isEmpty() ? Set.of() : Collections.unmodifiableSet(EnumSet.copyOf(privileges));
         modules = modules != null ? List.copyOf(modules) : List.of();
         implicitContact = implicitContact != null ? Set.copyOf(implicitContact) : Set.of();
         implicitContactless = implicitContactless != null ? Set.copyOf(implicitContactless) : Set.of();
@@ -43,6 +46,11 @@ public record GPRegistryEntryNG(
     @Override
     public byte[] version() {
         return version == null ? null : version.clone();
+    }
+
+    @Override
+    public Set<Privilege> privileges() {
+        return privileges.isEmpty() ? Set.of() : EnumSet.copyOf(privileges);
     }
 
     public boolean isPackage() {
@@ -119,6 +127,7 @@ public record GPRegistryEntryNG(
         List<AID> modules = new ArrayList<>();
         Set<Integer> implicitContact = new HashSet<>();
         Set<Integer> implicitContactless = new HashSet<>();
+        Integer state;
 
         public Builder kind(Kind kind) {
             this.kind = kind;
@@ -175,9 +184,14 @@ public record GPRegistryEntryNG(
             return this;
         }
 
+        public Builder state(int state) {
+            this.state = state;
+            return this;
+        }
+
         public GPRegistryEntryNG build() {
             return new GPRegistryEntryNG(aid, kind, lifecycle, privileges, domain, loadFile,
-                    version, modules, implicitContact, implicitContactless);
+                    version, modules, implicitContact, implicitContactless, state);
         }
     }
 

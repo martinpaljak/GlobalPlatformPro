@@ -5,13 +5,12 @@
 
 package pro.javacard.gp;
 
-import apdu4j.core.HexUtils;
 import org.bouncycastle.util.encoders.Hex;
 import org.slf4j.Logger;
-import pro.javacard.tlv.TLV;
-import pro.javacard.tlv.TLVParseException;
+import pro.javacard.tlv.LV;
+import pro.javacard.tlv.Len;
+import pro.javacard.tlv.TLVs;
 
-import java.io.ByteArrayOutputStream;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -79,46 +78,7 @@ public final class GPUtils {
     }
 
     public static byte[] encodeLength(final int len) {
-        final var bo = new ByteArrayOutputStream();
-        // XXX: can probably re-use some existing method somewhere
-        if (len < 0x80) {
-            bo.write((byte) len);
-        } else if (len <= 0xFF) {
-            bo.write((byte) 0x81);
-            bo.write((byte) len);
-        } else if (len <= 0xFFFF) {
-            bo.write((byte) 0x82);
-            bo.write((byte) ((len & 0xFF00) >> 8));
-            bo.write((byte) (len & 0xFF));
-        } else {
-            bo.write((byte) 0x83);
-            bo.write((byte) ((len & 0xFF0000) >> 16));
-            bo.write((byte) ((len & 0xFF00) >> 8));
-            bo.write((byte) (len & 0xFF));
-        }
-        return bo.toByteArray();
-    }
-
-    public static int getLength(byte[] buffer, int offset) {
-        // XXX: Old specs allow 0x80 for encoding 128 bytes...., so maybe check that 81 80 is in fact > 80
-        final var first = buffer[offset] & 0xFF;
-        if (first <= 0x80) {
-            return buffer[offset] & 0xFF;
-        } else if (first == 0x81) {
-            return buffer[offset + 1] & 0xFF;
-        } else if (first == 0x82) {
-            return (buffer[offset + 1] & 0xFF) << 8 | (buffer[offset + 2] & 0xFF);
-        } else {
-            throw new GPDataException("Invalid length encoding", Arrays.copyOfRange(buffer, offset, offset + 3));
-        }
-    }
-
-    public static int getLenLen(byte[] buffer, int offset) {
-        if ((buffer[offset] & 0xFF) <= 0x80) {
-            return 1;
-        } else {
-            return (buffer[offset] & 0xFF) - 0x7F;
-        }
+        return Len.ber(len);
     }
 
     // Encodes APDU LC value, which has either length of 1 byte or 3 bytes (for extended length APDUs)
@@ -148,7 +108,7 @@ public final class GPUtils {
 
     public static void trace_lv(final byte[] data, final Logger logger) {
         try {
-            for (String s : visualize_lv(data)) {
+            for (String s : LV.visualize(data)) {
                 logger.trace(s);
             }
         } catch (IllegalArgumentException e) {
@@ -156,57 +116,14 @@ public final class GPUtils {
         }
     }
 
-    static List<String> visualize_lv(final byte[] data) {
-        final var result = new ArrayList<String>();
-        try {
-            for (var i = 0; i < data.length;) {
-                final var l = getLength(data, i);
-                final var lenLen = getLenLen(data, i);
-                result.add("[%s] %s".formatted(HexUtils.bin2hex(Arrays.copyOfRange(data, i, i + lenLen)),
-                        HexUtils.bin2hex(Arrays.copyOfRange(data, i + lenLen, i + lenLen + l))));
-                i += lenLen + l;
-            }
-        } catch (ArrayIndexOutOfBoundsException e) {
-            throw new IllegalArgumentException("Not valid LV structure: " + e.getMessage(), e);
-        }
-        return result;
-    }
-
-    static void dump(final TLV tlv, final int depth, final List<String> result) {
-        if (tlv.hasChildren()) {
-            result.add("%s[%s]".formatted(" ".repeat(depth * 5), Hex.toHexString(tlv.tag().bytes())));
-
-            for (TLV child : tlv.children()) {
-                dump(child, depth + 1, result);
-            }
-        } else {
-            result.add("%s[%s] %s".formatted(" ".repeat(depth * 5), Hex.toHexString(tlv.tag().bytes()), Hex.toHexString(tlv.value())));
-        }
-    }
-
-    static void dump(final List<TLV> list, final int depth, final List<String> result) {
-        for (TLV t : list) {
-            dump(t, depth, result);
-        }
-    }
-
     public static List<String> visualize_tlv(final byte[] payload) {
-        final var result = new ArrayList<String>();
-        try {
-            final var tlvs = TLV.parse(payload);
-            dump(tlvs, 0, result);
-        } catch (TLVParseException e) {
-            throw new IllegalArgumentException("Not valid TLVs: " + e.getMessage(), e);
-        }
-        return result;
+        return TLVs.visualize(payload);
     }
 
     static void trace_tlv(final byte[] data, final Logger l) {
         try {
-            for (String s : visualize_tlv(data)) {
-                l.trace(s);
-            }
-        } catch (IllegalArgumentException e) {
+            visualize_tlv(data).forEach(l::trace);
+        } catch (RuntimeException e) {
             l.error("Invalid TLV data: {}", Hex.toHexString(data), e);
         }
     }

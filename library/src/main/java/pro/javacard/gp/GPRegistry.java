@@ -12,7 +12,6 @@ import pro.javacard.gp.GPRegistryEntry.Kind;
 import pro.javacard.gp.GPRegistryEntry.Privilege;
 import pro.javacard.gp.data.BitField;
 import pro.javacard.tlv.TLV;
-import pro.javacard.tlv.Tag;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -93,12 +92,9 @@ public final class GPRegistry implements Iterable<GPRegistryEntry> {
     }
 
     public Optional<AID> getDefaultSelectedPackageAID() {
-        final Optional<AID> defaultAID = getDefaultSelectedAID();
-        if (defaultAID.isPresent()) {
-            return allPackages().stream().filter(e -> e.getModules().contains(defaultAID.get()))
-                    .map(GPRegistryEntry::getAID).reduce(onlyOne());
-        }
-        return defaultAID;
+        return getDefaultSelectedAID().flatMap(aid -> allPackages().stream()
+                .filter(e -> e.getModules().contains(aid))
+                .map(GPRegistryEntry::getAID).reduce(onlyOne()));
     }
 
     // Shorthand
@@ -153,26 +149,15 @@ public final class GPRegistry implements Iterable<GPRegistryEntry> {
         final var tlvs = TLV.parse(data);
         GPUtils.trace_tlv(data, logger);
 
-        for (TLV t : TLV.findAll(tlvs, Tag.ber(0xE3))) {
+        for (TLV t : tlvs.findAll(0xE3)) {
             final var e = new GPRegistryEntry();
             if (t.hasChildren()) {
-                final var aid = t.find(Tag.ber(0x4f));
-                if (aid != null) {
-                    final var aidv = new AID(aid.value());
-                    e.setAID(aidv);
-                }
-                final var lifecycletag = t.find(Tag.ber(0x9F, 0x70));
-                if (lifecycletag != null) {
-                    e.setLifeCycle(lifecycletag.value()[0]);
-                }
-
-                final var privstag = t.find(Tag.ber(0xC5));
-                if (privstag != null) {
-                    e.setPrivileges(BitField.parse(Privilege.class, privstag.value(), 1, 3));
-                }
+                t.find(0x4f).ifPresent(aid -> e.setAID(new AID(aid.value())));
+                t.find(0x9F70).ifPresent(lc -> e.setLifeCycle(lc.value()[0]));
+                t.find(0xC5).ifPresent(privs -> e.setPrivileges(BitField.parse(Privilege.class, privs.value(), 1, 3)));
 
                 // 11.1.7 of GPC 2.3
-                for (TLV cf : t.findAll(Tag.ber(0xCF))) {
+                for (TLV cf : t.findAll(0xCF)) {
                     final var cfb = cf.value();
                     if (cfb.length != 1) {
                         throw new GPDataException("Tag CF not single byte", cfb);
@@ -186,23 +171,14 @@ public final class GPRegistry implements Iterable<GPRegistryEntry> {
                     }
                 }
 
-                final var loadfiletag = t.find(Tag.ber(0xC4));
-                if (loadfiletag != null) {
-                    e.setLoadFile(new AID(loadfiletag.value()));
-                }
-                final var versiontag = t.find(Tag.ber(0xCE));
-                if (versiontag != null) {
-                    e.setVersion(versiontag.value());
-                }
+                t.find(0xC4).ifPresent(loadfile -> e.setLoadFile(new AID(loadfile.value())));
+                t.find(0xCE).ifPresent(version -> e.setVersion(version.value()));
 
-                for (TLV lf : t.findAll(Tag.ber(0x84))) {
+                for (TLV lf : t.findAll(0x84)) {
                     e.addModule(new AID(lf.value()));
                 }
 
-                final var domaintag = t.find(Tag.ber(0xCC));
-                if (domaintag != null) {
-                    e.setDomain(new AID(domaintag.value()));
-                }
+                t.find(0xCC).ifPresent(domain -> e.setDomain(new AID(domain.value())));
             }
             e.setType(type);
             add(e);

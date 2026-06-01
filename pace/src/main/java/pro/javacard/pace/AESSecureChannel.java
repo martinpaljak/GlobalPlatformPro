@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pro.javacard.tlv.TLV;
 import pro.javacard.tlv.Tag;
+import static pro.javacard.tlv.TLV.ba;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -66,22 +67,26 @@ public final class AESSecureChannel implements BIBO {
 
         final byte[] newdata;
 
+        // Le (97) data object, appended to both the MAC input and the wrapped payload.
+        // Ne can be 256 (one short-form byte), which wraps to 0x00 - hence the explicit mask.
+        final var leDO = TLV.of(0x97, ba(apdu.getNe() & 0xFF)).encode();
+
         // Encrypt payload
         if (apdu.getData().length > 0) {
             final byte[] plaintext = pad80(apdu.getData(), 16);
             log.trace("ENC payload  : {}", HexUtils.bin2hex(plaintext));
             final byte[] cgram = encrypt(enc_key, iv, plaintext);
 
-            // TLV header. +1 for padding indicator (0x01)
-            newdata = concatenate(new byte[]{(byte) 0x87, (byte) (cgram.length + 1), 0x01}, cgram);
+            // 87 cryptogram data object; value is the padding indicator (0x01) followed by the cryptogram
+            newdata = TLV.of(0x87, concatenate(ba(0x01), cgram)).encode();
             log.trace("New payload  : {}", HexUtils.bin2hex(newdata));
 
             // Le FIXME: only short size currently ?
-            macinput.writeBytes(pad80(concatenate(newdata, new byte[]{(byte) 0x97, 0x01, (byte) apdu.getNe()}), 16));
+            macinput.writeBytes(pad80(concatenate(newdata, leDO), 16));
         } else {
             newdata = new byte[0];
             // Add Le to mac
-            macinput.writeBytes(pad80(new byte[]{(byte) 0x97, 0x01, (byte) apdu.getNe()}, 16));
+            macinput.writeBytes(pad80(leDO, 16));
         }
 
         log.trace("MAC input    : {}", HexUtils.bin2hex(macinput.toByteArray()));
@@ -98,12 +103,10 @@ public final class AESSecureChannel implements BIBO {
         }
 
         //if (apdu.getNe() == 0x00)
-        payload.writeBytes(new byte[]{(byte) 0x97, 0x01, (byte) apdu.getNe()});
+        payload.writeBytes(leDO);
 
-        // append mac
-        payload.write(0x8e);
-        payload.write(mac.length);
-        payload.writeBytes(mac);
+        // append mac in the 8E cryptographic checksum data object
+        payload.writeBytes(TLV.of(0x8E, mac).encode());
 
         return new CommandAPDU(cla, ins, p1, p2, payload.toByteArray(), 256);
     }
@@ -123,16 +126,15 @@ public final class AESSecureChannel implements BIBO {
         // Prepend SSC
         macinput.writeBytes(ssc);
 
-        byte[] cardmac = null;
-
         final var tlvs = TLV.parse(apdu.getData());
 
-        final var payloadtag = TLV.find(tlvs, Tag.ber(0x87)).orElse(null);
-        if (payloadtag != null) {
+        // Encrypted response data (optional); crypto below throws checked exceptions, so no lambda
+        final var payloadtag = tlvs.find(0x87);
+        if (payloadtag.isPresent()) {
             final byte[] iv = encrypt(enc_key, new byte[16], ssc);
             log.trace("IV           : {}", HexUtils.bin2hex(iv));
 
-            final var payload = payloadtag.value();
+            final var payload = payloadtag.get().value();
             final byte[] cgram = Arrays.copyOfRange(payload, 1, payload.length);
             log.trace("cgram        : {}", HexUtils.bin2hex(cgram));
 
@@ -143,15 +145,15 @@ public final class AESSecureChannel implements BIBO {
             macinput.writeBytes(TLV.of(Tag.ber(0x87), payload).encode());
         }
 
-        final var swtag = TLV.find(tlvs, Tag.ber(0x99)).orElse(null);
-        if (swtag != null) {
-            macinput.writeBytes(TLV.of(Tag.ber(0x99), swtag.value()).encode());
-            fresh.writeBytes(swtag.value());
-        }
-        final var mactag = TLV.find(tlvs, Tag.ber(0x8e)).orElse(null);
-        if (mactag != null) {
-            cardmac = mactag.value();
-        }
+        // The processing status (tag 99) is mandatory
+        final byte[] sw = tlvs.find(0x99).map(TLV::value)
+                .orElseThrow(() -> new SecureChannelException("Response status (tag 99) missing"));
+        macinput.writeBytes(TLV.of(Tag.ber(0x99), sw).encode());
+        fresh.writeBytes(sw);
+
+        // The response MAC (tag 8E) is mandatory
+        final byte[] cardmac = tlvs.find(0x8e).map(TLV::value)
+                .orElseThrow(() -> new SecureChannelException("Response MAC (tag 8E) missing"));
 
         // Calculate mac
         final byte[] mac = PACE.aes_mac8(mac_key, pad80(macinput.toByteArray(), 16));

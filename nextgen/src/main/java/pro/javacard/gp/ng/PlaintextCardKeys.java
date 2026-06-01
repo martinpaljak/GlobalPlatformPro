@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pro.javacard.gp.GPCrypto;
 import pro.javacard.gp.GPSecureChannelVersion.SCP;
+import static pro.javacard.tlv.TLV.ba;
 
 import java.security.GeneralSecurityException;
 import java.util.*;
@@ -29,9 +30,9 @@ public final class PlaintextCardKeys implements CardKeys, AutoCloseable {
 
     static {
         var scp2 = new HashMap<KeyPurpose, byte[]>();
-        scp2.put(KeyPurpose.MAC, new byte[]{(byte) 0x01, (byte) 0x01});
-        scp2.put(KeyPurpose.ENC, new byte[]{(byte) 0x01, (byte) 0x82});
-        scp2.put(KeyPurpose.DEK, new byte[]{(byte) 0x01, (byte) 0x81});
+        scp2.put(KeyPurpose.MAC, ba(0x01, 0x01));
+        scp2.put(KeyPurpose.ENC, ba(0x01, 0x82));
+        scp2.put(KeyPurpose.DEK, ba(0x01, 0x81));
         SCP02_CONSTANTS = Collections.unmodifiableMap(scp2);
     }
 
@@ -356,7 +357,7 @@ public final class PlaintextCardKeys implements CardKeys, AutoCloseable {
     }
 
     // SCP02 RMAC constant (0x0102) - not in SCP02_CONSTANTS since KeyPurpose has no RMAC
-    private static final byte[] SCP02_RMAC_CONSTANT = new byte[]{(byte) 0x01, (byte) 0x02};
+    private static final byte[] SCP02_RMAC_CONSTANT = ba(0x01, 0x02);
 
     private static byte[] deriveSessionSCP02(byte[] cardKey, KeyPurpose p, byte[] sequence, boolean rmac) {
         try {

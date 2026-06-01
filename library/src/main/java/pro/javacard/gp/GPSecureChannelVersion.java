@@ -18,8 +18,8 @@ public final class GPSecureChannelVersion {
             this.value = value;
         }
 
-        public byte getValue() {
-            return (byte) (value & 0xFF);
+        public int getValue() {
+            return value;
         }
 
         public static Optional<SCP> valueOf(final int i) {

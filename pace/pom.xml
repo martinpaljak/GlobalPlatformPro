@@ -4,7 +4,7 @@
     <parent>
         <groupId>com.github.martinpaljak</groupId>
         <artifactId>gppro</artifactId>
-        <version>26.04.21-SNAPSHOT</version>
+        <version>26.05.31-SNAPSHOT</version>
     </parent>
     <artifactId>pace</artifactId>
     <name>PACE library</name>

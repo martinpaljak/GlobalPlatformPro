@@ -66,9 +66,9 @@ public final class GPData {
         final var tlvs = TLV.parse(data);
         GPUtils.trace_tlv(data, logger);
 
-        final var cd = TLV.find(tlvs, Tag.ber(0x66));
+        final var cd = tlvs.find(0x66);
         if (cd.isPresent() && cd.get().hasChildren()) {
-            final var isdd = TLV.find(tlvs, Tag.ber(0x73));
+            final var isdd = tlvs.find(0x66, 0x73);
             if (isdd.isPresent()) {
                 // Loop all sub-values
                 for (TLV vt : isdd.get().children()) {
@@ -193,6 +193,51 @@ public final class GPData {
         }
     }
 
+    // GPC 2.3.1 Table H-8: Cipher Suites for LFDB Encryption (tag 84)
+    @SuppressWarnings("ImmutableEnumChecker") // Def is effectively immutable
+    public enum LFDB_ENCRYPTION implements BitField<LFDB_ENCRYPTION> {
+        DES3(byte_mask(0, 0x01)), // DEPRECATED
+        AES_128(byte_mask(0, 0x02)),
+        AES_192(byte_mask(0, 0x04)),
+        AES_256(byte_mask(0, 0x08)),
+        SM4(byte_mask(0, 0x10)),
+        ICV(byte_mask(0, 0x80)),
+        RFU(new Def.RFU(byte_mask(0, 0x60)));
+
+        private final BitField.Def def;
+
+        LFDB_ENCRYPTION(final BitField.Def def) {
+            this.def = def;
+        }
+
+        @Override
+        public Def def() {
+            return def;
+        }
+    }
+
+    // GPC 2.4 Table H-11: Support of Optional Features (tag 8A)
+    @SuppressWarnings("ImmutableEnumChecker") // Def is effectively immutable
+    public enum OPTIONAL_FEATURE implements BitField<OPTIONAL_FEATURE> {
+        TokenIdentifierDenyList(byte_mask(0, 0x01)),
+        CumulativeDelete(byte_mask(0, 0x02)),
+        SecurityDomainSelfRemoval(byte_mask(0, 0x04)),
+        CumulativeGrantedMemory(byte_mask(0, 0x08)),
+        KeyPurpose(byte_mask(0, 0x10)),
+        RFU(new Def.RFU(byte_mask(0, 0xE0)));
+
+        private final BitField.Def def;
+
+        OPTIONAL_FEATURE(final BitField.Def def) {
+            this.def = def;
+        }
+
+        @Override
+        public Def def() {
+            return def;
+        }
+    }
+
     static List<Integer> toUnsignedList(final byte[] b) {
         final var r = new ArrayList<Integer>();
         for (byte value : b) {
@@ -201,96 +246,73 @@ public final class GPData {
         return r;
     }
 
-    // GPV 2.2 AmdE 6.1 /
-    public static void pretty_print_card_capabilities(byte[] data) throws GPDataException {
-        // BUGFIX: exist cards that return nested 0x67 tag with GET DATA with GP CLA
-        if (data[0] == 0x67 && data[2] == 0x67) {
-            logger.warn("Bogus data detected, fixing double tag");
-            data = Arrays.copyOfRange(data, 2, data.length);
-        }
-        // END BUGFIX
+    private static <T extends Enum<T> & BitField<T>> String describe(final Class<T> type, final byte[] v) {
+        return BitField.parse(type, v).stream().map(Enum::toString).collect(Collectors.joining(", "));
+    }
 
-        final var tlvs = TLV.parse(data);
-        GPUtils.trace_tlv(data, logger);
-        final var capsOpt = TLV.find(tlvs, Tag.ber(0x67));
-        if (capsOpt.isPresent()) {
-            for (TLV v : capsOpt.get().children()) {
-                var t = v.find(Tag.ber(0xA0));
-                if (t != null) {
-                    final var scp = t.find(Tag.ber(0x80));
-                    if (scp != null) {
-                        System.out.format("Supports SCP%02X", be2int(scp.value()));
-                        final var is = t.find(Tag.ber(0x81));
-                        if (is != null) {
-                            for (byte b : is.value()) {
-                                System.out.format(" i=%02X", b);
-                            }
-                        }
-                        final var keylens = t.find(Tag.ber(0x82));
-                        if (keylens != null) {
-                            System.out.print(" with");
-                            final var keyval = be2int(keylens.value());
-                            if ((keyval & 0x01) == 0x01) {
-                                System.out.print(" AES-128");
-                            }
-                            if ((keyval & 0x02) == 0x02) {
-                                System.out.print(" AES-196");
-                            }
-                            if ((keyval & 0x04) == 0x04) {
-                                System.out.print(" AES-256");
-                            }
-                        }
-                    }
-                    System.out.println();
-                    continue;
-                }
-                t = v.find(Tag.ber(0x81));
-                if (t != null) {
-                    final var privs = BitField.parse(GPRegistryEntry.Privilege.class, t.value());
-                    System.out.println("Supported DOM privileges: "
-                            + privs.stream().map(Enum::toString).collect(Collectors.joining(", ")));
-                    continue;
-                }
-                t = v.find(Tag.ber(0x82));
-                if (t != null) {
-                    final var privs = BitField.parse(GPRegistryEntry.Privilege.class, t.value());
-                    System.out.println("Supported APP privileges: "
-                            + privs.stream().map(Enum::toString).collect(Collectors.joining(", ")));
-                    continue;
-                }
-                t = v.find(Tag.ber(0x83));
-                if (t != null) {
-                    final var hashes = toUnsignedList(t.value()).stream().map(e -> LFDBH.byValue(e).get().toString())
-                            .collect(Collectors.joining(", "));
-                    System.out.println("Supported LFDB hash: " + hashes);
-                    continue;
-                }
-                t = v.find(Tag.ber(0x85));
-                if (t != null) {
-                    final var ciphers = BitField.parse(SIGNATURE.class, t.value()).stream().map(Enum::toString)
-                            .collect(Collectors.joining(", "));
-                    System.out.println("Supported Token Verification ciphers: " + ciphers);
-                    continue;
-                }
-                t = v.find(Tag.ber(0x86));
-                if (t != null) {
-                    final var ciphers = BitField.parse(SIGNATURE.class, t.value()).stream().map(Enum::toString)
-                            .collect(Collectors.joining(", "));
-                    System.out.println("Supported Receipt Generation ciphers: " + ciphers);
-                    continue;
-                }
-                t = v.find(Tag.ber(0x87));
-                if (t != null) {
-                    final var ciphers = BitField.parse(SIGNATURE.class, t.value()).stream().map(Enum::toString)
-                            .collect(Collectors.joining(", "));
-                    System.out.println("Supported DAP Verification ciphers: " + ciphers);
-                    continue;
-                }
-                t = v.find(Tag.ber(0x88));
-                if (t != null) {
-                    System.out.println("Supported ECC Key Parameters: " + HexUtils.bin2hex(t.value()));
-                }
+    // GPC 2.3.1 Table H-5: Card Capability Information (tag 67); A0 keys per Table H-7
+    public static void pretty_print_card_capabilities(byte[] data) throws GPDataException {
+        try {
+            // BUGFIX: exist cards that return nested 0x67 tag with GET DATA with GP CLA
+            if (data[0] == 0x67 && data[2] == 0x67) {
+                logger.warn("Bogus data detected, fixing double tag");
+                data = Arrays.copyOfRange(data, 2, data.length);
             }
+            // END BUGFIX
+
+            final var tlvs = TLV.parse(data);
+            GPUtils.trace_tlv(data, logger); // full structure shown under verbose logging
+            final var caps = tlvs.find(0x67).orElse(null);
+            if (caps == null) {
+                return;
+            }
+
+            // SCP information (tag A0); mandatory, may repeat per supported protocol
+            for (TLV scp : caps.findAll(0xA0)) {
+                scp.find(0x80).ifPresent(id -> {
+                    System.out.format("Supports SCP%02X", be2int(id.value()));
+                    scp.find(0x81).ifPresent(opts -> {
+                        for (byte b : opts.value()) {
+                            System.out.format(" i=%02X", b);
+                        }
+                    });
+                    scp.find(0x82).ifPresent(keys -> {
+                        System.out.print(" with");
+                        final var keyval = be2int(keys.value());
+                        if ((keyval & 0x01) == 0x01) {
+                            System.out.print(" AES-128");
+                        }
+                        if ((keyval & 0x02) == 0x02) {
+                            System.out.print(" AES-192");
+                        }
+                        if ((keyval & 0x04) == 0x04) {
+                            System.out.print(" AES-256");
+                        }
+                    });
+                });
+                System.out.println();
+            }
+
+            // Remaining known data objects, in spec order; find() asserts the single-occurrence contract
+            caps.find(0x81).map(t -> "Supported DOM privileges: " + describe(GPRegistryEntry.Privilege.class, t.value())).ifPresent(System.out::println);
+            caps.find(0x82).map(t -> "Supported APP privileges: " + describe(GPRegistryEntry.Privilege.class, t.value())).ifPresent(System.out::println);
+            caps.find(0x83).map(t -> "Supported LFDB hash: " + LFDBH.fromBytes(t.value()).stream().map(LFDBH::toString).collect(Collectors.joining(", "))).ifPresent(System.out::println);
+            caps.find(0x84).map(t -> "Supported LFDB encryption ciphers: " + describe(LFDB_ENCRYPTION.class, t.value())).ifPresent(System.out::println);
+            caps.find(0x85).map(t -> "Supported Token Verification ciphers: " + describe(SIGNATURE.class, t.value())).ifPresent(System.out::println);
+            caps.find(0x86).map(t -> "Supported Receipt Generation ciphers: " + describe(SIGNATURE.class, t.value())).ifPresent(System.out::println);
+            caps.find(0x87).map(t -> "Supported DAP Verification ciphers: " + describe(SIGNATURE.class, t.value())).ifPresent(System.out::println);
+            caps.find(0x88).map(t -> "Supported ECC Key Parameters: " + HexUtils.bin2hex(t.value())).ifPresent(System.out::println);
+            // Tag 89 (Amendment H Table 3-2): byte 0 version (0x01), byte 1 options, only b1 defined
+            caps.find(0x89).map(t -> {
+                final var v = t.value();
+                final var multi = v.length > 1 && (v[1] & 0x01) == 0x01;
+                return "Supported ELF Upgrade Process: v" + (v[0] & 0xFF) + (multi ? " (multiple ELFs per session)" : " (single ELF per session)");
+            }).ifPresent(System.out::println);
+            caps.find(0x8A).map(t -> "Supported optional features: " + describe(OPTIONAL_FEATURE.class, t.value())).ifPresent(System.out::println);
+        } catch (GPDataException e) {
+            throw e; // already carries the offending (localized) value
+        } catch (RuntimeException e) {
+            throw new GPDataException("Could not parse card capabilities: " + HexUtils.bin2hex(data), e);
         }
     }
 

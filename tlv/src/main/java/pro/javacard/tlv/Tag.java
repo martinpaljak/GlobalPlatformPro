@@ -41,11 +41,17 @@ public interface Tag {
     }
 
     static Tag ber(int b1, int b2) {
+        if (b1 < 0 || b1 > 0xFF || b2 < 0 || b2 > 0xFF) {
+            throw new IllegalArgumentException("Tag bytes out of range: " + Integer.toHexString(b1) + " " + Integer.toHexString(b2));
+        }
         return new BERTag(new byte[]{(byte) b1, (byte) b2});
     }
 
-    static Tag simple(byte b) {
-        return new SimpleTag(b);
+    static Tag simple(int b) {
+        if (b < 0x01 || b > 0xFE) {
+            throw new IllegalArgumentException("SimpleTLV tag must be 0x01..0xFE, got " + Integer.toHexString(b));
+        }
+        return new SimpleTag((byte) b);
     }
 
     static Tag dgi(int dgi) {

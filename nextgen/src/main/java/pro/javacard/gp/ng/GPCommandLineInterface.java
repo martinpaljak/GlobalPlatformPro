@@ -27,6 +27,7 @@ public abstract class GPCommandLineInterface {
     protected static final OptionSpec<AID> OPT_CONNECT = parser.acceptsAll(Arrays.asList("c", "connect"), "Connect to app/domain").withRequiredArg()
             .ofType(AID.class);
     protected static final OptionSpec<Void> OPT_DEBUG = parser.acceptsAll(Arrays.asList("d", "debug"), "Show PC/SC and APDU trace");
+    protected static final OptionSpec<File> OPT_DUMP = parser.accepts("dump", "Dump APDU trace to file").withRequiredArg().ofType(File.class).describedAs("file");
     protected static final OptionSpec<Void> OPT_S16 = parser.accepts("s16", "Use SCP03 S16 mode");
 
     protected static final OptionSpec<Void> OPT_VERBOSE = parser.acceptsAll(Arrays.asList("v", "verbose"), "Be verbose about operations");
@@ -51,6 +52,9 @@ public abstract class GPCommandLineInterface {
     protected static final OptionSpec<AID> OPT_PACKAGE = parser.acceptsAll(Arrays.asList("package", "pkg"), "Package AID").availableUnless(OPT_CAP).withRequiredArg()
             .ofType(AID.class).describedAs("AID");
 
+    protected static final OptionSpec<AID> OPT_UPDATE = parser.accepts("update", "Update registry entry of an instance (INSTALL [for registry update])").withRequiredArg().ofType(AID.class)
+            .describedAs("AID");
+
     protected static final OptionSpec<String> OPT_INSTALL = parser.accepts("install", "Install applet(s)").withRequiredArg().describedAs("capfile/AID");
     protected static final OptionSpec<String> OPT_INSTALL_ONLY = parser.accepts("install-only", "Install applet").availableUnless(OPT_INSTALL).withRequiredArg()
             .describedAs("capfile/AID");
@@ -69,6 +73,22 @@ public abstract class GPCommandLineInterface {
     protected static final OptionSpec<Void> OPT_DEFAULT_CONTACTLESS = parser.accepts("default-contactless", "Default Selected on contactless interface");
 
     protected static final OptionSpec<AID> OPT_DOMAIN = parser.accepts("domain", "Create supplementary security domain").withRequiredArg().ofType(AID.class);
+
+    // Contactless (Amendment C) install parameters
+    protected static final OptionSpec<Void> OPT_CL_ACTIVATED = parser.accepts("cl-activated", "Install contactless-activated");
+    protected static final OptionSpec<AID> OPT_CL_NOTIFY = parser.accepts("cl-notify", "Add to CREL notify list").withRequiredArg().ofType(AID.class);
+    protected static final OptionSpec<AID> OPT_CL_NOTIFY_REMOVE = parser.accepts("cl-notify-remove", "Remove from CREL notify list").withRequiredArg().ofType(AID.class);
+    protected static final OptionSpec<Integer> OPT_CL_FAMILY = parser.accepts("cl-family", "Application family id").withRequiredArg().ofType(Integer.class)
+            .withValuesConvertedBy(new HexIntegerConverter());
+    protected static final OptionSpec<Void> OPT_CL_DISPLAY_OPTIONAL = parser.accepts("cl-display-optional", "Display not required");
+    protected static final OptionSpec<Void> OPT_CL_CONTACT = parser.accepts("cl-contact", "Enable contact interface access");
+    protected static final OptionSpec<Void> OPT_CL_CONTACTLESS = parser.accepts("cl-contactless", "Enable contactless interface access");
+
+    // Contactless Registry Service (CRS) commands
+    protected static final OptionSpec<AID> OPT_CRS_LIST = parser.accepts("crs-list", "List contactless applications").withOptionalArg().ofType(AID.class);
+    protected static final OptionSpec<Void> OPT_CRS_INFO = parser.accepts("crs-info", "Show CRS version and counter");
+    protected static final OptionSpec<AID> OPT_CRS_ACTIVATE = parser.accepts("crs-activate", "Activate on contactless").withRequiredArg().ofType(AID.class);
+    protected static final OptionSpec<AID> OPT_CRS_DEACTIVATE = parser.accepts("crs-deactivate", "Deactivate on contactless").withRequiredArg().ofType(AID.class);
 
     // Card an applet lifecycle management
     protected static final OptionSpec<AID> OPT_LOCK_APPLET = parser.accepts("lock-applet", "Lock applet").withRequiredArg().ofType(AID.class);

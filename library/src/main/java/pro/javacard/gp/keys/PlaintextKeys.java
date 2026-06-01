@@ -8,6 +8,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pro.javacard.gp.*;
 
+import static pro.javacard.tlv.TLV.ba;
+
 import javax.crypto.NoSuchPaddingException;
 import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
@@ -33,10 +35,10 @@ public final class PlaintextKeys extends GPCardKeys {
 
     static {
         final var scp2 = new HashMap<KeyPurpose, byte[]>();
-        scp2.put(KeyPurpose.MAC, new byte[] { (byte) 0x01, (byte) 0x01 });
-        scp2.put(KeyPurpose.RMAC, new byte[] { (byte) 0x01, (byte) 0x02 });
-        scp2.put(KeyPurpose.DEK, new byte[] { (byte) 0x01, (byte) 0x81 });
-        scp2.put(KeyPurpose.ENC, new byte[] { (byte) 0x01, (byte) 0x82 });
+        scp2.put(KeyPurpose.MAC, ba(0x01, 0x01));
+        scp2.put(KeyPurpose.RMAC, ba(0x01, 0x02));
+        scp2.put(KeyPurpose.DEK, ba(0x01, 0x81));
+        scp2.put(KeyPurpose.ENC, ba(0x01, 0x82));
         SCP02_CONSTANTS = Collections.unmodifiableMap(scp2);
 
         final var scp3 = new HashMap<KeyPurpose, Byte>();
@@ -196,9 +198,7 @@ public final class PlaintextKeys extends GPCardKeys {
         final var kdd = env.get(prefix + "_KDD");
         final var ver = env.get(prefix + "_VER");
         final var r = fromStrings(enc, mac, dek, mk, div, kdd, ver);
-        if (r.isPresent()) {
-            logger.debug("Got keys from environment, prefix=" + prefix);
-        }
+        r.ifPresent(keys -> logger.debug("Got keys from environment, prefix=" + prefix));
         return r;
     }
 

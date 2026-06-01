@@ -10,6 +10,7 @@ import pro.javacard.capfile.CAPFile;
 import pro.javacard.capfile.WellKnownAID;
 import pro.javacard.gp.GPData.LFDBH;
 import pro.javacard.gp.GPRegistryEntry.Privilege;
+import pro.javacard.tlv.TLV;
 
 import java.io.PrintStream;
 import java.util.Optional;
@@ -32,7 +33,7 @@ public final class GPCommands {
         if (data == null || data.length != 8) {
             throw new IllegalArgumentException("PrePerso data must be 8 bytes");
         }
-        final byte[] payload = GPUtils.concatenate(new byte[] { (byte) 0x9f, 0x67, (byte) data.length }, data);
+        final var payload = TLV.of(0x9F67, data).encode();
         storeDGI(gp, payload);
     }
 
@@ -40,7 +41,7 @@ public final class GPCommands {
         if (data == null || data.length != 8) {
             throw new IllegalArgumentException("Perso data must be 8 bytes");
         }
-        final byte[] payload = GPUtils.concatenate(new byte[] { (byte) 0x9f, 0x66, (byte) data.length }, data);
+        final var payload = TLV.of(0x9F66, data).encode();
         storeDGI(gp, payload);
     }
 
@@ -55,9 +56,7 @@ public final class GPCommands {
                 out.println();
             }
 
-            if (e.getDomain().isPresent()) {
-                out.println(tab + "Parent:   " + e.getDomain().get());
-            }
+            e.getDomain().ifPresent(d -> out.println(tab + "Parent:   " + d));
             if (e.getType() == GPRegistryEntry.Kind.PKG) {
                 if (e.getVersion() != null) {
                     out.println(tab + "Version:  " + e.getVersionString());
@@ -71,9 +70,7 @@ public final class GPCommands {
                     }
                 }
             } else {
-                if (e.getSource().isPresent()) {
-                    out.println(tab + "From:     " + e.getSource().get());
-                }
+                e.getSource().ifPresent(s -> out.println(tab + "From:     " + s));
                 final var implicit = getImplicitString(e);
                 implicit.ifPresent(s -> out.println(tab + "Selected: " + s));
                 if (!e.getPrivileges().isEmpty()) {

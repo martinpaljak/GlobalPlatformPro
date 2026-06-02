@@ -38,16 +38,27 @@ public class TestContactlessParams {
     public void testActivatedOnly() {
         var result = params("--cl-activated");
 
-        // C9 00 (empty app params) and EF { A0 { 81 01, A5 82 C0 } } with exact length bytes
-        assertEquals(HexUtils.bin2hex(result), "C900EF0AA008810101A5038201C0");
+        // C9 00 (empty app params) and EF { A0 { 81 01 } }: no interface mask unless explicitly asked
+        assertEquals(HexUtils.bin2hex(result), "C900EF05A003810101");
 
         var roots = TLVs.parse(result);
         assertTrue(roots.find(0xC9).isPresent());
         assertEquals(roots.find(0xEF, 0xA0, 0x81).orElseThrow().value(), new byte[]{0x01});
-        // A fresh template declares both interfaces by default
-        assertEquals(roots.find(0xEF, 0xA0, 0xA5, 0x82).orElseThrow().value(), new byte[]{(byte) 0xC0});
+        // No interface mask is sent by default
+        assertTrue(roots.find(0xEF, 0xA0, 0xA5, 0x82).isEmpty());
         // No user interaction template when only activation requested
         assertTrue(roots.find(0xEF, 0xA1).isEmpty());
+
+        // The mask is sent only when an interface is named explicitly: contactless-only is 40
+        var masked = TLVs.parse(params("--cl-activated", "--cl-contactless"));
+        assertEquals(masked.find(0xEF, 0xA0, 0xA5, 0x82).orElseThrow().value(), new byte[]{(byte) 0x40});
+    }
+
+    @Test
+    public void testRegistryUpdateNoC9() {
+        // A registry update sends no C9 and only the requested EF content (the card rejects an empty C9)
+        var result = GPToolNG.install_params(GPCommandLineInterface.parser.parse("--cl-display-optional"), true);
+        assertEquals(HexUtils.bin2hex(result), "EF05A103880101");
     }
 
     @Test
@@ -64,8 +75,8 @@ public class TestContactlessParams {
         assertEquals(aids.get(0).value(), HexUtils.hex2bin(a));
         assertEquals(aids.get(1).value(), HexUtils.hex2bin(b));
 
-        // Interface defaults to both even without an explicit --cl-contact/--cl-contactless
-        assertEquals(roots.find(0xEF, 0xA0, 0xA5, 0x82).orElseThrow().value(), new byte[]{(byte) 0xC0});
+        // No interface mask without an explicit --cl-contact/--cl-contactless
+        assertTrue(roots.find(0xEF, 0xA0, 0xA5, 0x82).isEmpty());
     }
 
     @Test
@@ -95,8 +106,8 @@ public class TestContactlessParams {
         assertTrue(roots.find(0xC9).isPresent());
         // Existing activation byte is preserved
         assertEquals(roots.find(0xEF, 0xA0, 0x81).orElseThrow().value(), new byte[]{0x01});
-        // Missing interface mask defaulted to both, family added
-        assertEquals(roots.find(0xEF, 0xA0, 0xA5, 0x82).orElseThrow().value(), new byte[]{(byte) 0xC0});
+        // No interface mask is added unless explicitly requested; family added
+        assertTrue(roots.find(0xEF, 0xA0, 0xA5, 0x82).isEmpty());
         assertEquals(roots.find(0xEF, 0xA1, 0x87).orElseThrow().value(), new byte[]{0x07});
     }
 

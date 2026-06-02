@@ -814,11 +814,13 @@ public final class GlobalPlatformCookbook {
 
     // === Contactless Registry Service (GPC Amendment C) ===
 
-    // A listed application: AID, lifecycle byte, contactless state byte (9F70)
-    // and the optional CREL Application AID List (A4) naming its event listeners
-    public record CRSEntry(AID aid, int lifecycle, int clState, List<AID> crelList) {
+    // A listed application: AID, lifecycle byte, contactless state byte (9F70),
+    // the optional CREL Application AID List (A4) naming its event listeners, and the
+    // full set of registry data objects the card returned inside the 61 template (Table 3-9)
+    public record CRSEntry(AID aid, int lifecycle, int clState, List<AID> crelList, List<TLV> data) {
         public CRSEntry {
             crelList = List.copyOf(crelList);
+            data = List.copyOf(data);
         }
 
         // Contactless state values (9F70 second byte)
@@ -846,10 +848,10 @@ public final class GlobalPlatformCookbook {
             final var lifecycle = state.length > 0 ? state[0] & 0xFF : 0;
             final var clState = state.length > 1 ? state[1] & 0xFF : 0;
             // A4 is the optional CREL Application AID List: a sequence of 4F AIDs.
-            // Returned only when 5C-requested, so an absent A4 yields an empty list.
+            // An application without referenced listeners carries no A4, yielding an empty list.
             final var crelList = TPath.findAll(app.children(), 0xA4, 0x4F).stream()
                     .map(a -> new AID(a.value())).toList();
-            result.add(new CRSEntry(aid, lifecycle, clState, crelList));
+            result.add(new CRSEntry(aid, lifecycle, clState, crelList, app.children()));
         }
         return result;
     }
@@ -887,22 +889,17 @@ public final class GlobalPlatformCookbook {
         return v;
     }
 
-    // CRS GET STATUS (Amendment C 6.2) with 6310 continuation -> listed applications
-    // Empty prefix queries all applications (4F 00). When withCrel is set, a 5C tag list
-    // requests the optional A4 CREL Application AID List alongside the AID and state.
-    // A4 must be requested together with the always-present tags: a 5C list naming only A4
-    // makes the card answer 6A88 when no application carries a CREL list.
-    public static Recipe<List<CRSEntry>> crs_get_status(final byte[] aidPrefix, final boolean withCrel) {
+    // CRS GET STATUS (Amendment C 6.2) with 6310 continuation -> listed applications.
+    // Empty prefix queries all applications (4F 00). No 5C tag list is sent: omitting it makes
+    // the card return all available Contactless Registry Data per application (Amendment C 3.11.3.3.1).
+    public static Recipe<List<CRSEntry>> crs_get_status(final byte[] aidPrefix) {
         final var search = aidPrefix == null || aidPrefix.length == 0
                 ? CRS_ALL
                 : TLV.of(Tag.ber(0x4F), aidPrefix).encode();
-        // 5C tag list selecting AID (4F), state (9F70) and the CREL list (A4)
-        final var tagList = TLV.of(Tag.ber(0x5C), ba(0x4F, 0x9F, 0x70, 0xA4)).encode();
-        final var filter = withCrel ? GPUtils.concatenate(search, tagList) : search;
         return gather(
-                cmd(INS_GET_STATUS, 0x40, 0x00, filter),
+                cmd(INS_GET_STATUS, 0x40, 0x00, search),
                 0x6310,
-                r -> cmd(INS_GET_STATUS, 0x40, 0x01, filter),
+                r -> cmd(INS_GET_STATUS, 0x40, 0x01, search),
                 0x9000,
                 "CRS GET STATUS failed",
                 List.of())

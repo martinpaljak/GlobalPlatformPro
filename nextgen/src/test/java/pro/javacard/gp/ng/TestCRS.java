@@ -14,6 +14,7 @@ import pro.javacard.tlv.TLVParseException;
 import pro.javacard.tlv.TLVs;
 import pro.javacard.tlv.Tag;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import static org.testng.Assert.*;
@@ -48,6 +49,10 @@ public class TestCRS {
         var withCrel = TLV.of(Tag.ber(0x61), List.of(
                 TLV.of(Tag.ber(0x4F), HexUtils.hex2bin("D245007700")),
                 TLV.of(Tag.ber(0x9F, 0x70), HexUtils.hex2bin("0701")),
+                TLV.of(Tag.ber(0x80), HexUtils.hex2bin("0009")),
+                // Display Control Template carrying a URL sub-tag, to exercise nested verbose rendering
+                TLV.of(Tag.ber(0x7F, 0x20), List.of(
+                        TLV.of(Tag.ber(0x5F, 0x50), HexUtils.hex2bin("687474703A2F2F78")))),
                 TLV.of(Tag.ber(0xA4), List.of(
                         TLV.of(Tag.ber(0x4F), HexUtils.hex2bin("A000000151")),
                         TLV.of(Tag.ber(0x4F), HexUtils.hex2bin("A00000015143525300"))))));
@@ -65,6 +70,10 @@ public class TestCRS {
         assertEquals(entries.get(0).crelList().get(1).toString(), "A00000015143525300");
         // Absent A4 yields an empty list, not an error
         assertTrue(entries.get(1).crelList().isEmpty());
+        // The full registry data is retained, including the nested display template and its URL
+        assertEquals(GlobalPlatformCookbook.big_endian(TLV.findAll(entries.get(0).data(), 0x80).get(0).value()), 9);
+        var url = TLV.findAll(entries.get(0).data(), 0x7F20).get(0).children().findAll(0x5F50).get(0).value();
+        assertEquals(new String(url, StandardCharsets.US_ASCII), "http://x");
     }
 
     @Test
@@ -130,8 +139,8 @@ public class TestCRS {
     public void testCrsListFromDump() {
         final var chef = chef_from_dump("/crs-list.dump");
         chef.cook(GlobalPlatformCookbook.select_aid(GlobalPlatformCookbook.CRS_AID));
-        // Plain listing (no 5C tag list); MockBIBO verifies the 4F00 wire command.
-        final var entries = chef.cook(GlobalPlatformCookbook.crs_get_status(new byte[0], false));
+        // No 5C tag list is sent, so the card returns all available data; MockBIBO verifies the 4F00 wire command.
+        final var entries = chef.cook(GlobalPlatformCookbook.crs_get_status(new byte[0]));
         assertEquals(entries.size(), 6);
         // First entry: the Card Manager / ISD
         assertEquals(entries.get(0).aid().toString(), "A000000151000000");
@@ -142,19 +151,40 @@ public class TestCRS {
         // The toggled application, activated in this capture
         assertEquals(entries.get(4).aid().toString(), "A000000003143117140617005643");
         assertEquals(entries.get(4).clState(), GlobalPlatformCookbook.CRSEntry.ACTIVATED);
+        // The full registry data per application is retained: this capture carries 80 counter, 81 priority, 88 display
+        assertEquals(GlobalPlatformCookbook.big_endian(TLV.findAll(entries.get(0).data(), 0x80).get(0).value()), 5);
+        assertEquals(TLV.findAll(entries.get(0).data(), 0x81).get(0).value()[0], 0x00);
+        assertEquals(TLV.findAll(entries.get(0).data(), 0x88).get(0).value()[0], 0x00);
+        // This card carries no CREL references, so every crelList is empty (no A4 returned).
+        assertTrue(entries.stream().allMatch(e -> e.crelList().isEmpty()));
+
+        // A second card whose listing spans two GET STATUS rounds (6310 continuation) and carries
+        // CREL references, an opaque A6 discretionary template and an 87 Application Family.
+        final var rich = chef_from_dump("/crs-list-rich.dump");
+        rich.cook(GlobalPlatformCookbook.select_aid(GlobalPlatformCookbook.CRS_AID));
+        final var all = rich.cook(GlobalPlatformCookbook.crs_get_status(new byte[0]));
+        assertEquals(all.size(), 8);
+        // The PPSE references the payment application as its CREL listener
+        assertEquals(all.get(2).aid().toString(), "325041592E5359532E4444463031");
+        assertEquals(all.get(2).crelList(), List.of(AID.fromString("D233000000775041592D303101")));
+        // The payment application: references the PPSE back, and declares a Financial AFI family (87 = 20)
+        assertEquals(all.get(7).aid().toString(), "D233000000775041592D303101");
+        assertEquals(all.get(7).crelList(), List.of(AID.fromString("325041592E5359532E4444463031")));
+        var afi = TLV.findAll(all.get(7).data(), 0x87).get(0).value()[0] & 0xFF;
+        assertEquals(GPRegistryEntryNG.ByteEnum.find(GPRegistryEntryNG.AppFamily.class, afi).orElseThrow(),
+                GPRegistryEntryNG.AppFamily.FINANCIAL);
     }
 
     @Test
-    public void testCrsListVerboseFromDump() {
-        final var chef = chef_from_dump("/crs-list-crel.dump");
+    public void testCrsListPrefixFromDump() {
+        final var chef = chef_from_dump("/crs-list-prefix.dump");
         chef.cook(GlobalPlatformCookbook.select_aid(GlobalPlatformCookbook.CRS_AID));
-        // Verbose listing adds 5C 04 4F 9F70 A4; MockBIBO verifies that exact wire command.
-        final var entries = chef.cook(GlobalPlatformCookbook.crs_get_status(new byte[0], true));
-        assertEquals(entries.size(), 6);
-        assertEquals(entries.get(0).aid().toString(), "A000000151000000");
-        assertEquals(entries.get(4).aid().toString(), "A000000003143117140617005643");
-        // This card carries no CREL references, so every crelList is empty (no A4 returned).
-        assertTrue(entries.stream().allMatch(e -> e.crelList().isEmpty()));
+        // A partial-AID search: MockBIBO verifies the 4F05D233000000 wire command, and only the
+        // two D233... applications come back.
+        final var entries = chef.cook(GlobalPlatformCookbook.crs_get_status(HexUtils.hex2bin("D233000000")));
+        assertEquals(entries.size(), 2);
+        assertTrue(entries.stream().allMatch(e -> e.aid().toString().startsWith("D233000000")));
+        assertEquals(entries.get(1).crelList(), List.of(AID.fromString("325041592E5359532E4444463031")));
     }
 
     @Test

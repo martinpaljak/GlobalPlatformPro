@@ -217,13 +217,40 @@ public record GPRegistryEntryNG(
             return matchValue() == value;
         }
 
-        static <T extends Enum<T> & ByteEnum> T fromByte(Class<T> klass, int value) {
+        static <T extends Enum<T> & ByteEnum> Optional<T> find(Class<T> klass, int value) {
             for (var state : klass.getEnumConstants()) {
                 if (state.matches(value)) {
-                    return state;
+                    return Optional.of(state);
                 }
             }
-            throw new IllegalArgumentException("Unknown %s value: 0x%02X".formatted(klass.getSimpleName(), value & 0xFF));
+            return Optional.empty();
+        }
+
+        static <T extends Enum<T> & ByteEnum> T fromByte(Class<T> klass, int value) {
+            return find(klass, value).orElseThrow(() ->
+                    new IllegalArgumentException("Unknown %s value: 0x%02X".formatted(klass.getSimpleName(), value & 0xFF)));
+        }
+    }
+
+    // Application Family (Amendment C tag 87) is the ISO/IEC 14443-3 AFI; the high nibble names the industry sector
+    public enum AppFamily implements ByteEnum {
+        ANY(0x00), TRANSPORT(0x10), FINANCIAL(0x20), IDENTIFICATION(0x30),
+        TELECOMMUNICATION(0x40), MEDICAL(0x50), MULTIMEDIA(0x60), GAMING(0x70), DATA_STORAGE(0x80);
+
+        private final int value;
+
+        AppFamily(int value) {
+            this.value = value;
+        }
+
+        @Override
+        public int matchValue() {
+            return value;
+        }
+
+        @Override
+        public boolean matches(int v) {
+            return (v & 0xF0) == value;
         }
     }
 

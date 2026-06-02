@@ -4,7 +4,9 @@
 package pro.javacard.tlv;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 
 // BER-TLV tag (ISO 7816-4)
@@ -71,6 +73,16 @@ public record BERTag(byte[] bytes) implements Tag {
         // Advance position on success only.
         buffer.position(pos + len);
         return tag;
+    }
+
+    // Split a bare concatenation of BER tags (no lengths or values), as used by an ISO 7816-4 tag list.
+    public static List<Tag> parseTags(final byte[] tags) {
+        final var out = new ArrayList<Tag>();
+        final var buffer = ByteBuffer.wrap(tags);
+        while (buffer.hasRemaining()) {
+            out.add(parse(buffer));
+        }
+        return out;
     }
 
     @Override

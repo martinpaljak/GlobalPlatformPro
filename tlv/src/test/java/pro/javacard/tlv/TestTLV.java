@@ -354,6 +354,11 @@ class TestTLV {
         final var child2 = TLV.of(0x82, hex("02"));
         final var parent = TLV.of(Tag.ber("E0"), child1, child2);
         Assert.assertEquals(parent.children().size(), 2);
+
+        // TLV.of(int, TLV...) varargs
+        final var parentInt = TLV.of(0xE0, child1, child2);
+        Assert.assertEquals(parentInt.tag(), Tag.ber("E0"));
+        Assert.assertEquals(parentInt.children().size(), 2);
     }
 
     @Test

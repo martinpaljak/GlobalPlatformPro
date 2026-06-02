@@ -38,6 +38,10 @@ public final class TLV {
         return of(tag, Arrays.asList(tlvs));
     }
 
+    public static TLV of(final int tag, final TLV... tlvs) {
+        return of(Tag.ber(tag), tlvs);
+    }
+
     public static TLV of(final Tag tag, final Collection<TLV> tlvs) {
         Objects.requireNonNull(tag, "tag");
         final var children = new ArrayList<TLV>(tlvs.size());

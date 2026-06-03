@@ -30,16 +30,16 @@ public class TestCRS {
                 "610C4F05D2450077009F70020701"
               + "610C4F05A0000001519F70020700");
 
-        var entries = GlobalPlatformCookbook.parse_crs_status(data);
+        var entries = CRSCookbook.parse_crs_status(data);
         assertEquals(entries.size(), 2);
 
         assertEquals(entries.get(0).aid().toString(), "D245007700");
         assertEquals(entries.get(0).lifecycle(), 0x07);
-        assertEquals(entries.get(0).clState(), GlobalPlatformCookbook.CRSEntry.ACTIVATED);
+        assertEquals(entries.get(0).clState(), CRSCookbook.CRSEntry.ACTIVATED);
 
         assertEquals(entries.get(1).aid().toString(), "A000000151");
         assertEquals(entries.get(1).lifecycle(), 0x07);
-        assertEquals(entries.get(1).clState(), GlobalPlatformCookbook.CRSEntry.DEACTIVATED);
+        assertEquals(entries.get(1).clState(), CRSCookbook.CRSEntry.DEACTIVATED);
     }
 
     @Test
@@ -61,7 +61,7 @@ public class TestCRS {
                 TLV.of(Tag.ber(0x9F, 0x70), HexUtils.hex2bin("0700"))));
         var data = TLVs.of(withCrel, plain).encode();
 
-        var entries = GlobalPlatformCookbook.parse_crs_status(data);
+        var entries = CRSCookbook.parse_crs_status(data);
         assertEquals(entries.size(), 2);
         // The first entry exposes its referenced CREL AIDs, in order
         assertEquals(entries.get(0).aid().toString(), "D245007700");
@@ -80,7 +80,7 @@ public class TestCRS {
     public void testParseInfoBare() {
         // A5 { 9F08 version = 0100, 80 counter = 0005 }
         var data = HexUtils.hex2bin("A5099F0802010080020005");
-        var info = GlobalPlatformCookbook.parse_crs_info(data);
+        var info = CRSCookbook.parse_crs_info(data);
         assertEquals(info.version(), 0x0100);
         assertEquals(info.counter(), 5);
     }
@@ -91,14 +91,14 @@ public class TestCRS {
         // A 6F-wrapped SELECT FCI (no top-level A5) is parse_fci's job and must not be accepted here.
         var data = HexUtils.hex2bin("6F1684" + "09A00000015143525300"
                 + "A5099F0802010080020005");
-        assertThrows(TLVParseException.class, () -> GlobalPlatformCookbook.parse_crs_info(data));
+        assertThrows(TLVParseException.class, () -> CRSCookbook.parse_crs_info(data));
     }
 
     @Test
     public void testParseFailuresA1() {
         // A1 failed-list carrying two 4F AIDs
         var data = HexUtils.hex2bin("A10E4F05D2450077004F05A000000151");
-        var aids = GlobalPlatformCookbook.parse_crs_failures(data);
+        var aids = CRSCookbook.parse_crs_failures(data);
         assertEquals(aids.size(), 2);
         assertEquals(aids.get(0).toString(), "D245007700");
         assertEquals(aids.get(1).toString(), "A000000151");
@@ -108,7 +108,7 @@ public class TestCRS {
     public void testParseFailures61() {
         // 61 template carrying two 4F AIDs
         var data = HexUtils.hex2bin("610E4F05D2450077004F05A000000151");
-        var aids = GlobalPlatformCookbook.parse_crs_failures(data);
+        var aids = CRSCookbook.parse_crs_failures(data);
         assertEquals(aids.size(), 2);
         assertEquals(aids.get(0).toString(), "D245007700");
         assertEquals(aids.get(1).toString(), "A000000151");
@@ -129,8 +129,8 @@ public class TestCRS {
     @Test
     public void testCrsInfoFromDump() {
         final var chef = chef_from_dump("/crs-info.dump");
-        chef.cook(GlobalPlatformCookbook.select_aid(GlobalPlatformCookbook.CRS_AID));
-        final var info = chef.cook(GlobalPlatformCookbook.crs_get_data());
+        chef.cook(GlobalPlatformCookbook.select_aid(CRSCookbook.CRS_AID));
+        final var info = chef.cook(CRSCookbook.crs_get_data());
         assertEquals(info.version(), 0x0100);
         assertEquals(info.counter(), 31);
     }
@@ -138,19 +138,19 @@ public class TestCRS {
     @Test
     public void testCrsListFromDump() {
         final var chef = chef_from_dump("/crs-list.dump");
-        chef.cook(GlobalPlatformCookbook.select_aid(GlobalPlatformCookbook.CRS_AID));
+        chef.cook(GlobalPlatformCookbook.select_aid(CRSCookbook.CRS_AID));
         // No 5C tag list is sent, so the card returns all available data; MockBIBO verifies the 4F00 wire command.
-        final var entries = chef.cook(GlobalPlatformCookbook.crs_get_status(new byte[0]));
+        final var entries = chef.cook(CRSCookbook.crs_get_status(new byte[0]));
         assertEquals(entries.size(), 6);
         // First entry: the Card Manager / ISD
         assertEquals(entries.get(0).aid().toString(), "A000000151000000");
         assertEquals(entries.get(0).lifecycle(), 0x0F);
-        assertEquals(entries.get(0).clState(), GlobalPlatformCookbook.CRSEntry.ACTIVATED);
+        assertEquals(entries.get(0).clState(), CRSCookbook.CRSEntry.ACTIVATED);
         // The CRS itself appears in its own listing
         assertEquals(entries.get(1).aid().toString(), "A00000015143525300");
         // The toggled application, activated in this capture
         assertEquals(entries.get(4).aid().toString(), "A000000003143117140617005643");
-        assertEquals(entries.get(4).clState(), GlobalPlatformCookbook.CRSEntry.ACTIVATED);
+        assertEquals(entries.get(4).clState(), CRSCookbook.CRSEntry.ACTIVATED);
         // The full registry data per application is retained: this capture carries 80 counter, 81 priority, 88 display
         assertEquals(GlobalPlatformCookbook.big_endian(TLV.findAll(entries.get(0).data(), 0x80).get(0).value()), 5);
         assertEquals(TLV.findAll(entries.get(0).data(), 0x81).get(0).value()[0], 0x00);
@@ -161,8 +161,8 @@ public class TestCRS {
         // A second card whose listing spans two GET STATUS rounds (6310 continuation) and carries
         // CREL references, an opaque A6 discretionary template and an 87 Application Family.
         final var rich = chef_from_dump("/crs-list-rich.dump");
-        rich.cook(GlobalPlatformCookbook.select_aid(GlobalPlatformCookbook.CRS_AID));
-        final var all = rich.cook(GlobalPlatformCookbook.crs_get_status(new byte[0]));
+        rich.cook(GlobalPlatformCookbook.select_aid(CRSCookbook.CRS_AID));
+        final var all = rich.cook(CRSCookbook.crs_get_status(new byte[0]));
         assertEquals(all.size(), 8);
         // The PPSE references the payment application as its CREL listener
         assertEquals(all.get(2).aid().toString(), "325041592E5359532E4444463031");
@@ -178,10 +178,10 @@ public class TestCRS {
     @Test
     public void testCrsListPrefixFromDump() {
         final var chef = chef_from_dump("/crs-list-prefix.dump");
-        chef.cook(GlobalPlatformCookbook.select_aid(GlobalPlatformCookbook.CRS_AID));
+        chef.cook(GlobalPlatformCookbook.select_aid(CRSCookbook.CRS_AID));
         // A partial-AID search: MockBIBO verifies the 4F05D233000000 wire command, and only the
         // two D233... applications come back.
-        final var entries = chef.cook(GlobalPlatformCookbook.crs_get_status(HexUtils.hex2bin("D233000000")));
+        final var entries = chef.cook(CRSCookbook.crs_get_status(HexUtils.hex2bin("D233000000")));
         assertEquals(entries.size(), 2);
         assertTrue(entries.stream().allMatch(e -> e.aid().toString().startsWith("D233000000")));
         assertEquals(entries.get(1).crelList(), List.of(AID.fromString("325041592E5359532E4444463031")));
@@ -190,16 +190,16 @@ public class TestCRS {
     @Test
     public void testCrsDeactivateFromDump() {
         final var chef = chef_from_dump("/crs-deactivate.dump");
-        chef.cook(GlobalPlatformCookbook.select_aid(GlobalPlatformCookbook.CRS_AID));
-        final var failed = chef.cook(GlobalPlatformCookbook.crs_set_status(List.of(TARGET), false));
+        chef.cook(GlobalPlatformCookbook.select_aid(CRSCookbook.CRS_AID));
+        final var failed = chef.cook(CRSCookbook.crs_set_status(List.of(TARGET), false));
         assertTrue(failed.isEmpty());
     }
 
     @Test
     public void testCrsActivateFromDump() {
         final var chef = chef_from_dump("/crs-activate.dump");
-        chef.cook(GlobalPlatformCookbook.select_aid(GlobalPlatformCookbook.CRS_AID));
-        final var failed = chef.cook(GlobalPlatformCookbook.crs_set_status(List.of(TARGET), true));
+        chef.cook(GlobalPlatformCookbook.select_aid(CRSCookbook.CRS_AID));
+        final var failed = chef.cook(CRSCookbook.crs_set_status(List.of(TARGET), true));
         assertTrue(failed.isEmpty());
     }
 }

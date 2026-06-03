@@ -14,6 +14,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <project.build.outputTimestamp>2026-05-31T11:16:09Z</project.build.outputTimestamp>
         <apdu4j.version>26.04.21-SNAPSHOT</apdu4j.version>
+        <jcardengine.version>26.04.21-SNAPSHOT</jcardengine.version>
     </properties>
     <organization>
         <name>Martin Paljak and contributors</name>
@@ -290,6 +291,11 @@
                 <groupId>com.github.martinpaljak</groupId>
                 <artifactId>apdu4j-apdulette</artifactId>
                 <version>${apdu4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.martinpaljak</groupId>
+                <artifactId>jcardengine-adapters</artifactId>
+                <version>${jcardengine.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>

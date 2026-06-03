@@ -33,6 +33,8 @@ public abstract class GPCommandLineInterface {
     protected static final OptionSpec<Void> OPT_VERBOSE = parser.acceptsAll(Arrays.asList("v", "verbose"), "Be verbose about operations");
     protected static final OptionSpec<String> OPT_READER = parser.acceptsAll(Arrays.asList("r", "reader"), "Use specific reader").withOptionalArg()
             .describedAs("reader");
+    protected static final OptionSpec<String> OPT_SIMULATOR = parser.accepts("simulator", "Use simulator").availableUnless(OPT_READER).withOptionalArg()
+            .describedAs("host:port");
     protected static final OptionSpec<Void> OPT_LIST = parser.acceptsAll(Arrays.asList("l", "list"), "List the contents of the card");
     protected static final OptionSpec<Void> OPT_INFO = parser.acceptsAll(Arrays.asList("i", "info"), "Show information");
     protected static final OptionSpec<String> OPT_APDU = parser.acceptsAll(Arrays.asList("a", "apdu"), "Send raw APDU").withRequiredArg().describedAs("APDU");
@@ -89,6 +91,15 @@ public abstract class GPCommandLineInterface {
     protected static final OptionSpec<Void> OPT_CRS_INFO = parser.accepts("crs-info", "Show CRS version and counter");
     protected static final OptionSpec<AID> OPT_CRS_ACTIVATE = parser.accepts("crs-activate", "Activate on contactless").withRequiredArg().ofType(AID.class);
     protected static final OptionSpec<AID> OPT_CRS_DEACTIVATE = parser.accepts("crs-deactivate", "Deactivate on contactless").withRequiredArg().ofType(AID.class);
+
+    // Secure Element Access Control (ARA-M) commands
+    protected static final OptionSpec<Void> OPT_ARA_LIST = parser.accepts("ara-list", "List access rules from ARA-M");
+    protected static final OptionSpec<Void> OPT_ARA_ADD = parser.accepts("ara-add", "Store an access rule");
+    protected static final OptionSpec<Void> OPT_ARA_DELETE = parser.accepts("ara-delete", "Delete an access rule");
+    protected static final OptionSpec<AID> OPT_ARA_AID = parser.accepts("ara-aid", "Target ARA applet (ARA-C; default ARA-M)").withRequiredArg().ofType(AID.class);
+    protected static final OptionSpec<HexBytes> OPT_ARA_HASH = parser.accepts("ara-hash", "Certificate hash (SHA-256 or SHA-1)").availableIf(OPT_ARA_ADD, OPT_ARA_DELETE).withRequiredArg().ofType(HexBytes.class);
+    protected static final OptionSpec<HexBytes> OPT_ARA_RULE = parser.accepts("ara-rule", "APDU access rule: 00 (NEVER), 01 (ALWAYS) or an APDU filter").requiredIf(OPT_ARA_ADD).withRequiredArg().ofType(HexBytes.class);
+    protected static final OptionSpec<HexBytes> OPT_ARA_NFC = parser.accepts("ara-nfc", "NFC access rule: 00 (NEVER), 01 (ALWAYS)").availableIf(OPT_ARA_ADD).withRequiredArg().ofType(HexBytes.class);
 
     // Card an applet lifecycle management
     protected static final OptionSpec<AID> OPT_LOCK_APPLET = parser.accepts("lock-applet", "Lock applet").withRequiredArg().ofType(AID.class);

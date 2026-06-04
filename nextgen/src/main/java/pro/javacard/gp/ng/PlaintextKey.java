@@ -19,6 +19,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.*;
@@ -53,9 +54,21 @@ public final class PlaintextKey {
         return Optional.ofNullable(privateKey);
     }
     
+    // A value that isn't a parseable path on this OS (e.g. "aes:..." on Windows,
+    // where ':' is invalid in a path element) is simply not a file.
+    private static Optional<Path> asReadableFile(final String v) {
+        try {
+            final Path p = Paths.get(v);
+            return Files.isReadable(p) ? Optional.of(p) : Optional.empty();
+        } catch (InvalidPathException e) {
+            return Optional.empty();
+        }
+    }
+
     public static PlaintextKey valueOf(final String v) {
-        final Path p = Paths.get(v);
-        if (Files.isReadable(p)) {
+        final Optional<Path> file = asReadableFile(v);
+        if (file.isPresent()) {
+            final Path p = file.get();
             try (InputStream inputStream = Files.newInputStream(p)) {
                 try (var pem = new PEMParser(new InputStreamReader(inputStream, StandardCharsets.US_ASCII))) {
                     final var ohh = pem.readObject();

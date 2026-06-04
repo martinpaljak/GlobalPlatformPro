@@ -4,7 +4,7 @@
     <parent>
         <groupId>com.github.martinpaljak</groupId>
         <artifactId>gppro</artifactId>
-        <version>26.05.31-SNAPSHOT</version>
+        <version>26.06.04-SNAPSHOT</version>
     </parent>
     <artifactId>gptool-nextgen</artifactId>
     <name>GlobalPlatformPro next-gen tool</name>
@@ -34,7 +34,7 @@
         <!-- TCP simulator client (JCSDK) -->
         <dependency>
             <groupId>com.github.martinpaljak</groupId>
-            <artifactId>jcardengine-adapters</artifactId>
+            <artifactId>apdu4j-remote</artifactId>
         </dependency>
         <!-- Command line parsing -->
         <dependency>

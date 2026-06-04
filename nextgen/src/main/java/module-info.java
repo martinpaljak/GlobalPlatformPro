@@ -10,7 +10,7 @@ module gptool.nextgen {
 
     requires apdu4j.prefs;
     requires apdu4j.pcsc;
-    requires pro.javacard.engine.adapters;
+    requires apdu4j.remote;
     requires jopt.simple;
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.databind;

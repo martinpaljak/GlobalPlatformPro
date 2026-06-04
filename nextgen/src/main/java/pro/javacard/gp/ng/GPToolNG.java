@@ -13,7 +13,7 @@ import apdu4j.prefs.Preferences;
 import apdu4j.pcsc.NoMatchingReaderException;
 import apdu4j.pcsc.ReaderSelector;
 import apdu4j.pcsc.Readers;
-import pro.javacard.engine.adapters.JCSDKClient;
+import apdu4j.remote.JCSDKClient;
 import pro.javacard.gp.ToolExtension;
 import joptsimple.OptionSet;
 import joptsimple.OptionSpec;
@@ -667,7 +667,7 @@ public final class GPToolNG extends GPCommandLineInterface implements ToolExtens
         var hp = (spec == null ? "" : spec).split(":", 2);
         var host = hp[0].isEmpty() ? "localhost" : hp[0];
         var port = hp.length > 1 && !hp[1].isEmpty() ? Integer.parseInt(hp[1]) : 9025;
-        BIBO bibo = new JCSDKClient(host, port).apply("T=1");
+        var bibo = new JCSDKClient(host, port).apply("T=1");
         if (debug) {
             bibo = LoggingBIBO.wrap(bibo, System.out);
         }

@@ -66,9 +66,9 @@ public final class PlaintextKey {
     }
 
     public static PlaintextKey valueOf(final String v) {
-        final Optional<Path> file = asReadableFile(v);
+        final var file = asReadableFile(v);
         if (file.isPresent()) {
-            final Path p = file.get();
+            final var p = file.get();
             try (InputStream inputStream = Files.newInputStream(p)) {
                 try (var pem = new PEMParser(new InputStreamReader(inputStream, StandardCharsets.US_ASCII))) {
                     final var ohh = pem.readObject();

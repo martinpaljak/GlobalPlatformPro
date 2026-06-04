@@ -4,7 +4,7 @@
     <parent>
         <groupId>com.github.martinpaljak</groupId>
         <artifactId>gppro</artifactId>
-        <version>26.05.31-SNAPSHOT</version>
+        <version>26.06.04-SNAPSHOT</version>
     </parent>
     <artifactId>globalplatformpro</artifactId>
     <name>GlobalPlatformPro library</name>

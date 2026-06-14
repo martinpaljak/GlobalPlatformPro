@@ -510,4 +510,28 @@ class TestTLV {
         final var t = TLV.build(0x9F01);
         Assert.assertNotEquals(t, new Object());
     }
+
+    @Test
+    public void testCompact() {
+        // Canonical ATR objects from TS 101 220 Table 7.7: '31' Card Service Data (tag '43', 1 byte),
+        // '73' Card Capabilities (tag '47', 3 bytes). Tag nibble in the high nibble, length in the low.
+        final var objs = List.of(TLV.of(Tag.ber(0x43), hex("55")), TLV.of(Tag.ber(0x47), hex("A0B1C2")));
+        final var compact = Compact.encode(objs);
+        Assert.assertEquals(compact, hex("31 55 73 A0B1C2"));
+
+        // Round-trip back to the canonical '4X' BER tags and values.
+        final var parsed = Compact.parse(compact);
+        Assert.assertEquals(parsed, TLVs.of(objs));
+        Assert.assertEquals(parsed.get(0).tag(), Tag.ber(0x43));
+        Assert.assertEquals(parsed.get(1).value(), hex("A0B1C2"));
+
+        // Not narrowable: non-'4X' tag, multi-byte tag, over-long value, non-BER tag.
+        Assert.expectThrows(IllegalArgumentException.class, () -> Compact.encode(List.of(TLV.of(0x80, hex("01")))));
+        Assert.expectThrows(IllegalArgumentException.class, () -> Compact.encode(List.of(TLV.of(0x9F70, hex("01")))));
+        Assert.expectThrows(IllegalArgumentException.class, () -> Compact.encode(List.of(TLV.of(Tag.ber(0x43), new byte[16]))));
+        Assert.expectThrows(IllegalArgumentException.class, () -> Compact.encode(List.of(TLV.of(Tag.simple(0x05), hex("01")))));
+
+        // Truncated stream: '73' promises 3 value bytes, only 1 present.
+        Assert.expectThrows(TLVParseException.class, () -> Compact.parse(hex("73 A0")));
+    }
 }

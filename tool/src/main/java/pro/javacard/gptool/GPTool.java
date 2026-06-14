@@ -93,7 +93,7 @@ public final class GPTool extends GPCommandLineInterface {
             // dump relevant environment and command line variables in verbose+ mode
             if (args.has(OPT_VERBOSE) || args.has(OPT_DEBUG) || args.has(OPT_INFO)) {
                 final var gpenv = System.getenv().entrySet().stream().filter(e -> e.getKey().startsWith("GP_"))
-                        .map(e -> "%s=%s".formatted(e.getKey(), e.getValue())).collect(Collectors.toList());
+                        .map(e -> "%s='%s'".formatted(e.getKey(), e.getValue())).collect(Collectors.toList());
                 if (gpenv.size() > 0) {
                     System.out.println("# " + String.join(" ", gpenv));
                 }

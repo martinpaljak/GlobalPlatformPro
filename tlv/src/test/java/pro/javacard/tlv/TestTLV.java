@@ -209,7 +209,7 @@ class TestTLV {
     public void testParseSimple() {
         // Simple TLV: Tag 01, Length 01, Value 01
         final var data = hex("01 01 01");
-        final var list = TLVParser.parse(data, Tag.Type.SIMPLE);
+        final var list = TLVParser.of(Tag.Codec.SINGLE_BYTE, Len.Codec.EXT, false).parse(data);
         Assert.assertEquals(list.size(), 1);
         Assert.assertTrue(list.get(0).tag() instanceof SimpleTag);
         Assert.assertEquals(list.get(0).tag(), Tag.simple((byte) 0x01));
@@ -220,7 +220,7 @@ class TestTLV {
         // DGI TLV: Tag 1234, Length 01, Value 01. Length in DGI is Extended (same as
         // Simple)
         final var data = hex("12 34 01 01");
-        final var list = TLVParser.parse(data, Tag.Type.DGI);
+        final var list = TLVParser.of(Tag.Codec.DGI, Len.Codec.EXT, false).parse(data);
         Assert.assertEquals(list.size(), 1);
         Assert.assertTrue(list.get(0).tag() instanceof DGITag);
         Assert.assertEquals(list.get(0).tag(), Tag.dgi(0x1234));
@@ -228,8 +228,8 @@ class TestTLV {
 
     @Test
     public void testUtilityConstructors() throws Exception {
-        // Cover private constructors for 100% coverage
-        final var classes = new Class<?>[] { Len.class, TLVParser.class, TLVEncoder.class };
+        // Cover private constructors for 100% coverage (TLVParser's is exercised via of())
+        final var classes = new Class<?>[] { Len.class, TLVEncoder.class };
         for (Class<?> cls : classes) {
             final var constructor = cls.getDeclaredConstructor();
             constructor.setAccessible(true);
@@ -289,10 +289,9 @@ class TestTLV {
 
     @Test
     public void testCoverageCompletion() {
-        // TLVParser.parse(byte[], int, int, Type)
-        // 00 01 01 -> we want to parse starting at index 1, length 2 (byte 01, byte 01)
+        // Offset/length parsing via a ByteBuffer slice: start at index 1, length 3 (01 01 01)
         final var data = hex("00 01 01 01");
-        final var list = TLVParser.parse(data, 1, 3, Tag.Type.SIMPLE); // Offset 1, Length 3 (01 01 01)
+        final var list = TLVParser.of(Tag.Codec.SINGLE_BYTE, Len.Codec.EXT, false).parse(ByteBuffer.wrap(data, 1, 3));
         Assert.assertEquals(list.size(), 1);
         Assert.assertEquals(list.get(0).tag(), Tag.simple((byte) 0x01));
 
@@ -329,12 +328,6 @@ class TestTLV {
         // TLV.add(byte[], byte[])
         final var t2 = TLV.build(0xE0).add(hex("81"), hex("01"));
         Assert.assertTrue(t2.hasChildren());
-
-        // Tag default methods or missing bits?
-        // Maybe Tag.ber(int, int) I did cover.
-        // What about Tag.Type.valueOf? (Generated enum methods)
-        Assert.assertEquals(Tag.Type.valueOf("BER"), Tag.Type.BER);
-        Assert.assertEquals(Tag.Type.values().length, 3);
     }
 
     @Test
@@ -533,5 +526,45 @@ class TestTLV {
 
         // Truncated stream: '73' promises 3 value bytes, only 1 present.
         Assert.expectThrows(TLVParseException.class, () -> Compact.parse(hex("73 A0")));
+    }
+
+    @Test
+    public void testComposableParser() {
+        // GPC 2.3.1 11.8.2.3.1 PUT KEY key-data-field: each key component is an opaque
+        // 1-byte type + BER long-form length + value, never constructed. An RSA modulus
+        // is A1 82 01 00 + 256 bytes - tag 0xA1 must NOT recurse as BER-constructed, and
+        // length 82 01 00 must read as 256, not the SIMPLE 0xFF-marker form (which would
+        // see 0x82 as length 130).
+        final var p = TLVParser.of(Tag.Codec.SINGLE_BYTE, Len.Codec.BER, false);
+
+        final var modulus = new byte[256];
+        Arrays.fill(modulus, (byte) 0x5A);
+        final var component = TLV.of(Tag.simple(0xA1), modulus);
+
+        // Known exact vector: opaque tag A1, BER long-form length 82 01 00, 256 value bytes.
+        final var encoded = p.encode(component);
+        Assert.assertEquals(Arrays.copyOf(encoded, 4), hex("A1 82 01 00"));
+        Assert.assertEquals(encoded.length, 4 + 256);
+
+        // Round-trip: encode -> parse -> encode reproduces the bytes.
+        final var parsed = p.parse(encoded);
+        Assert.assertEquals(parsed.size(), 1);
+        final var one = parsed.get(0);
+        Assert.assertEquals(one.tag(), Tag.simple(0xA1));
+        Assert.assertEquals(one.value().length, 256);
+        Assert.assertFalse(one.isConstructed()); // 0xA1 stays primitive: no recursion
+        Assert.assertEquals(p.encode(one), encoded);
+
+        // The constructed flag alone never recurses opaque tags - they carry no constructed bit.
+        Assert.assertFalse(TLVParser.of(Tag.Codec.SINGLE_BYTE, Len.Codec.BER, true)
+                .parse(encoded).get(0).isConstructed());
+
+        // BER preset: instance parse matches the TLV.parse convenience, and encode round-trips.
+        final var berParser = TLVParser.of(Tag.Codec.BER, Len.Codec.BER, true);
+        final var ber = hex("E0 06 9F45 03 222222");
+        Assert.assertEquals(berParser.parse(ber), TLV.parse(ber));
+        final var tree = TLV.of(Tag.ber(0xE0), TLV.of(0x9F45, hex("222222")));
+        Assert.assertEquals(berParser.encode(tree), tree.encode());
+        Assert.assertEquals(berParser.encode(tree), ber);
     }
 }

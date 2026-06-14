@@ -3,14 +3,20 @@
 
 package pro.javacard.tlv;
 
+import java.nio.ByteBuffer;
 import java.util.HexFormat;
 
 // Generic tag interface for different TLV encoding schemes
 public interface Tag {
     HexFormat HEX_FORMAT = HexFormat.of().withUpperCase();
 
-    enum Type {
-        BER, SIMPLE, DGI
+    // Reads one tag off the buffer; encoding is universal via Tag.bytes(), so decode-only
+    interface Codec {
+        Tag decode(ByteBuffer buf);
+
+        Codec BER = BERTag::parse;           // multi-byte, class/constructed bits
+        Codec SINGLE_BYTE = SimpleTag::parse; // opaque 0x01..0xFE, no constructed semantics
+        Codec DGI = DGITag::parse;           // 2-byte big-endian
     }
 
     byte[] bytes();

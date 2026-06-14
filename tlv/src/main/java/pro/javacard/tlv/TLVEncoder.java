@@ -10,15 +10,24 @@ public final class TLVEncoder {
 
     public static byte[] encode(final TLV tlv) {
         final var tag = tlv.tag();
-        final var tagBytes = tag.bytes();
-
         final byte[] valueBytes = tlv.hasChildren() ? TLV.encode(tlv.children()) : tlv.value();
-
+        // Length form follows the tag type here; the composable TLVParser carries it explicitly instead
         final byte[] lengthBytes = tag instanceof BERTag ? Len.ber(valueBytes.length) : Len.ext(valueBytes.length);
-        final var result = new byte[tagBytes.length + lengthBytes.length + valueBytes.length];
-        System.arraycopy(tagBytes, 0, result, 0, tagBytes.length);
-        System.arraycopy(lengthBytes, 0, result, tagBytes.length, lengthBytes.length);
-        System.arraycopy(valueBytes, 0, result, tagBytes.length + lengthBytes.length, valueBytes.length);
+        return concatenate(tag.bytes(), lengthBytes, valueBytes);
+    }
+
+    // Join a fixed set of byte fragments in order (tlv cannot reach library's GPUtils.concatenate)
+    static byte[] concatenate(final byte[]... parts) {
+        var total = 0;
+        for (final var p : parts) {
+            total += p.length;
+        }
+        final var result = new byte[total];
+        var offset = 0;
+        for (final var p : parts) {
+            System.arraycopy(p, 0, result, offset, p.length);
+            offset += p.length;
+        }
         return result;
     }
 }

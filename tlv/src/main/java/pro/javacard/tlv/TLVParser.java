@@ -3,48 +3,52 @@
 
 package pro.javacard.tlv;
 
+import java.io.ByteArrayOutputStream;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collection;
 
-// Stateless TLV parser
+// Composable TLV codec: a tag codec, a length codec and whether to recurse into constructed tags.
+// GlobalPlatform dialects mix these freely (e.g. opaque 1-byte tag + BER long-form length, never
+// constructed - the GPC 2.3.1 11.8.2.3.1 PUT KEY key components).
 public final class TLVParser {
-    private TLVParser() {}
+    private final Tag.Codec tagCodec;
+    private final Len.Codec lenCodec;
+    private final boolean constructed;
 
-    public static TLVs parse(final ByteBuffer buf, final Tag.Type type) {
+    private TLVParser(final Tag.Codec tagCodec, final Len.Codec lenCodec, final boolean constructed) {
+        this.tagCodec = tagCodec;
+        this.lenCodec = lenCodec;
+        this.constructed = constructed;
+    }
+
+    public static TLVParser of(final Tag.Codec tag, final Len.Codec length, final boolean constructed) {
+        return new TLVParser(tag, length, constructed);
+    }
+
+    public TLVs parse(final byte[] data) {
+        return parse(ByteBuffer.wrap(data));
+    }
+
+    public TLVs parse(final ByteBuffer buf) {
         final var result = new ArrayList<TLV>();
         while (buf.hasRemaining()) {
-            result.add(parseOne(buf, type));
+            result.add(parseOne(buf));
         }
         return TLVs.of(result);
     }
 
-    public static TLVs parse(final byte[] data, final Tag.Type type) {
-        return parse(ByteBuffer.wrap(data), type);
-    }
-
-    public static TLVs parse(final byte[] data, final int offset, final int length, final Tag.Type type) {
-        return parse(ByteBuffer.wrap(data, offset, length), type);
-    }
-
-    public static TLV parseOne(final ByteBuffer buf, final Tag.Type type) {
+    public TLV parseOne(final ByteBuffer buf) {
         try {
-            final var tag = switch (type) {
-                case BER -> BERTag.parse(buf);
-                case SIMPLE -> SimpleTag.parse(buf);
-                case DGI -> DGITag.parse(buf);
-            };
-
-            final var length = switch (type) {
-                case BER -> Len.ber(buf);
-                case SIMPLE, DGI -> Len.ext(buf);
-            };
+            final var tag = tagCodec.decode(buf);
+            final var length = lenCodec.decode(buf);
             final var value = new byte[length];
             buf.get(value);
 
-            // Only BER-TLV has constructed/primitive semantics
-            if (tag instanceof BERTag ber && ber.isConstructed()) {
-                final var kids = new ArrayList<>(parse(ByteBuffer.wrap(value), type));
+            // Only BER tags carry constructed/primitive semantics; the flag gates that recursion
+            if (constructed && tag instanceof BERTag ber && ber.isConstructed()) {
+                final var kids = new ArrayList<>(parse(ByteBuffer.wrap(value)));
                 return new TLV(tag, null, kids);
             } else {
                 return new TLV(tag, value, null);
@@ -52,5 +56,19 @@ public final class TLVParser {
         } catch (BufferUnderflowException | IndexOutOfBoundsException | IllegalArgumentException e) {
             throw new TLVParseException("Insufficient data to parse TLV", e);
         }
+    }
+
+    // Encodes with this codec's length form - the only way to pair an opaque tag with BER length
+    public byte[] encode(final TLV tlv) {
+        final byte[] valueBytes = tlv.hasChildren() ? encode(tlv.children()) : tlv.value();
+        return TLVEncoder.concatenate(tlv.tag().bytes(), lenCodec.encode(valueBytes.length), valueBytes);
+    }
+
+    private byte[] encode(final Collection<TLV> tlvs) {
+        final var out = new ByteArrayOutputStream();
+        for (final var tlv : tlvs) {
+            out.writeBytes(encode(tlv));
+        }
+        return out.toByteArray();
     }
 }

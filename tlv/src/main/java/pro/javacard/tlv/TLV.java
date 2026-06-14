@@ -227,17 +227,19 @@ public final class TLV {
     }
 
     // Parsing - convenience methods for BER-TLV
+    private static final TLVParser BER = TLVParser.of(Tag.Codec.BER, Len.Codec.BER, true);
+
     public static TLVs parse(final byte[] data) {
-        return TLVParser.parse(data, Tag.Type.BER);
+        return BER.parse(data);
     }
 
     public static TLVs parse(final ByteBuffer buffer) {
-        return TLVParser.parse(buffer, Tag.Type.BER);
+        return BER.parse(buffer);
     }
 
     // Parse exactly one BER-TLV and advance the buffer past it
     public static TLV parseSingle(final ByteBuffer buffer) {
-        return TLVParser.parseOne(buffer, Tag.Type.BER);
+        return BER.parseOne(buffer);
     }
 
     // Visualization

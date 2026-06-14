@@ -9,6 +9,35 @@ import java.nio.ByteBuffer;
 public final class Len {
     private Len() {}
 
+    // Both directions: ber and ext disagree on the wire, so a codec carries the chosen pair
+    public interface Codec {
+        int decode(ByteBuffer buf);
+        byte[] encode(int len);
+
+        Codec BER = new Codec() {           // 81/82/83 long form
+            @Override
+            public int decode(final ByteBuffer buf) {
+                return Len.ber(buf);
+            }
+
+            @Override
+            public byte[] encode(final int len) {
+                return Len.ber(len);
+            }
+        };
+        Codec EXT = new Codec() {           // 0xFF-marker 2-byte form
+            @Override
+            public int decode(final ByteBuffer buf) {
+                return Len.ext(buf);
+            }
+
+            @Override
+            public byte[] encode(final int len) {
+                return Len.ext(len);
+            }
+        };
+    }
+
     // BER-TLV length (ISO 7816-4)
     public static byte[] ber(int len) {
         if (len < 0) {

@@ -54,15 +54,12 @@ It's that simple!
 > Building JavaCard applets is equally pleasing with **[ant-javacard](https://github.com/martinpaljak/ant-javacard)**
 
 
-## NEWS &middot; `Q4 2024`
- - [JavaCard Buyer's Guide](https://github.com/martinpaljak/GlobalPlatformPro/wiki/JavaCard-Buyer%27s-Guide) has been updated to 2024
- - GlobalPlatformPro v24.10.15 released with many new features
-   - enhanced support for Delegated Management and DAP keys
-   - receipt verification
-   - PACE authentication and secure channel
-   - Key Diversification templates
-   - S16 mode for SCP03
-   - many bugs fixed, UX improved.
+## NEWS &middot; `Q2 2026`
+ - GlobalPlatformPro v26.06.04 released
+   - ARA-M access control and contactless services in nextgen
+   - new path-addressed TLV editing API across all modules
+   - PACE and SCP03 improvements, Java 25 builds, many fixes
+ - Full history in [CHANGELOG.md](CHANGELOG.md)
 
 # Users's Guide
 Begin from [Getting Started guide](https://github.com/martinpaljak/GlobalPlatformPro/wiki/Getting-Started) in the wiki

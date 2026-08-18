@@ -1,10 +1,8 @@
 # Agent Instructions
 
 - Use `./mvnw` (Maven wrapper), never `mvn`
-- Use `./mvnw compile` or module-specific builds during development
 - When compiling a single module with `-pl`, always use `-am` (also-make) to build its dependencies: `./mvnw compile -pl tool -am`
 - Run `./mvnw verify` as the final check — must be clean before committing
-- Java 17+ required
 - Compiler uses `-Werror -Xlint:all` — all warnings are errors
 
 ## Dependency Updates
@@ -25,20 +23,6 @@ Configuration: `eclipse-formatter.xml` in the project root. `module-info.java` f
 
 Use `@formatter:off` / `@formatter:on` to protect sections from automatic formatting.
 
-## Project Structure
-
-Multi-module Maven project. All source under `pro.javacard.*` packages.
-
-| Module     | Package              | Description                              |
-|------------|----------------------|------------------------------------------|
-| `library`  | `pro.javacard.gp`   | Core library — GP card sessions, crypto, commands, registry |
-| `tool`     | `pro.javacard.gptool`| CLI tool (`GPTool`) wrapping the library |
-| `tlv`      | `pro.javacard.tlv`  | TLV (Tag-Length-Value) parsing utilities  |
-| `pace`     | `pro.javacard.pace` | PACE protocol implementation             |
-| `prefs`    | `pro.javacard.prefs`| Preferences/config handling              |
-
-Tests live in each module's `src/test/` (except `pace`).
-
 ## Wiki
 
 This project has a GitHub wiki. It should ALWAYS be cloned into the `./wiki` directory before starting work:
@@ -46,7 +30,3 @@ This project has a GitHub wiki. It should ALWAYS be cloned into the `./wiki` dir
     git clone git@github.com:martinpaljak/GlobalPlatformPro.wiki.git wiki
 
 When making changes to the codebase, verify that the wiki does not contradict the source code — update wiki pages as needed to keep documentation consistent with actual behavior.
-
-## Specifications
-
-Relevant specifications are available as text files in `docs/`. Consult them when working on protocol-level code or command structures.

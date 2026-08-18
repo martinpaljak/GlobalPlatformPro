@@ -3,7 +3,7 @@
 
 package pro.javacard.gp.ng;
 
-import apdu4j.apdulette.SousChef;
+import apdu4j.apdulette.Chef;
 import apdu4j.core.HexUtils;
 import apdu4j.core.MockBIBO;
 import org.testng.annotations.Test;
@@ -61,7 +61,7 @@ public class TestARA {
         var first = Arrays.copyOfRange(frame, 0, frame.length - 5);
         var rest = Arrays.copyOfRange(frame, frame.length - 5, frame.length);
 
-        var chef = new SousChef(MockBIBO.of(HexUtils.bin2hex(first) + "9000", HexUtils.bin2hex(rest) + "9000"));
+        var chef = Chef.of(MockBIBO.of(HexUtils.bin2hex(first) + "9000", HexUtils.bin2hex(rest) + "9000"));
         var rules = chef.cook(ARACookbook.ara_get_data());
         assertEquals(rules.size(), 1);
         assertEquals(rules.get(0).aid().orElseThrow().toString(), APPLET.toString());
@@ -85,6 +85,6 @@ public class TestARA {
         assertThrows(IllegalArgumentException.class, () -> ARACookbook.delete_ar_do(Optional.of(APPLET), Optional.of(ba(0x00))));
 
         // a card with no rules answers 6A88 to GET DATA [all] - the list comes back empty, not an error
-        assertTrue(new SousChef(MockBIBO.of("6A88")).cook(ARACookbook.ara_get_data()).isEmpty());
+        assertTrue(Chef.of(MockBIBO.of("6A88")).cook(ARACookbook.ara_get_data()).isEmpty());
     }
 }

@@ -3,7 +3,7 @@
 
 package pro.javacard.gp.ng;
 
-import apdu4j.apdulette.SousChef;
+import apdu4j.apdulette.Chef;
 import apdu4j.core.DumpFormat;
 import apdu4j.core.HexUtils;
 import apdu4j.core.MockBIBO;
@@ -118,9 +118,9 @@ public class TestCRS {
     // Each dump is the exact SELECT + command exchange gp sent to a live card; the recipes are
     // cooked in the same order so MockBIBO's command verification confirms the wire bytes too.
 
-    private SousChef chef_from_dump(final String resource) {
+    private Chef chef_from_dump(final String resource) {
         final var dump = DumpFormat.parse(getClass().getResourceAsStream(resource));
-        return new SousChef(MockBIBO.fromDump(dump));
+        return Chef.of(MockBIBO.fromDump(dump));
     }
 
     // The application toggled across the set-status dumps.

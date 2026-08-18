@@ -3,7 +3,7 @@
 
 package pro.javacard.gp.ng;
 
-import apdu4j.apdulette.SousChef;
+import apdu4j.apdulette.Chef;
 import apdu4j.core.HexUtils;
 import apdu4j.core.MockBIBO;
 import org.testng.annotations.Test;
@@ -39,7 +39,7 @@ public class TestRegistryUpdate {
         var expectedApdu = "80E64000" + HexUtils.bin2hex(new byte[]{(byte) (expectedData.length() / 2)}) + expectedData + "00";
 
         var mock = MockBIBO.with(expectedApdu, "9000");
-        var chef = new SousChef(mock);
+        var chef = Chef.of(mock);
         var response = chef.cook(GlobalPlatformCookbook.install_for_registry_update(
                 INSTANCE, EnumSet.noneOf(GPRegistryEntryNG.Privilege.class), params));
         assertEquals(response.getSW(), 0x9000);
@@ -55,7 +55,7 @@ public class TestRegistryUpdate {
         var expectedApdu = "80E64000" + HexUtils.bin2hex(new byte[]{(byte) (expectedData.length() / 2)}) + expectedData + "00";
 
         var mock = MockBIBO.with(expectedApdu, "9000");
-        var chef = new SousChef(mock);
+        var chef = Chef.of(mock);
         var response = chef.cook(GlobalPlatformCookbook.install_for_registry_update(
                 INSTANCE, EnumSet.noneOf(GPRegistryEntryNG.Privilege.class), params));
         assertEquals(response.getSW(), 0x9000);
@@ -80,7 +80,7 @@ public class TestRegistryUpdate {
         var params = new byte[0];
         // priv field is 3 bytes; params length 00; token length 00
         var mock = MockBIBO.of("9000");
-        var chef = new SousChef(mock);
+        var chef = Chef.of(mock);
         var response = chef.cook(GlobalPlatformCookbook.install_for_registry_update(INSTANCE, privs, params));
         assertEquals(response.getSW(), 0x9000);
     }
@@ -96,7 +96,7 @@ public class TestRegistryUpdate {
         var expectedApdu = "80E60200" + HexUtils.bin2hex(new byte[]{(byte) (expectedData.length() / 2)}) + expectedData + "00";
 
         var mock = MockBIBO.with(expectedApdu, "9000");
-        var chef = new SousChef(mock);
+        var chef = Chef.of(mock);
         var response = chef.cook(GlobalPlatformCookbook.install_for_load(pkg, isd, new byte[0], new byte[0]));
         assertEquals(response.getSW(), 0x9000);
     }
@@ -109,7 +109,7 @@ public class TestRegistryUpdate {
         var expectedApdu = "80E40000" + HexUtils.bin2hex(new byte[]{(byte) data.length}) + HexUtils.bin2hex(data) + "00";
 
         var mock = MockBIBO.with(expectedApdu, "9000");
-        var chef = new SousChef(mock);
+        var chef = Chef.of(mock);
         var response = chef.cook(GlobalPlatformCookbook.delete_aid(aid, false));
         assertEquals(response.getSW(), 0x9000);
     }

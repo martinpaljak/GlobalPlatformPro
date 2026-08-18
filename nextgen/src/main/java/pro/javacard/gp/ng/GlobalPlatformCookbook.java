@@ -253,7 +253,7 @@ public final class GlobalPlatformCookbook {
         return send(new CommandAPDU(0x00, 0xA4, 0x04, 0x00, JCOP_IDENTIFY, 256))
                 .then(r -> {
                     if (r.getData().length > 15 && r.getData()[14] == 0x00) {
-                        return Recipe.<ResponseAPDU>error("Unfused JCOP detected");
+                        return Recipe.cardError(r, "Unfused JCOP detected");
                     }
                     return Recipe.premade(r);
                 });
@@ -262,7 +262,7 @@ public final class GlobalPlatformCookbook {
     // Try AIDs from list, chained with orElse fallback
     public static Recipe<ResponseAPDU> try_aids(final List<AID> aids) {
         if (aids.isEmpty()) {
-            return Recipe.error("No ISD found");
+            return Recipe.fail("No ISD found");
         }
         return firstOf(aids.stream().map(a -> select_aid(a.getBytes())).toList());
     }
@@ -370,7 +370,7 @@ public final class GlobalPlatformCookbook {
                 .recover(err -> switch (err.sw()) {
                     case 0x6A82 -> check_jcop_unfused().and(try_aids(extraAIDs));
                     case 0x6A87 -> select_aid(DEFAULT_ISD);
-                    default -> Recipe.error(err.message() + " (SW: %04X)".formatted(err.sw()));
+                    default -> Recipe.cardError(err.response(), err.message());
                 })
                 .map(GlobalPlatformCookbook::parse_fci);
     }
@@ -472,7 +472,7 @@ public final class GlobalPlatformCookbook {
                         throw new KitchenDisaster("INITIALIZE UPDATE failed, card locked?");
                     }
                     if (r.getSW() != 0x9000) {
-                        return Recipe.error("INITIALIZE UPDATE failed (SW: %04X)".formatted(r.getSW()));
+                        return Recipe.cardError(r, "INITIALIZE UPDATE failed");
                     }
                     return Recipe.premade(InitUpdateResponse.parse(r.getData(), hc));
                 });

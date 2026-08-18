@@ -637,7 +637,7 @@ public final class GPToolNG extends GPCommandLineInterface implements ToolExtens
     // STORE DATA an ARA rule block, tolerating 6382 (rule stored but an unknown BER-TLV was discarded, SEAC Table 5-15)
     private static Recipe<ResponseAPDU> ara_store_data(byte[] payload) {
         return GlobalPlatformCookbook.store_data_blob(payload, 0x10)
-                .recover(err -> err.response().getSW() == 0x6382 ? Recipe.premade(err.response()) : Recipe.error(err.message()));
+                .recover(err -> err.response().getSW() == 0x6382 ? Recipe.premade(err.response()) : Recipe.cardError(err.response(), err.message()));
     }
 
     // Build reader selector from CLI options and environment
@@ -744,7 +744,7 @@ public final class GPToolNG extends GPCommandLineInterface implements ToolExtens
                     ret = executeRecipes(stack, plan, keys, mode, cliPrefs);
                 } else {
                     var selector = buildReaderSelector(args, env, dump);
-                    ret = selector.open(stack -> executeRecipes(stack, plan, keys, mode, cliPrefs));
+                    ret = selector.run(stack -> executeRecipes(stack, plan, keys, mode, cliPrefs));
                 }
             }
         } catch (NoMatchingReaderException e) {

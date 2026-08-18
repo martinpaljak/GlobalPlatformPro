@@ -3,7 +3,7 @@
 
 package pro.javacard.gp.ng;
 
-import apdu4j.apdulette.SousChef;
+import apdu4j.apdulette.Chef;
 import apdu4j.core.BIBOSA;
 import apdu4j.core.DumpFormat;
 import apdu4j.core.HexUtils;
@@ -19,11 +19,11 @@ import static org.testng.Assert.*;
 
 public class TestGlobalPlatformCookbook {
 
-    // Helper to create SousChef from a classpath dump resource
-    private SousChef chef_from_dump(final String resource) {
+    // Helper to create Chef from a classpath dump resource
+    private Chef chef_from_dump(final String resource) {
         final var dump = DumpFormat.parse(getClass().getResourceAsStream(resource));
         final var mock = MockBIBO.fromDump(dump);
-        return new SousChef(mock);
+        return Chef.of(mock);
     }
 
     @Test
@@ -59,7 +59,7 @@ public class TestGlobalPlatformCookbook {
     public void testOpenSecureChannelFromDump() {
         final var dump = DumpFormat.parse(getClass().getResourceAsStream("/scp03-auth-jcop4.dump"));
         final var mock = MockBIBO.fromDump(dump);
-        final var chef = new SousChef(mock);
+        final var chef = Chef.of(mock);
         final var keys = PlaintextCardKeys.defaultKey();
         final var mode = EnumSet.of(GPSession.APDUMode.MAC);
         final var fixedChallenge = HexUtils.hex2bin("0102030405060708");
@@ -70,7 +70,7 @@ public class TestGlobalPlatformCookbook {
 
         // Verify we can wrap a GET STATUS through the secure channel
         final var scpBibosa = SCP03.secure(new BIBOSA(mock), (SCP03.State) state);
-        final var secureChef = new SousChef(scpBibosa);
+        final var secureChef = Chef.of(scpBibosa);
         final var registry = secureChef.cook(GlobalPlatformCookbook.get_status(0x80));
         assertTrue(registry.length > 0);
     }
@@ -96,7 +96,7 @@ public class TestGlobalPlatformCookbook {
     public void testOpenSecureChannelScp01FromDump() {
         final var dump = DumpFormat.parse(getClass().getResourceAsStream("/scp01-auth.dump"));
         final var mock = MockBIBO.fromDump(dump);
-        final var chef = new SousChef(mock);
+        final var chef = Chef.of(mock);
         final var keys = PlaintextCardKeys.defaultKey();
         final var mode = EnumSet.of(GPSession.APDUMode.MAC);
         final var fixedChallenge = HexUtils.hex2bin("C0F8AE055C5AB83B");
@@ -107,7 +107,7 @@ public class TestGlobalPlatformCookbook {
 
         // Verify we can wrap a GET STATUS through the secure channel and get a valid response
         final var scpBibosa = SCP01.secure(new BIBOSA(mock), (SCP01.State) state);
-        final var secureChef = new SousChef(scpBibosa);
+        final var secureChef = Chef.of(scpBibosa);
         final var registry = secureChef.cook(GlobalPlatformCookbook.get_status(0x80));
         assertTrue(registry.length > 0);
     }
@@ -133,7 +133,7 @@ public class TestGlobalPlatformCookbook {
     public void testOpenSecureChannelScp02FromDump() {
         final var dump = DumpFormat.parse(getClass().getResourceAsStream("/scp02-auth.dump"));
         final var mock = MockBIBO.fromDump(dump);
-        final var chef = new SousChef(mock);
+        final var chef = Chef.of(mock);
         final var keys = PlaintextCardKeys.defaultKey();
         final var mode = EnumSet.of(GPSession.APDUMode.MAC);
         final var fixedChallenge = HexUtils.hex2bin("796B87A024C3EF57");
@@ -144,7 +144,7 @@ public class TestGlobalPlatformCookbook {
 
         // Verify we can wrap a GET STATUS through the secure channel
         final var scpBibosa = SCP02.secure(new BIBOSA(mock), (SCP02.State) state);
-        final var secureChef = new SousChef(scpBibosa);
+        final var secureChef = Chef.of(scpBibosa);
         final var registry = secureChef.cook(GlobalPlatformCookbook.get_status(0x80));
         assertTrue(registry.length > 0);
     }

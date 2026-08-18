@@ -130,7 +130,7 @@ public final class CRSCookbook {
                 .then(r -> switch (r.getSW()) {
                     case 0x9000 -> Recipe.premade(List.<AID>of());
                     case 0x6320, 0x6330 -> Recipe.premade(parse_crs_failures(r.getData()));
-                    default -> Recipe.error("CRS SET STATUS failed (SW: %04X)".formatted(r.getSW()));
+                    default -> Recipe.cardError(r, "CRS SET STATUS failed");
                 });
     }
 }

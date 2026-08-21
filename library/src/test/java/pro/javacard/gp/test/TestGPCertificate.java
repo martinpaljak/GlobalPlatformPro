@@ -15,6 +15,7 @@ import pro.javacard.gp.GPUtils;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
 import java.security.spec.ECGenParameterSpec;
 import java.time.LocalDate;
@@ -150,6 +151,16 @@ public class TestGPCertificate {
         // Not a curve of Table B-2
         Assert.assertTrue(GPCurve.forName("secp192r1").isEmpty());
         Assert.assertTrue(GPCurve.forName("nonsense").isEmpty());
+
+        // A key on the command line: a point with or without the curve, and a private key that derives its own
+        final var point = HexUtils.hex2bin(CA_POINT);
+        Assert.assertEquals(GPCurve.secp256r1.encodePoint(GPCurve.secp256r1.toPublicKey(point)), point);
+        Assert.assertEquals(GPCurve.secp256r1.encodePoint((ECPublicKey) GPCurve.keys("secp256r1:" + CA_POINT).orElseThrow().getPublic()), point);
+        Assert.assertEquals(GPCurve.secp256r1.encodePoint((ECPublicKey) GPCurve.keys(CA_POINT).orElseThrow().getPublic()), point);
+        final var generated = keypair("secp256r1");
+        final var scalar = "secp256r1:%064x".formatted(((ECPrivateKey) generated.getPrivate()).getS());
+        Assert.assertEquals(GPCurve.secp256r1.encodePoint((ECPublicKey) GPCurve.keys(scalar).orElseThrow().getPublic()),
+                GPCurve.secp256r1.encodePoint((ECPublicKey) generated.getPublic()));
     }
 
     // A certificate with the mandatory fields, of which the key usage, expiration and public key are given
@@ -188,6 +199,24 @@ public class TestGPCertificate {
         Assert.assertThrows(GPDataException.class, () -> minimal(usage, expires, "7F4905F003000000").curveReference());
         // A proprietary key parameter reference names no curve
         Assert.assertThrows(GPDataException.class, () -> minimal(usage, expires, "7F4906B00104F00140").publicKey());
+
+        // A point is taken as a key only if it is uncompressed and on the curve it is read on
+        final var point = HexUtils.hex2bin(CA_POINT);
+        Assert.assertThrows(IllegalArgumentException.class, () -> GPCurve.brainpoolP256r1.toPublicKey(point));
+        final var offCurve = point.clone();
+        offCurve[offCurve.length - 1] ^= 0x01;
+        Assert.assertThrows(IllegalArgumentException.class, () -> GPCurve.secp256r1.toPublicKey(offCurve));
+        // A compressed point, and the point at infinity
+        Assert.assertThrows(IllegalArgumentException.class,
+                () -> GPCurve.secp256r1.toPublicKey(HexUtils.hex2bin("02" + CA_POINT.substring(2, 66))));
+        Assert.assertThrows(IllegalArgumentException.class, () -> GPCurve.secp256r1.toPublicKey(HexUtils.hex2bin("00")));
+        // A named curve makes the value a key or an error, a bare value may be something else entirely
+        Assert.assertThrows(IllegalArgumentException.class, () -> GPCurve.keys("secp256r1:1234"));
+        Assert.assertThrows(IllegalArgumentException.class, () -> GPCurve.keys("secp256r1:" + "00".repeat(32)));
+        Assert.assertTrue(GPCurve.keys("aes:00112233445566778899AABBCCDDEEFF").isEmpty());
+        Assert.assertTrue(GPCurve.keys("00112233445566778899AABBCCDDEEFF").isEmpty());
+        Assert.assertTrue(GPCurve.keys("/not/a/curve:00").isEmpty());
+        Assert.assertTrue(GPCurve.keys("nonsense").isEmpty());
 
         // Both '53' and '73' discretionary data
         final var both = GPCertificate.builder().serial(HexUtils.hex2bin("01")).ca(HexUtils.hex2bin("02"))

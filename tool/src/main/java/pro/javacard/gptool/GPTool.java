@@ -160,6 +160,11 @@ public final class GPTool extends GPCommandLineInterface {
                 return;
             }
 
+            // Certificates are made and read without a card
+            if (GPCertTool.isCertificateCommand(args)) {
+                System.exit(GPCertTool.run(args));
+            }
+
             // FIXME: have "cardlessCommands()"
             if (onlyHasArg(args, OPT_CAP)) {
                 final CAPFile cap = CAPFile.fromFile(args.valueOf(OPT_CAP).toPath());
@@ -1282,7 +1287,7 @@ public final class GPTool extends GPCommandLineInterface {
         return Arrays.stream(yes).anyMatch(args::has);
     }
 
-    private static void verbose(String s) {
+    static void verbose(String s) {
         if (isVerbose) {
             System.out.println("# " + s);
         }

@@ -13,6 +13,7 @@ import org.bouncycastle.openssl.PEMKeyPair;
 import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
 import pro.javacard.gp.GPCrypto;
+import pro.javacard.gp.GPCurve;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -99,6 +100,15 @@ public final class Key {
                 throw new IllegalArgumentException("Could not read PEM: " + e.getMessage(), e);
             }
         } else {
+            // EC keys as "curve:point" or "curve:scalar", and a bare uncompressed point
+            try {
+                final var ec = GPCurve.keys(v);
+                if (ec.isPresent()) {
+                    return new Key(v, null, ec.get().getPublic(), ec.get().getPrivate());
+                }
+            } catch (GeneralSecurityException e) {
+                throw new IllegalArgumentException("Could not read EC key: " + e.getMessage(), e);
+            }
             if (v.startsWith("aes:")) {
                 final byte[] bv = HexUtils.hex2bin(v.substring(4));
                 if (bv.length == 16 || bv.length == 24 || bv.length == 32) {
@@ -125,7 +135,6 @@ public final class Key {
                     throw new IllegalArgumentException("Invalid key length: " + k.length);
                 }
             }
-            // TODO: public keys as curve points.
         }
     }
 

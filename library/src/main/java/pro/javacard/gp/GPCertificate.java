@@ -49,7 +49,7 @@ public final class GPCertificate {
     // Mandatory in every profile of the format
     private static final List<Tag> MANDATORY = List.of(SERIAL, CA, SUBJECT, USAGE, EXPIRES, PUBLIC_KEY);
 
-    // Key Usage of tag '95', see GPC 2.3.1 11.1.9
+    // Key Usage of tag '95', see GPC v2.3.1 11.1.9
     public enum Usage {
         VERIFICATION(0x8200), // Table 11-17: b8 verification, b2 digital signature
         AGREEMENT(0x0080); // Table 11-18: b8 key agreement
@@ -241,7 +241,7 @@ public final class GPCertificate {
         return child(PUBLIC_KEY, POINT);
     }
 
-    // Key Parameter Reference of GPC 2.3.1 Table B-2
+    // Key Parameter Reference of GPC v2.3.1 Table B-2
     public int curveReference() {
         return reference(child(PUBLIC_KEY, CURVE));
     }

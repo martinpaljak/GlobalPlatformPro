@@ -58,7 +58,7 @@ public final class GPCrypto {
     static final String DES_ECB_CIPHER = "DES/ECB/NoPadding";
     static final String AES_CBC_CIPHER = "AES/CBC/NoPadding";
 
-    // Not registered globally. Needed for the brainpool curves of Table B-2, which SunEC does not implement.
+    // Not registered globally. Needed for the brainpool curves of GPC 2.3.1 Table B-2, which SunEC does not implement.
     static final Provider BC = new BouncyCastleProvider();
 
     // Shared random
@@ -302,7 +302,7 @@ public final class GPCrypto {
         return signer.sign();
     }
 
-    // Table B-3: the hash follows the order of the signing key
+    // GPC 2.3.1 Table B-3: the hash follows the order of the signing key
     static String ecdsa_digest(final int orderBits) {
         if (orderBits >= 512) {
             return "SHA-512";
@@ -316,7 +316,7 @@ public final class GPCrypto {
         return ecdsa_digest(key.getParams().getOrder().bitLength()).replace("-", "") + "withECDSA";
     }
 
-    // B.4.3 ECDSA: r and s are each as long as the order, so the signature is twice this
+    // GPC 2.3.1 B.4.3 ECDSA: r and s are each as long as the order, so the signature is twice this
     private static int order_length(final ECKey key) {
         return (key.getParams().getOrder().bitLength() + 7) / 8;
     }

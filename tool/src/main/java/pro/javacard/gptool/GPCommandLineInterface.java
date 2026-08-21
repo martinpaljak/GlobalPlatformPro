@@ -7,6 +7,8 @@ import apdu4j.core.HexBytes;
 import joptsimple.*;
 import joptsimple.util.EnumConverter;
 import pro.javacard.capfile.AID;
+import pro.javacard.gp.GPCertificate;
+import pro.javacard.gp.GPCurve;
 import pro.javacard.gp.GPData;
 import pro.javacard.gp.GPSession;
 import pro.javacard.gp.GPUtils;
@@ -14,6 +16,9 @@ import pro.javacard.pace.PACE;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.Optional;
@@ -173,6 +178,55 @@ abstract class GPCommandLineInterface {
     protected static OptionSpec<PACE.PACECurve> OPT_PACE_CURVE = parser.accepts("pace-curve", "Curve to use").requiredIf(OPT_PACE, OPT_PACE_SM)
             .withRequiredArg().ofType(PACE.PACECurve.class).describedAs("curve");
 
+    // GP certificates (tag '7F21'); offline, no card is touched
+    protected static OptionSpec<File> OPT_CERT_IN = parser.accepts("cert-in", "Read certificate(s)").withRequiredArg().ofType(File.class)
+            .describedAs("file");
+    protected static OptionSpec<Void> OPT_CERT_NEW = parser.accepts("cert-new", "Construct a new certificate").availableUnless(OPT_CERT_IN);
+    protected static OptionSpec<File> OPT_CERT_DTBS_IN = parser.accepts("cert-dtbs-in", "Read bytes to be signed").availableUnless(OPT_CERT_IN, OPT_CERT_NEW)
+            .withRequiredArg().ofType(File.class).describedAs("file");
+
+    protected static OptionSpec<File> OPT_CERT_OUT = parser.accepts("cert-out", "Write certificate to file").withRequiredArg().ofType(File.class)
+            .describedAs("file");
+    protected static OptionSpec<Void> OPT_CERT_BIN = parser.accepts("cert-bin", "Output binary");
+    protected static OptionSpec<Void> OPT_CERT_HEX = parser.accepts("cert-hex", "Output hex").availableUnless(OPT_CERT_BIN);
+    protected static OptionSpec<Void> OPT_CERT_BASE64 = parser.accepts("cert-base64", "Output base64").availableUnless(OPT_CERT_BIN, OPT_CERT_HEX);
+
+    protected static OptionSpec<Key> OPT_CERT_SIGN = parser.accepts("cert-sign", "Sign with CA private key").availableUnless(OPT_CERT_DTBS_IN)
+            .withRequiredArg().withValuesConvertedBy(new KeyConverter()).describedAs("PEM or curve:key");
+    protected static OptionSpec<String> OPT_CERT_SIGNATURE = parser.accepts("cert-signature", "Attach signature (R||S or DER)")
+            .availableUnless(OPT_CERT_SIGN).withRequiredArg().describedAs("file or hex");
+    protected static OptionSpec<Void> OPT_CERT_DTBS = parser.accepts("cert-dtbs", "Print the bytes to be signed").availableUnless(OPT_CERT_SIGN,
+            OPT_CERT_SIGNATURE);
+    protected static OptionSpec<String> OPT_CERT_VERIFY = parser.accepts("cert-verify", "Verify with issuer public key").availableIf(OPT_CERT_IN)
+            .withRequiredArg().describedAs("PEM/certificate/key");
+
+    protected static OptionSpec<GPCurve> OPT_CERT_CA_CURVE = parser.accepts("cert-ca-curve", "Curve of the CA key").availableUnless(OPT_CERT_SIGN)
+            .withRequiredArg().withValuesConvertedBy(new CurveConverter()).describedAs("curve");
+
+    // Certificate fields, tags of Amendment F v1.4 Table 6-1 and Amendment A v1.2 Table 3-6
+    protected static OptionSpec<HexBytes> OPT_CERT_SERIAL = parser.accepts("cert-serial", "Certificate Serial Number ('93')").withRequiredArg()
+            .withValuesConvertedBy(new LenientHexConverter()).describedAs("hex or text");
+    protected static OptionSpec<HexBytes> OPT_CERT_CA = parser.accepts("cert-ca", "CA Identifier ('42')").withRequiredArg()
+            .withValuesConvertedBy(new LenientHexConverter()).describedAs("hex or text");
+    protected static OptionSpec<HexBytes> OPT_CERT_SUBJECT = parser.accepts("cert-subject", "Subject Identifier ('5F20')").withRequiredArg()
+            .withValuesConvertedBy(new LenientHexConverter()).describedAs("hex or text");
+    protected static OptionSpec<HexBytes> OPT_CERT_IMAGE_NUMBER = parser.accepts("cert-image-number", "Security Domain Image Number ('45')")
+            .withRequiredArg().withValuesConvertedBy(new LenientHexConverter()).describedAs("hex or text");
+    protected static OptionSpec<GPCertificate.Usage> OPT_CERT_USAGE = parser.accepts("cert-usage", "Key Usage ('95')").withRequiredArg()
+            .withValuesConvertedBy(new UsageConverter());
+    protected static OptionSpec<LocalDate> OPT_CERT_EFFECTIVE = parser.accepts("cert-effective", "Effective Date ('5F25')").withRequiredArg()
+            .withValuesConvertedBy(new DateConverter()).describedAs("date");
+    protected static OptionSpec<LocalDate> OPT_CERT_EXPIRES = parser.accepts("cert-expires", "Expiration Date ('5F24')").withRequiredArg()
+            .withValuesConvertedBy(new DateConverter()).describedAs("date");
+    protected static OptionSpec<HexBytes> OPT_CERT_DISCRETIONARY = parser.accepts("cert-discretionary", "Discretionary Data ('53')").withRequiredArg()
+            .ofType(HexBytes.class).describedAs("hex");
+    protected static OptionSpec<HexBytes> OPT_CERT_DISCRETIONARY_TLV = parser.accepts("cert-discretionary-tlv", "Discretionary Data ('73')")
+            .availableUnless(OPT_CERT_DISCRETIONARY).withRequiredArg().ofType(HexBytes.class).describedAs("hex");
+    protected static OptionSpec<HexBytes> OPT_CERT_AUTHORIZATIONS = parser.accepts("cert-authorizations", "Authorizations ('BF20')").withRequiredArg()
+            .ofType(HexBytes.class).describedAs("hex");
+    protected static OptionSpec<String> OPT_CERT_PUBKEY = parser.accepts("cert-pubkey", "Subject public key ('7F49')").withRequiredArg()
+            .describedAs("PEM or curve:point");
+
     // MISC options
     protected static OptionSpec<GPSession.APDUMode> OPT_SC_MODE = parser.accepts("mode", "Secure channel to use").withRequiredArg()
             .ofType(GPSession.APDUMode.class).withValuesConvertedBy(new APDUModeConverter());
@@ -207,6 +261,86 @@ abstract class GPCommandLineInterface {
         @Override
         public String valuePattern() {
             return "Integer";
+        }
+    }
+
+    static class KeyConverter implements ValueConverter<Key> {
+        @Override
+        public Key convert(final String s) {
+            return Key.valueOf(s);
+        }
+
+        @Override
+        public Class<? extends Key> valueType() {
+            return Key.class;
+        }
+
+        @Override
+        public String valuePattern() {
+            return "Key";
+        }
+    }
+
+    static class UsageConverter extends EnumConverter<GPCertificate.Usage> {
+        public UsageConverter() {
+            super(GPCertificate.Usage.class);
+        }
+    }
+
+    static class CurveConverter implements ValueConverter<GPCurve> {
+        @Override
+        public GPCurve convert(final String s) {
+            final var valid = Arrays.stream(GPCurve.values()).map(Enum::name).collect(Collectors.joining(","));
+            return GPCurve.forName(s).orElseThrow(() -> new IllegalArgumentException(s + " is not a supported curve (valid are: " + valid + ")"));
+        }
+
+        @Override
+        public Class<? extends GPCurve> valueType() {
+            return GPCurve.class;
+        }
+
+        @Override
+        public String valuePattern() {
+            return "Curve";
+        }
+    }
+
+    // ISO dates, plus the YYYYMMDD that the certificate itself carries
+    static class DateConverter implements ValueConverter<LocalDate> {
+        @Override
+        public LocalDate convert(final String s) {
+            try {
+                return LocalDate.parse(s, s.length() == 8 ? DateTimeFormatter.BASIC_ISO_DATE : DateTimeFormatter.ISO_LOCAL_DATE);
+            } catch (DateTimeParseException e) {
+                throw new IllegalArgumentException(s + " is not a date (use YYYY-MM-DD)");
+            }
+        }
+
+        @Override
+        public Class<? extends LocalDate> valueType() {
+            return LocalDate.class;
+        }
+
+        @Override
+        public String valuePattern() {
+            return "Date";
+        }
+    }
+
+    static class LenientHexConverter implements ValueConverter<HexBytes> {
+        @Override
+        public HexBytes convert(final String s) {
+            return HexBytes.lenient(s);
+        }
+
+        @Override
+        public Class<? extends HexBytes> valueType() {
+            return HexBytes.class;
+        }
+
+        @Override
+        public String valuePattern() {
+            return "Bytes";
         }
     }
 

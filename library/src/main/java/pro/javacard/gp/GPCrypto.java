@@ -3,8 +3,10 @@
 
 package pro.javacard.gp;
 
+import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1Integer;
+import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.DLSequence;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
@@ -15,6 +17,7 @@ import org.bouncycastle.crypto.generators.KDFCounterBytesGenerator;
 import org.bouncycastle.crypto.macs.CMac;
 import org.bouncycastle.crypto.params.KDFCounterParameters;
 import org.bouncycastle.crypto.params.KeyParameter;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openssl.PEMKeyPair;
 import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
@@ -29,9 +32,13 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.cert.CertificateException;
+import java.security.interfaces.ECKey;
+import java.security.interfaces.ECPrivateKey;
+import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.spec.MGF1ParameterSpec;
 import java.security.spec.PSSParameterSpec;
@@ -50,6 +57,9 @@ public final class GPCrypto {
     static final String DES_CBC_CIPHER = "DES/CBC/NoPadding";
     static final String DES_ECB_CIPHER = "DES/ECB/NoPadding";
     static final String AES_CBC_CIPHER = "AES/CBC/NoPadding";
+
+    // Not registered globally. Needed for the brainpool curves of Table B-2, which SunEC does not implement.
+    static final Provider BC = new BouncyCastleProvider();
 
     // Shared random
     private static final SecureRandom rnd;
@@ -292,6 +302,46 @@ public final class GPCrypto {
         return signer.sign();
     }
 
+    // Table B-3: the hash follows the order of the signing key
+    static String ecdsa_digest(final int orderBits) {
+        if (orderBits >= 512) {
+            return "SHA-512";
+        } else if (orderBits >= 384) {
+            return "SHA-384";
+        }
+        return "SHA-256";
+    }
+
+    private static String ecdsa(final ECKey key) {
+        return ecdsa_digest(key.getParams().getOrder().bitLength()).replace("-", "") + "withECDSA";
+    }
+
+    // B.4.3 ECDSA: r and s are each as long as the order, so the signature is twice this
+    private static int order_length(final ECKey key) {
+        return (key.getParams().getOrder().bitLength() + 7) / 8;
+    }
+
+    // The signature is the concatenation of r and s, as specified in TR-03111
+    public static byte[] ecdsa_plain(final PrivateKey key, final byte[] dtbs) throws GeneralSecurityException {
+        if (!(key instanceof ECPrivateKey eckey)) {
+            throw new InvalidKeyException("Not an EC key: " + key.getAlgorithm());
+        }
+        final var signer = Signature.getInstance(ecdsa(eckey), BC);
+        signer.initSign(key);
+        signer.update(dtbs);
+        return der2rs(signer.sign(), order_length(eckey));
+    }
+
+    public static boolean ecdsa_plain_verify(final ECPublicKey key, final byte[] dtbs, final byte[] signature) throws GeneralSecurityException {
+        if (signature.length != 2 * order_length(key)) {
+            return false;
+        }
+        final var verifier = Signature.getInstance(ecdsa(key), BC);
+        verifier.initVerify(key);
+        verifier.update(dtbs);
+        return verifier.verify(rs2der(signature));
+    }
+
     // Get a public key from a PEM file, either public key or keypair
     public static PublicKey pem2PublicKey(final InputStream in) throws IOException {
         try (var pem = new PEMParser(new InputStreamReader(in, StandardCharsets.US_ASCII))) {
@@ -336,6 +386,17 @@ public final class GPCrypto {
                 return Arrays.copyOf(key, 8);
             default:
                 throw new IllegalArgumentException("Invalid DES key length: " + length);
+        }
+    }
+
+    public static byte[] rs2der(final byte[] rs) throws SignatureException {
+        final var half = rs.length / 2;
+        final var r = new BigInteger(1, Arrays.copyOf(rs, half));
+        final var s = new BigInteger(1, Arrays.copyOfRange(rs, half, rs.length));
+        try {
+            return new DERSequence(new ASN1Encodable[] { new ASN1Integer(r), new ASN1Integer(s) }).getEncoded();
+        } catch (IOException e) {
+            throw new SignatureException("Could not convert R||S to DER: " + e.getMessage());
         }
     }
 

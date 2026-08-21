@@ -6,7 +6,7 @@
 module pro.javacard.globalplatform {
     requires transitive apdu4j.core;
 
-    requires pro.javacard.tlv;
+    requires transitive pro.javacard.tlv; // GPCertificate.fields() hands out TLV
     requires org.bouncycastle.pkix;
     requires org.bouncycastle.provider; // FIXME: Hex. uses this
     requires transitive org.slf4j;

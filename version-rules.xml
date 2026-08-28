@@ -5,7 +5,7 @@
         <ignoreVersion type="regex">(?i).*[-.]M\d+</ignoreVersion>
     </ignoreVersions>
     <rules>
-        <rule groupId="com.github.martinpaljak" artifactId="apdu4j-core">
+        <rule groupId="pro.javacard" artifactId="apdu4j-core">
             <ignoreVersions>
                 <ignoreVersion type="regex">^\d{4}.*</ignoreVersion>
             </ignoreVersions>

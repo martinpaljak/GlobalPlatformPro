@@ -2,23 +2,23 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>com.github.martinpaljak</groupId>
+        <groupId>pro.javacard</groupId>
         <artifactId>gppro</artifactId>
-        <version>26.06.05-SNAPSHOT</version>
+        <version>26.08.28-SNAPSHOT</version>
     </parent>
     <artifactId>globalplatformpro</artifactId>
     <name>GlobalPlatformPro library</name>
     <dependencies>
         <!-- For APDU construction and parsing -->
         <dependency>
-            <groupId>com.github.martinpaljak</groupId>
+            <groupId>pro.javacard</groupId>
             <artifactId>apdu4j-core</artifactId>
         </dependency>
         <!-- For CAP file parsing -->
         <dependency>
-            <groupId>com.github.martinpaljak</groupId>
+            <groupId>pro.javacard</groupId>
             <artifactId>capfile</artifactId>
-            <version>26.05.15</version>
+            <version>26.08.28-SNAPSHOT</version>
         </dependency>
         <!-- For logging -->
         <dependency>
@@ -32,7 +32,7 @@
         </dependency>
         <!-- For TLV handling -->
         <dependency>
-            <groupId>com.github.martinpaljak</groupId>
+            <groupId>pro.javacard</groupId>
             <artifactId>tlv</artifactId>
             <version>${project.version}</version>
         </dependency>

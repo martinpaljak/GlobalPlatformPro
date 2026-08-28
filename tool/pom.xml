@@ -2,27 +2,27 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>com.github.martinpaljak</groupId>
+        <groupId>pro.javacard</groupId>
         <artifactId>gppro</artifactId>
-        <version>26.06.05-SNAPSHOT</version>
+        <version>26.08.28-SNAPSHOT</version>
     </parent>
     <artifactId>gptool</artifactId>
     <name>GlobalPlatformPro CLI tool</name>
     <dependencies>
         <!-- For PC/SC reader access -->
         <dependency>
-            <groupId>com.github.martinpaljak</groupId>
+            <groupId>pro.javacard</groupId>
             <artifactId>apdu4j-pcsc</artifactId>
         </dependency>
         <!-- Library itself -->
         <dependency>
-            <groupId>com.github.martinpaljak</groupId>
+            <groupId>pro.javacard</groupId>
             <artifactId>globalplatformpro</artifactId>
             <version>${project.version}</version>
         </dependency>
         <!-- For PACE auth -->
         <dependency>
-            <groupId>com.github.martinpaljak</groupId>
+            <groupId>pro.javacard</groupId>
             <artifactId>pace</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -49,7 +49,7 @@
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-cbor</artifactId>
-            <version>2.22.0</version>
+            <version>2.22.2</version>
         </dependency>
     </dependencies>
     <profiles>
@@ -60,7 +60,7 @@
             </activation>
             <dependencies>
                 <dependency>
-                    <groupId>com.github.martinpaljak</groupId>
+                    <groupId>pro.javacard</groupId>
                     <artifactId>gptool-nextgen</artifactId>
                     <version>${project.version}</version>
                     <optional>true</optional>

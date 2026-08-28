@@ -417,8 +417,8 @@ public final class GPCertificate {
 
     @Override
     public String toString() {
-        return "GP certificate %s for %s by %s, expires %s".formatted(HexUtils.bin2hex(serial()),
-                HexUtils.bin2hex(subject()), HexUtils.bin2hex(ca()), expires());
+        return "GP certificate %s for %s by %s, expires %s".formatted(GPUtils.bin2printable(serial()),
+                GPUtils.bin2printable(subject()), GPUtils.bin2printable(ca()), expires());
     }
 
     @Override

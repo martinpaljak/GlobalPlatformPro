@@ -11,6 +11,7 @@ import pro.javacard.gp.GPCertificate;
 import pro.javacard.gp.GPCrypto;
 import pro.javacard.gp.GPCurve;
 import pro.javacard.gp.GPDataException;
+import pro.javacard.gp.GPUtils;
 import pro.javacard.tlv.Len;
 import pro.javacard.tlv.TLV;
 import pro.javacard.tlv.Tag;
@@ -315,14 +316,8 @@ final class GPCertTool extends GPCommandLineInterface {
             case 0x7F49 -> "%s on %s".formatted(HexUtils.bin2hex(certificate.publicKeyPoint()),
                     GPCurve.forReference(certificate.curveReference()).map(Enum::name)
                             .orElse("key parameter reference '%02X'".formatted(certificate.curveReference())));
-            default -> text(value).map(t -> "%s \"%s\"".formatted(HexUtils.bin2hex(value), t)).orElse(HexUtils.bin2hex(value));
+            default -> GPUtils.bin2printable(value);
         };
-    }
-
-    // An identifier is as likely to be a name as it is bytes, the same way it is given on the command line
-    private static Optional<String> text(final byte[] value) {
-        final var s = new String(value, StandardCharsets.US_ASCII);
-        return value.length > 0 && s.chars().allMatch(c -> c >= 0x20 && c < 0x7F) ? Optional.of(s) : Optional.empty();
     }
 
     private static Optional<byte[]> bytes(final OptionSet args, final OptionSpec<HexBytes> spec) {

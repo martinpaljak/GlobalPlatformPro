@@ -5,6 +5,7 @@
 
 package pro.javacard.gp;
 
+import apdu4j.core.HexUtils;
 import org.bouncycastle.util.encoders.Hex;
 import org.slf4j.Logger;
 import pro.javacard.tlv.LV;
@@ -13,6 +14,7 @@ import pro.javacard.tlv.TLVs;
 
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -44,6 +46,12 @@ public final class GPUtils {
             s.append(c >= 0x20 && c < 0x7f ? c : '.');
         }
         return "|" + s + "|";
+    }
+
+    // Identifiers can be ASCII names or opaque bytes.
+    public static String bin2printable(final byte[] bytes) {
+        final var s = new String(bytes, StandardCharsets.US_ASCII);
+        return bytes.length > 0 && s.chars().allMatch(c -> c >= 0x20 && c < 0x7F) ? s : HexUtils.bin2hex(bytes);
     }
 
     public static byte[] concatenate(final byte[]... args) {

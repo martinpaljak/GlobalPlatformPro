@@ -49,6 +49,8 @@ public class TestGPCertTool {
         Assert.assertEquals(certificate.effective().orElseThrow(), LocalDate.of(2026, 1, 1));
         Assert.assertEquals(certificate.curveReference(), GPCurve.secp256r1.reference());
 
+        Assert.assertEquals(certificate.toString(), "GP certificate 01 for A0000001515350 by Kloc CA, expires 2036-12-31");
+
         Assert.assertEquals(gp("--cert-in", file.toString()), 0);
         Assert.assertEquals(gp("--cert-in", file.toString(), "--cert-verify", CA_PUBLIC), 0);
         // The certificate is self-signed, so it is its own issuer

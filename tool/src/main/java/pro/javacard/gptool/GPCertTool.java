@@ -14,6 +14,7 @@ import pro.javacard.gp.GPDataException;
 import pro.javacard.gp.GPUtils;
 import pro.javacard.tlv.Len;
 import pro.javacard.tlv.TLV;
+import pro.javacard.tlv.TLVParseException;
 import pro.javacard.tlv.Tag;
 
 import java.io.File;
@@ -26,7 +27,6 @@ import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
 import java.security.PublicKey;
 import java.security.interfaces.ECPublicKey;
-import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 import java.util.Locale;
@@ -54,6 +54,10 @@ final class GPCertTool extends GPCommandLineInterface {
             Map.entry(0x5F37, "Signature"));
 
     private static final Tag SIGNATURE = Tag.ber(0x5F37);
+
+    // A DER ECDSA signature: SEQUENCE of two INTEGER-s
+    private static final Tag SEQUENCE = Tag.ber(0x30);
+    private static final Tag INTEGER = Tag.ber(0x02);
 
     private static final List<OptionSpec<?>> FIELDS = List.of(OPT_CERT_SERIAL, OPT_CERT_CA, OPT_CERT_SUBJECT, OPT_CERT_USAGE, OPT_CERT_EFFECTIVE,
             OPT_CERT_EXPIRES, OPT_CERT_IMAGE_NUMBER, OPT_CERT_DISCRETIONARY, OPT_CERT_DISCRETIONARY_TLV, OPT_CERT_AUTHORIZATIONS, OPT_CERT_PUBKEY);
@@ -94,7 +98,7 @@ final class GPCertTool extends GPCommandLineInterface {
             return verified ? 0 : 1;
         }
 
-        // A signature only ever covers the body it was made over, so a changed certificate is signed again or not emitted
+        // A signature only ever covers the body it was made over
         if (edited && !args.has(OPT_CERT_SIGN) && !args.has(OPT_CERT_SIGNATURE) && !args.has(OPT_CERT_DTBS)) {
             throw new IllegalArgumentException("Changing a certificate needs --cert-sign, --cert-signature or --cert-dtbs");
         }
@@ -112,8 +116,7 @@ final class GPCertTool extends GPCommandLineInterface {
         }
         apply(builder, args);
 
-        // The bytes to be signed, for a signer that lives elsewhere; the digest goes to stderr, so that
-        // stdout is the bytes and nothing else
+        // The bytes to be signed, for a signer that lives elsewhere; the digest goes to stderr
         if (args.has(OPT_CERT_DTBS)) {
             final var dtbs = builder.dtbs();
             final var digest = curve(args).digest();
@@ -190,7 +193,7 @@ final class GPCertTool extends GPCommandLineInterface {
             if (!new File(value).isFile()) {
                 throw e;
             }
-            // Not a PEM file, so a GP certificate; in a chain, the signer is the last one
+            // Not a PEM file, but a GP certificate; in a chain, the signer is the last one
             final var chain = read(new File(value));
             if (chain.isEmpty()) {
                 throw new GPDataException("No certificate in " + value);
@@ -203,25 +206,44 @@ final class GPCertTool extends GPCommandLineInterface {
     private static byte[] signature(final OptionSet args) throws IOException, GeneralSecurityException {
         final var given = args.valueOf(OPT_CERT_SIGNATURE);
         final var value = new File(given).isFile() ? bytes(new File(given)) : HexUtils.stringToBin(given);
-        if (value.length > 0 && value[0] == 0x30) {
-            final var length = orderLength(args, value);
+        // The CA curve as given, else NIST: a brainpool CA has to be named
+        final var curves = args.has(OPT_CERT_CA_CURVE) ? List.of(args.valueOf(OPT_CERT_CA_CURVE))
+                : List.of(GPCurve.secp256r1, GPCurve.secp384r1, GPCurve.secp521r1);
+        final var integers = der(value);
+        if (integers.isPresent()) {
+            final var length = orderLength(curves, integers.get());
             verbose("Converting DER signature to R||S of %d bytes".formatted(2 * length));
             return GPCrypto.der2rs(value, length);
         }
-        return value;
+        // R||S is two order-wide integers, GPC 2.3.1 B.4.3
+        if (curves.stream().anyMatch(c -> value.length == 2 * c.orderLength())) {
+            return value;
+        }
+        throw new GPDataException("Signature is neither DER nor R||S", value);
     }
 
-    // The CA curve as given, else the smallest curve the two DER integers fit on
-    private static int orderLength(final OptionSet args, final byte[] der) {
-        if (args.has(OPT_CERT_CA_CURVE)) {
-            return args.valueOf(OPT_CERT_CA_CURVE).orderLength();
+    // The two integers of a DER ECDSA signature
+    private static Optional<List<TLV>> der(final byte[] value) {
+        try {
+            final var parsed = TLV.parse(value);
+            if (parsed.size() == 1 && SEQUENCE.equals(parsed.get(0).tag())) {
+                final var integers = List.copyOf(parsed.get(0).children());
+                if (integers.size() == 2 && integers.stream().allMatch(i -> INTEGER.equals(i.tag()))) {
+                    return Optional.of(integers);
+                }
+            }
+        } catch (TLVParseException e) {
+            verbose("Not a DER signature: " + e.getMessage());
         }
-        // The DER integers are signed and r or s may be short, so it is their value that gives the size
-        final var integers = TLV.parse(der).stream().flatMap(s -> s.children().stream())
-                .mapToInt(i -> (new BigInteger(1, i.value()).bitLength() + 7) / 8).max()
-                .orElseThrow(() -> new GPDataException("Not a DER signature", der));
-        return Arrays.stream(GPCurve.values()).mapToInt(GPCurve::orderLength).distinct().sorted().filter(l -> l >= integers).findFirst()
-                .orElseThrow(() -> new GPDataException("No curve for a signature this large", der));
+        return Optional.empty();
+    }
+
+    // The smallest curve the integers fit on
+    private static int orderLength(final List<GPCurve> curves, final List<TLV> integers) {
+        // The DER integers are signed and r or s may be short
+        final var size = integers.stream().mapToInt(i -> (new BigInteger(1, i.value()).bitLength() + 7) / 8).max().orElseThrow();
+        return curves.stream().mapToInt(GPCurve::orderLength).sorted().filter(l -> l == size || l == size + 1).findFirst()
+                .orElseThrow(() -> new GPDataException("No curve for %d byte signature integers, state --cert-ca-curve".formatted(size)));
     }
 
     // P-256 wherever the CA curve is needed and not stated

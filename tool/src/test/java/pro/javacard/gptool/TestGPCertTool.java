@@ -8,6 +8,7 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 import pro.javacard.gp.GPCertificate;
 import pro.javacard.gp.GPCurve;
+import pro.javacard.gp.GPDataException;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -53,9 +54,9 @@ public class TestGPCertTool {
 
         Assert.assertEquals(gp("--cert-in", file.toString()), 0);
         Assert.assertEquals(gp("--cert-in", file.toString(), "--cert-verify", CA_PUBLIC), 0);
-        // The certificate is self-signed, so it is its own issuer
+        // The certificate is self-signed: its own issuer
         Assert.assertEquals(gp("--cert-in", file.toString(), "--cert-verify", file.toString()), 0);
-        // Changing a field invalidates the signature already in the file, so signing runs again
+        // Changing a field invalidates the signature already in the file
         Assert.assertEquals(gp("--cert-in", file.toString(), "--cert-serial", "09", "--cert-sign", CA, "--cert-out", file.toString()), 0);
         Assert.assertEquals(GPCertificate.parse(Files.readAllBytes(file)).serial(), HexUtils.hex2bin("09"));
         Assert.assertEquals(gp("--cert-in", file.toString(), "--cert-verify", CA_PUBLIC), 0);
@@ -112,6 +113,44 @@ public class TestGPCertTool {
         final var same = temp();
         Assert.assertEquals(gp("--cert-dtbs-in", file.toString(), "--cert-signature", HexUtils.bin2hex(der), "--cert-out", same.toString()), 0);
         Assert.assertEquals(Files.readAllBytes(same), Files.readAllBytes(certificate));
+    }
+
+    @Test
+    public void testPlainSignatureStartingWithDERTag() throws Exception {
+        // The first byte of R is '30' in one signature out of 256
+        final var file = temp();
+        Assert.assertEquals(gp("--cert-new", "--cert-serial", "01", "--cert-ca", "|Kloc CA|", "--cert-subject", "|OCE|", "--cert-usage",
+                "verification", "--cert-expires", "2030-01-01", "--cert-pubkey", CA_PUBLIC, "--cert-sign", CA, "--cert-out", file.toString()), 0);
+
+        // '30' '3E' spans exactly the 64 bytes of R||S
+        final var rs = GPCertificate.parse(Files.readAllBytes(file)).signature();
+        rs[0] = 0x30;
+        rs[1] = 0x3E;
+        final var attached = temp();
+        Assert.assertEquals(gp("--cert-in", file.toString(), "--cert-signature", HexUtils.bin2hex(rs), "--cert-out", attached.toString()), 0);
+        Assert.assertEquals(GPCertificate.parse(Files.readAllBytes(attached)).signature(), rs);
+
+        // Neither R||S of a known curve nor DER
+        Assert.assertThrows(GPDataException.class, () -> gp("--cert-in", file.toString(), "--cert-signature", "30" + "AA".repeat(70)));
+
+        // A DER signature of two 48 byte integers is P-384, not the P-256 of the stated CA curve
+        final var p384 = "3064" + ("0230" + "7F" + "AA".repeat(47)).repeat(2);
+        Assert.assertThrows(GPDataException.class, () -> gp("--cert-in", file.toString(), "--cert-signature", p384,
+                "--cert-ca-curve", "secp256r1"));
+
+        // Without a stated curve, the integers give the size
+        final var wide = temp();
+        Assert.assertEquals(gp("--cert-in", file.toString(), "--cert-signature", p384, "--cert-out", wide.toString()), 0);
+        Assert.assertEquals(GPCertificate.parse(Files.readAllBytes(wide)).signature().length, 96);
+
+        // brainpoolP512r1 integers are 64 bytes, two short of secp521r1: the curve has to be named
+        final var bp512 = "308184" + ("0240" + "7F" + "AA".repeat(63)).repeat(2);
+        Assert.assertThrows(GPDataException.class, () -> gp("--cert-in", file.toString(), "--cert-signature", bp512));
+
+        final var named = temp();
+        Assert.assertEquals(gp("--cert-in", file.toString(), "--cert-signature", bp512,
+                "--cert-ca-curve", "brainpoolP512r1", "--cert-out", named.toString()), 0);
+        Assert.assertEquals(GPCertificate.parse(Files.readAllBytes(named)).signature().length, 128);
     }
 
     @Test

@@ -4,7 +4,7 @@
     <parent>
         <groupId>pro.javacard</groupId>
         <artifactId>gppro</artifactId>
-        <version>26.08.28-SNAPSHOT</version>
+        <version>26.09.01-SNAPSHOT</version>
     </parent>
     <artifactId>pace</artifactId>
     <name>PACE library</name>

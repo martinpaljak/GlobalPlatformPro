@@ -33,7 +33,7 @@ public record GPRegistryEntryNG(
         if (kind == Kind.Application && privileges.contains(Privilege.SecurityDomain)) {
             kind = Kind.SecurityDomain;
         }
-        // EnumSet iterates in declaration order, so privilege listings are deterministic
+        // EnumSet iterates in declaration order: deterministic privilege listings
         privileges = privileges.isEmpty() ? Set.of() : Collections.unmodifiableSet(EnumSet.copyOf(privileges));
         modules = modules != null ? List.copyOf(modules) : List.of();
         implicitContact = implicitContact != null ? Set.copyOf(implicitContact) : Set.of();

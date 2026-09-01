@@ -92,11 +92,8 @@ public final class TLVs extends AbstractList<TLV> {
         return TPath.set(this, t0, t1, t2, value);
     }
 
-    // --- compute: functional read-modify-write of a leaf. remap receives the current value, or
-    // null when the path is absent, and returns the new value; a null result deletes the leaf (or
-    // leaves it absent). Mirrors Map.compute - the one primitive that creates, replaces and removes
-    // (create-only is remap returning the current value when present). Addresses a primitive leaf
-    // exactly like set (a constructed target throws via set). ---
+    // --- compute: read-modify-write of a primitive leaf, like Map.compute. remap gets the current
+    // value or null when absent, and a null result deletes the leaf. ---
     public TLVs compute(final TPath path, final Function<byte[], byte[]> remap) {
         final var existing = find(path);
         final var next = remap.apply(existing.map(TLV::value).orElse(null));

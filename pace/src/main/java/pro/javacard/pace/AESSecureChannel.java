@@ -68,8 +68,7 @@ public final class AESSecureChannel implements BIBO {
 
         final byte[] newdata;
 
-        // Le (97) data object, appended to both the MAC input and the wrapped payload.
-        // Ne can be 256 (one short-form byte), which wraps to 0x00 - hence the explicit mask.
+        // Le (97) data object for the MAC input and the wrapped payload; Ne 256 masks to 0x00
         final var leDO = TLV.of(0x97, ba(apdu.getNe() & 0xFF)).encode();
 
         // Encrypt payload
@@ -129,7 +128,7 @@ public final class AESSecureChannel implements BIBO {
 
         final var tlvs = TLV.parse(apdu.getData());
 
-        // Encrypted response data (optional); crypto below throws checked exceptions, so no lambda
+        // Encrypted response data (optional)
         final var payloadtag = tlvs.find(0x87);
         if (payloadtag.isPresent()) {
             final byte[] iv = encrypt(enc_key, new byte[16], ssc);

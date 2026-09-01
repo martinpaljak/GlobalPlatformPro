@@ -316,7 +316,7 @@ public final class GPCrypto {
         return ecdsa_digest(key.getParams().getOrder().bitLength()).replace("-", "") + "withECDSA";
     }
 
-    // GPC 2.3.1 B.4.3 ECDSA: r and s are each as long as the order, so the signature is twice this
+    // GPC 2.3.1 B.4.3 ECDSA: r and s are each as long as the order
     private static int order_length(final ECKey key) {
         return (key.getParams().getOrder().bitLength() + 7) / 8;
     }

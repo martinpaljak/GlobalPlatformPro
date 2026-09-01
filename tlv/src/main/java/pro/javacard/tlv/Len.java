@@ -9,7 +9,7 @@ import java.nio.ByteBuffer;
 public final class Len {
     private Len() {}
 
-    // Both directions: ber and ext disagree on the wire, so a codec carries the chosen pair
+    // Both directions: ber and ext disagree on the wire
     public interface Codec {
         int decode(ByteBuffer buf);
         byte[] encode(int len);

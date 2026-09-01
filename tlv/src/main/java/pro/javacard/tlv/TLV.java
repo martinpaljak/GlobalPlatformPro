@@ -105,8 +105,7 @@ public final class TLV {
     }
 
     // Navigation
-    // The single direct child with this tag: empty if none, present if exactly one, throws if more
-    // than one (findAll is the multi-finder). Use a TPath (via TLVs) to address deeper nodes.
+    // The single direct child with this tag; findAll is the multi-finder, TPath addresses deeper nodes
     public Optional<TLV> find(final Tag tag) {
         final var matches = findAll(tag);
         if (matches.size() > 1) {

@@ -10,7 +10,7 @@ import java.util.HexFormat;
 public interface Tag {
     HexFormat HEX_FORMAT = HexFormat.of().withUpperCase();
 
-    // Reads one tag off the buffer; encoding is universal via Tag.bytes(), so decode-only
+    // Reads one tag off the buffer; encoding is universal via Tag.bytes()
     interface Codec {
         Tag decode(ByteBuffer buf);
 

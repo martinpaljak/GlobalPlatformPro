@@ -10,8 +10,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 // Composable TLV codec: a tag codec, a length codec and whether to recurse into constructed tags.
-// GlobalPlatform dialects mix these freely (e.g. opaque 1-byte tag + BER long-form length, never
-// constructed - the GPC 2.3.1 11.8.2.3.1 PUT KEY key components).
+// GlobalPlatform dialects mix these freely (GPC 2.3.1 11.8.2.3.1 PUT KEY key components, for one).
 public final class TLVParser {
     private final Tag.Codec tagCodec;
     private final Len.Codec lenCodec;

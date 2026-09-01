@@ -31,7 +31,7 @@ class TestTLV {
         Assert.assertEquals(strings,
                 List.of("[7F42]", "      [9F45] 222222", "      [9F46] 333333", "      [9F45] 444444"));
 
-        // 9F45 appears twice under 7F42, so find is ambiguous and throws; findAll returns both
+        // 9F45 appears twice under 7F42: find is ambiguous, findAll returns both
         Assert.expectThrows(IllegalArgumentException.class, () -> result.find(0x7F42, 0x9F45));
         final var matches = result.get(0).findAll(Tag.ber("9f45"));
         Assert.assertEquals(matches.size(), 2);
@@ -133,9 +133,7 @@ class TestTLV {
         // Too long
         Assert.assertThrows(IllegalArgumentException.class, () -> new BERTag(new byte[5]));
 
-        // Invalid multi-byte start
-        // 1E is a single byte tag (bits 1-5 not all 1). So length must be 1.
-        // If we pass 2 bytes, it should fail.
+        // A single byte tag (bits 1-5 not all 1) must be exactly one byte
         Assert.assertThrows(IllegalArgumentException.class, () -> new BERTag(new byte[] { (byte) 0x00, (byte) 0x01 }));
 
         // Missing continuation bit
@@ -199,9 +197,7 @@ class TestTLV {
         // Buffer underflow
         Assert.assertThrows(TLVParseException.class, () -> TLV.parse(hex("9F")));
 
-        // Length overflow in BER
-        // 84 FF FF FF FF -> 4 bytes length, code says throw if > 3 bytes (0x1000000)
-        // Code: if (n > 3) throw new IllegalArgumentException("Length too large");
+        // Length overflow in BER: 84 is four length bytes, three is the maximum
         Assert.assertThrows(TLVParseException.class, () -> TLV.parse(hex("9F 84 FF FF FF FF")));
     }
 
@@ -411,11 +407,7 @@ class TestTLV {
 
     @Test
     public void testThreeByteBERTag() {
-        // 9F 81 01 -> 1st byte 9F (1F, constructed), 2nd 81 (continuation), 3rd 01
-        // (end)
-        // This exercises the `for` loop in validate() which runs for middle bytes.
-        // For a 2-byte tag like 9F 01, loop i=1; i<1 is false. Loop doesn't run.
-        // For 3-byte tag, i=1; i<2. Loop runs once.
+        // 9F 81 01: first byte 9F, 81 continues, 01 ends
         final var tag = new BERTag(hex("9F 81 01"));
         Assert.assertNotNull(tag);
         Assert.assertEquals(tag.bytes().length, 3);
@@ -423,16 +415,11 @@ class TestTLV {
 
     @Test
     public void testEqualsMixedState() {
-        // Compare TLV with value vs TLV with children (value=null)
-        // using package-private constructor to force specific state if needed
-        // but TLV.of(Tag, byte[]) makes value != null.
-        // TLV.build(Tag) makes value == null.
+        // A TLV with a value against one with children (value == null)
 
         final var t1 = TLV.of(0x9F01, hex("01")); // value != null
         final var t2 = TLV.build(0x9F01); // value == null
 
-        // This hits Arrays.equals(value, other.value) -> Arrays.equals(byte[], null) ->
-        // false
         Assert.assertNotEquals(t1, t2);
 
         // Arrays.equals(null, byte[]) -> false
@@ -476,14 +463,7 @@ class TestTLV {
 
     @Test
     public void testParseInvalidFourByteTag() {
-        // 9F 81 81 81.
-        // Parse loop will run for i=1, i=2, i=3.
-        // i=1 (81): cont.
-        // i=2 (81): cont.
-        // i=3 (81): cont.
-        // i=4 Loop ends.
-        // new BERTag called. Last byte 81 has high bit set. Throws.
-        // This covers the "loop finishes without break" path in parse()
+        // 9F 81 81 81: the last byte still continues, with nothing following
         final var data = hex("9F 81 81 81");
         Assert.assertThrows(IllegalArgumentException.class, () -> BERTag.parse(ByteBuffer.wrap(data)));
     }

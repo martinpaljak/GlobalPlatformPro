@@ -144,7 +144,7 @@ public class TestPlaintextCardKeys {
     public void testKeyWrapping_SCP03() {
         var keys = (PlaintextCardKeys) PlaintextCardKeys.fromKeys(KEY_16, KEY_16, KEY_16).diversify(SCP.SCP03, KDD);
         var encrypted = keys.wrapKey(KEY_16, new byte[2]);
-        // SCP03 adds random padding, so length is 16 but content is non-deterministic
+        // SCP03 adds random padding: length is 16, content is not deterministic
         Assert.assertEquals(encrypted.length, 16);
     }
 

@@ -105,10 +105,8 @@ public final class GlobalPlatformCookbook {
             if (tok.isPresent()) {
                 apdu = tok.get().tokenize(apdu);
             } else if (ins == INS_INSTALL) {
-                // Every INSTALL data field ends with a mandatory token-length field
-                // (GPC 2.4 Tables 11-42, 11-43, 11-44, 11-46). With no DM token the
-                // length is 00 - mirroring NULLTokenizer. DELETE (E4) carries its
-                // token under tag 9E and gets no trailing 00, so it is left untouched.
+                // Every INSTALL data field ends with a mandatory token-length field, 00 without a
+                // token (GPC 2.4 Tables 11-42, 11-43, 11-44, 11-46). DELETE (E4) uses tag 9E instead.
                 apdu = cmd(ins, p1, p2, GPUtils.concatenate(data, ba(0x00)));
             }
             var recipe = send(apdu);
@@ -687,10 +685,8 @@ public final class GlobalPlatformCookbook {
     // dapBlock: pre-built DAP block (null for none)
     public static Recipe<ResponseAPDU> load_cap(final CAPFile cap, final AID targetDomain, final byte[] dapBlock) {
         return deferred(prefs -> {
-            // The Load File Data Block Hash is only required when something signs over it:
-            // a DAP signature on the load file, or a delegated management Load Token.
-            // Otherwise it is optional (GPC 2.3.1 11.5.2.3.1) and some cards reject an
-            // unexpected hash, so omit it (length 00) unless needed. Algorithm from LOAD_HASH.
+            // The Load File Data Block Hash is optional (GPC 2.3.1 11.5.2.3.1) and only needed for a
+            // DAP signature or a Load Token; some cards reject an unexpected hash.
             final var needHash = (dapBlock != null && dapBlock.length > 0) || prefs.valueOf(DM_TOKENIZER).isPresent();
             final var hash = needHash ? cap.getLoadFileDataHash(prefs.get(LOAD_HASH)) : new byte[0];
             return install_for_load(cap.getPackageAID(), targetDomain, hash, ba())
@@ -780,7 +776,7 @@ public final class GlobalPlatformCookbook {
         final var privs = privileges.isEmpty() ? null : BitField.encode(privileges, 3);
         // Leading nulls are the empty SD AID and data length fields.
         final var data = lv(null, null, instanceAID.getBytes(), privs, params);
-        // No Registry Update Receipt context in the library, so receipt verification is skipped.
+        // No Registry Update Receipt context in the library
         return gp_dm(INS_INSTALL, 0x40, 0x00, data);
     }
 

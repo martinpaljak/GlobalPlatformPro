@@ -68,15 +68,14 @@ public class TestGPCertificate {
         Assert.assertEquals(HexUtils.bin2hex(cert.signedData()), CERTIFICATE.substring(8, CERTIFICATE.length() - 134));
         // Proprietary key parameter references name no curve
         Assert.assertTrue(GPCurve.forReference(0x40).isEmpty());
-        // GPC 2.3.1 11.1.9: an absent second byte is assumed to be '00', so '82 00' is '82'
+        // GPC 2.3.1 11.1.9: an absent second byte is assumed to be '00'
         Assert.assertEquals(minimal("95028200", "5F240420361231", "7F4906B00104F00100").usage(),
                 GPCertificate.Usage.VERIFICATION);
     }
 
     @Test
     public void testBuildSignVerify() throws Exception {
-        // GPC 2.3.1 Table B-3: the hash follows the order of the signing key, so a P-521 CA over a
-        // P-384 subject signs with SHA-512
+        // GPC 2.3.1 Table B-3: the hash follows the order of the signing key
         final var ca = keypair("secp521r1");
         final var subject = keypair("secp384r1");
 
@@ -136,7 +135,7 @@ public class TestGPCertificate {
         Assert.assertEquals(chain.size(), 2);
         Assert.assertTrue(chain.get(0).verify((ECPublicKey) ca.getPublic()));
         Assert.assertTrue(chain.get(1).verify(chain.get(0).publicKey()));
-        // The P-384 subject key signed the leaf, so SHA-384 and 48 byte components
+        // The P-384 subject key signed the leaf: SHA-384 and 48 byte components
         Assert.assertEquals(leaf.signature().length, 96);
 
         // GPC 2.3.1 Table B-3

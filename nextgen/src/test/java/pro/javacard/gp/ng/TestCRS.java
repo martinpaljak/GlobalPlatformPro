@@ -139,7 +139,7 @@ public class TestCRS {
     public void testCrsListFromDump() {
         final var chef = chef_from_dump("/crs-list.dump");
         chef.cook(GlobalPlatformCookbook.select_aid(CRSCookbook.CRS_AID));
-        // No 5C tag list is sent, so the card returns all available data; MockBIBO verifies the 4F00 wire command.
+        // No 5C tag list is sent: the card returns all available data
         final var entries = chef.cook(CRSCookbook.crs_get_status(new byte[0]));
         assertEquals(entries.size(), 6);
         // First entry: the Card Manager / ISD
@@ -155,7 +155,7 @@ public class TestCRS {
         assertEquals(GlobalPlatformCookbook.big_endian(TLV.findAll(entries.get(0).data(), 0x80).get(0).value()), 5);
         assertEquals(TLV.findAll(entries.get(0).data(), 0x81).get(0).value()[0], 0x00);
         assertEquals(TLV.findAll(entries.get(0).data(), 0x88).get(0).value()[0], 0x00);
-        // This card carries no CREL references, so every crelList is empty (no A4 returned).
+        // This card carries no CREL references (no A4 returned)
         assertTrue(entries.stream().allMatch(e -> e.crelList().isEmpty()));
 
         // A second card whose listing spans two GET STATUS rounds (6310 continuation) and carries

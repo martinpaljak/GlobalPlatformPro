@@ -63,8 +63,7 @@ final class CRSTool {
         }
     }
 
-    // A "Label: value" detail line padded to align values, matching the registry listing style.
-    // A longer label keeps a single separating space rather than aligning, so nothing collides.
+    // A "Label: value" detail line padded to align values, like the registry listing
     private static String crs_line(String label, String value) {
         return "%-11s %s".formatted(label + ":", value);
     }

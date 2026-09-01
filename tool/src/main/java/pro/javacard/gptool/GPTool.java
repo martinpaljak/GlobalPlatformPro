@@ -133,8 +133,7 @@ public final class GPTool extends GPCommandLineInterface {
 
     // To keep basic gp.jar together with apdu4j app, this is just a minimalist wrapper
     public static void main(final String[] argv) {
-        // Jump to the next-gen tool before any legacy parsing, so that nextgen-only options
-        // (e.g. --cl-*/--crs-*) are not rejected by the legacy option parser.
+        // Jump to the next-gen tool before the legacy parser rejects nextgen-only options
         if (Arrays.asList(argv).contains("--ng") || Arrays.asList(argv).contains("-ng")
                 || "true".equalsIgnoreCase(System.getenv("GP_NG"))) {
             try {
@@ -655,8 +654,7 @@ public final class GPTool extends GPCommandLineInterface {
                     // Extradition rule value meaning "any security domain" (82 = allow-to, 87 = allow-from)
                     final byte[] EXTRADITE_ALL = ba(0x20, 0x20);
 
-                    // Editable install parameters; rawParams holds verbatim bytes only when the user
-                    // supplied something we can not parse as TLV (and therefore can not amend).
+                    // Editable install parameters; rawParams holds verbatim bytes we can not parse as TLV
                     TLVs parameters = TLVs.of();
                     byte[] rawParams = null;
                     if (args.has(OPT_PARAMS)) {

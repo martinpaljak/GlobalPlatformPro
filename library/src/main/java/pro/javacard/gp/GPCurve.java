@@ -147,7 +147,7 @@ public enum GPCurve {
         throw new IllegalArgumentException("Not a point or a private key of " + curve.name());
     }
 
-    // A scalar inside the order of the curve. It is a secret, so it never appears in an error.
+    // A scalar inside the order of the curve, never shown in an error
     private ECPrivateKey toPrivateKey(final byte[] scalar) throws GeneralSecurityException {
         final var d = new BigInteger(1, scalar);
         if (d.signum() == 0 || d.compareTo(curve.getN()) >= 0) {

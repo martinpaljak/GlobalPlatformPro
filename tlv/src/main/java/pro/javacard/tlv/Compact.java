@@ -9,15 +9,12 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 
-// COMPACT-TLV (ISO/IEC 7816-4, ATR historical bytes). A compact object is one byte carrying the
-// tag number in the high nibble and the value length in the low nibble, followed by the value. It
-// maps to the primitive BER tag '4X' (X = tag nibble) with a value of at most 15 bytes, so the
-// in-memory form stays a plain BER TLV and these are the only two converters.
+// COMPACT-TLV (ISO/IEC 7816-4, ATR historical bytes). One byte with the tag number in the high nibble
+// and the value length in the low nibble, mapped to the primitive BER tag '4X' in memory.
 public final class Compact {
     private Compact() {}
 
-    // Serialize BER TLVs to compact form. Each tag must be a single-byte '4X' BER tag with a value
-    // of at most 15 bytes, otherwise it cannot be narrowed and this throws.
+    // Serialize BER TLVs to compact form; each tag must be a single-byte '4X' with at most 15 bytes of value.
     public static byte[] encode(final Collection<TLV> tlvs) {
         final var out = new ByteArrayOutputStream();
         for (var tlv : tlvs) {

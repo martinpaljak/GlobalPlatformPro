@@ -21,8 +21,7 @@ public class TestContactlessParams {
         return GPToolNG.install_params(GPCommandLineInterface.parser.parse(argv));
     }
 
-    // Build --domain install parameters as the command line would.
-    // --allow-to/--allow-from are only available together with --domain, so it is always present.
+    // Build --domain install parameters as the command line would; --allow-to/--allow-from need --domain
     private static byte[] domainParams(GPSecureChannelVersion scp, String... argv) {
         var full = Stream.concat(Stream.of("--domain", "A000000151535041"), Stream.of(argv)).toArray(String[]::new);
         return GPToolNG.domain_install_params(GPCommandLineInterface.parser.parse(full), scp);
@@ -144,8 +143,7 @@ public class TestContactlessParams {
         assertEquals(roots.find(0x87).orElseThrow().value(), new byte[]{0x20, 0x20});
         assertTrue(roots.find(0xC9).isPresent());
 
-        // A present tag has the allow-all bits merged in: 0x2020 OR an existing value preserves
-        // already-set bits (0xAA already carries 0x20), so AAAA stays AAAA
+        // A present tag has the allow-all bits merged in: 0xAA already carries 0x20, AAAA stays AAAA
         assertEquals(domainParams(null, "--params", "8202AAAA", "--allow-to"), HexUtils.hex2bin("8202AAAA"));
         // ... but missing bits are actually merged: 0000 becomes 2020
         assertEquals(TLVs.parse(domainParams(null, "--params", "82020000", "--allow-to"))

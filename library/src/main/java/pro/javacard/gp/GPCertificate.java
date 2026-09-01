@@ -18,11 +18,9 @@ import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.function.Predicate;
 
-// GlobalPlatform certificate (tag '7F21'), as used by SCP11 (Amendment F v1.4 Table 6-1) and by the
-// CASD of Amendment A v1.2 (Table 3-6). In both, tag '5F37' is last and its signature covers every
-// field preceding it in the order they appear, so the signed bytes are kept as they arrived and never
-// re-encoded. The certificate with message recovery of Amendment A Table 3-4 is a different format
-// and is not read here: it signs a reordered set and carries tag '5F38' after the signature.
+// GlobalPlatform certificate (tag '7F21') of SCP11 (Amendment F v1.4 Table 6-1) and the CASD of
+// Amendment A v1.2 (Table 3-6). Tag '5F37' is last and signs every field before it, verbatim.
+// The certificate with message recovery of Amendment A Table 3-4 is a different format, not read here.
 public final class GPCertificate {
 
     private static final Tag CERTIFICATE = Tag.ber(0x7F21);

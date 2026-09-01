@@ -19,9 +19,7 @@ class TestTPath {
         return nodes.stream().map(TLV::tag).collect(Collectors.toList());
     }
 
-    // Drive set (replace, upsert leaf, create intermediate chain, single-segment root upsert),
-    // add (append, upsert parent chain) and delete over one tree, asserting order preservation and
-    // strict purity (the input is never observed to change).
+    // set, add and delete over one tree, asserting order preservation and purity
     @Test
     public void editLifecycle() {
         final var tree = List.of(

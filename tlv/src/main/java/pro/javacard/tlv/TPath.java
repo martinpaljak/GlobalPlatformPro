@@ -80,9 +80,7 @@ public final class TPath {
 
     // --- the four operations: one core each (takes a path), the rest delegate ---
 
-    // The single node this path addresses: empty if absent, throws if any segment matches more than
-    // one sibling (the path is then ambiguous - narrow it with a where(...) predicate, or use findAll).
-    // Returns the live node; reads never copy. An empty path matches nothing.
+    // The single live node this path addresses: empty if absent, throws if a segment is ambiguous
     public static Optional<TLV> find(final List<TLV> roots, final TPath path) {
         var current = Optional.<TLV>empty();
         var level = roots;
@@ -154,8 +152,6 @@ public final class TPath {
     }
 
     // Drop the addressed node. An absent path is a no-op (a fresh copy is still returned).
-    // The find short-circuit guarantees the path exists before rebuild runs, so rebuild never
-    // creates anything for a delete.
     public static TLVs delete(final List<TLV> roots, final TPath path) {
         requireNonEmpty(path);
         if (find(roots, path).isEmpty()) {
@@ -216,10 +212,8 @@ public final class TPath {
 
     // --- pure helpers ---
 
-    // Rebuild one level: copy untouched siblings, transform or descend at the first match, append a
-    // freshly created branch when the segment is absent (set and add upsert; delete short-circuits
-    // before ever reaching a missing segment). The leaf op returns the replacement node, or null to
-    // drop it (delete).
+    // Rebuild one level: copy untouched siblings, descend at the first match, upsert an absent
+    // segment. The leaf op returns the replacement node, or null to drop it.
     static List<TLV> rebuild(final List<TLV> level, final List<Segment> segs, final BiFunction<TLV, Tag, TLV> leaf) {
         final var seg = segs.get(0);
         final var last = segs.size() == 1;

@@ -624,9 +624,7 @@ public final class GPToolNG extends GPCommandLineInterface implements ToolExtens
             postAuth.add(GlobalPlatformCookbook.get_registry().consume(reg -> printRegistry(reg, args.has(OPT_VERBOSE))));
         }
 
-        // Authentication targets the currently selected application. Legacy auto-selected the ISD
-        // first; mirror that when no explicit target was chosen, so management commands also work on
-        // cards where the ISD is not the application selected by default after reset.
+        // Authentication targets the currently selected application; legacy auto-selected the ISD first
         if (!postAuth.isEmpty() && !args.has(OPT_CONNECT) && !env.containsKey(ENV_GP_AID)) {
             preAuth.add(GlobalPlatformCookbook.select_default());
         }

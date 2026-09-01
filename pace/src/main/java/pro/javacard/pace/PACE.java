@@ -202,7 +202,7 @@ public final class PACE {
         final var domain = new ECDomainParameters(p.getCurve(), p.getG(), p.getN(), p.getH());
         final var q = domain.getCurve().decodePoint(data);
         // TR-03110 Part-2: REQUIRED to validate public keys received from the card.
-        // isValid() covers on-curve and subgroup order, but returns true for infinity, so reject that explicitly.
+        // isValid() covers on-curve and subgroup order, but returns true for infinity
         if (q.isInfinity() || !q.isValid()) {
             throw new PACEException("PACE: received invalid public point: " + HexUtils.bin2hex(data));
         }
@@ -273,19 +273,12 @@ public final class PACE {
         return new ECParameterSpec(curve.getCurve(), newG, curve.getN(), curve.getH());
     }
 
-    // ECDH on curve, X coordinate only
+    // ECDH on curve, field-width encoded X coordinate only
     public static byte[] generateSharedSecret(final ECParameterSpec curve, final byte[] sk, final byte[] pk) {
         final var d = new BigInteger(1, sk);
         final var q = curve.getCurve().decodePoint(pk);
         final var k = q.multiply(d);
-        return positive(k.normalize().getXCoord().toBigInteger().toByteArray());
-    }
-
-    public static byte[] positive(final byte[] bytes) {
-        if (bytes[0] == 0 && bytes.length % 2 == 1) {
-            return Arrays.copyOfRange(bytes, 1, bytes.length);
-        }
-        return bytes;
+        return k.normalize().getXCoord().getEncoded();
     }
 
     // A.2.4.2. AES

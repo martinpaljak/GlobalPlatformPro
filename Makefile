@@ -6,7 +6,7 @@ MVN_OPTS = -Dmaven.javadoc.skip=true -Dmaven.test.skip=true -Dspotbugs.skip=true
 VERSIONS = org.codehaus.mojo:versions-maven-plugin:2.21.0
 VERSION_RULES = -Dmaven.version.rules=file://$(shell pwd)/version-rules.xml
 
-SOURCES = $(shell find pace tool library -name '*.java' -o -name 'pom.xml') pom.xml Makefile
+SOURCES = $(shell find tlv library pace nextgen tool -name '*.java' -o -name 'pom.xml') pom.xml Makefile
 XMLS = $(shell find . -name '*.xml' -not -path '*/target/*')
 
 default: today tool/target/gp.jar

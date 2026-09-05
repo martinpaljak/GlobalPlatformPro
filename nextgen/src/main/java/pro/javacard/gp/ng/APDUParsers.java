@@ -96,7 +96,7 @@ public class APDUParsers {
             obj.fieldNames().forEachRemaining(fn -> obj.set(fn, hexify_(obj.get(fn))));
             return obj;
         } else if (node.isBinary()) {
-            final byte[] bytes = Base64.decode(node.asText());
+            final var bytes = Base64.decode(node.asText());
             return new TextNode(Hex.toHexString(bytes));
         }
         return node;
@@ -154,7 +154,7 @@ public class APDUParsers {
             // If curly strings, parse as payload and dump into compact CBOR
             final var curly = s.indexOf('{');
             if (curly > 0) {
-                final byte[] header = Hex.decode(hex_cleanup(s.substring(0, curly)));
+                final var header = Hex.decode(hex_cleanup(s.substring(0, curly)));
                 if (header.length == 4) {
                     final var j = json.readTree(s.substring(curly));
                     final var c = cbor.writeValueAsBytes(j);

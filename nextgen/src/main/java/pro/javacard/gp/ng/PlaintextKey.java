@@ -54,7 +54,7 @@ public final class PlaintextKey {
     public Optional<PrivateKey> getPrivate() {
         return Optional.ofNullable(privateKey);
     }
-    
+
     // A value that isn't a parseable path on this OS (e.g. "aes:..." on Windows,
     // where ':' is invalid in a path element) is simply not a file.
     private static Optional<Path> asReadableFile(final String v) {
@@ -117,21 +117,21 @@ public final class PlaintextKey {
                 throw new IllegalArgumentException("Could not read EC key: " + e.getMessage(), e);
             }
             if (v.startsWith("aes:")) {
-                final byte[] bv = HexUtils.hex2bin(v.substring(4));
+                final var bv = HexUtils.hex2bin(v.substring(4));
                 if (bv.length == 16 || bv.length == 24 || bv.length == 32) {
                     return new PlaintextKey(v, GPCrypto.aeskey(bv), null, null);
                 } else {
                     throw new IllegalArgumentException("Invalid key length: " + bv.length);
                 }
             } else if (v.startsWith("3des:")) {
-                final byte[] bv = HexUtils.hex2bin(v.substring(5));
+                final var bv = HexUtils.hex2bin(v.substring(5));
                 if (bv.length == 16) {
                     return new PlaintextKey(v, GPCrypto.des3key(bv), null, null);
                 } else {
                     throw new IllegalArgumentException("Invalid key length: " + bv.length);
                 }
             } else {
-                final byte[] k = HexUtils.hex2bin(v);
+                final var k = HexUtils.hex2bin(v);
                 if (k.length == 24 || k.length == 32) {
                     return new PlaintextKey(v, GPCrypto.aeskey(k), null, null);
                 } else if (k.length == 16) {

@@ -136,28 +136,23 @@ public final class GlobalPlatformCookbook {
     // === Preference keys: card behavior (replaces GPCardProfile) ===
 
     // GET STATUS response format: true = TLV tags (P2=0x02), false = legacy (P2=0x00)
-    public static final Preference.Default<Boolean> STATUS_USE_TAGS =
-            Preference.of("gp.status.use.tags", Boolean.class, true, false);
+    public static final Preference.Default<Boolean> STATUS_USE_TAGS = Preference.of("gp.status.use.tags", Boolean.class, true, false);
 
     // Whether to query load files with modules (P1=0x10) in addition to plain load files (P1=0x20)
-    public static final Preference.Default<Boolean> STATUS_REPORT_MODULES =
-            Preference.of("gp.status.report.modules", Boolean.class, true, false);
+    public static final Preference.Default<Boolean> STATUS_REPORT_MODULES = Preference.of("gp.status.report.modules", Boolean.class, true, false);
 
     // Whether INSTALL [for extradition] uses old-style fixed parameters (C90145)
     // instead of modern TLV tag 0x81 for secure channel specification
-    public static final Preference.Default<Boolean> INSTALL_OLD_SSD_PARAMS =
-            Preference.of("gp.install.old.ssd.params", Boolean.class, false, false);
+    public static final Preference.Default<Boolean> INSTALL_OLD_SSD_PARAMS = Preference.of("gp.install.old.ssd.params", Boolean.class, false, false);
 
     // SCP03: some cards only increment encryption counter when data is present,
     // violating GP 2.2 Amendment D v1.1.1 section 6.2.6 which mandates increment
     // for every C-APDU. Enable this to match those broken implementations.
-    public static final Preference.Default<Boolean> SCP03_BUGGY_COUNTER =
-            Preference.of("gp.scp03.buggy.counter", Boolean.class, false, false);
+    public static final Preference.Default<Boolean> SCP03_BUGGY_COUNTER = Preference.of("gp.scp03.buggy.counter", Boolean.class, false, false);
 
     // Hash algorithm for Load File Data Block Hash in INSTALL [for load].
     // JCA algorithm name: SHA-1, SHA-256, SHA-384, SHA-512
-    public static final Preference.Default<String> LOAD_HASH =
-            Preference.of("gp.load.hash", String.class, "SHA-256", false);
+    public static final Preference.Default<String> LOAD_HASH = Preference.of("gp.load.hash", String.class, "SHA-256", false);
 
     // === Named presets (replacing GPCardProfile) ===
 
@@ -173,66 +168,49 @@ public final class GlobalPlatformCookbook {
 
     public static final Map<String, Preferences> PRESETS = Map.of(
             "default", PRESET_DEFAULT,
-            "old", PRESET_OLD
-    );
+            "old", PRESET_OLD);
 
     // === Preference keys: discovery results ===
 
-    public static final Preference.Parameter<AID> ISD_AID =
-            Preference.parameter("gp.isd.aid", AID.class, true);
+    public static final Preference.Parameter<AID> ISD_AID = Preference.parameter("gp.isd.aid", AID.class, true);
 
-    public static final Preference.Default<Integer> BLOCK_SIZE =
-            Preference.of("gp.block.size", Integer.class, 255, false);
+    public static final Preference.Default<Integer> BLOCK_SIZE = Preference.of("gp.block.size", Integer.class, 255, false);
 
-    public static final Preference.Parameter<GPSecureChannelVersion> SCP_VERSION =
-            Preference.parameter("gp.scp.version", GPSecureChannelVersion.class, true);
+    public static final Preference.Parameter<GPSecureChannelVersion> SCP_VERSION = Preference.parameter("gp.scp.version", GPSecureChannelVersion.class, true);
 
-    public static final Preference.Parameter<String> GP_VERSION =
-            Preference.parameter("gp.version", String.class, true);
+    public static final Preference.Parameter<String> GP_VERSION = Preference.parameter("gp.version", String.class, true);
 
     // GET DATA results (raw bytes)
-    public static final Preference.Parameter<byte[]> CPLC =
-            Preference.parameter("gp.cplc", byte[].class, true);
+    public static final Preference.Parameter<byte[]> CPLC = Preference.parameter("gp.cplc", byte[].class, true);
 
-    public static final Preference.Parameter<byte[]> IIN =
-            Preference.parameter("gp.iin", byte[].class, true);
+    public static final Preference.Parameter<byte[]> IIN = Preference.parameter("gp.iin", byte[].class, true);
 
-    public static final Preference.Parameter<byte[]> CIN =
-            Preference.parameter("gp.cin", byte[].class, true);
+    public static final Preference.Parameter<byte[]> CIN = Preference.parameter("gp.cin", byte[].class, true);
 
-    public static final Preference.Parameter<byte[]> KDD =
-            Preference.parameter("gp.kdd", byte[].class, true);
+    public static final Preference.Parameter<byte[]> KDD = Preference.parameter("gp.kdd", byte[].class, true);
 
-    public static final Preference.Parameter<byte[]> SSC =
-            Preference.parameter("gp.ssc", byte[].class, true);
+    public static final Preference.Parameter<byte[]> SSC = Preference.parameter("gp.ssc", byte[].class, true);
 
-    public static final Preference.Parameter<byte[]> CARD_DATA =
-            Preference.parameter("gp.card.data", byte[].class, true);
+    public static final Preference.Parameter<byte[]> CARD_DATA = Preference.parameter("gp.card.data", byte[].class, true);
 
-    public static final Preference.Parameter<byte[]> CARD_CAPABILITIES =
-            Preference.parameter("gp.card.capabilities", byte[].class, true);
+    public static final Preference.Parameter<byte[]> CARD_CAPABILITIES = Preference.parameter("gp.card.capabilities", byte[].class, true);
 
-    public static final Preference.Parameter<byte[]> KEY_INFO =
-            Preference.parameter("gp.key.info", byte[].class, true);
+    public static final Preference.Parameter<byte[]> KEY_INFO = Preference.parameter("gp.key.info", byte[].class, true);
 
     // Session context for DEK encryption (populated after open_secure_channel)
-    public static final Preference.Parameter<byte[]> SESSION_CONTEXT =
-            Preference.parameter("gp.session.context", byte[].class, false);
+    public static final Preference.Parameter<byte[]> SESSION_CONTEXT = Preference.parameter("gp.session.context", byte[].class, false);
 
     // === Preference keys: CLI/operational ===
 
     // Force 16-byte host challenge in INITIALIZE UPDATE (S16 mode)
     // When false (default), 8-byte with automatic retry on 0x6700
-    public static final Preference.Default<Boolean> FORCE_S16 =
-            Preference.of("gp.scp.force.s16", Boolean.class, false, false);
+    public static final Preference.Default<Boolean> FORCE_S16 = Preference.of("gp.scp.force.s16", Boolean.class, false, false);
 
     // Delegated management tokenizer (optional, for --dm-key/--dm-token)
-    public static final Preference.Parameter<DMTokenizer> DM_TOKENIZER =
-            Preference.parameter("gp.dm.tokenizer", DMTokenizer.class, false);
+    public static final Preference.Parameter<DMTokenizer> DM_TOKENIZER = Preference.parameter("gp.dm.tokenizer", DMTokenizer.class, false);
 
     // Receipt verifier (optional, for --receipt-key)
-    public static final Preference.Parameter<ReceiptVerifier> RECEIPT_VERIFIER =
-            Preference.parameter("gp.receipt.verifier", ReceiptVerifier.class, false);
+    public static final Preference.Parameter<ReceiptVerifier> RECEIPT_VERIFIER = Preference.parameter("gp.receipt.verifier", ReceiptVerifier.class, false);
 
     // === Building blocks ===
 
@@ -513,9 +491,9 @@ public final class GlobalPlatformCookbook {
         bo.writeBytes(GPUtils.encodeLcLength(lc, 0));
         bo.writeBytes(command.getData());
 
-        final byte[] cmac = GPCrypto.aes_cmac(macKey, bo.toByteArray(), 128);
+        final var cmac = GPCrypto.aes_cmac(macKey, bo.toByteArray(), 128);
         final byte[] cmdMac = Arrays.copyOf(cmac, macLength);
-        final byte[] data = GPUtils.concatenate(command.getData(), cmdMac);
+        final var data = GPUtils.concatenate(command.getData(), cmdMac);
 
         return send(new CommandAPDU(cla, command.getINS(), command.getP1(), command.getP2(), data))
                 .map(r -> cmac);
@@ -597,7 +575,7 @@ public final class GlobalPlatformCookbook {
         return deferred(prefs -> {
             var hostChallenge = prefs.get(FORCE_S16) ? GPCrypto.random(16) : null;
             return init_update(keys.keyInfo().version(), 0, hostChallenge)
-                .then(response -> open_secure_channel_auth(keys, secLevel, response));
+                    .then(response -> open_secure_channel_auth(keys, secLevel, response));
         });
     }
 

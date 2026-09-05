@@ -14,24 +14,11 @@ default: today tool/target/gp.jar
 tool/target/gp.jar: $(SOURCES)
 	./mvnw $(MVN_OPTS) package
 
-srcbuild:
-	# override the version, which would be "unsupported" without a git checkout
-ifdef GPPRO_VERSION
-	./mvnw $(VERSIONS):set -DnewVersion=$(GPPRO_VERSION) -DgenerateBackupPoms=false
-endif
-	./mvnw $(MVN_OPTS) package
-
 dep: $(SOURCES)
 	./mvnw $(MVN_OPTS) install
 
 source:
-	./mvnw rewrite:run spotless:apply
-
-clean:
-	./mvnw clean
-
-test:
-	./mvnw verify
+	./mvnw -P fixup process-test-classes spotless:apply
 
 fast:
 	./mvnw -T1C install -Dmaven.test.skip=true -Dspotbugs.skip=true

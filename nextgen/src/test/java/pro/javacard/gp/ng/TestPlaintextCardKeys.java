@@ -163,7 +163,7 @@ public class TestPlaintextCardKeys {
         var ngKeys = PlaintextCardKeys.fromMasterKey(KEY_16, PlaintextCardKeys.KDF_TEMPLATES.get("emv"));
         var ngDiversified = (PlaintextCardKeys) ngKeys.diversify(SCP.SCP02, KDD);
 
-        GPCardKeys oldKeys = PlaintextKeys.fromMasterKey(KEY_16, PlaintextKeys.kdf_templates.get("emv"));
+        var oldKeys = PlaintextKeys.fromMasterKey(KEY_16, PlaintextKeys.kdf_templates.get("emv"));
         oldKeys = oldKeys.diversify(SCP.SCP02, KDD);
 
         for (var p : CardKeys.KeyPurpose.cardKeys()) {
@@ -178,7 +178,7 @@ public class TestPlaintextCardKeys {
         var ngKeys = PlaintextCardKeys.fromMasterKey(KEY_32, PlaintextCardKeys.KDF_TEMPLATES.get("kdf3"));
         var ngDiversified = (PlaintextCardKeys) ngKeys.diversify(SCP.SCP03, KDD);
 
-        GPCardKeys oldKeys = PlaintextKeys.fromMasterKey(KEY_32, PlaintextKeys.kdf_templates.get("kdf3"));
+        var oldKeys = PlaintextKeys.fromMasterKey(KEY_32, PlaintextKeys.kdf_templates.get("kdf3"));
         oldKeys = oldKeys.diversify(SCP.SCP03, KDD);
 
         for (var p : CardKeys.KeyPurpose.cardKeys()) {
@@ -194,7 +194,7 @@ public class TestPlaintextCardKeys {
         var sessionContext = new byte[16];
         var ngSession = (SessionKeys.SCP01Keys) ngKeys.deriveSession(sessionContext);
 
-        GPCardKeys oldKeys = PlaintextKeys.fromKeys(KEY_16, KEY_16, KEY_16);
+        var oldKeys = PlaintextKeys.fromKeys(KEY_16, KEY_16, KEY_16);
         oldKeys.diversify(SCP.SCP01, KDD);
         var oldEnc = oldKeys.getSessionKey(GPCardKeys.KeyPurpose.ENC, sessionContext);
         var oldMac = oldKeys.getSessionKey(GPCardKeys.KeyPurpose.MAC, sessionContext);
@@ -209,7 +209,7 @@ public class TestPlaintextCardKeys {
         var sequence = new byte[2];
         var ngSession = (SessionKeys.SCP02Keys) ngKeys.deriveSession(sequence);
 
-        GPCardKeys oldKeys = PlaintextKeys.fromKeys(KEY_16, KEY_16, KEY_16);
+        var oldKeys = PlaintextKeys.fromKeys(KEY_16, KEY_16, KEY_16);
         oldKeys.diversify(SCP.SCP02, KDD);
         var oldEnc = oldKeys.getSessionKey(GPCardKeys.KeyPurpose.ENC, sequence);
         var oldMac = oldKeys.getSessionKey(GPCardKeys.KeyPurpose.MAC, sequence);
@@ -225,7 +225,7 @@ public class TestPlaintextCardKeys {
         var ngKeys = (PlaintextCardKeys) PlaintextCardKeys.fromKeys(KEY_16, KEY_16, KEY_16).diversify(SCP.SCP03, KDD);
         var ngSession = (SessionKeys.SCP03Keys) ngKeys.deriveSession(KDD);
 
-        GPCardKeys oldKeys = PlaintextKeys.fromKeys(KEY_16, KEY_16, KEY_16);
+        var oldKeys = PlaintextKeys.fromKeys(KEY_16, KEY_16, KEY_16);
         oldKeys.diversify(SCP.SCP03, KDD);
         var oldEnc = oldKeys.getSessionKey(GPCardKeys.KeyPurpose.ENC, KDD);
         var oldMac = oldKeys.getSessionKey(GPCardKeys.KeyPurpose.MAC, KDD);
@@ -244,7 +244,7 @@ public class TestPlaintextCardKeys {
         var ngKeys = (PlaintextCardKeys) PlaintextCardKeys.fromKeys(KEY_16, KEY_16, KEY_16).diversify(SCP.SCP01, KDD);
         var ngResult = ngKeys.encryptDEK(data, sessionContext);
 
-        GPCardKeys oldKeys = PlaintextKeys.fromKeys(KEY_16, KEY_16, KEY_16);
+        var oldKeys = PlaintextKeys.fromKeys(KEY_16, KEY_16, KEY_16);
         oldKeys.diversify(SCP.SCP01, KDD);
         var oldResult = oldKeys.encrypt(data, sessionContext);
 
@@ -259,7 +259,7 @@ public class TestPlaintextCardKeys {
         var ngKeys = (PlaintextCardKeys) PlaintextCardKeys.fromKeys(KEY_16, KEY_16, KEY_16).diversify(SCP.SCP02, KDD);
         var ngResult = ngKeys.encryptDEK(data, sessionContext);
 
-        GPCardKeys oldKeys = PlaintextKeys.fromKeys(KEY_16, KEY_16, KEY_16);
+        var oldKeys = PlaintextKeys.fromKeys(KEY_16, KEY_16, KEY_16);
         oldKeys.diversify(SCP.SCP02, KDD);
         var oldResult = oldKeys.encrypt(data, sessionContext);
 
@@ -274,7 +274,7 @@ public class TestPlaintextCardKeys {
         var ngKeys = (PlaintextCardKeys) PlaintextCardKeys.fromKeys(KEY_16, KEY_16, KEY_16).diversify(SCP.SCP03, KDD);
         var ngResult = ngKeys.encryptDEK(data, sessionContext);
 
-        GPCardKeys oldKeys = PlaintextKeys.fromKeys(KEY_16, KEY_16, KEY_16);
+        var oldKeys = PlaintextKeys.fromKeys(KEY_16, KEY_16, KEY_16);
         oldKeys.diversify(SCP.SCP03, KDD);
         var oldResult = oldKeys.encrypt(data, sessionContext);
 
@@ -286,9 +286,9 @@ public class TestPlaintextCardKeys {
         var ngKeys = (PlaintextCardKeys) PlaintextCardKeys.fromKeys(KEY_16, KEY_16, KEY_16).diversify(SCP.SCP01, KDD);
         var ngResult = ngKeys.wrapKey(KEY_16, new byte[2]);
 
-        GPCardKeys oldKeys = PlaintextKeys.fromKeys(KEY_16, KEY_16, KEY_16);
+        var oldKeys = PlaintextKeys.fromKeys(KEY_16, KEY_16, KEY_16);
         oldKeys.diversify(SCP.SCP01, KDD);
-        GPCardKeys target = PlaintextKeys.fromKeys(KEY_16, KEY_16, KEY_16);
+        var target = PlaintextKeys.fromKeys(KEY_16, KEY_16, KEY_16);
         target.diversify(SCP.SCP01, KDD);
         var oldResult = oldKeys.encryptKey(target, GPCardKeys.KeyPurpose.ENC, new byte[2]);
 
@@ -300,9 +300,9 @@ public class TestPlaintextCardKeys {
         var ngKeys = (PlaintextCardKeys) PlaintextCardKeys.fromKeys(KEY_16, KEY_16, KEY_16).diversify(SCP.SCP02, KDD);
         var ngResult = ngKeys.wrapKey(KEY_16, new byte[2]);
 
-        GPCardKeys oldKeys = PlaintextKeys.fromKeys(KEY_16, KEY_16, KEY_16);
+        var oldKeys = PlaintextKeys.fromKeys(KEY_16, KEY_16, KEY_16);
         oldKeys.diversify(SCP.SCP02, KDD);
-        GPCardKeys target = PlaintextKeys.fromKeys(KEY_16, KEY_16, KEY_16);
+        var target = PlaintextKeys.fromKeys(KEY_16, KEY_16, KEY_16);
         target.diversify(SCP.SCP02, KDD);
         var oldResult = oldKeys.encryptKey(target, GPCardKeys.KeyPurpose.ENC, new byte[2]);
 
@@ -314,7 +314,7 @@ public class TestPlaintextCardKeys {
         var ngKeys = PlaintextCardKeys.fromKeys(KEY_16, KEY_16, KEY_16);
         var ngResult = ngKeys.kdf(ENC, new byte[16], new byte[16], 16);
 
-        GPCardKeys oldKeys = PlaintextKeys.fromKeys(KEY_16, KEY_16, KEY_16);
+        var oldKeys = PlaintextKeys.fromKeys(KEY_16, KEY_16, KEY_16);
         var oldResult = oldKeys.scp3_kdf(GPCardKeys.KeyPurpose.ENC, new byte[16], new byte[16], 16);
 
         Assert.assertEquals(ngResult, oldResult, "SCP03 KDF mismatch");
@@ -372,7 +372,7 @@ public class TestPlaintextCardKeys {
             }
             var ngKeys = (PlaintextCardKeys) PlaintextCardKeys.fromMasterKey(KEY_16, template.getValue()).diversify(SCP.SCP02, KDD);
 
-            GPCardKeys oldKeys = PlaintextKeys.fromMasterKey(KEY_16, PlaintextKeys.kdf_templates.get(template.getKey()));
+            var oldKeys = PlaintextKeys.fromMasterKey(KEY_16, PlaintextKeys.kdf_templates.get(template.getKey()));
             oldKeys.diversify(SCP.SCP02, KDD);
 
             for (var p : CardKeys.KeyPurpose.cardKeys()) {
@@ -385,10 +385,10 @@ public class TestPlaintextCardKeys {
 
     @Test
     public void crossVerify_KDF3_AllLengths_SCP03() {
-        for (var key : new byte[][]{KEY_16, KEY_24, KEY_32}) {
+        for (var key : new byte[][] { KEY_16, KEY_24, KEY_32 }) {
             var ngKeys = (PlaintextCardKeys) PlaintextCardKeys.fromMasterKey(key, PlaintextCardKeys.KDF_TEMPLATES.get("kdf3")).diversify(SCP.SCP03, KDD);
 
-            GPCardKeys oldKeys = PlaintextKeys.fromMasterKey(key, PlaintextKeys.kdf_templates.get("kdf3"));
+            var oldKeys = PlaintextKeys.fromMasterKey(key, PlaintextKeys.kdf_templates.get("kdf3"));
             oldKeys.diversify(SCP.SCP03, KDD);
 
             for (var p : CardKeys.KeyPurpose.cardKeys()) {

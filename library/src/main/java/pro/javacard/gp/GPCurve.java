@@ -23,7 +23,6 @@ import java.util.Optional;
 
 // ECC curves that have a Key Parameter Reference assigned in GPC 2.3.1 Table B-2. The constant name
 // is the curve name, as known to BouncyCastle.
-@SuppressWarnings("ImmutableEnumChecker") // X9ECParameters is effectively immutable
 public enum GPCurve {
     secp256r1(0x00), // P-256
     secp384r1(0x01), // P-384

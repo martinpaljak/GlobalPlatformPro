@@ -59,7 +59,6 @@ public final class PACE {
     static final byte PASSWORD_CAN = 0x02;
 
     // A.2.1.1 Table 4: Standardized Domain Parameters
-    @SuppressWarnings("ImmutableEnumChecker") // ECParameterSpec is effectively immutable
     public enum PACECurve {
         secp256r1(12, ECNamedCurveTable.getParameterSpec("secp256r1")),
         brainpoolp256r1(13, ECNamedCurveTable.getParameterSpec("brainpoolp256r1")),

@@ -42,7 +42,7 @@ import static pro.javacard.tlv.TLV.ba;
  * Does secure channel and low-level translation of GP* objects to APDU-s and arguments
  * NOT thread-safe
  */
-public class GPSession {
+public final class GPSession {
 
     public static final int SW_NO_ERROR = 0x9000;
     private static final Logger logger = LoggerFactory.getLogger(GPSession.class);
@@ -259,8 +259,8 @@ public class GPSession {
                     if (Arrays.equals(oidtag.value(), HexUtils.hex2bin("2A864886FC6B01"))) {
                         // Detect versions
                         isdd.find(0x60).flatMap(vertag -> vertag.find(0x06)).ifPresent(veroid ->
-                                // TODO: react to it maybe? Not that relevant in 2.2 era
-                                logger.debug("Auto-detected GP version: " + GPData.oid2version(veroid.value())));
+                        // TODO: react to it maybe? Not that relevant in 2.2 era
+                        logger.debug("Auto-detected GP version: " + GPData.oid2version(veroid.value())));
                     } else if (GPData.oid2string(oidtag.value()).startsWith("1.2.840.114283.4.") && oidtag.value().length == 9) {
                         final var data = oidtag.value();
                         // SCP version
@@ -314,7 +314,6 @@ public class GPSession {
     /*
      * Establishes a secure channel (INITIALIZE UPDATE + EXTERNAL AUTHENTICATE) to a security domain or application
      */
-    @SuppressWarnings("StatementSwitchToExpressionSwitch")
     public void openSecureChannel(GPCardKeys keys, GPSecureChannelVersion scp, byte[] host_challenge, EnumSet<APDUMode> securityLevel)
             throws GPException {
 
@@ -372,29 +371,24 @@ public class GPSession {
             throw new GPDataException("INITIALIZE UPDATE response with too small length", update_response);
         }
 
-        var update_len = 0;
-
-        switch (update_response[11]) {
-            case 0x01:
-            case 0x02:
-                update_len = 28;
-                break;
-            case 0x03:
-                update_len = 29;
+        final var update_len = switch (update_response[11]) {
+            case 0x01, 0x02 -> 28;
+            case 0x03 -> {
+                var len = 29;
                 final var i = update_response[12];
                 if ((i & 0x10) == 0x10) {
-                    update_len += 3;
+                    len += 3;
                 }
                 if ((i & 0x01) == 0x01) {
                     if (!s16) {
                         logger.warn("S16 mode reported by card but not requested!");
                     }
-                    update_len += 16; // +8 for both challenges
+                    len += 16; // +8 for both challenges
                 }
-                break;
-            default:
-                throw new GPDataException("Unsupported SCP version", update_response);
-        }
+                yield len;
+            }
+            default -> throw new GPDataException("Unsupported SCP version", update_response);
+        };
 
         // Verify response length (SCP01/SCP02 + SCP03 + SCP03 w/ pseudorandom + SCP03 w/ S16)
         if (update_len != update_response.length) {
@@ -515,20 +509,19 @@ public class GPSession {
         // Calculate host cryptogram and initialize SCP wrapper
         final byte[] host_cryptogram;
         switch (scpVersion.scp) {
-            case SCP01:
+            case SCP01 -> {
                 host_cryptogram = GPCrypto.mac_3des(GPUtils.concatenate(card_challenge, host_challenge), encKey, new byte[8]);
                 wrapper = new SCP01Wrapper(encKey, macKey, blockSize);
-                break;
-            case SCP02:
+            }
+            case SCP02 -> {
                 host_cryptogram = GPCrypto.mac_3des(GPUtils.concatenate(card_challenge, host_challenge), encKey, new byte[8]);
                 wrapper = new SCP02Wrapper(encKey, macKey, rmacKey, blockSize);
-                break;
-            case SCP03:
+            }
+            case SCP03 -> {
                 host_cryptogram = GPCrypto.scp03_kdf(macKey, (byte) 0x01, cntx, s16 ? 128 : 64);
                 wrapper = new SCP03Wrapper(encKey, macKey, rmacKey, blockSize, s16);
-                break;
-            default:
-                throw new IllegalStateException("Unknown SCP");
+            }
+            default -> throw new IllegalStateException("Unknown SCP");
         }
 
         logger.debug("Calculated host cryptogram: " + HexUtils.bin2hex(host_cryptogram));

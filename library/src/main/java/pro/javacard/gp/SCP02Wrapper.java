@@ -15,8 +15,7 @@ import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
-// SCP02 15 - CMAC on modified APDU, ICV zero, ICV encryption, no RMAC (55 = well-known random)
-@SuppressWarnings("InconsistentCapitalization") // rmac param is the key; rMac field is the output buffer
+// SCP02 - CMAC on modified APDU, ICV zero, ICV encryption, no RMAC
 class SCP02Wrapper extends SecureChannelWrapper {
     private static final Logger logger = LoggerFactory.getLogger(SCP02Wrapper.class);
 
@@ -24,13 +23,8 @@ class SCP02Wrapper extends SecureChannelWrapper {
     private byte[] icv = null;
     private byte[] ricv = null;
 
-    private boolean icvEnc = false;
-    private boolean macModifiedAPDU = false;
-    private boolean postAPDU = false;
-
-    SCP02Wrapper(final byte[] enc, final byte[] mac, final byte[] rmac, final int bs) {
-        super(enc, mac, rmac, bs);
-        setVariant(0x55);
+    SCP02Wrapper(final byte[] enc, final byte[] mac, final byte[] rmacKey, final int bs) {
+        super(enc, mac, rmacKey, bs);
     }
 
     private static byte clearBits(final byte b, final byte mask) {
@@ -39,11 +33,6 @@ class SCP02Wrapper extends SecureChannelWrapper {
 
     private static byte setBits(final byte b, final byte mask) {
         return (byte) ((b | mask) & 0xFF);
-    }
-
-    public void setVariant(final int i) {
-        icvEnc = true;
-        macModifiedAPDU = true;
     }
 
     @Override
@@ -86,14 +75,12 @@ class SCP02Wrapper extends SecureChannelWrapper {
                 // This conditional is hard to read, but external update ICV MUST be always 0 and this assures it.
                 if (icv == null) {
                     icv = new byte[8];
-                } else if (icvEnc) {
+                } else {
                     icv = GPCrypto.des_ecb(icv, macKey);
                 }
 
-                if (macModifiedAPDU) {
-                    newCLA = setBits((byte) newCLA, (byte) 0x04);
-                    newLc = newLc + 8;
-                }
+                newCLA = setBits((byte) newCLA, (byte) 0x04);
+                newLc = newLc + 8;
                 t.write(newCLA);
                 t.write(origINS);
                 t.write(origP1);
@@ -104,10 +91,6 @@ class SCP02Wrapper extends SecureChannelWrapper {
                 logger.trace("MAC input: {}", HexUtils.bin2hex(t.toByteArray()));
                 icv = GPCrypto.mac_des_3des(macKey, t.toByteArray(), icv);
 
-                if (postAPDU) {
-                    newCLA = setBits((byte) newCLA, (byte) 0x04);
-                    newLc = newLc + 8;
-                }
                 t.reset();
                 newData = origData;
             }

@@ -165,7 +165,6 @@ public final class GPData {
     }
 
     // GPC 2.3.1 Table H-9 and Table H-10
-    @SuppressWarnings("ImmutableEnumChecker") // Def is effectively immutable
     public enum SIGNATURE implements BitField<SIGNATURE> {
         // First byte
         RSA1024_SHA1(byte_mask(0, 0x01)),
@@ -194,7 +193,6 @@ public final class GPData {
     }
 
     // GPC 2.3.1 Table H-8: Cipher Suites for LFDB Encryption (tag 84)
-    @SuppressWarnings("ImmutableEnumChecker") // Def is effectively immutable
     public enum LFDB_ENCRYPTION implements BitField<LFDB_ENCRYPTION> {
         DES3(byte_mask(0, 0x01)), // DEPRECATED
         AES_128(byte_mask(0, 0x02)),
@@ -217,7 +215,6 @@ public final class GPData {
     }
 
     // GPC 2.4 Table H-11: Support of Optional Features (tag 8A)
-    @SuppressWarnings("ImmutableEnumChecker") // Def is effectively immutable
     public enum OPTIONAL_FEATURE implements BitField<OPTIONAL_FEATURE> {
         TokenIdentifierDenyList(byte_mask(0, 0x01)),
         CumulativeDelete(byte_mask(0, 0x02)),

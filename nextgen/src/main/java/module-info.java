@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2023 Martin Paljak <martin@martinpaljak.net>
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-@SuppressWarnings({"requires-automatic"})
+@SuppressWarnings("requires-automatic") // jopt-simple has no module-info
 module gptool.nextgen {
     requires pro.javacard.globalplatform;
     requires pro.javacard.pace;

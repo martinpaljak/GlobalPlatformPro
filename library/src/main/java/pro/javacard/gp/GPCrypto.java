@@ -45,7 +45,6 @@ import java.security.spec.PSSParameterSpec;
 import java.util.Arrays;
 
 // Various cryptographic primitives used for secure channel or plaintext keys
-@SuppressWarnings("lgtm[java/weak-cryptographic-algorithm]")
 public final class GPCrypto {
     private GPCrypto() {}
 
@@ -377,16 +376,12 @@ public final class GPCrypto {
     }
 
     // Do shuffling as necessary
-    @SuppressWarnings("StatementSwitchToExpressionSwitch")
     static byte[] resize_des(final byte[] key, final int length) {
-        switch (length) {
-            case 24:
-                return GPUtils.concatenate(Arrays.copyOf(key, 16), Arrays.copyOf(key, 8));
-            case 8:
-                return Arrays.copyOf(key, 8);
-            default:
-                throw new IllegalArgumentException("Invalid DES key length: " + length);
-        }
+        return switch (length) {
+            case 24 -> GPUtils.concatenate(Arrays.copyOf(key, 16), Arrays.copyOf(key, 8));
+            case 8 -> Arrays.copyOf(key, 8);
+            default -> throw new IllegalArgumentException("Invalid DES key length: " + length);
+        };
     }
 
     public static byte[] rs2der(final byte[] rs) throws SignatureException {

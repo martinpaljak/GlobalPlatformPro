@@ -40,6 +40,7 @@ import java.security.interfaces.RSAPrivateKey;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static apdu4j.core.HexUtils.bin2hex;
@@ -49,6 +50,8 @@ import static pro.javacard.tlv.TLV.ba;
 // Does the CLI parameter parsing and associated execution
 public final class GPTool extends GPCommandLineInterface {
     // NOTE: can't have a static logger here, as it is set up based on args and env. This class should only use stdout/stderr.
+
+    private static final Pattern COMMA = Pattern.compile(",");
 
     private static boolean isVerbose = false;
     private static boolean isTrace = false;
@@ -1035,7 +1038,6 @@ public final class GPTool extends GPCommandLineInterface {
     static Predicate<GPRegistryEntry> dapDomainFilter = e -> e.hasPrivilege(Privilege.MandatedDAPVerification) || e.hasPrivilege(Privilege.DAPVerification);
 
     // Extract parameters and call GPCommands.load()
-    @SuppressWarnings("StatementSwitchToExpressionSwitch")
     private static void loadCAP(OptionSet args, GPSession gp, CAPFile capFile) throws GPException {
         try {
             final var to = optional(args, OPT_TO).orElse(gp.getAID());
@@ -1103,15 +1105,10 @@ public final class GPTool extends GPCommandLineInterface {
 
             System.out.printf("%s loaded: %s %s%n", capFile.getFile().map(Path::toString).orElse("CAP"), capFile.getPackageName(), capFile.getPackageAID());
         } catch (GPException e) {
-            switch (e.sw) {
-                case 0x6A80:
-                    System.err.println("Applet loading failed. Are you sure the card can handle it?");
-                    break;
-                case 0x6985:
-                    System.err.println("Applet loading not allowed. Are you sure the domain can accept it?");
-                    break;
-                default:
-                    // Do nothing. Here for findbugs
+            if (e.sw == 0x6A80) {
+                System.err.println("Applet loading failed. Are you sure the card can handle it?");
+            } else if (e.sw == 0x6985) {
+                System.err.println("Applet loading not allowed. Are you sure the domain can accept it?");
             }
             throw e;
         } catch (GeneralSecurityException e) {
@@ -1201,23 +1198,22 @@ public final class GPTool extends GPCommandLineInterface {
     }
 
     // NOTE: Integer is used because byte[] is not good for a set.
-    @SuppressWarnings({ "StringSplitter", "MixedMutabilityReturnType" })
     static List<Integer> split(String s) {
         // remove whitespace and "0x" instances
         s = s.replaceAll("\\s+", "").replaceAll("0[xX]", "");
 
         // If longer than 4 and contains comma - try to parse as list
         if (s.contains(",") && s.length() > 4) {
-            final var parts = s.split(",");
+            final var parts = COMMA.split(s);
             final var result = new ArrayList<Integer>();
 
             for (String part : parts) {
                 result.add(hex2int(part));
             }
 
-            return result;
+            return List.copyOf(result);
         } else {
-            return Collections.singletonList(hex2int(s));
+            return List.of(hex2int(s));
         }
     }
 
@@ -1250,12 +1246,11 @@ public final class GPTool extends GPCommandLineInterface {
         };
     }
 
-    @SuppressWarnings("StringSplitter")
     private static EnumSet<Privilege> getPrivileges(final OptionSet args) {
         final var privs = EnumSet.noneOf(Privilege.class);
         if (args.has(OPT_PRIVS)) {
             for (String p : args.valuesOf(OPT_PRIVS)) {
-                for (String s : p.split(",")) {
+                for (String s : COMMA.split(p)) {
                     privs.add(Privilege.lookup(s.trim()).orElseThrow(() -> new IllegalArgumentException("Unknown privilege: " + s.trim()
                             + "\nValid values are: " + Arrays.stream(Privilege.values()).map(Enum::toString).collect(Collectors.joining(", ")))));
                 }

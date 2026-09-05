@@ -90,7 +90,6 @@ public final class GPCommands {
     }
 
     // Figure out load parameters
-    @SuppressWarnings("StatementSwitchToExpressionSwitch")
     public static void load(final GPSession gp, final CAPFile cap, final AID to, final AID dapAID, final LFDBH hash) throws GPException {
         final var reg = gp.getRegistry();
 

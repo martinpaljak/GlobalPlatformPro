@@ -11,27 +11,16 @@ import java.io.ByteArrayOutputStream;
 import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
 
-// SCP01 05 - no ICV encryption 15 - ICV encryption (
+// SCP01 - MAC on modified APDU, ICV not encrypted
 class SCP01Wrapper extends SecureChannelWrapper {
-    private boolean icvEnc = false;
-    private final boolean preAPDU = true;
-    private final boolean postAPDU = false;
-
     byte[] icv = null;
 
     SCP01Wrapper(final byte[] enc, final byte[] mac, final int bs) {
         super(enc, mac, null, bs);
-        setVariant(0x15);
     }
 
     private static byte setBits(final byte b, final byte mask) {
         return (byte) ((b | mask) & 0xFF);
-    }
-
-    public void setVariant(final int i) {
-        if (i == 0x05) {
-            icvEnc = false;
-        }
     }
 
     @Override
@@ -60,14 +49,10 @@ class SCP01Wrapper extends SecureChannelWrapper {
             if (mac) {
                 if (icv == null) {
                     icv = new byte[8];
-                } else if (icvEnc) {
-                    icv = GPCrypto.des3_ecb(icv, macKey);
                 }
 
-                if (preAPDU) {
-                    newCLA = setBits((byte) newCLA, (byte) 0x04);
-                    newLc = newLc + 8;
-                }
+                newCLA = setBits((byte) newCLA, (byte) 0x04);
+                newLc = newLc + 8;
                 t.write(newCLA);
                 t.write(origINS);
                 t.write(origP1);
@@ -77,10 +62,6 @@ class SCP01Wrapper extends SecureChannelWrapper {
 
                 icv = GPCrypto.mac_3des(t.toByteArray(), macKey, icv);
 
-                if (postAPDU) {
-                    newCLA = setBits((byte) newCLA, (byte) 0x04);
-                    newLc = newLc + 8;
-                }
                 t.reset();
                 newData = origData;
             }

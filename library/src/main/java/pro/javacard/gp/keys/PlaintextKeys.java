@@ -268,21 +268,22 @@ public final class PlaintextKeys extends GPCardKeys {
         }
     }
 
-    @SuppressWarnings("StatementSwitchToExpressionSwitch")
     @Override
     public byte[] encryptKey(final GPCardKeys key, final KeyPurpose p, final byte[] sessionContext) throws GeneralSecurityException {
         if (!(key instanceof PlaintextKeys other)) {
             throw new IllegalArgumentException(getClass().getName() + " can only handle " + getClass().getName());
         }
-        switch (scp) {
-            case SCP01:
+        return switch (scp) {
+            case SCP01 -> {
                 logger.debug("Encrypting {} value (KCV={}) with DEK (KCV={})", p, HexUtils.bin2hex(other.kcv(p)), HexUtils.bin2hex(kcv(KeyPurpose.DEK)));
-                return GPCrypto.des3_ecb(other.cardKeys.get(p), cardKeys.get(KeyPurpose.DEK));
-            case SCP02:
+                yield GPCrypto.des3_ecb(other.cardKeys.get(p), cardKeys.get(KeyPurpose.DEK));
+            }
+            case SCP02 -> {
                 final var sdek = deriveSessionKeySCP02(cardKeys.get(KeyPurpose.DEK), KeyPurpose.DEK, sessionContext);
                 logger.debug("Encrypting {} value (KCV={}) with S-DEK (KCV={})", p, HexUtils.bin2hex(other.kcv(p)), HexUtils.bin2hex(GPCrypto.kcv_3des(sdek)));
-                return GPCrypto.des3_ecb(other.cardKeys.get(p), sdek);
-            case SCP03:
+                yield GPCrypto.des3_ecb(other.cardKeys.get(p), sdek);
+            }
+            case SCP03 -> {
                 logger.debug("Encrypting {} value (KCV={}) with DEK (KCV={})", p, HexUtils.bin2hex(other.kcv(p)), HexUtils.bin2hex(kcv(KeyPurpose.DEK)));
                 final var otherkey = other.cardKeys.get(p);
                 // Pad with random
@@ -290,34 +291,25 @@ public final class PlaintextKeys extends GPCardKeys {
                 final byte[] plaintext = GPCrypto.random(n);
                 System.arraycopy(otherkey, 0, plaintext, 0, otherkey.length);
                 // encrypt
-                return GPCrypto.aes_cbc(plaintext, cardKeys.get(KeyPurpose.DEK), new byte[16]);
-            default:
-                throw new GPException("Illegal SCP");
-        }
+                yield GPCrypto.aes_cbc(plaintext, cardKeys.get(KeyPurpose.DEK), new byte[16]);
+            }
+            default -> throw new GPException("Illegal SCP");
+        };
     }
 
-    @SuppressWarnings("StatementSwitchToExpressionSwitch")
     @Override
     public byte[] getSessionKey(final KeyPurpose p, final byte[] session_kdd) {
         // Calculate session key (ENC-MAC-DEK[-RMAC])
-        switch (scp) {
-            case SCP01:
-                return deriveSessionKeySCP01(cardKeys.get(p), p, session_kdd);
-            case SCP02:
-                if (p == KeyPurpose.RMAC) {
-                    return deriveSessionKeySCP02(cardKeys.get(KeyPurpose.MAC), KeyPurpose.RMAC, session_kdd);
-                } else {
-                    return deriveSessionKeySCP02(cardKeys.get(p), p, session_kdd);
-                }
-            case SCP03:
-                if (p == KeyPurpose.RMAC) {
-                    return deriveSessionKeySCP03(cardKeys.get(KeyPurpose.MAC), KeyPurpose.RMAC, session_kdd);
-                } else {
-                    return deriveSessionKeySCP03(cardKeys.get(p), p, session_kdd);
-                }
-            default:
-                throw new IllegalStateException("Unknown SCP");
-        }
+        return switch (scp) {
+            case SCP01 -> deriveSessionKeySCP01(cardKeys.get(p), p, session_kdd);
+            case SCP02 -> p == KeyPurpose.RMAC
+                    ? deriveSessionKeySCP02(cardKeys.get(KeyPurpose.MAC), KeyPurpose.RMAC, session_kdd)
+                    : deriveSessionKeySCP02(cardKeys.get(p), p, session_kdd);
+            case SCP03 -> p == KeyPurpose.RMAC
+                    ? deriveSessionKeySCP03(cardKeys.get(KeyPurpose.MAC), KeyPurpose.RMAC, session_kdd)
+                    : deriveSessionKeySCP03(cardKeys.get(p), p, session_kdd);
+            default -> throw new IllegalStateException("Unknown SCP");
+        };
     }
 
     @Override

@@ -20,8 +20,11 @@ import pro.javacard.gp.GPUtils;
 
 import java.io.IOException;
 import java.util.Objects;
+import java.util.regex.Pattern;
 
 public class APDUParsers {
+    private static final Pattern WHITESPACE = Pattern.compile("\\s+");
+
     static final ObjectMapper cbor;
 
     static final ObjectMapper json;
@@ -157,9 +160,8 @@ public class APDUParsers {
                     return validate(Hex.decode(hex_cleanup(s)));
                 } catch (IllegalArgumentException | DecoderException e) {
                     // Otherwise support giving header and payload separated by space and fill payload length in automagically
-                    @SuppressWarnings("StringSplitter")
-                    final // Trailing empty strings are not relevant here
-                    var pieces = s.split("\\s+");
+                    // Trailing empty strings are not relevant here
+                    final var pieces = WHITESPACE.split(s);
                     if (pieces.length == 2) {
                         final byte[][] pcs = new byte[2][];
                         pcs[0] = Hex.decode(hex_cleanup(pieces[0]));

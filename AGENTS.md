@@ -13,7 +13,7 @@ Run `make versions` to check for newer versions of dependencies, plugins, and ex
 
 Before committing, run these in order:
 
-1. `./mvnw -Pcheck -Dmaven.javadoc.skip=true -Dmaven.test.skip=true compile spotbugs:check` — Error Prone and SpotBugs static analysis
+1. `./mvnw -Pcheck -Dmaven.javadoc.skip=true -Dmaven.test.skip=true compile spotbugs:check` — SpotBugs static analysis, excludes in `spotbugs.xml`
 2. `./mvnw rewrite:run spotless:apply` — OpenRewrite auto-fixes and code formatting
 3. `./mvnw verify` — final build + tests, must be clean
 

@@ -17,15 +17,9 @@ public final class GPKeyInfo {
     private static final Logger logger = LoggerFactory.getLogger(GPKeyInfo.class);
 
     private GPKey type;
-    @SuppressWarnings("UnusedVariable") // FIXME: handle them as optionals
-    private List<GPKeyInfoElement> elements;
     private int version = 0; // 1..7f
     private int id = -1; // 0..7f
     private int length = -1;
-    @SuppressWarnings("UnusedVariable") // FIXME: handle them as optionals
-    private int access = -1; // bit field
-    @SuppressWarnings("UnusedVariable") // FIXME: handle them as optionals
-    private int usage = -1; // bit field
 
     // Called when parsing KeyInfo template
     public GPKeyInfo(final int version, final int id, final int length, final GPKey type) {
@@ -35,6 +29,7 @@ public final class GPKeyInfo {
         this.type = type;
     }
 
+    // FIXME: access and usage are dropped, handle them as optionals
     public GPKeyInfo(final int version, final int id, final List<GPKeyInfoElement> elements, final int access, final int usage) {
         this.version = version;
         this.id = id;
@@ -66,11 +61,6 @@ public final class GPKeyInfo {
                 throw new GPDataException("Multiple unsupported elements in key info template");
             }
         }
-        this.elements = new ArrayList<>(elements);
-
-        // FIXME: handle them as optionals here
-        this.access = access;
-        this.usage = usage;
     }
 
     // GP 2.1.1 9.3.3.1

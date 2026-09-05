@@ -44,10 +44,13 @@ import java.security.MessageDigest;
 import java.security.interfaces.RSAPrivateKey;
 import java.util.*;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 // Does the CLI parameter parsing and associated execution
 public final class GPToolNG extends GPCommandLineInterface implements ToolExtension {
+    private static final Pattern COMMA = Pattern.compile(",");
+
     // NOTE: can't have a static logger here, as it is set up based on args and env. This class should only use stdout/stderr.
 
     private static boolean isTrace = false;
@@ -958,14 +961,13 @@ public final class GPToolNG extends GPCommandLineInterface implements ToolExtens
     }
 
     // NOTE: Integer is used because byte[] is not good for a set.
-    @SuppressWarnings("StringSplitter")
     static List<Integer> split(String s) {
         // remove whitespace and "0x" instances
         s = s.replaceAll("\\s+", "").replaceAll("0[xX]", "");
 
         // If longer than 4 and contains comma - try to parse as list
         if (s.contains(",") && s.length() > 4) {
-            var parts = s.split(",");
+            var parts = COMMA.split(s);
             var result = new ArrayList<Integer>();
 
             for (String part : parts) {

@@ -27,36 +27,29 @@ jobs:
       matrix:
         java: [ 17, 21, 25 ]
     name: Java ${{ matrix.java }}
+    env:
+      PUBLISH: ${{ matrix.java == '21' && ( github.ref == 'refs/heads/master' || github.ref == 'refs/heads/next' || startsWith(github.ref, 'refs/tags/v') ) }}
     steps:
       - name: Check out code
         uses: actions/checkout@v7
-        with:
-          fetch-depth: 0 # To make git describe give the intended output
-          fetch-tags: true
       - name: Setup java
         uses: actions/setup-java@v6
         with:
           java-version: ${{ matrix.java }}
           distribution: zulu
           cache: maven
-      - run: TZ=UTC ./mvnw -B -P exe
-
       - name: Set up publishing
-        if: (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/next' || github.ref == 'refs/heads/master') && matrix.java == '21'
+        if: env.PUBLISH == 'true'
         uses: martinpaljak/maven-ssh-deploy@v2
         with:
           host: mvn.javacard.pro
           key: ${{ secrets.SSH_KEY }}
           fingerprint: SHA256:auiF3nHWvDmvq2stDl+QEECCqMcDp+FY1/bDRnvxpRw
-      - name: Deploy to Maven repository
-        if: (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/next' || github.ref == 'refs/heads/master') && matrix.java == '21'
-        run: |
-          unset CI
-          TZ=UTC ./mvnw -B deploy -DskipTests
+      - name: Build and deploy
+        run: ./mvnw -B -U -P exe deploy -Dmaven.deploy.skip=${{ env.PUBLISH != 'true' }}
       - name: Release
         if: startsWith(github.ref, 'refs/tags/v') && matrix.java == '21'
-        id: create_release
-        uses: softprops/action-gh-release@v3.0.2
+        uses: softprops/action-gh-release@v3.0.3
         with:
           files: |
             tool/target/gp.jar

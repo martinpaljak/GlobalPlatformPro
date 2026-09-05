@@ -209,7 +209,7 @@ public final class GPTool extends GPCommandLineInterface {
 
     static boolean onlyHasArg(OptionSet args, OptionSpec<?> s) {
         final var needle = args.specs().stream().filter(args::has).count();
-        final var hay = args.specs().stream().filter(e -> args.has(e) && e != s).count();
+        final var hay = args.specs().stream().filter(e -> args.has(e) && !e.equals(s)).count();
         return needle == 1 && hay == 0;
     }
 

@@ -165,7 +165,7 @@ final class GPCertTool extends GPCommandLineInterface {
     // Anything a hex or base64 dump cannot contain, which a certificate always has: it starts with '7F21'
     private static boolean binary(final byte[] bytes) {
         for (final var b : bytes) {
-            if (b < 0x20 && b != '\n' && b != '\r' && b != '\t' || b == 0x7F) {
+            if ((b < 0x20 && b != '\n' && b != '\r' && b != '\t') || b == 0x7F) {
                 return true;
             }
         }

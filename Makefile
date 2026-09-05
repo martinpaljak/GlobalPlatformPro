@@ -1,4 +1,5 @@
-export TZ = UTC # same as Github
+ # same as Github
+export TZ = UTC
 export JAVA_HOME ?= /Library/Java/JavaVirtualMachines/zulu-21.jdk/Contents/Home
 
 MVN_OPTS = -Dmaven.javadoc.skip=true -Dmaven.test.skip=true -Dspotbugs.skip=true
@@ -35,8 +36,8 @@ test:
 fast:
 	./mvnw -T1C install -Dmaven.test.skip=true -Dspotbugs.skip=true
 
-check:
-	./mvnw -Perrorprone -Dmaven.javadoc.skip=true -Dmaven.test.skip=true compile spotbugs:check
+ci:
+	CI=true ./mvnw -U -P exe
 
 versions:
 	./mvnw -B --no-transfer-progress $(VERSIONS):display-parent-updates $(VERSIONS):display-dependency-updates $(VERSIONS):display-plugin-updates $(VERSIONS):display-extension-updates $(VERSION_RULES)

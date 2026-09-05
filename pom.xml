@@ -101,7 +101,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.15.0</version>
+                <version>3.16.0</version>
                 <configuration>
                     <release>17</release>
                     <compilerArgs>
@@ -128,7 +128,7 @@
             <plugin>
                 <groupId>com.diffplug.spotless</groupId>
                 <artifactId>spotless-maven-plugin</artifactId>
-                <version>3.10.1</version>
+                <version>3.10.2</version>
                 <configuration>
                     <java>
                         <excludes>
@@ -187,7 +187,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>3.5.6</version>
+                    <version>3.6.0</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -292,6 +292,12 @@
     </build>
     <dependencyManagement>
         <dependencies>
+            <!-- CAP file parsing -->
+            <dependency>
+                <groupId>pro.javacard</groupId>
+                <artifactId>capfile</artifactId>
+                <version>26.08.28-SNAPSHOT</version>
+            </dependency>
             <dependency>
                 <groupId>pro.javacard</groupId>
                 <artifactId>apdu4j-core</artifactId>
@@ -320,17 +326,27 @@
             <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-api</artifactId>
-                <version>2.0.18</version>
+                <version>2.0.19</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-simple</artifactId>
-                <version>2.0.18</version>
+                <version>2.0.19</version>
             </dependency>
             <dependency>
                 <groupId>org.bouncycastle</groupId>
                 <artifactId>bcpkix-jdk18on</artifactId>
                 <version>1.85</version>
+            </dependency>
+            <dependency>
+                <groupId>net.sf.jopt-simple</groupId>
+                <artifactId>jopt-simple</artifactId>
+                <version>5.0.4</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.dataformat</groupId>
+                <artifactId>jackson-dataformat-cbor</artifactId>
+                <version>2.22.2</version>
             </dependency>
             <dependency>
                 <groupId>org.testng</groupId>
@@ -394,7 +410,7 @@
                     <plugin>
                         <groupId>com.github.spotbugs</groupId>
                         <artifactId>spotbugs-maven-plugin</artifactId>
-                        <version>4.10.4.0</version>
+                        <version>4.10.4.1</version>
                         <executions>
                             <execution>
                                 <id>parent-spotbugs</id>

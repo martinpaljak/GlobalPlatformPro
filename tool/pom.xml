@@ -37,7 +37,6 @@
         <dependency>
             <groupId>net.sf.jopt-simple</groupId>
             <artifactId>jopt-simple</artifactId>
-            <version>5.0.4</version>
         </dependency>
         <!-- For tests  -->
         <dependency>
@@ -49,7 +48,6 @@
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-cbor</artifactId>
-            <version>2.22.2</version>
         </dependency>
     </dependencies>
     <profiles>

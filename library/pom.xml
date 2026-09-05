@@ -18,7 +18,6 @@
         <dependency>
             <groupId>pro.javacard</groupId>
             <artifactId>capfile</artifactId>
-            <version>26.08.28-SNAPSHOT</version>
         </dependency>
         <!-- For logging -->
         <dependency>

@@ -17,8 +17,10 @@ tool/target/gp.jar: $(SOURCES)
 dep: $(SOURCES)
 	./mvnw $(MVN_OPTS) install
 
+# OpenRewrite edits every module during the last one, so it must finish before the formatter starts
 source:
-	./mvnw -P fixup process-test-classes spotless:apply
+	./mvnw -P fixup process-test-classes
+	./mvnw spotless:apply
 
 fast:
 	./mvnw -T1C install -Dmaven.test.skip=true -Dspotbugs.skip=true

@@ -16,8 +16,7 @@ public record InitUpdateResponse(
         byte[] hostChallenge,
         byte[] cardChallenge,
         byte[] cardCryptogram,
-        byte[] sequenceCounter
-) {
+        byte[] sequenceCounter) {
     public InitUpdateResponse {
         diversificationData = diversificationData.clone();
         hostChallenge = hostChallenge.clone();
@@ -29,19 +28,29 @@ public record InitUpdateResponse(
     }
 
     @Override
-    public byte[] diversificationData() { return diversificationData.clone(); }
+    public byte[] diversificationData() {
+        return diversificationData.clone();
+    }
 
     @Override
-    public byte[] hostChallenge() { return hostChallenge.clone(); }
+    public byte[] hostChallenge() {
+        return hostChallenge.clone();
+    }
 
     @Override
-    public byte[] cardChallenge() { return cardChallenge.clone(); }
+    public byte[] cardChallenge() {
+        return cardChallenge.clone();
+    }
 
     @Override
-    public byte[] cardCryptogram() { return cardCryptogram.clone(); }
+    public byte[] cardCryptogram() {
+        return cardCryptogram.clone();
+    }
 
     @Override
-    public byte[] sequenceCounter() { return sequenceCounter == null ? null : sequenceCounter.clone(); }
+    public byte[] sequenceCounter() {
+        return sequenceCounter == null ? null : sequenceCounter.clone();
+    }
 
     public static InitUpdateResponse parse(byte[] response, byte[] hostChallenge) {
         if (response.length < 28) {

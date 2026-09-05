@@ -14,9 +14,9 @@ public interface Tag {
     interface Codec {
         Tag decode(ByteBuffer buf);
 
-        Codec BER = BERTag::parse;           // multi-byte, class/constructed bits
+        Codec BER = BERTag::parse; // multi-byte, class/constructed bits
         Codec SINGLE_BYTE = SimpleTag::parse; // opaque 0x01..0xFE, no constructed semantics
-        Codec DGI = DGITag::parse;           // 2-byte big-endian
+        Codec DGI = DGITag::parse; // 2-byte big-endian
     }
 
     byte[] bytes();
@@ -38,19 +38,19 @@ public interface Tag {
             throw new IllegalArgumentException("Tag value out of range: " + v);
         }
         if (v <= 0xFF) {
-            return new BERTag(new byte[]{(byte) v});
+            return new BERTag(new byte[] { (byte) v });
         }
         if (v <= 0xFFFF) {
-            return new BERTag(new byte[]{(byte) (v >> 8), (byte) v});
+            return new BERTag(new byte[] { (byte) (v >> 8), (byte) v });
         }
-        return new BERTag(new byte[]{(byte) (v >> 16), (byte) (v >> 8), (byte) v});
+        return new BERTag(new byte[] { (byte) (v >> 16), (byte) (v >> 8), (byte) v });
     }
 
     static Tag ber(int b1, int b2) {
         if (b1 < 0 || b1 > 0xFF || b2 < 0 || b2 > 0xFF) {
             throw new IllegalArgumentException("Tag bytes out of range: " + Integer.toHexString(b1) + " " + Integer.toHexString(b2));
         }
-        return new BERTag(new byte[]{(byte) b1, (byte) b2});
+        return new BERTag(new byte[] { (byte) b1, (byte) b2 });
     }
 
     static Tag simple(int b) {

@@ -33,13 +33,13 @@ class TestTPath {
 
         // operations are threaded through the int, Tag and TPath construction styles
         final var r = roots
-                .set(0x6F, 0xA5, 0x9F08, hex("0210"))                  // int: replace existing primitive
-                .set(TPath.of(0x6F, 0xA5, 0x9F02), hex("0000000A"))    // TPath: upsert leaf into constructed
-                .set(0x6F, 0x70, 0x9F1F, hex("AA"))                    // int: create missing intermediate chain
-                .add(TPath.of(0x6F, 0xA5), TLV.of(0x9F65, hex("EE")))  // TPath: append a duplicate-tag child
-                .add(0x6F, 0x71, TLV.of(0x9F1E, hex("BB")))            // int: add, upserting the parent chain
-                .delete(0x6F, 0x84)                                    // int: delete an existing node
-                .set(0x80, hex("9000"));                               // int: single-segment root upsert
+                .set(0x6F, 0xA5, 0x9F08, hex("0210")) // int: replace existing primitive
+                .set(TPath.of(0x6F, 0xA5, 0x9F02), hex("0000000A")) // TPath: upsert leaf into constructed
+                .set(0x6F, 0x70, 0x9F1F, hex("AA")) // int: create missing intermediate chain
+                .add(TPath.of(0x6F, 0xA5), TLV.of(0x9F65, hex("EE"))) // TPath: append a duplicate-tag child
+                .add(0x6F, 0x71, TLV.of(0x9F1E, hex("BB"))) // int: add, upserting the parent chain
+                .delete(0x6F, 0x84) // int: delete an existing node
+                .set(0x80, hex("9000")); // int: single-segment root upsert
 
         // edits landed (read back through int, Tag and TPath styles)
         Assert.assertEquals(r.find(0x6F, 0xA5, 0x9F08).get().value(), hex("0210"));
@@ -87,8 +87,8 @@ class TestTPath {
         // parse then encode is a symmetric round-trip
         Assert.assertEquals(roots.encode(), bytes);
 
-        Assert.assertTrue(roots.find(TPath.root()).isEmpty());     // empty path addresses nothing
-        Assert.assertTrue(roots.find(0x6F, 0x99).isEmpty());       // miss
+        Assert.assertTrue(roots.find(TPath.root()).isEmpty()); // empty path addresses nothing
+        Assert.assertTrue(roots.find(0x6F, 0x99).isEmpty()); // miss
         // find addresses at most one: duplicate 9F65 under A5 is ambiguous -> throws (use where/findAll)
         Assert.expectThrows(IllegalArgumentException.class, () -> roots.find(Tag.ber("6F"), Tag.ber("A5"), Tag.ber("9F65")));
 
@@ -98,11 +98,11 @@ class TestTPath {
 
         // findAll returns every leaf matching the last segment, reached by first match at each earlier segment
         Assert.assertEquals(tags(roots.findAll(0x6F, 0xA5, 0x9F65)), List.of(Tag.ber("9F65"), Tag.ber("9F65")));
-        Assert.assertEquals(roots.findAll(0x6F).size(), 1);          // single-segment, top level
-        Assert.assertTrue(roots.findAll(0x6F, 0x99).isEmpty());      // last segment matches nothing
+        Assert.assertEquals(roots.findAll(0x6F).size(), 1); // single-segment, top level
+        Assert.assertTrue(roots.findAll(0x6F, 0x99).isEmpty()); // last segment matches nothing
         Assert.assertTrue(roots.findAll(0x6F, 0x99, 0x9F65).isEmpty()); // spine breaks mid-walk
-        Assert.assertTrue(roots.findAll(TPath.root()).isEmpty());    // empty path
-        Assert.assertEquals(roots.findAll(second).size(), 1);        // predicate filters the multi-match
+        Assert.assertTrue(roots.findAll(TPath.root()).isEmpty()); // empty path
+        Assert.assertEquals(roots.findAll(second).size(), 1); // predicate filters the multi-match
 
         // a predicate cannot synthesize a value: upsert-creation is tag-only and ignores it
         final var created = roots.set(TPath.of(0x6F).tag(0xB5).where(v -> false), hex("01"));

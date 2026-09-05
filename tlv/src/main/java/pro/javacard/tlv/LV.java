@@ -16,8 +16,7 @@ public final class LV {
 
     private static final HexFormat HEX = HexFormat.of().withUpperCase();
 
-    private LV() {
-    }
+    private LV() {}
 
     // Concatenate parts into a length-value sequence; a null part becomes a single 0x00.
     public static byte[] encode(final byte[]... parts) {

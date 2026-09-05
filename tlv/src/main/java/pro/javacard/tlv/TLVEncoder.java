@@ -5,8 +5,7 @@ package pro.javacard.tlv;
 
 // Stateless TLV encoder
 public final class TLVEncoder {
-    private TLVEncoder() {
-    }
+    private TLVEncoder() {}
 
     public static byte[] encode(final TLV tlv) {
         final var tag = tlv.tag();

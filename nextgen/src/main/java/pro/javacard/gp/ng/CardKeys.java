@@ -34,7 +34,9 @@ public interface CardKeys {
 
     // Key metadata
     record KeyInfo(int version, int id, int length, KeyType type) {
-        public enum KeyType { DES3, AES }
+        public enum KeyType {
+            DES3, AES
+        }
     }
 
     // Bind to a specific card. Returns a NEW instance - original unchanged.

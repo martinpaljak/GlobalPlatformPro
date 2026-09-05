@@ -24,8 +24,8 @@ public final class SCP01 {
     private SCP01() {}
 
     public record State(byte[] encKey, byte[] macKey, byte[] icv,
-                        EnumSet<GPSession.APDUMode> securityLevel,
-                        byte[] sessionContext) implements SecureChannelState, AutoCloseable {
+            EnumSet<GPSession.APDUMode> securityLevel,
+            byte[] sessionContext) implements SecureChannelState, AutoCloseable {
 
         public State(final byte[] encKey, final byte[] macKey, final byte[] icv, final EnumSet<GPSession.APDUMode> securityLevel) {
             this(encKey, macKey, icv, securityLevel, new byte[0]);
@@ -64,7 +64,7 @@ public final class SCP01 {
     }
 
     private static Stateful<CommandAPDU, State> wrap(final CommandAPDU command, final State state,
-                                                     final boolean mac, final boolean enc) {
+            final boolean mac, final boolean enc) {
         try {
             var cla = command.getCLA();
             final var data = command.getData();

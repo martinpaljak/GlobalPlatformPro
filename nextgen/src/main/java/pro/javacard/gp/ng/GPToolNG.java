@@ -79,8 +79,7 @@ public final class GPToolNG extends GPCommandLineInterface implements ToolExtens
     static final String ENV_GP_PCSC_TRANSACT = "GP_PCSC_TRANSACT";
 
     // Pre/post auth recipe plan
-    record RecipePlan(List<Recipe<?>> preAuth, List<Recipe<?>> postAuth) {
-    }
+    record RecipePlan(List<Recipe<?>> preAuth, List<Recipe<?>> postAuth) {}
 
     // Bridge CLI options to Preferences via a declarative mapping.
     @SafeVarargs
@@ -128,13 +127,13 @@ public final class GPToolNG extends GPCommandLineInterface implements ToolExtens
     }
 
     // Explicitly public, to not forget the need for apdu4j
-    public GPToolNG() {
-    }
+    public GPToolNG() {}
 
     private static void showPreamble(String[] argv, OptionSet args) {
         // dump relevant environment and command line variables in verbose+ mode
         if (args.has(OPT_VERBOSE) || args.has(OPT_DEBUG) || args.has(OPT_INFO)) {
-            var gpenv = System.getenv().entrySet().stream().filter(e -> e.getKey().startsWith("GP_")).map(e -> "%s='%s'".formatted(e.getKey(), e.getValue())).collect(Collectors.toList());
+            var gpenv = System.getenv().entrySet().stream().filter(e -> e.getKey().startsWith("GP_")).map(e -> "%s='%s'".formatted(e.getKey(), e.getValue()))
+                    .collect(Collectors.toList());
             if (gpenv.size() > 0) {
                 System.out.println("# " + String.join(" ", gpenv));
             }
@@ -235,7 +234,8 @@ public final class GPToolNG extends GPCommandLineInterface implements ToolExtens
 
     // Build CLI preferences from options
     static Preferences buildCliPrefs(OptionSet args) {
-        var prefs = fromOptions(args, bind(OPT_BS, GlobalPlatformCookbook.BLOCK_SIZE), bind(OPT_HASH, GlobalPlatformCookbook.LOAD_HASH, h -> h.toString()), flag(OPT_S16, GlobalPlatformCookbook.FORCE_S16));
+        var prefs = fromOptions(args, bind(OPT_BS, GlobalPlatformCookbook.BLOCK_SIZE), bind(OPT_HASH, GlobalPlatformCookbook.LOAD_HASH, h -> h.toString()),
+                flag(OPT_S16, GlobalPlatformCookbook.FORCE_S16));
 
         // Profile
         if (args.has(OPT_PROFILE)) {
@@ -243,7 +243,8 @@ public final class GPToolNG extends GPCommandLineInterface implements ToolExtens
             if (p != null) {
                 prefs = prefs.merge(p);
             } else {
-                System.err.printf("Unknown profile '%s', known profiles: %s%n", args.valueOf(OPT_PROFILE), String.join(", ", GlobalPlatformCookbook.PRESETS.keySet()));
+                System.err.printf("Unknown profile '%s', known profiles: %s%n", args.valueOf(OPT_PROFILE),
+                        String.join(", ", GlobalPlatformCookbook.PRESETS.keySet()));
             }
         }
 
@@ -263,7 +264,8 @@ public final class GPToolNG extends GPCommandLineInterface implements ToolExtens
 
         // Receipt verifier
         if (args.has(OPT_RECEIPT_KEY)) {
-            prefs = prefs.with(GlobalPlatformCookbook.RECEIPT_VERIFIER, new ReceiptVerifier.AESReceiptVerifier(args.valueOf(OPT_RECEIPT_KEY).v(), args.has(OPT_FORCE)));
+            prefs = prefs.with(GlobalPlatformCookbook.RECEIPT_VERIFIER,
+                    new ReceiptVerifier.AESReceiptVerifier(args.valueOf(OPT_RECEIPT_KEY).v(), args.has(OPT_FORCE)));
         }
 
         return prefs;
@@ -372,7 +374,8 @@ public final class GPToolNG extends GPCommandLineInterface implements ToolExtens
                     postAuth.add(GlobalPlatformCookbook.delete_aid(loadcap.getPackageAID(), true).recover(err -> Recipe.premade(err.response())));
                 }
                 postAuth.add(Cookbook.deferred(prefs -> {
-                    var targetDomain = args.has(OPT_TO) ? args.valueOf(OPT_TO) : prefs.valueOf(GlobalPlatformCookbook.ISD_AID).orElse(new AID(GlobalPlatformCookbook.DEFAULT_ISD));
+                    var targetDomain = args.has(OPT_TO) ? args.valueOf(OPT_TO)
+                            : prefs.valueOf(GlobalPlatformCookbook.ISD_AID).orElse(new AID(GlobalPlatformCookbook.DEFAULT_ISD));
                     return GlobalPlatformCookbook.load_cap_file(loadcap, targetDomain);
                 }));
             }
@@ -398,7 +401,8 @@ public final class GPToolNG extends GPCommandLineInterface implements ToolExtens
 
             // Load
             postAuth.add(Cookbook.deferred(prefs -> {
-                var targetDomain = args.has(OPT_TO) ? args.valueOf(OPT_TO) : prefs.valueOf(GlobalPlatformCookbook.ISD_AID).orElse(new AID(GlobalPlatformCookbook.DEFAULT_ISD));
+                var targetDomain = args.has(OPT_TO) ? args.valueOf(OPT_TO)
+                        : prefs.valueOf(GlobalPlatformCookbook.ISD_AID).orElse(new AID(GlobalPlatformCookbook.DEFAULT_ISD));
                 return GlobalPlatformCookbook.load_cap_file(capfile, targetDomain);
             }));
 
@@ -814,7 +818,7 @@ public final class GPToolNG extends GPCommandLineInterface implements ToolExtens
             warn("Added " + tag + " (" + opt + ") as " + bin2hex(EXTRADITE_ALL));
             return EXTRADITE_ALL.clone();
         }
-        final var merged = new byte[]{(byte) (current[0] | EXTRADITE_ALL[0]), (byte) (current[1] | EXTRADITE_ALL[1])};
+        final var merged = new byte[] { (byte) (current[0] | EXTRADITE_ALL[0]), (byte) (current[1] | EXTRADITE_ALL[1]) };
         warn("Merged " + opt + " into " + tag + ": " + bin2hex(current) + " -> " + bin2hex(merged));
         return merged;
     }

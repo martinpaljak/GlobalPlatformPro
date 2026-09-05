@@ -28,7 +28,7 @@ public class TestCRS {
         // First app ACTIVATED (01), second DEACTIVATED (00)
         var data = HexUtils.hex2bin(
                 "610C4F05D2450077009F70020701"
-              + "610C4F05A0000001519F70020700");
+                        + "610C4F05A0000001519F70020700");
 
         var entries = CRSCookbook.parse_crs_status(data);
         assertEquals(entries.size(), 2);

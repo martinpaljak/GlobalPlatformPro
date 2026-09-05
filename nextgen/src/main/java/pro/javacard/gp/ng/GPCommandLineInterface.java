@@ -27,7 +27,8 @@ public abstract class GPCommandLineInterface {
     protected static final OptionSpec<AID> OPT_CONNECT = parser.acceptsAll(Arrays.asList("c", "connect"), "Connect to app/domain").withRequiredArg()
             .ofType(AID.class);
     protected static final OptionSpec<Void> OPT_DEBUG = parser.acceptsAll(Arrays.asList("d", "debug"), "Show PC/SC and APDU trace");
-    protected static final OptionSpec<File> OPT_DUMP = parser.accepts("dump", "Dump APDU trace to file").withRequiredArg().ofType(File.class).describedAs("file");
+    protected static final OptionSpec<File> OPT_DUMP = parser.accepts("dump", "Dump APDU trace to file").withRequiredArg().ofType(File.class)
+            .describedAs("file");
     protected static final OptionSpec<Void> OPT_S16 = parser.accepts("s16", "Use SCP03 S16 mode");
 
     protected static final OptionSpec<Void> OPT_VERBOSE = parser.acceptsAll(Arrays.asList("v", "verbose"), "Be verbose about operations");
@@ -48,13 +49,16 @@ public abstract class GPCommandLineInterface {
 
     protected static final OptionSpec<File> OPT_CAP = parser.accepts("cap", "Use a CAP file as pkg/app source").availableUnless(OPT_LOAD).withRequiredArg()
             .ofType(File.class).describedAs("capfile");
-    protected static final OptionSpec<AID> OPT_CREATE = parser.accepts("create", "Create new instance of an applet (deprecated)").withRequiredArg().ofType(AID.class)
+    protected static final OptionSpec<AID> OPT_CREATE = parser.accepts("create", "Create new instance of an applet (deprecated)").withRequiredArg()
+            .ofType(AID.class)
             .describedAs("AID");
     protected static final OptionSpec<AID> OPT_APPLET = parser.accepts("applet", "Applet AID").withRequiredArg().ofType(AID.class).describedAs("AID");
-    protected static final OptionSpec<AID> OPT_PACKAGE = parser.acceptsAll(Arrays.asList("package", "pkg"), "Package AID").availableUnless(OPT_CAP).withRequiredArg()
+    protected static final OptionSpec<AID> OPT_PACKAGE = parser.acceptsAll(Arrays.asList("package", "pkg"), "Package AID").availableUnless(OPT_CAP)
+            .withRequiredArg()
             .ofType(AID.class).describedAs("AID");
 
-    protected static final OptionSpec<AID> OPT_UPDATE = parser.accepts("update", "Update registry entry of an instance (INSTALL [for registry update])").withRequiredArg().ofType(AID.class)
+    protected static final OptionSpec<AID> OPT_UPDATE = parser.accepts("update", "Update registry entry of an instance (INSTALL [for registry update])")
+            .withRequiredArg().ofType(AID.class)
             .describedAs("AID");
 
     protected static final OptionSpec<String> OPT_INSTALL = parser.accepts("install", "Install applet(s)").withRequiredArg().describedAs("capfile/AID");
@@ -79,7 +83,8 @@ public abstract class GPCommandLineInterface {
     // Contactless (Amendment C) install parameters
     protected static final OptionSpec<Void> OPT_CL_ACTIVATED = parser.accepts("cl-activated", "Install contactless-activated");
     protected static final OptionSpec<AID> OPT_CL_NOTIFY = parser.accepts("cl-notify", "Add to CREL notify list").withRequiredArg().ofType(AID.class);
-    protected static final OptionSpec<AID> OPT_CL_NOTIFY_REMOVE = parser.accepts("cl-notify-remove", "Remove from CREL notify list").withRequiredArg().ofType(AID.class);
+    protected static final OptionSpec<AID> OPT_CL_NOTIFY_REMOVE = parser.accepts("cl-notify-remove", "Remove from CREL notify list").withRequiredArg()
+            .ofType(AID.class);
     protected static final OptionSpec<Integer> OPT_CL_FAMILY = parser.accepts("cl-family", "Application family id").withRequiredArg().ofType(Integer.class)
             .withValuesConvertedBy(new HexIntegerConverter());
     protected static final OptionSpec<Void> OPT_CL_DISPLAY_OPTIONAL = parser.accepts("cl-display-optional", "Display not required");
@@ -90,16 +95,21 @@ public abstract class GPCommandLineInterface {
     protected static final OptionSpec<AID> OPT_CRS_LIST = parser.accepts("crs-list", "List contactless applications").withOptionalArg().ofType(AID.class);
     protected static final OptionSpec<Void> OPT_CRS_INFO = parser.accepts("crs-info", "Show CRS version and counter");
     protected static final OptionSpec<AID> OPT_CRS_ACTIVATE = parser.accepts("crs-activate", "Activate on contactless").withRequiredArg().ofType(AID.class);
-    protected static final OptionSpec<AID> OPT_CRS_DEACTIVATE = parser.accepts("crs-deactivate", "Deactivate on contactless").withRequiredArg().ofType(AID.class);
+    protected static final OptionSpec<AID> OPT_CRS_DEACTIVATE = parser.accepts("crs-deactivate", "Deactivate on contactless").withRequiredArg()
+            .ofType(AID.class);
 
     // Secure Element Access Control (ARA-M) commands
     protected static final OptionSpec<Void> OPT_ARA_LIST = parser.accepts("ara-list", "List access rules from ARA-M");
     protected static final OptionSpec<Void> OPT_ARA_ADD = parser.accepts("ara-add", "Store an access rule");
     protected static final OptionSpec<Void> OPT_ARA_DELETE = parser.accepts("ara-delete", "Delete an access rule");
-    protected static final OptionSpec<AID> OPT_ARA_AID = parser.accepts("ara-aid", "Target ARA applet (ARA-C; default ARA-M)").withRequiredArg().ofType(AID.class);
-    protected static final OptionSpec<HexBytes> OPT_ARA_HASH = parser.accepts("ara-hash", "Certificate hash (SHA-256 or SHA-1)").availableIf(OPT_ARA_ADD, OPT_ARA_DELETE).withRequiredArg().ofType(HexBytes.class);
-    protected static final OptionSpec<HexBytes> OPT_ARA_RULE = parser.accepts("ara-rule", "APDU access rule: 00 (NEVER), 01 (ALWAYS) or an APDU filter").requiredIf(OPT_ARA_ADD).withRequiredArg().ofType(HexBytes.class);
-    protected static final OptionSpec<HexBytes> OPT_ARA_NFC = parser.accepts("ara-nfc", "NFC access rule: 00 (NEVER), 01 (ALWAYS)").availableIf(OPT_ARA_ADD).withRequiredArg().ofType(HexBytes.class);
+    protected static final OptionSpec<AID> OPT_ARA_AID = parser.accepts("ara-aid", "Target ARA applet (ARA-C; default ARA-M)").withRequiredArg()
+            .ofType(AID.class);
+    protected static final OptionSpec<HexBytes> OPT_ARA_HASH = parser.accepts("ara-hash", "Certificate hash (SHA-256 or SHA-1)")
+            .availableIf(OPT_ARA_ADD, OPT_ARA_DELETE).withRequiredArg().ofType(HexBytes.class);
+    protected static final OptionSpec<HexBytes> OPT_ARA_RULE = parser.accepts("ara-rule", "APDU access rule: 00 (NEVER), 01 (ALWAYS) or an APDU filter")
+            .requiredIf(OPT_ARA_ADD).withRequiredArg().ofType(HexBytes.class);
+    protected static final OptionSpec<HexBytes> OPT_ARA_NFC = parser.accepts("ara-nfc", "NFC access rule: 00 (NEVER), 01 (ALWAYS)").availableIf(OPT_ARA_ADD)
+            .withRequiredArg().ofType(HexBytes.class);
 
     // Card an applet lifecycle management
     protected static final OptionSpec<AID> OPT_LOCK_APPLET = parser.accepts("lock-applet", "Lock applet").withRequiredArg().ofType(AID.class);
@@ -117,7 +127,8 @@ public abstract class GPCommandLineInterface {
     protected static final OptionSpec<Void> OPT_TODAY = parser.accepts("today", "Set date to today when updating CPLC");
 
     // SCP key handling
-    protected static final OptionSpec<String> OPT_KEY = parser.acceptsAll(Arrays.asList("k", "key"), "Specify (master) key").withRequiredArg().describedAs("key");
+    protected static final OptionSpec<String> OPT_KEY = parser.acceptsAll(Arrays.asList("k", "key"), "Specify (master) key").withRequiredArg()
+            .describedAs("key");
     protected static final OptionSpec<String> OPT_KEY_KDF = parser.accepts("key-kdf", "Use KDF/template with master key").withRequiredArg();
 
     protected static final OptionSpec<HexBytes> OPT_KEY_ENC = parser.accepts("key-enc", "Specify card ENC key").withRequiredArg().ofType(HexBytes.class)
@@ -140,8 +151,10 @@ public abstract class GPCommandLineInterface {
     // Key management
     protected static final OptionSpec<Integer> OPT_KEY_VERSION = parser.accepts("key-ver", "Specify key version").withRequiredArg().ofType(Integer.class)
             .withValuesConvertedBy(new HexIntegerConverter()).describedAs("version");
-    protected static final OptionSpec<PlaintextKey> OPT_PUT_KEY = parser.accepts("put-key", "Put a new key").withRequiredArg().ofType(PlaintextKey.class).describedAs("PEM or hex");
-    protected static final OptionSpec<PlaintextKey> OPT_REPLACE_KEY = parser.accepts("replace-key", "Put a new key, forcing replace").availableUnless(OPT_PUT_KEY)
+    protected static final OptionSpec<PlaintextKey> OPT_PUT_KEY = parser.accepts("put-key", "Put a new key").withRequiredArg().ofType(PlaintextKey.class)
+            .describedAs("PEM or hex");
+    protected static final OptionSpec<PlaintextKey> OPT_REPLACE_KEY = parser.accepts("replace-key", "Put a new key, forcing replace")
+            .availableUnless(OPT_PUT_KEY)
             .withRequiredArg().ofType(PlaintextKey.class).describedAs("PEM or hex");
     protected static final OptionSpec<Integer> OPT_NEW_KEY_VERSION = parser.accepts("new-keyver", "Key version for the new key")
             .requiredIf(OPT_PUT_KEY, OPT_REPLACE_KEY).withRequiredArg().ofType(Integer.class).withValuesConvertedBy(new HexIntegerConverter())
@@ -151,9 +164,11 @@ public abstract class GPCommandLineInterface {
             .withValuesConvertedBy(new HexIntegerConverter()).describedAs("version");
 
     // Delegated management
-    protected static final OptionSpec<PlaintextKey> OPT_DM_KEY = parser.accepts("dm-key", "Delegated Management key").withRequiredArg().ofType(PlaintextKey.class)
+    protected static final OptionSpec<PlaintextKey> OPT_DM_KEY = parser.accepts("dm-key", "Delegated Management key").withRequiredArg()
+            .ofType(PlaintextKey.class)
             .describedAs("PEM or hex");
-    protected static final OptionSpec<HexBytes> OPT_DM_TOKEN = parser.accepts("dm-token", "Delegated Management token").availableUnless(OPT_DM_KEY).withRequiredArg()
+    protected static final OptionSpec<HexBytes> OPT_DM_TOKEN = parser.accepts("dm-token", "Delegated Management token").availableUnless(OPT_DM_KEY)
+            .withRequiredArg()
             .ofType(HexBytes.class).describedAs("token");
     protected static final OptionSpec<HexBytes> OPT_RECEIPT_KEY = parser.accepts("receipt-key", "Receipt verification key (AES)").withRequiredArg()
             .ofType(HexBytes.class).describedAs("key");
@@ -165,13 +180,16 @@ public abstract class GPCommandLineInterface {
     protected static final OptionSpec<Void> OPT_ALLOW_FROM = parser.accepts("allow-from", "Allow moving from created SSD").availableIf(OPT_DOMAIN);
 
     // DAP
-    protected static final OptionSpec<AID> OPT_DAP_DOMAIN = parser.accepts("dap-domain", "Domain to use for DAP verification").withRequiredArg().ofType(AID.class);
+    protected static final OptionSpec<AID> OPT_DAP_DOMAIN = parser.accepts("dap-domain", "Domain to use for DAP verification").withRequiredArg()
+            .ofType(AID.class);
     protected static final OptionSpec<Void> OPT_SHA256 = parser.accepts("sha256", "Use SHA-256 for LFDB hash (deprecated; default)");
     protected static final OptionSpec<GPData.LFDBH> OPT_HASH = parser.accepts("hash", "Use <hash> for LFDB hash instead of SHA-256").withRequiredArg()
             .ofType(GPData.LFDBH.class).withValuesConvertedBy(new LFDBHConverter()).describedAs("hash");
 
-    protected static final OptionSpec<PlaintextKey> OPT_DAP_KEY = parser.accepts("dap-key", "DAP key").withRequiredArg().ofType(PlaintextKey.class).describedAs("PEM or hex");
-    protected static final OptionSpec<HexBytes> OPT_DAP_SIGNATURE = parser.accepts("dap-signature", "DAP signature").availableUnless(OPT_DAP_KEY).withRequiredArg()
+    protected static final OptionSpec<PlaintextKey> OPT_DAP_KEY = parser.accepts("dap-key", "DAP key").withRequiredArg().ofType(PlaintextKey.class)
+            .describedAs("PEM or hex");
+    protected static final OptionSpec<HexBytes> OPT_DAP_SIGNATURE = parser.accepts("dap-signature", "DAP signature").availableUnless(OPT_DAP_KEY)
+            .withRequiredArg()
             .ofType(HexBytes.class).describedAs("signature");
 
     // Personalization and store data
@@ -179,25 +197,30 @@ public abstract class GPCommandLineInterface {
             .describedAs("data");
     protected static final OptionSpec<HexBytes> OPT_STORE_DATA_CHUNK = parser.accepts("store-data-chunk", "Send STORE DATA commands").withRequiredArg()
             .ofType(HexBytes.class).describedAs("data");
-    protected static final OptionSpec<AID> OPT_PERSONALIZE = parser.accepts("personalize", "Personalize applet via associated SD").withRequiredArg().ofType(AID.class)
+    protected static final OptionSpec<AID> OPT_PERSONALIZE = parser.accepts("personalize", "Personalize applet via associated SD").withRequiredArg()
+            .ofType(AID.class)
             .describedAs("AID");
-    protected static final OptionSpec<String> OPT_STORE_DATA_RAW = parser.accepts("store-data-raw", "Send raw STORE DATA APDU via secure channel (P2 auto-managed)")
+    protected static final OptionSpec<String> OPT_STORE_DATA_RAW = parser
+            .accepts("store-data-raw", "Send raw STORE DATA APDU via secure channel (P2 auto-managed)")
             .withRequiredArg().describedAs("APDU");
 
     protected static final OptionSpec<AID> OPT_MAKE_DEFAULT = parser.accepts("make-default", "Make AID the default").withRequiredArg().ofType(AID.class);
-    protected static final OptionSpec<AID> OPT_RENAME_ISD = parser.accepts("rename-isd", "Rename ISD").withRequiredArg().ofType(AID.class).describedAs("new AID");
+    protected static final OptionSpec<AID> OPT_RENAME_ISD = parser.accepts("rename-isd", "Rename ISD").withRequiredArg().ofType(AID.class)
+            .describedAs("new AID");
 
     // EMV personalization
     protected static final OptionSpec<File> OPT_STORE_DGI_FILE = parser.accepts("store-dgi-file", "Send DGI-s from file").withRequiredArg().ofType(File.class)
             .describedAs("DGI file");
     protected static final OptionSpec<String> OPT_DGI_PADDED = parser.accepts("dgi-padded", "List of padded encrypted DGI-s").availableIf(OPT_STORE_DGI_FILE)
             .withRequiredArg().ofType(String.class);
-    protected static final OptionSpec<String> OPT_DGI_UNPADDED = parser.accepts("dgi-unpadded", "List of unpadded encrypted DGI-s").availableIf(OPT_STORE_DGI_FILE)
+    protected static final OptionSpec<String> OPT_DGI_UNPADDED = parser.accepts("dgi-unpadded", "List of unpadded encrypted DGI-s")
+            .availableIf(OPT_STORE_DGI_FILE)
             .withRequiredArg().ofType(String.class);
 
     // PACE
     protected static final OptionSpec<AID> OPT_PACE = parser.accepts("pace", "Run PACE with CAN against AID").withRequiredArg().ofType(AID.class);
-    protected static final OptionSpec<AID> OPT_PACE_SM = parser.accepts("pace-sm", "Run PACE with CAN and SM against AID").availableUnless(OPT_PACE).withRequiredArg()
+    protected static final OptionSpec<AID> OPT_PACE_SM = parser.accepts("pace-sm", "Run PACE with CAN and SM against AID").availableUnless(OPT_PACE)
+            .withRequiredArg()
             .ofType(AID.class);
 
     protected static final OptionSpec<String> OPT_CAN = parser.accepts("can", "CAN for PACE").withRequiredArg().ofType(String.class).describedAs("can");
@@ -216,7 +239,8 @@ public abstract class GPCommandLineInterface {
             .describedAs("profile");
 
     // PC/SC options
-    protected static final OptionSpec<Void> OPT_PCSC_EXCLUSIVE = parser.acceptsAll(Arrays.asList("X", "pcsc-exclusive"), "Exclusive PC/SC access to the reader");
+    protected static final OptionSpec<Void> OPT_PCSC_EXCLUSIVE = parser.acceptsAll(Arrays.asList("X", "pcsc-exclusive"),
+            "Exclusive PC/SC access to the reader");
 
     static class APDUModeConverter extends EnumConverter<GPSession.APDUMode> {
         public APDUModeConverter() {

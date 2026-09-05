@@ -42,7 +42,7 @@ public class TestContactlessParams {
 
         var roots = TLVs.parse(result);
         assertTrue(roots.find(0xC9).isPresent());
-        assertEquals(roots.find(0xEF, 0xA0, 0x81).orElseThrow().value(), new byte[]{0x01});
+        assertEquals(roots.find(0xEF, 0xA0, 0x81).orElseThrow().value(), new byte[] { 0x01 });
         // No interface mask is sent by default
         assertTrue(roots.find(0xEF, 0xA0, 0xA5, 0x82).isEmpty());
         // No user interaction template when only activation requested
@@ -50,7 +50,7 @@ public class TestContactlessParams {
 
         // The mask is sent only when an interface is named explicitly: contactless-only is 40
         var masked = TLVs.parse(params("--cl-activated", "--cl-contactless"));
-        assertEquals(masked.find(0xEF, 0xA0, 0xA5, 0x82).orElseThrow().value(), new byte[]{(byte) 0x40});
+        assertEquals(masked.find(0xEF, 0xA0, 0xA5, 0x82).orElseThrow().value(), new byte[] { (byte) 0x40 });
     }
 
     @Test
@@ -84,8 +84,8 @@ public class TestContactlessParams {
         var result = params("--cl-family", "0x42", "--cl-display-optional");
 
         var roots = TLVs.parse(result);
-        assertEquals(roots.find(0xEF, 0xA1, 0x87).orElseThrow().value(), new byte[]{0x42});
-        assertEquals(roots.find(0xEF, 0xA1, 0x88).orElseThrow().value(), new byte[]{0x01});
+        assertEquals(roots.find(0xEF, 0xA1, 0x87).orElseThrow().value(), new byte[] { 0x42 });
+        assertEquals(roots.find(0xEF, 0xA1, 0x88).orElseThrow().value(), new byte[] { 0x01 });
     }
 
     @Test
@@ -104,10 +104,10 @@ public class TestContactlessParams {
         // Authoritative builder adds the empty C9 sibling
         assertTrue(roots.find(0xC9).isPresent());
         // Existing activation byte is preserved
-        assertEquals(roots.find(0xEF, 0xA0, 0x81).orElseThrow().value(), new byte[]{0x01});
+        assertEquals(roots.find(0xEF, 0xA0, 0x81).orElseThrow().value(), new byte[] { 0x01 });
         // No interface mask is added unless explicitly requested; family added
         assertTrue(roots.find(0xEF, 0xA0, 0xA5, 0x82).isEmpty());
-        assertEquals(roots.find(0xEF, 0xA1, 0x87).orElseThrow().value(), new byte[]{0x07});
+        assertEquals(roots.find(0xEF, 0xA1, 0x87).orElseThrow().value(), new byte[] { 0x07 });
     }
 
     @Test
@@ -116,7 +116,7 @@ public class TestContactlessParams {
         var result = params("--params", "0102", "--cl-activated");
 
         var roots = TLVs.parse(result);
-        assertEquals(roots.find(0xC9).orElseThrow().value(), new byte[]{0x01, 0x02});
+        assertEquals(roots.find(0xC9).orElseThrow().value(), new byte[] { 0x01, 0x02 });
         assertTrue(roots.find(0xEF, 0xA0, 0x81).isPresent());
         // EF must not be nested inside C9
         assertTrue(roots.find(0xC9, 0xEF).isEmpty());
@@ -128,8 +128,8 @@ public class TestContactlessParams {
         var result = params("--params", "8101AAC90142", "--cl-activated");
 
         var roots = TLVs.parse(result);
-        assertEquals(roots.find(0xC9).orElseThrow().value(), new byte[]{0x42});
-        assertEquals(roots.find(0x81).orElseThrow().value(), new byte[]{(byte) 0xAA});
+        assertEquals(roots.find(0xC9).orElseThrow().value(), new byte[] { 0x42 });
+        assertEquals(roots.find(0x81).orElseThrow().value(), new byte[] { (byte) 0xAA });
         assertTrue(roots.find(0xEF, 0xA0, 0x81).isPresent());
     }
 
@@ -138,16 +138,16 @@ public class TestContactlessParams {
         // Happy path: SCP version (81) plus both extradition rules (82/87) added to a C9-only base
         var roots = TLVs.parse(domainParams(GPSecureChannelVersion.valueOf(0x03, 0x55),
                 "--params", "C90100", "--allow-to", "--allow-from"));
-        assertEquals(roots.find(0x81).orElseThrow().value(), new byte[]{0x03, 0x55});
-        assertEquals(roots.find(0x82).orElseThrow().value(), new byte[]{0x20, 0x20});
-        assertEquals(roots.find(0x87).orElseThrow().value(), new byte[]{0x20, 0x20});
+        assertEquals(roots.find(0x81).orElseThrow().value(), new byte[] { 0x03, 0x55 });
+        assertEquals(roots.find(0x82).orElseThrow().value(), new byte[] { 0x20, 0x20 });
+        assertEquals(roots.find(0x87).orElseThrow().value(), new byte[] { 0x20, 0x20 });
         assertTrue(roots.find(0xC9).isPresent());
 
         // A present tag has the allow-all bits merged in: 0xAA already carries 0x20, AAAA stays AAAA
         assertEquals(domainParams(null, "--params", "8202AAAA", "--allow-to"), HexUtils.hex2bin("8202AAAA"));
         // ... but missing bits are actually merged: 0000 becomes 2020
         assertEquals(TLVs.parse(domainParams(null, "--params", "82020000", "--allow-to"))
-                .find(0x82).orElseThrow().value(), new byte[]{0x20, 0x20});
+                .find(0x82).orElseThrow().value(), new byte[] { 0x20, 0x20 });
 
         // Unparseable params pass through without amend, but throw when extradition is requested
         var raw = HexUtils.hex2bin("0102");

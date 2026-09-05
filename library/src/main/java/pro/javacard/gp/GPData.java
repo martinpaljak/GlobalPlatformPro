@@ -293,7 +293,8 @@ public final class GPData {
             // Remaining known data objects, in spec order; find() asserts the single-occurrence contract
             caps.find(0x81).map(t -> "Supported DOM privileges: " + describe(GPRegistryEntry.Privilege.class, t.value())).ifPresent(System.out::println);
             caps.find(0x82).map(t -> "Supported APP privileges: " + describe(GPRegistryEntry.Privilege.class, t.value())).ifPresent(System.out::println);
-            caps.find(0x83).map(t -> "Supported LFDB hash: " + LFDBH.fromBytes(t.value()).stream().map(LFDBH::toString).collect(Collectors.joining(", "))).ifPresent(System.out::println);
+            caps.find(0x83).map(t -> "Supported LFDB hash: " + LFDBH.fromBytes(t.value()).stream().map(LFDBH::toString).collect(Collectors.joining(", ")))
+                    .ifPresent(System.out::println);
             caps.find(0x84).map(t -> "Supported LFDB encryption ciphers: " + describe(LFDB_ENCRYPTION.class, t.value())).ifPresent(System.out::println);
             caps.find(0x85).map(t -> "Supported Token Verification ciphers: " + describe(SIGNATURE.class, t.value())).ifPresent(System.out::println);
             caps.find(0x86).map(t -> "Supported Receipt Generation ciphers: " + describe(SIGNATURE.class, t.value())).ifPresent(System.out::println);

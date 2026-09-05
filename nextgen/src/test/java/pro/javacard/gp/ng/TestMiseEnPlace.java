@@ -53,8 +53,7 @@ public class TestMiseEnPlace {
     public void testStoreDataBlocks() {
         final var blocks = List.of(
                 HexUtils.hex2bin("0102030405"),
-                HexUtils.hex2bin("0607080910")
-        );
+                HexUtils.hex2bin("0607080910"));
         final var result = chef.cook(GlobalPlatformCookbook.store_data_blocks(blocks, 0x00), prefs);
         assertEquals(result.getSW(), 0x9000);
     }

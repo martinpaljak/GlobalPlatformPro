@@ -17,8 +17,7 @@ import java.util.stream.Stream;
 public record GPRegistryNG(List<GPRegistryEntryNG> entries) implements Iterable<GPRegistryEntryNG> {
 
     // Dedup key - correct equality, no hash collisions
-    private record Key(AID aid, Kind kind) {
-    }
+    private record Key(AID aid, Kind kind) {}
 
     public GPRegistryNG {
         // Deduplicate by (kind, aid) - last writer wins, preserves insertion order
@@ -103,7 +102,9 @@ public record GPRegistryNG(List<GPRegistryEntryNG> entries) implements Iterable<
         var result = new ArrayList<GPRegistryEntryNG>();
 
         for (var t : tlvs.findAll(0xE3)) {
-            if (!t.hasChildren()) {continue;}
+            if (!t.hasChildren()) {
+                continue;
+            }
 
             var b = new GPRegistryEntryNG.Builder().kind(type);
 

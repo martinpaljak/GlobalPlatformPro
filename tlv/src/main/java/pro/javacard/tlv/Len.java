@@ -12,9 +12,10 @@ public final class Len {
     // Both directions: ber and ext disagree on the wire
     public interface Codec {
         int decode(ByteBuffer buf);
+
         byte[] encode(int len);
 
-        Codec BER = new Codec() {           // 81/82/83 long form
+        Codec BER = new Codec() { // 81/82/83 long form
             @Override
             public int decode(final ByteBuffer buf) {
                 return Len.ber(buf);
@@ -25,7 +26,7 @@ public final class Len {
                 return Len.ber(len);
             }
         };
-        Codec EXT = new Codec() {           // 0xFF-marker 2-byte form
+        Codec EXT = new Codec() { // 0xFF-marker 2-byte form
             @Override
             public int decode(final ByteBuffer buf) {
                 return Len.ext(buf);

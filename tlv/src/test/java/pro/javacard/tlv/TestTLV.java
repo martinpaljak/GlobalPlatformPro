@@ -160,8 +160,8 @@ class TestTLV {
         // Direct only: a nested tag is not matched, and self is never a candidate
         final var deep = TLV.build(0x7F01).add(t);
         Assert.assertTrue(deep.find(Tag.ber("9F45")).isPresent()); // direct child
-        Assert.assertTrue(deep.find(Tag.ber("81")).isEmpty());     // nested under 9F45, not direct
-        Assert.assertTrue(deep.find(Tag.ber("7F01")).isEmpty());   // self never a candidate
+        Assert.assertTrue(deep.find(Tag.ber("81")).isEmpty()); // nested under 9F45, not direct
+        Assert.assertTrue(deep.find(Tag.ber("7F01")).isEmpty()); // self never a candidate
 
         // Check "end"
         Assert.assertEquals(t.children().get(0).end(), t);
@@ -300,7 +300,7 @@ class TestTLV {
         final var list2 = List.of(t);
         final var roots = TLVs.of(list2);
         Assert.assertTrue(roots.find(0xE0, 0x81).isPresent()); // nested, addressed by path
-        Assert.assertTrue(roots.find(0x81).isEmpty());         // not a top-level entry
+        Assert.assertTrue(roots.find(0x81).isEmpty()); // not a top-level entry
 
         Assert.assertEquals(TLV.findAll(list2, Tag.ber("E0")).size(), 1);
         Assert.assertEquals(TLV.findAll(list2, Tag.ber("81")).size(), 0);
@@ -308,9 +308,9 @@ class TestTLV {
         Assert.assertEquals(list2.get(0).findAll(Tag.ber("82")).size(), 0);
 
         // find is the single-finder: present for one match, empty for none; direct/top-level only
-        Assert.assertSame(TLV.find(list2, Tag.ber("E0")).get(), t);          // static, top-level
-        Assert.assertTrue(TLV.find(list2, Tag.ber("81")).isEmpty());         // 81 is nested, not top-level
-        Assert.assertTrue(list2.get(0).find(Tag.ber("81")).isPresent());     // instance, direct child of E0
+        Assert.assertSame(TLV.find(list2, Tag.ber("E0")).get(), t); // static, top-level
+        Assert.assertTrue(TLV.find(list2, Tag.ber("81")).isEmpty()); // 81 is nested, not top-level
+        Assert.assertTrue(list2.get(0).find(Tag.ber("81")).isPresent()); // instance, direct child of E0
         Assert.assertTrue(list2.get(0).find(Tag.ber("82")).isEmpty());
 
         // find throws on multiple matches; findAll is the multi-finder

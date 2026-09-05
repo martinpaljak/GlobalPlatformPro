@@ -25,18 +25,18 @@ public class TestRegistryUpdate {
     @Test
     public void testRegistryUpdateWithCrelNotify() {
         // Build the same contactless parameters the CLI produces for --cl-notify
-        var params = GPToolNG.install_params(GPCommandLineInterface.parser.parse(new String[]{"--cl-notify", CREL.toString()}));
+        var params = GPToolNG.install_params(GPCommandLineInterface.parser.parse(new String[] { "--cl-notify", CREL.toString() }));
 
         // Expected command data field per Table 11-46:
         // 00 (SD AID len) | 00 (data len) | 08 + instance AID | 00 (priv len) |
         // <params len> + params | 00 (token len)
-        var expectedData = HexUtils.bin2hex(new byte[]{0x00, 0x00})
+        var expectedData = HexUtils.bin2hex(new byte[] { 0x00, 0x00 })
                 + "08" + INSTANCE.toString()
                 + "00"
-                + HexUtils.bin2hex(new byte[]{(byte) params.length}) + HexUtils.bin2hex(params)
+                + HexUtils.bin2hex(new byte[] { (byte) params.length }) + HexUtils.bin2hex(params)
                 + "00";
         // INS=E6, P1=40 (for registry update), P2=00, Le=00
-        var expectedApdu = "80E64000" + HexUtils.bin2hex(new byte[]{(byte) (expectedData.length() / 2)}) + expectedData + "00";
+        var expectedApdu = "80E64000" + HexUtils.bin2hex(new byte[] { (byte) (expectedData.length() / 2) }) + expectedData + "00";
 
         var mock = MockBIBO.with(expectedApdu, "9000");
         var chef = Chef.of(mock);
@@ -52,7 +52,7 @@ public class TestRegistryUpdate {
     public void testRegistryUpdateRawParams() {
         var params = HexUtils.hex2bin("C90100");
         var expectedData = "0000" + "08" + INSTANCE.toString() + "00" + "03" + "C90100" + "00";
-        var expectedApdu = "80E64000" + HexUtils.bin2hex(new byte[]{(byte) (expectedData.length() / 2)}) + expectedData + "00";
+        var expectedApdu = "80E64000" + HexUtils.bin2hex(new byte[] { (byte) (expectedData.length() / 2) }) + expectedData + "00";
 
         var mock = MockBIBO.with(expectedApdu, "9000");
         var chef = Chef.of(mock);
@@ -93,7 +93,7 @@ public class TestRegistryUpdate {
         var pkg = new AID("0102030405");
         var isd = new AID("A000000151000000");
         var expectedData = "05" + pkg + "08" + isd + "00" + "00" + "00";
-        var expectedApdu = "80E60200" + HexUtils.bin2hex(new byte[]{(byte) (expectedData.length() / 2)}) + expectedData + "00";
+        var expectedApdu = "80E60200" + HexUtils.bin2hex(new byte[] { (byte) (expectedData.length() / 2) }) + expectedData + "00";
 
         var mock = MockBIBO.with(expectedApdu, "9000");
         var chef = Chef.of(mock);
@@ -106,7 +106,7 @@ public class TestRegistryUpdate {
     public void testDeleteNoTrailingToken() {
         var aid = new AID("0102030405");
         var data = TLV.of(Tag.ber(0x4F), aid.getBytes()).encode();
-        var expectedApdu = "80E40000" + HexUtils.bin2hex(new byte[]{(byte) data.length}) + HexUtils.bin2hex(data) + "00";
+        var expectedApdu = "80E40000" + HexUtils.bin2hex(new byte[] { (byte) data.length }) + HexUtils.bin2hex(data) + "00";
 
         var mock = MockBIBO.with(expectedApdu, "9000");
         var chef = Chef.of(mock);

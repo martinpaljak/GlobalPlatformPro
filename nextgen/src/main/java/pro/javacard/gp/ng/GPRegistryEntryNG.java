@@ -24,8 +24,7 @@ public record GPRegistryEntryNG(
         Set<Integer> implicitContact,
         Set<Integer> implicitContactless,
         // Contactless activation state (9F70 second byte); present on Amendment C cards only, otherwise null
-        Integer state
-) {
+        Integer state) {
     public GPRegistryEntryNG {
         // Note: caller assures that privileges are present
         Objects.requireNonNull(privileges);
@@ -227,8 +226,8 @@ public record GPRegistryEntryNG(
         }
 
         static <T extends Enum<T> & ByteEnum> T fromByte(Class<T> klass, int value) {
-            return find(klass, value).orElseThrow(() ->
-                    new IllegalArgumentException("Unknown %s value: 0x%02X".formatted(klass.getSimpleName(), value & 0xFF)));
+            return find(klass, value)
+                    .orElseThrow(() -> new IllegalArgumentException("Unknown %s value: 0x%02X".formatted(klass.getSimpleName(), value & 0xFF)));
         }
     }
 

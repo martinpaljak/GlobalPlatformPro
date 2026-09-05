@@ -46,10 +46,8 @@ public final class ARACookbook {
     // One access rule: a (target applet AID, certificate hash) reference bound to APDU and NFC rules,
     // plus the raw REF-AR-DO children the card returned. AID and hash may be absent (a rule for all).
     public record AccessRule(Optional<AID> aid, Optional<byte[]> hash, Optional<byte[]> apduRule,
-                             Optional<byte[]> nfcRule, List<TLV> data) {
-        public AccessRule {
-            data = List.copyOf(data);
-        }
+            Optional<byte[]> nfcRule, List<TLV> data) {
+        public AccessRule { data = List.copyOf(data); }
     }
 
     // Decode the FF40 GET DATA [all] frame into access rules (SEAC 4.2.2)

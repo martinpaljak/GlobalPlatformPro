@@ -13,11 +13,12 @@ Run `make versions` to check for newer versions of dependencies, plugins, and ex
 
 Before committing, run these in order:
 
-1. `./mvnw -Pcheck -Dmaven.javadoc.skip=true -Dmaven.test.skip=true compile spotbugs:check` — SpotBugs static analysis, excludes in `spotbugs.xml`
-2. `./mvnw rewrite:run spotless:apply` — OpenRewrite auto-fixes and code formatting
-3. `./mvnw verify` — final build + tests, must be clean
+1. `make source`: OpenRewrite auto-fixes and the Eclipse formatter, applied in place
+2. `CI=true ./mvnw clean verify`: build, tests, SpotBugs and `spotless:check`, must be clean
 
 OpenRewrite applies automatic fixes (var inference, String.formatted, finality, etc.). Spotless applies the Eclipse formatter. Both modify source files in place — review the changes before committing.
+
+The `check` profile activates on `env.CI=true` with JDK 21 or newer, so `-Pcheck` is never needed; `CI=true` alone brings in SpotBugs (excludes in `spotbugs.xml`), `spotless:check` and the OpenRewrite dry run. A formatting failure is fixed by `make source`, not by hand.
 
 Configuration: `eclipse-formatter.xml` in the project root. `module-info.java` files are excluded from formatting.
 

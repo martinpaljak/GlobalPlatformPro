@@ -20,6 +20,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
@@ -60,9 +61,9 @@ public final class Key {
     }
 
     public static Key valueOf(final String v) {
-        final Path p = Paths.get(v);
-        if (Files.isReadable(p)) {
-            try (InputStream inputStream = Files.newInputStream(p)) {
+        final Optional<Path> file = asReadableFile(v);
+        if (file.isPresent()) {
+            try (InputStream inputStream = Files.newInputStream(file.get())) {
                 try (var pem = new PEMParser(new InputStreamReader(inputStream, StandardCharsets.US_ASCII))) {
                     final var ohh = pem.readObject();
                     if (ohh instanceof PEMKeyPair kp) {
@@ -135,6 +136,16 @@ public final class Key {
                     throw new IllegalArgumentException("Invalid key length: " + k.length);
                 }
             }
+        }
+    }
+
+    // Windows does not allow a colon in a path name: "aes:..." and "secp256r1:..." fail to parse there
+    private static Optional<Path> asReadableFile(final String v) {
+        try {
+            final Path p = Paths.get(v);
+            return Files.isReadable(p) ? Optional.of(p) : Optional.empty();
+        } catch (InvalidPathException e) {
+            return Optional.empty();
         }
     }
 

@@ -20,6 +20,8 @@ public class TestKeyConverter {
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testGarbage() {
+        // A path name that does not parse is a key value: NUL fails everywhere, a colon fails on Windows
+        Assert.assertThrows(IllegalArgumentException.class, () -> Key.valueOf("secp256r1\0:0102"));
         Key.valueOf("foobar");
     }
 

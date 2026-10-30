@@ -548,7 +548,7 @@ public final class GPSession {
         for (var i = 0; i < chunks.size(); i++) {
             final var last = i == chunks.size() - 1;
             final int p1 = last ? command.getP1() : command.getP1() | 0x80; // XXX: should check if instruction is eligible for this treatment
-            resp = channel.transmit(new CommandAPDU(wrapped.getCLA(), wrapped.getINS(), p1, wrapped.getP2(), chunks.get(i), 256));
+            resp = channel.transmit(new CommandAPDU(wrapped.getCLA(), wrapped.getINS(), p1, wrapped.getP2(), chunks.get(i), wrapped.getNe()));
             if (!last) {
                 GPException.check(resp);
             }

@@ -277,8 +277,10 @@ public final class GPCrypto {
         final var keylen = (key.getModulus().bitLength() + 7) / 8;
         if (keylen == 128) {
             return rsa_scheme1(key, dtbs);
-        } else {
+        } else if (keylen > 128) {
             return rsa_scheme2(key, dtbs);
+        } else {
+            throw new IllegalArgumentException("RSA Key too short");
         }
     }
 

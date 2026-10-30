@@ -1081,10 +1081,14 @@ public final class GPTool extends GPCommandLineInterface {
                     signature = args.valueOf(OPT_DAP_SIGNATURE).value();
                 } else if (args.has(OPT_DAP_KEY)) {
                     final var dapKey = args.valueOf(OPT_DAP_KEY);
-                    if (dapKey.getPrivate().isEmpty()) {
+                    if (!dapKey.getPrivate().isEmpty()) {
+                        signature = DAPSigner.sign(capFile, dapKey.getPrivate().get(), Optional.ofNullable(lfdbh).orElse(GPData.LFDBH.SHA256));
+                    } else if (!dapKey.getSymmetric().isEmpty()) {
+                        signature = DAPSigner.mac(capFile, dapKey.getSymmetric().get(), Optional.ofNullable(lfdbh).orElse(GPData.LFDBH.SHA256));
+                    } else {
                         throw new IllegalArgumentException("Invalid DAP key: " + dapKey);
                     }
-                    signature = DAPSigner.sign(capFile, dapKey.getPrivate().get(), Optional.ofNullable(lfdbh).orElse(GPData.LFDBH.SHA256));
+                    
                 } else {
                     // TODO: have some xml/zip parsers for ease of use like existing capfile (but deprecate that)
                     if (!args.has(OPT_FORCE)) {
